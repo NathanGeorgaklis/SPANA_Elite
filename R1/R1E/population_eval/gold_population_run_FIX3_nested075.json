@@ -1,0 +1,101 @@
+{
+ "camera": {
+  "reason_counts": {},
+  "shift_frac_width_per_s": {
+   "max": 0.32189861745606463,
+   "median": 0.05337847966504346,
+   "min": 1.599048059067199e-05,
+   "n": 179,
+   "p10": 0.000447369530880691,
+   "p90": 0.23064232190002157
+  },
+  "status_counts": {
+   "ESTIMATED": 179,
+   "FIRST_FRAME": 1
+  },
+  "zoom_factor_per_s": {
+   "max": 1.0342781032419437,
+   "median": 0.9965002837940486,
+   "min": 0.8744643232096443,
+   "n": 179,
+   "p10": 0.9540944691442882,
+   "p90": 1.0031426591870831
+  }
+ },
+ "config_hash": "e65093a4c563d9a851bc6dafe908da369d699ce1c96c522c2ccff171fa1cb3e9",
+ "config_registry_version": "r1e-1",
+ "detector_setting": "s_grid2x2",
+ "fixture_fields_used": [
+  "seed_frame",
+  "video_sha256"
+ ],
+ "fps": 30.0,
+ "frames": 180,
+ "invariant_errors": [],
+ "labels_identity_or_event_results_used": false,
+ "population": {
+  "bank_eligible_share": 0.626615969581749,
+  "closures_by_reason": {
+   "CONTACT_AMBIGUITY": 3,
+   "LEFT_FRAME": 9,
+   "MERGED_CONTACT": 43,
+   "UNMATCHED_TIMEOUT": 40
+  },
+  "competitor_probe_height": "median observed box height of the frame",
+  "competitors_per_observed_tracklet": {
+   "max": 24.0,
+   "median": 3.0,
+   "min": 0.0,
+   "n": 1315,
+   "p10": 0.0,
+   "p90": 13.0
+  },
+  "contact_events_by_kind": {
+   "AMBIGUOUS_ASSOCIATION": 2,
+   "MERGED_DETECTION": 184
+  },
+  "duplicates_suppressed": 0,
+  "hidden_frames_by_source": {
+   "HELD": 265,
+   "PREDICTED": 417
+  },
+  "merge_reasons": {
+   "AREA_RATIO": 25,
+   "ASPECT_WIDE": 20,
+   "MULTI_CLAIM": 15,
+   "PERSISTENT_MERGE": 28,
+   "UNRESOLVED_MERGE": 134
+  },
+  "observation_flags": {
+   "CONTAINS_OTHER": 231,
+   "CONTESTED": 4,
+   "IN_MERGED_REGION": 190,
+   "MERGED_SUSPECTED": 184,
+   "NESTED": 290,
+   "OVERLAPS_OTHER": 856,
+   "PARTIAL": 132,
+   "TOUCHES_IMAGE_EDGE": 144
+  },
+  "observed_tracklet_boxes": 1315,
+  "provisional_share": 0.3361216730038023,
+  "tracklet_lifetime_s": {
+   "max": 4.666666666666667,
+   "median": 0.5333333333333333,
+   "min": 0.03333333333333333,
+   "n": 108,
+   "p10": 0.03333333333333333,
+   "p90": 1.2666666666666666
+  },
+  "tracklets_seen": 108,
+  "tracklets_started": 108
+ },
+ "runtime_ms_per_frame": {
+  "max": 10.765790997538716,
+  "median": 4.364707994682249,
+  "min": 1.5966670034686103,
+  "n": 180,
+  "p10": 3.5572922992287204,
+  "p90": 5.19429159903666
+ },
+ "tool": "tools_rb/population_eval.py"
+}

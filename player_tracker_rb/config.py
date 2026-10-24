@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1d-1"
+CONFIG_REGISTRY_VERSION = "r1e-1"
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -419,6 +419,20 @@ PARAMS: Tuple[Param, ...] = (
     _p("motion_veto_max_scale_ratio_per_s", "float", "ratio per s",
        "Box-height change faster than this factor per second vetoes a candidate.", 1.8, N, "DESIGN_CHOICE", UNV,
        "BEHAVIOURAL", "geometry", "D09", 1.0, 100.0),
+    _p("motion_velocity_tau_s", "float", "s",
+       "Time constant of the exponential smoothing of a tracklet's camera-compensated velocity and log-height "
+       "rate (alpha = 1 - exp(-dt / tau), so the smoothing is the same at any fps).", 0.2, N, "DESIGN_CHOICE",
+       UNV, "BEHAVIOURAL", "geometry", "R1-E motion model (NEW)", 0.001, 30.0),
+    _p("motion_max_extrapolation_s", "float", "s",
+       "A box is extrapolated with its velocity for at most this long after its last observation; after that "
+       "it is HELD (camera-compensated only, no further extrapolation).", 0.3, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "geometry", "R1-E motion model (NEW); D06 observed vs predicted vs held", 0.0, 30.0),
+    _p("motion_jitter_h", "float", "h",
+       "Detector box-centre jitter allowed on top of the speed limit when checking motion plausibility.",
+       0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "geometry", "R1-E motion model (NEW)", 0.0, 20.0),
+    _p("motion_scale_jitter_ratio", "float", "ratio",
+       "Detector box-height jitter allowed on top of motion_veto_max_scale_ratio_per_s.", 1.25, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "geometry", "R1-E motion model (NEW)", 1.0, 100.0),
 
     # ---- population / competitors (D10) ------------------------------------------------------
     _p("population_match_iou_min", "float", "IoU ratio",
@@ -432,6 +446,74 @@ PARAMS: Tuple[Param, ...] = (
        "Any detection-backed body whose box centre is within this of the target gate is a competitor, from "
        "its first frame, regardless of team label or age.", 1.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
        "population", "D10; R1 approval §E", 0.0, 20.0),
+    _p("population_duplicate_iou", "float", "IoU ratio",
+       "Two same-frame detections with IoU at least this are one body detected twice: the lower-scored one is "
+       "suppressed as a separate tracklet but kept as evidence, and the kept one is flagged (never a bank "
+       "sample). Below this, overlapping boxes are separate people.", 0.85, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "population", "R1-E (NEW); detector NMS already removes IoU > detector_nms_iou", 0.0, 1.0),
+    _p("population_assoc_ambiguity_margin", "float", "IoU difference",
+       "A tracklet-detection link is ambiguous if a rival detection or rival tracklet is within this IoU of "
+       "it. Ambiguous links end the tracklets involved (no continuity is claimed through the contact).", 0.1, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "R1-E (NEW); F1/F4 identity switch at contact", 0.0, 1.0),
+    _p("population_max_gap_s", "float", "s",
+       "A tracklet missed for at most this long may continue on a detection, but only if no other body touched "
+       "its predicted box during the gap. Longer gaps always start a new tracklet.", 0.2, N, "DESIGN_CHOICE",
+       UNV, "BEHAVIOURAL", "population", "R1-E (NEW)", 0.0, 30.0),
+    _p("population_contact_cover_min", "float", "fraction of predicted box area",
+       "A hidden tracklet is in contact with another body if that body covers at least this fraction of its "
+       "predicted box.", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "R1-E (NEW)", 0.0, 1.0),
+    _p("population_partial_height_ratio", "float", "ratio to predicted box height",
+       "A detection shorter than this fraction of its tracklet's predicted height is PARTIAL (part of the body "
+       "hidden or outside the image). PARTIAL boxes do not update velocity or size.", 0.75, N, "DESIGN_CHOICE",
+       UNV, "BEHAVIOURAL", "population", "R1-E (NEW)", 0.0, 1.0),
+    _p("population_min_inside_fraction", "float", "fraction of predicted box area",
+       "A hidden tracklet whose predicted box has less than this fraction inside the image has left the frame "
+       "and is closed.", 0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "R1-E (NEW)", 0.0, 1.0),
+    _p("population_provisional_s", "float", "s",
+       "A tracklet younger than this is labelled provisional. Informational only: provisional tracklets are "
+       "competitors exactly like older ones.", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-E (NEW); D10 (historical PROVISIONAL tracks were invisible to contests, defect F4)", 0.0, 30.0),
+    _p("population_bank_sample_interval_s", "float", "s",
+       "Minimum time between appearance samples offered to one tracklet's bank.", 0.25, N, "DESIGN_CHOICE",
+       UNV, "BEHAVIOURAL", "population", "R1-E (NEW)", 0.0, 30.0),
+    _p("population_closed_memory_s", "float", "s",
+       "Closed tracklets (with their appearance banks) stay available as recent competitors for this long.",
+       2.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "R1-E (NEW); D08 pre-contact competitor "
+       "appearance", 0.0, 600.0),
+    _p("population_merged_region_hold_s", "float", "s",
+       "A merged region (where one detection covered two or more bodies) stays UNRESOLVED for this long after "
+       "the last size/multi-claim evidence, unless at least as many separate bodies come out of it first. While "
+       "unresolved, a single box inside it is MERGED_SUSPECTED (a second body may still be hidden in it).", 0.5,
+       N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "R1-E (NEW); D11 merged-detection guard", 0.0,
+       30.0),
+    _p("population_nested_containment", "float", "fraction of the smaller box's area",
+       "A detection lying at least this much inside a larger same-frame detection is NESTED: kept as an "
+       "observation and a competitor, but it starts no tracklet and claims nothing (detectors return part-body "
+       "boxes inside a person's full box; a second person that hidden is not trackable from geometry either). The "
+       "containing box is CONTAINS_OTHER and never an appearance sample.", 0.75, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "population", "R1-E (NEW); R1-E development-clip population check: at 0.9, alternative "
+       "boxes of one person (smaller box 0.75-0.9 inside the larger) still became separate tracklets and "
+       "produced false MULTI_CLAIM merges; side-by-side people in contact measured 0.33-0.62. In-sample, "
+       "UNVALIDATED.", 0.0, 1.0),
+    _p("population_size_ref_window_s", "float", "s",
+       "A tracklet's size reference is the median width and height of its non-partial observed boxes in this "
+       "recent window (camera-scaled).", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-E (NEW); D11 (recent median), D13", 0.0, 30.0),
+    _p("population_size_ref_min_s", "float", "s",
+       "A size reference is ESTABLISHED only when its non-partial observations span at least this long. Size-"
+       "based merge tests (AREA_RATIO, ASPECT_WIDE, PERSISTENT_MERGE) need an established reference: a box seen "
+       "once may itself have been partial.", 0.2, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-E (NEW); R1-E development-clip population check (part-box references)", 0.0, 30.0),
+    _p("merged_claim_min_box_fraction", "float", "fraction of the detection's area",
+       "A tracklet counts towards a MULTI_CLAIM merge only if its predicted box fills at least this fraction of "
+       "the detection (and it was observed within population_max_gap_s). A small far body behind a large near "
+       "body fills little of the near body's box: that is occlusion, not one box for two bodies.", 0.25, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-E (NEW); D11; R1-E development-clip population check (occluders were flagged as merges)", 0.0, 1.0),
+    _p("population_track_id_digits", "int", "digits",
+       "Zero-padded width of the numeric part of a population tracklet id (prefix + number).", 3, H,
+       "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "population",
+       "historical online ids T001, T064, T076 (R0 plan; blind_r2_009, shot_close_range)", 1, 12),
 
     # ---- merged-detection guard (D11) --------------------------------------------------------
     _p("merged_area_ratio", "float", "ratio to recent median target area",
@@ -503,16 +585,52 @@ PARAMS: Tuple[Param, ...] = (
        "A frame-to-frame grey-histogram distance at least this, together with flow failure, is a hard cut.",
        0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "D16", 0.0, 1.0),
     _p("cut_flow_inlier_fraction_max", "float", "fraction of tracked features",
-       "Optical flow with fewer surviving inliers than this counts as flow failure.", 0.2, N, "DESIGN_CHOICE",
+       "Optical flow whose RANSAC inliers are at most this fraction of the background features found in the "
+       "previous frame counts as flow failure.", 0.2, N, "DESIGN_CHOICE",
        UNV, "BEHAVIOURAL", "camera", "D16", 0.0, 1.0),
     _p("flow_max_corners", "int", "features", "Maximum background features for global-motion estimation.",
        300, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "D16", 10, 10000),
     _p("flow_quality_level", "float", "OpenCV corner quality (0-1)", "goodFeaturesToTrack quality level.",
        0.01, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "D16", 0.0, 1.0),
-    _p("flow_min_distance_px", "float", "px (image resolution)", "Minimum spacing between flow features.",
+    _p("flow_min_distance_px", "float", "px (flow working resolution)",
+       "Minimum spacing between flow features, at the flow working width (flow_work_width_px).",
        8.0, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "D16", 1.0, 1000.0),
     _p("flow_person_mask_pad_h", "float", "h", "Padding around person boxes excluded from background flow.",
        0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "D16", 0.0, 5.0),
+    _p("cut_hist_bins", "int", "bins", "Number of grey-level bins of the cut-detection histogram.", 32, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "D16; R1-E (NEW)", 2, 256),
+    _p("cut_work_width_px", "int", "px (cut-histogram working width)",
+       "Frames are resized to this width before the cut histogram (normalised, so resolution-independent).",
+       160, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW)", 8, 4096),
+    _p("flow_work_width_px", "int", "px (flow working width)",
+       "Frames are resized to this width for global-motion flow, so every flow pixel parameter means the same "
+       "thing at any source resolution. The estimate is scaled back to source pixels.", 640, N,
+       "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW); R1 approval §29 (scale-normalised)",
+       32, 8192),
+    _p("flow_lk_win_px", "int", "px (flow working resolution)", "Lucas-Kanade window size.", 21, N,
+       "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW); OpenCV default family", 3, 255),
+    _p("flow_lk_max_level", "int", "pyramid levels", "Lucas-Kanade pyramid levels above the base image.", 3, N,
+       "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW)", 0, 10),
+    _p("flow_ransac_reproj_px", "float", "px (flow working resolution)",
+       "RANSAC inlier threshold for the global similarity transform.", 2.0, N, "DESIGN_CHOICE",
+       "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW)", 0.1, 100.0),
+    _p("flow_min_features", "int", "features",
+       "Fewer background features (found, or successfully tracked) than this means the camera motion cannot "
+       "be estimated.", 30, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW)", 3, 10000),
+    _p("camera_max_shift_frac_per_s", "float", "fraction of frame width per s",
+       "An estimated image-centre shift faster than this is implausible (estimate rejected: UNKNOWN).", 3.0, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera motion", 0.0, 1000.0),
+    _p("camera_max_scale_ratio_per_s", "float", "ratio per s",
+       "An estimated zoom faster than this factor per second is implausible (estimate rejected: UNKNOWN).",
+       3.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera zoom", 1.0, 1000.0),
+    _p("camera_max_rotation_rad_per_s", "float", "rad per s",
+       "An estimated image rotation faster than this is implausible (estimate rejected: UNKNOWN).", 0.5, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera roll", 0.0, 100.0),
+    _p("camera_unknown_breaks_continuity", "bool", "flag",
+       "If True, a frame whose camera motion cannot be estimated (UNKNOWN) breaks position continuity exactly "
+       "like a detected cut (fail closed: a cut between similar-looking shots is not distinguishable from a "
+       "flow failure).", True, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera",
+       "R1-E (NEW); R1 approval §20 fail closed", allowed=(True, False)),
 
     # ---- REFERENCE_ONLY: recovered historical values. Never read by tracker code. -------------
     _p("hist_assoc_weight_appearance", "float", "weight", "Historical linear association weight (audit only).",
@@ -570,6 +688,8 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
             errs.append(f"{band} must be (low, high) with low < high")
     if v["merged_aspect_band"][0] >= 1.0 or v["merged_aspect_band"][1] <= 1.0:
         errs.append("merged_aspect_band must contain 1.0 (the target's own aspect)")
+    if v["population_max_gap_s"] > v["population_max_unmatched_s"]:
+        errs.append("population_max_gap_s must be <= population_max_unmatched_s")
     if v["lost_long_s"] < v["max_ambiguous_s"] or v["lost_long_s"] < v["max_occluded_s"]:
         errs.append("lost_long_s must be >= max_ambiguous_s and >= max_occluded_s")
     dcm = v["detection_confidence_by_position_source"]
