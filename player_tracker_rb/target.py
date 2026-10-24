@@ -12,22 +12,29 @@ Inputs per frame: the Population's FrameResult for this frame (R1-E: tracklets, 
 and the image. update() first lets the population sample its own tracklet banks for this frame (competitor
 appearance), then decides the target.
 
+SEED (D18): the max-IoU body detection (>= seed_min_iou) to the human seed box, refused (SeedError, fail closed)
+if it is merged-suspected, merge-sized against the seed box itself (merged_area_ratio / merged_aspect_band: the
+only single-body size reference on the first frame), has an unusable crop, or cannot anchor the bank.
+
 States (D05): TRACKING (trusted, observed), OCCLUDED, AMBIGUOUS, LOST, REACQUIRING (verifying a candidate).
 Only TRACKING is trusted, and only TRACKING has an observed box (D06): every other state writes the target's
 PREDICTED or HELD box, and the contested candidate box (if any) separately in observed_or_contested_box.
 
 CANDIDATE EVALUATION (one detection i; D08; no fast path: applied even when it is the only box):
-  * MERGED: the box is MERGED_SUSPECTED, or its tracklet carries MERGE_LINEAGE (may hold two people) -> it can
-    never confirm identity (D11).
-  * MOTION (veto only): while positional continuity is valid, the target motion model must find the box
-    physically plausible (motion.py). Motion never adds identity evidence.
+  * MERGED: the box is MERGED_SUSPECTED, or its tracklet carries MERGE_LINEAGE, or (while position is valid and
+    the target has a size reference) it is merge-sized against the target's recent median size (merged_area_ratio
+    / merged_aspect_band) -> it may hold two people and can never confirm identity (D11).
+  * MOTION (veto only): while positional continuity is valid and a motion prior exists, the target motion model
+    must find the box physically plausible (motion.py). Motion never adds identity evidence.
   * APPEARANCE: the crop's similarity to the target bank (best single sample) must pass identity_support()
     (lab_floor, embedding_floor, appearance_floor; contaminated crops fail). Reacquisition uses the stricter
     composite floor reacq_appearance_floor.
   * CONTRAST against every competitor that could be this box (Population.competitors around the box:
     observations, hidden tracklets, tracklets closed within contact_memory_s, with their banks). EXCLUDED, so the
-    target never competes with itself: the candidate's own tracklet, every tracklet the target was confirmed on,
-    and boxes of the candidate's own nested group (part-body / alternative boxes of the same body).
+    target never competes with itself: the candidate's own tracklet, every tracklet the target was confirmed on
+    UNLESS that tracklet is observed this frame on a box outside the candidate's nested group (then it is a separate
+    body beside the candidate and competes; R1-F review H1), and boxes of the candidate's own nested group
+    (part-body / alternative boxes of the same body).
       contrast = target_similarity - best competitor-bank similarity on this same crop
     must be >= contrastive_margin (ordinary) or the reacquisition margin (below). With no banked competitor the
     contrast is not defined and does not block.
@@ -52,7 +59,10 @@ LEFT_FRAME -> LOST (TARGET_OUT_OF_FRAME), UNMATCHED_TIMEOUT -> LOST (AGED_OUT). 
 continued: the target can then only come back through REACQUISITION.
 
 REACQUISITION (D15; any box that is not the continuing tracklet, after any break):
-  * candidates: every non-merged, non-alternative detection; while positional continuity is valid and the target
+  * candidates: every non-merged, non-alternative detection whose tracklet is not a KNOWN OTHER (a tracked body
+    observed as a separate box in the same frame as the target at the seed, or while the target was confirmed by
+    continuation on one tracklet for >= target_known_other_min_s; cleared when a reacquisition is accepted and
+    pruned to tracklets the population still knows); while positional continuity is valid and the target
     was confirmed less than lost_long_s ago, only inside the search gate; otherwise anywhere (appearance only);
   * per frame test: as above with reacq_appearance_floor and the margin
         m(a) = min(reacq_contrastive_margin + reacq_margin_growth_per_s * a, reacq_margin_cap)
@@ -60,7 +70,7 @@ REACQUISITION (D15; any box that is not the continuing tracklet, after any break
   * verification: the best passing candidate is followed by its population tracklet. It is accepted only when
     (i) at least reacq_window_s has elapsed since verification started, (ii) it passed in at least
     reacq_min_hit_fraction of the window's frames, (iii) it passes in the accepting frame, and (iv) no other box
-    was within ambiguity_margin of it in that frame. If its tracklet closes, or another candidate becomes clearly
+    (including the target's own continuing box, if observed) was within ambiguity_margin of it in that frame. If its tracklet closes, or another candidate becomes clearly
     better, verification restarts. During verification the state is REACQUIRING (untrusted).
   * acceptance: TRACKING, target_episode + 1, a reacquisition event (D07), and a bank quarantine of
     post_reacq_quarantine_s.
@@ -86,7 +96,9 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
   * seed frame: 1.0 (human-provided identity);
   * TRACKING: 0.5 + 0.5 * min(a, k), with
         a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
-        k = clip((contrast - margin) / (1 - margin), 0, 1), or 1 when no banked competitor exists
+        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation (the
+            tracklet itself is geometric evidence of one body) but k = 0 for an accepted REACQUISITION (appearance
+            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False)
     so a trusted frame is in [0.5, 1] and the weakest piece of evidence decides;
   * every untrusted frame: min(untrusted_identity_confidence_ceiling,
         last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
@@ -308,7 +320,7 @@ class TargetTracker:
         self._mm = MotionModel(cfg)
         self._bank = AppearanceBank(cfg, require_trust=True)
         self._motion: Optional[MotionState] = None
-        self._heights: List[Tuple[float, float]] = []       # (t, height px) of non-partial confirmed boxes
+        self._sizes: List[Tuple[float, float, float]] = []   # (t, w, h px) of non-partial confirmed boxes
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
@@ -317,6 +329,8 @@ class TargetTracker:
         self._tracklet: Optional[str] = None                 # the target's current population tracklet
         self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
         self._known_others: Set[str] = set()                 # tracklets seen as separate bodies beside the target
+        self._tracklet_since_t: Optional[float] = None       # when the target was first confirmed on its tracklet
+        self._failed = False                                 # a refused seed leaves the tracker unusable
         self._last_confirm_t: Optional[float] = None
         self._last_confirm_frame: Optional[int] = None
         self._last_trusted_conf = 0.0
@@ -356,10 +370,19 @@ class TargetTracker:
 
     def _height(self, t: float) -> Optional[float]:
         win = self._cfg.get("target_height_window_s")
-        recent = [h for (ts, h) in self._heights if t - ts <= win]
+        recent = [hh for (ts, _ww, hh) in self._sizes if t - ts <= win]
         if recent:
             return float(np.median(recent))
         return self._last_h
+
+    def _size_ref(self, t: float) -> Optional[Tuple[float, float]]:
+        """The target's ESTABLISHED recent size (median w, h of non-partial confirmed boxes within
+        target_height_window_s, spanning at least population_size_ref_min_s), or None."""
+        c = self._cfg
+        recent = [(ts, ww, hh) for (ts, ww, hh) in self._sizes if t - ts <= c.get("target_height_window_s")]
+        if len(recent) < 2 or recent[-1][0] - recent[0][0] < c.get("population_size_ref_min_s"):
+            return None
+        return float(np.median([x[1] for x in recent])), float(np.median([x[2] for x in recent]))
 
     def _group(self, res: P.FrameResult, i: int) -> Set[int]:
         """Detection indices of i's nested group (i, the boxes nested in it, and its host chain)."""
@@ -410,8 +433,8 @@ class TargetTracker:
         if self._last_confirm_t is None:
             return c.get("gate_base_h")
         ref_t = t
-        if self._state == AMBIGUOUS and not c.get("gate_grows_while_ambiguous") and self._ambiguous_since_t:
-            ref_t = self._ambiguous_since_t
+        if not c.get("gate_grows_while_ambiguous") and self._ambiguous_since_t is not None:
+            ref_t = self._ambiguous_since_t                 # frozen from the start of the ambiguity
         u = max(0.0, ref_t - self._last_confirm_t)
         return min(c.get("gate_base_h") + c.get("gate_growth_h_per_s") * u, c.get("gate_max_h"))
 
@@ -432,6 +455,16 @@ class TargetTracker:
         o = res.observations[i]
         details: List[str] = []
         merged = self._merged(res, i)
+        # D11 at the target level: a box much larger or wider than the target's own established recent size may
+        # hold two people (applied while position/scale continuity holds)
+        ref = self._size_ref(t) if (self._position_valid and pred_box is not None) else None
+        if not merged and ref is not None:
+            w, hh = _wh(o.bbox)
+            lo, hi = c.get("merged_aspect_band")
+            aspect_rel = (w / hh) / (ref[0] / ref[1])
+            if (w * hh) / (ref[0] * ref[1]) >= c.get("merged_area_ratio") or \
+                    (aspect_rel > hi and hh / ref[1] >= c.get("population_partial_height_ratio")):
+                merged = True
         if merged:
             details.append("MERGED")
         # position (gate) and motion veto, only while positional continuity is valid
@@ -442,7 +475,7 @@ class TargetTracker:
             dist_h = math.hypot(bcx - pcx, bcy - pcy) / h
             overlaps = float(box_iou_matrix(np.asarray([pred_box]), np.asarray([o.bbox]))[0, 0]) > 0
             in_gate = dist_h <= gate_h or overlaps
-        if self._motion is not None and self._position_valid and t > self._motion.t_obs:
+        if pred_box is not None and self._motion is not None and self._position_valid and t > self._motion.t_obs:
             chk = self._mm.check(self._motion, o.bbox, t,
                                  partial=P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags)
             mrec = chk.as_record()
@@ -466,7 +499,12 @@ class TargetTracker:
         margin = c.get("contrastive_margin") if role == CONTINUATION else self._reacq_margin(absence_s)
         best_ref, best_sim, unknown = None, None, []
         grp = self._group(res, i)
-        excl_t = set(self._target_tracklets) | ({o.tracklet_id} if o.tracklet_id else set())
+        # the target never competes with itself: its own tracklets are excluded, EXCEPT one observed this frame on
+        # a box outside this candidate's group - that is a separate body (the target cannot be in two places), so
+        # it competes like anyone else (rule 28)
+        seen_elsewhere = {v.tracklet_id for v in res.tracklets
+                          if v.observed and v.tracklet_id in self._target_tracklets and v.detection_index not in grp}
+        excl_t = (set(self._target_tracklets) - seen_elsewhere) | ({o.tracklet_id} if o.tracklet_id else set())
         comps = self._pop.competitors(o.bbox, h, exclude_tracklet_ids=sorted(excl_t),
                                       exclude_detection_indices=sorted(grp))
         for cp in comps:
@@ -532,7 +570,9 @@ class TargetTracker:
         floor = c.get("appearance_floor") if ev.role == CONTINUATION else c.get("reacq_appearance_floor")
         a = min(1.0, max(0.0, (ev.composite - floor) / (1.0 - floor)))
         if ev.contrast is None:
-            k = 1.0
+            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain), but for a
+            # REACQUISITION nothing positive separates the candidate from an unseen look-alike -> minimal trust
+            k = 1.0 if ev.role == CONTINUATION else 0.0
         else:
             k = min(1.0, max(0.0, (ev.contrast - ev.margin) / (1.0 - ev.margin)))
         return 1.0 / 2 + min(a, k) / 2
@@ -590,15 +630,23 @@ class TargetTracker:
         else:
             self._motion = self._mm.update(self._motion, o.bbox, t, partial=partial)
         if not partial:
-            self._heights.append((t, _wh(o.bbox)[1]))
+            self._sizes.append((t,) + _wh(o.bbox))
             self._last_h = _wh(o.bbox)[1]
-        self._heights = [(ts, hh) for (ts, hh) in self._heights if t - ts <= self._cfg.get("target_height_window_s")]
+        self._sizes = [x for x in self._sizes if t - x[0] <= self._cfg.get("target_height_window_s")]
         self._position_valid = True
+        if o.tracklet_id != self._tracklet or self._tracklet_since_t is None:
+            self._tracklet_since_t = t
         self._tracklet = o.tracklet_id
         # every other tracked body observed in this frame, outside the target's own nested group, is a known
-        # different person (two separate boxes at once): it can never become the target by reacquisition
+        # different person (two separate boxes at once): it can never become the target by reacquisition. Only
+        # recorded at the seed (the human identified the target there) or once the target has been confirmed on
+        # the same tracklet for target_known_other_min_s (one trusted frame is not enough to rule a body out for its
+        # whole tracklet)
         grp = self._group(res, ev.detection_index)
-        for other in res.observations:
+        seeding = self._last_confirm_t is None              # the seed box is the human's own identification
+        settled = seeding or (ev.role == CONTINUATION and
+                              t - self._tracklet_since_t >= self._cfg.get("target_known_other_min_s"))
+        for other in (res.observations if settled else ()):
             if other.is_body and other.index not in grp and other.tracklet_id and \
                     other.tracklet_id != o.tracklet_id and other.tracklet_id not in self._target_tracklets:
                 self._known_others.add(other.tracklet_id)
@@ -626,7 +674,7 @@ class TargetTracker:
     def seed(self, res: P.FrameResult, image: np.ndarray, seed_bbox: Sequence[float]) -> TargetFrame:
         """Start the target from a human seed box at the seed frame (D18). Fails closed (SeedError) if no single,
         clean detection matches the seed, or if its crop cannot anchor the appearance bank."""
-        if self._state is not None:
+        if self._state is not None or self._failed:
             raise TargetError("seed() may be called once, on the first frame")
         self._check_frame(res, image)
         c = self._cfg
@@ -644,6 +692,13 @@ class TargetTracker:
         o = bodies[k]
         if self._merged(res, o.index):
             raise SeedError("the detection matching the seed is merged-suspected (may hold two people)")
+        # the human's seed box is the one trustworthy single-body size reference at the seed frame: a detection
+        # that is merge-sized against it (D11 area / aspect test) may hold the target plus someone else
+        (dw, dh), (sw, sh) = _wh(o.bbox), _wh(sb)
+        if (dw * dh) / (sw * sh) >= c.get("merged_area_ratio") or \
+                (dw / dh) / (sw / sh) > c.get("merged_aspect_band")[1]:
+            raise SeedError("the detection matching the seed is merge-sized against the seed box "
+                            f"(area x{(dw * dh) / (sw * sh):.2f}, aspect x{(dw / dh) / (sw / sh):.2f})")
         cache: Dict[int, AppearanceFeature] = {}
         feat = self._feature(cache, res, image, o.index)
         if not feat.usable:
@@ -653,6 +708,7 @@ class TargetTracker:
         self._state = TRACKING
         bank = self._confirm(res, image, ev, 1.0, cache)
         if bank["status"] != "ACCEPTED":
+            self._failed = True                              # never usable after a refused seed (fail closed)
             raise SeedError(f"the seed crop cannot anchor the target appearance bank: {bank['refusals']}")
         self._last_frame = res.rel_frame
         fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, {"seed": True, "seed_iou": float(ious[k]),
@@ -662,12 +718,15 @@ class TargetTracker:
 
     # -- per frame -----------------------------------------------------------------------------------------
     def update(self, res: P.FrameResult, image: np.ndarray) -> TargetFrame:
-        if self._state is None:
-            raise TargetError("seed() first")
+        if self._state is None or self._failed:
+            raise TargetError("seed() first (and successfully)")
         self._check_frame(res, image)
         c = self._cfg
         t = res.time_s
         self._pop.sample_appearance(res.rel_frame, image, self._ext)
+        alive = {v.tracklet_id for v in res.tracklets} | {m.tracklet_id for m in self._pop.recently_closed()}
+        self._known_others &= alive                          # bounded: only bodies the population still knows
+        self._target_tracklets &= alive | ({self._tracklet} if self._tracklet else set())
         prev_state = self._state
         cache: Dict[int, AppearanceFeature] = {}
         log: Dict[str, Any] = {"from": prev_state}
@@ -679,12 +738,14 @@ class TargetTracker:
             self._motion = None
             self._position_valid = False
             self._tracklet = None
+            self._tracklet_since_t = None
             self._verif = None
+            self._sizes, self._last_h = [], None              # scale from another shot means nothing here
             log["camera"] = "CONTINUITY_BROKEN"
         elif self._motion is not None:
             self._motion = self._mm.apply_camera(self._motion, cam)
             if cam.compensated:
-                self._heights = [(ts, hh * cam.scale) for (ts, hh) in self._heights]
+                self._sizes = [(ts, ww * cam.scale, hh * cam.scale) for (ts, ww, hh) in self._sizes]
                 if self._last_h is not None:
                     self._last_h *= cam.scale
                 if self._last_box is not None:
@@ -795,6 +856,7 @@ class TargetTracker:
                     reacq_accepted_frame=res.rel_frame, uncertain_duration_s=t - uf_t,
                     evidence=acc["evidence"]))
                 self._reacq_t = t
+                self._known_others = set()                   # a new episode: earlier co-observations are reset
             elif self._verif is not None:
                 state = REACQUIRING
                 reasons = sorted(set(reasons) | {REACQUISITION_UNVERIFIED})
@@ -838,8 +900,9 @@ class TargetTracker:
                 inside = o.bbox[0] <= pcx <= o.bbox[2] and o.bbox[1] <= pcy <= o.bbox[3]
                 return (OCCLUDED if inside else AMBIGUOUS), [MERGED_DETECTION_SUSPECTED], (), True
         occ = []
+        own = set(self._target_tracklets) | ({self._verif.tracklet_id} if self._verif is not None else set())
         for o in res.observations:
-            if o.is_body and _cover(pred_box, o.bbox) >= c.get("occluder_cover_min"):
+            if o.is_body and o.tracklet_id not in own and _cover(pred_box, o.bbox) >= c.get("occluder_cover_min"):
                 occ.append(o.tracklet_id or o.ref)
         if self._pop.inside_fraction(pred_box) < c.get("population_min_inside_fraction"):
             return LOST, [TARGET_OUT_OF_FRAME], (), False
@@ -852,9 +915,11 @@ class TargetTracker:
                    evals: List[CandidateEvaluation]) -> Dict[str, Any]:
         c = self._cfg
         t = res.time_s
-        alive = {v.tracklet_id for v in res.tracklets} | {m.tracklet_id for m in self._pop.recently_closed()}
-        self._known_others &= alive                          # bounded: only bodies the population still knows
         cands: List[CandidateEvaluation] = []
+        # the target's own continuing box, if observed this frame, is a rival of every other candidate: a box
+        # elsewhere cannot be the target while the target's own tracklet is seen and looks as much like it
+        cont = [e for e in evals if e.role == CONTINUATION and self._tracklet is not None
+                and e.tracklet_id == self._tracklet]
         excluded_known = []
         for o in res.observations:
             if not o.is_body or P.ALTERNATIVE in o.flags:
@@ -879,7 +944,7 @@ class TargetTracker:
                             key=lambda e: (-e.composite, e.detection_index))
         out["best_failing"] = lookalikes[0] if lookalikes and not lookalikes[0].passed else None
         best = passing[0] if passing else None
-        rivals = self._rivals(cands, best) if best is not None else []
+        rivals = self._rivals(cands + cont, best) if best is not None else []
         hit = best is not None and not rivals
         v = self._verif
         if v is not None:
@@ -901,7 +966,8 @@ class TargetTracker:
         cur_hit = cur is not None and cur.passed and hit and best.tracklet_id == v.tracklet_id
         v.history.append((t, cur_hit))
         win = c.get("reacq_window_s")
-        window = [ok for (ts, ok) in v.history if t - ts < win + self._frame_dt(res) / 2]
+        v.history = [(ts, ok) for (ts, ok) in v.history if t - ts < win + self._frame_dt(res) / 2]   # bounded
+        window = [ok for (_ts, ok) in v.history]
         frac = sum(window) / len(window)
         dt = self._frame_dt(res)
         elapsed = t - v.start_t
@@ -916,6 +982,7 @@ class TargetTracker:
         if cur_hit and elapsed >= win - dt / 2 and frac >= c.get("reacq_min_hit_fraction"):
             out["accepted"] = cur
             out["evidence"] = {"tracklet_id": v.tracklet_id, "window_s": win, "hit_fraction": frac,
+                               "contrast_available": cur.contrast is not None,
                                "frames_in_window": len(window), "absence_s": absence,
                                "positional_prior": pred_box is not None, "margin": cur.margin,
                                "target_similarity": cur.composite, "best_competitor": cur.best_competitor,
@@ -958,7 +1025,9 @@ class TargetTracker:
             tsim = None if cand is None or cand["target_similarity"] is None else cand["target_similarity"]["composite"]
             csim = None if cand is None else cand["best_competitor_similarity"]
             tracklet = None if det_idx is None else res.observations[det_idx].tracklet_id
-        inside = self._pop.inside_fraction(box) >= self._cfg.get("population_min_inside_fraction")
+        # with no valid position (after a cut) the box is only a placeholder: the target is not known to be outside
+        inside = (not self._position_valid and state != TRACKING) or \
+            self._pop.inside_fraction(box) >= self._cfg.get("population_min_inside_fraction")
         return TargetFrame(
             rb_state=state, observation_source=src, bbox_is_observed=src == DETECTION, bbox_is_held=src == HELD,
             bbox_is_predicted=src == PREDICTED, held_age_s=held_age, last_confirmed_frame=self._last_confirm_frame,

@@ -31,6 +31,7 @@ from player_tracker_rb.detector import PersonCandidate
 W, H = 1280, 720
 FPS = 30.0
 DIM = 16
+POSE_DIMS = (DIM - 3, DIM - 2)   # pose subspace (never used by identity vectors; DIM - 1 is the background)
 HEAD_FRAC = 0.12
 BACKGROUND = (40, 120, 40)
 
@@ -76,8 +77,12 @@ def make_people(spec: Sequence[Tuple[str, Tuple[int, int, int], float]]) -> Dict
 
 
 class SignatureEmbedding(EmbeddingBackend):
-    def __init__(self, people: Dict[str, Person]):
+    """pose_gain > 0 adds a view-dependent component (from the crop's aspect ratio) in POSE_DIMS, so the same
+    person seen in different poses gives different, non-redundant embeddings; identity stays in its own dims."""
+
+    def __init__(self, people: Dict[str, Person], pose_gain: float = 0.0):
         self.people = people
+        self.pose_gain = pose_gain
         bg = np.zeros(DIM)
         bg[DIM - 1] = 1.0
         self.bg = bg
@@ -89,6 +94,11 @@ class SignatureEmbedding(EmbeddingBackend):
             v += n * p.vec
         if not np.any(v):
             return self.bg.copy()
+        v = l2_normalise(v)
+        if self.pose_gain:
+            a = 2 * np.pi * crop.shape[1] / crop.shape[0]
+            v[POSE_DIMS[0]] += self.pose_gain * np.cos(a)
+            v[POSE_DIMS[1]] += self.pose_gain * np.sin(a)
         return l2_normalise(v)
 
     def provenance(self):
@@ -182,16 +192,22 @@ class Result:
         return [k for k, f in enumerate(self.frames) if f.rb_state == T.TRACKING]
 
     def bank_is_pure(self, target: str = "TARGET") -> bool:
+        """Every bank sample's IDENTITY part (pose dims removed) is exactly the target's identity vector."""
         tv = self.people[target].vec
-        return all(float(s.embedding @ tv) > 1.0 - 1e-9 for s in self.tracker.bank.samples)
+        for smp in self.tracker.bank.samples:
+            e = np.array(smp.embedding, float)
+            e[list(POSE_DIMS)] = 0.0
+            if float(l2_normalise(e) @ tv) <= 1.0 - 1e-9:
+                return False
+        return True
 
 
 def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: str = "TARGET",
         cfg: Optional[TrackerConfig] = None, fps: float = FPS, width: int = W, height: int = H,
-        visible_min: float = 0.35) -> Result:
+        visible_min: float = 0.35, pose_gain: float = 0.0) -> Result:
     cfg = cfg or TrackerConfig.default()
     pop = P.Population(cfg, width, height)
-    ext = AppearanceExtractor(cfg, SignatureEmbedding(people))
+    ext = AppearanceExtractor(cfg, SignatureEmbedding(people, pose_gain))
     tt = T.TargetTracker(cfg, pop, ext)
     out_frames, out_dets, out_pops = [], [], []
     for k, fr in enumerate(frames):

@@ -79,7 +79,9 @@ def crossing_frames(n, speed_px, dy_px, *, merge=False, hide=False, other="PERSO
         ov = max(0.0, min(a[k][2], b[k][2]) - max(a[k][0], b[k][0]))
         if merge and ov > 20:
             fr.merge = [("TARGET", other)]
-        elif hide and ov > 0:
+        elif hide and ov >= (a[k][2] - a[k][0]) / 2:
+            # the far person is missed only while at least half hidden, so on re-emergence it is detected while
+            # still partly behind the near one (as a real detector does), not first seen beside it
             fr.drop = ["TARGET"] if dy_px <= 0 else [other]
         out.append(fr)
     return out
@@ -407,10 +409,12 @@ class TestAmbiguityAndCompetitors(Base):
         r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
         self.check(r)
         self.assertEqual(r.states()[15:], [T.TRACKING] * 25)
-        for f in r.frames[15:]:
-            b = f.decision.get("bank")
-            if b and b["status"] == "REFUSED":
-                self.assertIn(P.CONTAINS_OTHER, b["refusals"] + ["CONTAINS_OTHER"])
+        offered = [f for f in r.frames[15:] if f.decision.get("bank")
+                   and "SAMPLE_NOT_DUE" not in f.decision["bank"]["refusals"]]
+        self.assertTrue(offered, "the bank rule was never exercised")
+        for f in offered:                       # a crop holding another object never enters the bank
+            self.assertEqual(f.decision["bank"]["status"], "REFUSED", f.rel_frame)
+            self.assertIn(P.CONTAINS_OTHER, f.decision["bank"]["refusals"], f.rel_frame)
 
     def test_motion_vetoed_box_is_not_a_rival(self):
         """Rule check: a box the motion model vetoes (physically implausible as the target this frame) never
@@ -441,13 +445,29 @@ class TestAmbiguityAndCompetitors(Base):
                 self.assertNotIn(c["best_competitor"], tts)
 
     def test_competitor_list_excludes_own_nested_part_box(self):
-        """A part-body box inside the target's box is not another person competing with the target."""
-        ppl = people()
-        frames = []
-        for k, b in enumerate(linear(40, (400, 400), (2, 0), w=50, h=140)):
-            frames.append(SceneFrame({"TARGET": b}))
-        r = run(frames, ppl)
-        self.check(r)
+        """A part-body box (upper 90%) is detected inside the target's box every frame. It is the same body: it is
+        never a competitor or unknown contact, and the target stays TRACKING."""
+        from tests_rb import _synth_scene as SS
+        orig = SS.detect
+
+        def detect(fr, *a, **k):
+            ds = orig(fr, *a, **k)
+            return ds + [SS.Detection((d.box[0] + 2, d.box[1], d.box[2] - 2, d.box[1] + 0.9 * (d.box[3] - d.box[1])),
+                                      ("TARGET",)) for d in ds if d.owners == ("TARGET",)]
+        SS.detect = detect
+        try:
+            frames = [SceneFrame({"TARGET": b}) for b in linear(40, (400, 400), (2, 0), w=50, h=140)]
+            r = run(frames, people(), cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
+        finally:
+            SS.detect = orig
+        self.assertTrue(all(any(o.nested_in is not None for o in p.observations) for p in r.pops[1:]),
+                        "the part box must actually be produced")
+        self.assertEqual(r.states(), [T.TRACKING] * 40)
+        for f, p in zip(r.frames[1:], r.pops[1:]):
+            nested = {o.ref for o in p.observations if o.nested_in is not None}
+            for c in f.decision["candidates"]:
+                self.assertFalse(set(c["unknown_contacts"]) & nested, f.rel_frame)
+                self.assertNotIn(c["best_competitor"], nested, f.rel_frame)
 
 
 class TestBankAndConfidence(Base):
@@ -463,17 +483,41 @@ class TestBankAndConfidence(Base):
                 o = r.pops[k].observations[f.detection_index]
                 self.assertLessEqual(o.max_iou_other, CFG.get("bank_contact_iou"))
 
+    def test_bank_grows_with_new_poses_and_stays_pure_through_a_crossing(self):
+        """With view-dependent embeddings (gait changes the box shape), the bank accepts several distinct isolated
+        views of the target, never one taken during contact or on an untrusted frame, and never another person."""
+        ppl = make_people([("TARGET", KIT_A, 1.0), ("PERSON_A", KIT_B, 0.2)])
+        frames = [SceneFrame({"TARGET": box_at(300 + 3 * k, 400, 36 + 10 * abs((k // 6) % 4 - 2), 100),
+                              "PERSON_A": box_at(800 - 3 * k, 410, 40, 100)}) for k in range(150)]
+        r = run(frames, ppl, pose_gain=0.5)
+        self.check(r)
+        accepted = [(k, f) for k, f in enumerate(r.frames[1:], 1)
+                    if f.decision.get("bank", {}).get("status") == "ACCEPTED"]
+        self.assertGreaterEqual(len(accepted), 2, "distinct poses must enter the bank")
+        self.assertEqual(len(r.tracker.bank), len(accepted) + 1)
+        for k, f in accepted:
+            self.assertEqual(f.rb_state, T.TRACKING)
+            o = r.pops[k].observations[f.detection_index]
+            self.assertLessEqual(o.max_iou_other, CFG.get("bank_contact_iou"))
+            self.assertNotIn(P.CONTESTED, o.flags)
+
     def test_post_reacquisition_quarantine(self):
         ppl = people()
         frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 50 else [])
                   for k, b in enumerate(still(120, (500, 400)))]
         r = run(frames, ppl)
         acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
-        q = int(CFG.get("post_reacq_quarantine_s") * FPS)
-        for k in range(acc, min(acc + q - 1, len(r.frames))):
-            b = r.frames[k].decision.get("bank")
-            if b and b["status"] == "REFUSED":
-                self.assertTrue("POST_REACQUISITION_QUARANTINE" in b["refusals"] or b["refusals"])
+        t_acc = r.frames[acc].time_s
+        offered = 0
+        for f in r.frames[acc:]:
+            if f.time_s - t_acc >= CFG.get("post_reacq_quarantine_s"):
+                break
+            b = f.decision.get("bank")
+            if b and "SAMPLE_NOT_DUE" not in b["refusals"]:
+                offered += 1
+                self.assertEqual(b["status"], "REFUSED", f.rel_frame)
+                self.assertIn("POST_REACQUISITION_QUARANTINE", b["refusals"])
+        self.assertGreater(offered, 0, "the quarantine path was never exercised")
 
     def test_confidence_semantics(self):
         ppl = people()

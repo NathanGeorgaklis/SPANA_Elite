@@ -48,11 +48,11 @@ Per frame (update), in order:
      against that body. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
-     RESOLVED (removed) when at least n separate bodies are observed in it, or touching it (>=
-     population_contact_cover_min of the body inside the region box expanded by population_merge_emerge_pad_h
-     region heights) and first seen after the merge formed (a body coming out of a merge
-     appears beside it; a body tracked before the merge does not count); tracklets born in a region with merge
-     lineage lose it when the region resolves. It LAPSES
+     RESOLVED (removed) when at least n separate single bodies are seen: bodies in it that are not merge-sized
+     against the region's reference, plus bodies EMERGING from it (first seen after the merge formed and
+     overlapping its box by >= population_contact_cover_min of the body; a body tracked before the merge, or one
+     merely standing beside it, does not count); tracklets born in a region with merge lineage lose it when the
+     region resolves. It LAPSES
      population_merged_region_hold_s after the last size or multi-claim evidence: a lapsed region no longer makes
      a box merged, but is remembered until population_closed_memory_s after that evidence. Detections in a region
      are IN_MERGED_REGION and are never appearance samples, because a second body may still be hidden in it.
@@ -650,10 +650,22 @@ class Population:
                     k = max(cands_k, key=lambda q: (rm[q, b], rc[q, b], -q))     # deterministic
                     region_of[i] = k
                     in_region[k].append(i)
-        # A region RESOLVES when at least as many separate bodies as it holds are seen: bodies in it, plus bodies
-        # first seen after the merge formed whose box touches it (a body coming out of a merge appears beside it).
-        # A body that was already tracked when the merge formed is not one of the merged bodies.
+        # A region RESOLVES when at least as many separate SINGLE bodies as it holds are seen:
+        #   * bodies in it that are not themselves merge-sized against the region's single-body reference (a box
+        #     still holding two people is not a resolved body), plus
+        #   * bodies EMERGING from it: first seen after the merge formed, and overlapping the region's box (>=
+        #     population_contact_cover_min of the body inside it; a person coming out of a merge is still partly
+        #     behind it when first detected). A body tracked before the merge, or one merely standing beside it,
+        #     is not one of the merged bodies.
         cmin = c.get("population_contact_cover_min")
+        lo_band, hi_band = c.get("merged_aspect_band")
+
+        def single_sized(i: int, ref: Optional[Tuple[float, float]]) -> bool:
+            if ref is None:
+                return True
+            w, h = _wh(boxes[i])
+            return (w * h) / (ref[0] * ref[1]) < c.get("merged_area_ratio") and \
+                (w / h) / (ref[0] / ref[1]) <= hi_band
         emerged: Dict[int, Set[int]] = {k: set() for k in range(len(self._regions))}
         for k, rg in enumerate(self._regions):
             for i in track:
@@ -661,13 +673,11 @@ class Population:
                     continue
                 if i in assigned_d and by_tid0[assigned_d[i]].first_time < rg.created_t:
                     continue
-                pad = c.get("population_merge_emerge_pad_h") * _wh(rg.box)[1]
-                rb = np.asarray([(rg.box[0] - pad, rg.box[1] - pad, rg.box[2] + pad, rg.box[3] + pad)])
-                bi = np.asarray([boxes[i]])
-                if float(containment(bi, rb)[0, 0]) >= cmin:
+                if float(containment(np.asarray([boxes[i]]), np.asarray([rg.box]))[0, 0]) >= cmin:
                     emerged[k].add(i)
         resolved = {k for k in range(len(self._regions))
-                    if len(set(in_region[k]) | emerged[k]) >= self._regions[k].n_bodies}
+                    if len({i for i in in_region[k] if single_sized(i, self._regions[k].ref_wh)} | emerged[k])
+                    >= self._regions[k].n_bodies}
         hold = c.get("population_merged_region_hold_s")
         # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
         # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies

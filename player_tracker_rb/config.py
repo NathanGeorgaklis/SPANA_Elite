@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1f-1"
+CONFIG_REGISTRY_VERSION = "r1f-2"   # r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -518,11 +518,6 @@ PARAMS: Tuple[Param, ...] = (
        "body fills little of the near body's box: that is occlusion, not one box for two bodies.", 0.25, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
        "R1-E (NEW); D11; R1-E development-clip population check (occluders were flagged as merges)", 0.0, 1.0),
-    _p("population_merge_emerge_pad_h", "float", "h",
-       "A body first seen after a merge formed counts as coming OUT of the merged region if its box touches the "
-       "region's box expanded by this many heights h of that box (a person re-emerging from a merge appears beside it, "
-       "often without overlapping it).", 0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
-       "R1-F (NEW); R1-F synthetic crossing finding (merge never resolved, target lineage permanent)", 0.0, 5.0),
     _p("population_track_id_digits", "int", "digits",
        "Zero-padded width of the numeric part of a population tracklet id (prefix + number).", 3, H,
        "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "population",
@@ -575,6 +570,11 @@ PARAMS: Tuple[Param, ...] = (
        "the other. A competitor in contact whose appearance is unknown (no bank yet, e.g. provisional) blocks the "
        "candidate: contrast cannot be verified (D10).", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
        "R1-F (NEW); D08, D10", 0.0, 1.0),
+    _p("target_known_other_min_s", "float", "s",
+       "A body seen beside the confirmed target becomes a KNOWN OTHER person (never reacquired as the target "
+       "while its tracklet lives) at the seed frame, or once the target has been confirmed on the same tracklet, by "
+       "continuation, for at least this long: one trusted frame is not enough to rule a body out.", 0.2, N, "DESIGN_CHOICE",
+       UNV, "BEHAVIOURAL", "identity", "R1-F (NEW); R1-F code review M2", 0.0, 30.0),
     _p("target_bank_sample_interval_s", "float", "s",
        "Minimum time between samples offered to the target appearance bank.", 0.25, N, "DESIGN_CHOICE", UNV,
        "BEHAVIOURAL", "bank", "R1-F (NEW); D12", 0.0, 30.0),

@@ -396,8 +396,9 @@ class ProbeCameraDenominator(unittest.TestCase):
 class MergeResolutionByEmergence(unittest.TestCase):
     """R1-F finding (first failing layer: population). A person in front is undetected while overlapping the person
     behind, so the visible box 'absorbs' them (a correct MULTI_CLAIM merge). When the hidden person re-emerges, its
-    box lies BESIDE the merged region, not inside it. The region must still resolve (bodies first seen after the
-    merge, touching it, are the bodies coming out of it), and tracklets born in the region lose MERGE_LINEAGE."""
+    box first appears partly behind the merged box. The region must resolve (bodies first seen after the merge and
+    overlapping it are the bodies coming out of it), and tracklets born in the region lose MERGE_LINEAGE. A body
+    merely beside the region, or a box still merge-sized, must not resolve it (review H2)."""
 
     def _scene(self, passer_by=False):
         frames = []
@@ -443,20 +444,43 @@ class MergeResolutionByEmergence(unittest.TestCase):
             o = r.observations[0]
             self.assertIn(P.MERGED_SUSPECTED, o.flags, f"rel {r.rel_frame}")
 
-    def test_body_emerging_exactly_beside_the_region_resolves_it(self):
-        """The re-emerging body's box touches the merged box but does not overlap it."""
+    def _region_then(self, after):
+        """Two bodies, then 10 frames merged into one box, then `after(k)` -> (dets, owners) per frame."""
         frames = []
         for k in range(60):
             a = box_at(400, 400, 40, 100)
             if k < 10:
-                b = box_at(470, 400, 40, 100)
-                frames.append(Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]))
+                frames.append(Frame([cand(a), cand(box_at(470, 400, 40, 100))], [("PERSON_A",), ("PERSON_B",)]))
             elif k < 20:
                 frames.append(Frame([cand(box_at(418, 400, 76, 100))], [("PERSON_A", "PERSON_B")]))
             else:
-                frames.append(Frame([cand(a), cand(box_at(441, 400, 40, 100))], [("PERSON_A",), ("PERSON_B",)]))
-        rn = run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
+                frames.append(Frame(*after(k)))
+        return run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
+
+    def test_body_emerging_partly_behind_the_region_resolves_it(self):
+        """The re-emerging body is still partly inside the merged box when first detected."""
+        rn = self._region_then(lambda k: ([cand(box_at(400, 400, 40, 100)), cand(box_at(441, 400, 40, 100))],
+                                          [("PERSON_A",), ("PERSON_B",)]))
         last = rn.results[-1]
         self.assertEqual(sum(v.observed for v in last.tracklets), 2)
         for v in last.tracklets:
             self.assertNotIn(P.MERGE_LINEAGE, v.flags)
+
+    def test_newcomer_merely_beside_the_region_does_not_resolve_it(self):
+        """R1-F review H2: a body first seen just OUTSIDE the merged box (no overlap) is not a body coming out of
+        it; the region must stay merged so the still-merged box cannot be trusted as one person."""
+        for first in (box_at(418, 400, 76, 100), box_at(400, 400, 40, 100)):   # still merged / one body showing
+            with self.subTest(first=first):
+                rn = self._region_then(lambda k: ([cand(first), cand(box_at(478, 400, 40, 100))],
+                                                  [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
+                for r in rn.results[20:]:
+                    lin = [v for v in r.tracklets if v.observed and P.MERGE_LINEAGE in v.flags]
+                    self.assertTrue(P.MERGED_SUSPECTED in r.observations[0].flags or lin, f"rel {r.rel_frame}")
+
+    def test_merge_sized_box_in_region_does_not_count_as_a_resolved_body(self):
+        """R1-F review H2: one body emerging beside a box that is STILL two-person sized must not resolve a
+        two-body region by counting the merged box as the second body."""
+        rn = self._region_then(lambda k: ([cand(box_at(418, 400, 76, 100)), cand(box_at(450, 400, 40, 100))],
+                                          [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
+        for r in rn.results[20:]:
+            self.assertIn(P.MERGED_SUSPECTED, r.observations[0].flags, f"rel {r.rel_frame}")

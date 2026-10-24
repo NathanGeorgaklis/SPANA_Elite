@@ -198,6 +198,9 @@ def run(video, fx_json, det_dir, setting, cache_dir, labels_csv, out_json):
                     "episode": f.target_episode} for k, f in enumerate(frames)
                    if k == 0 or f.rb_state != frames[k - 1].rb_state
                    or f.identity_uncertainty_reasons != frames[k - 1].identity_uncertainty_reasons]
+    outside = [rel for rel in labels if not 0 <= rel < len(frames) or frames[rel].rel_frame != rel]
+    if outside:                                  # a label frame the run never produced: fail closed, never wrap
+        raise SystemExit(f"label frames outside the run (rel {sorted(outside)[:5]}...): fail closed")
     by_class = {}
     for rel, row in sorted(labels.items()):
         cl = label_class(row)
