@@ -72,6 +72,19 @@ SPANA engine v2-rebuild, R1. Pre-coding gate, 2026-10-24.
 
 ---
 
+### A5. DINOv2 pre-download licence record (approval §5, recorded 2026-10-24)
+
+| Item | Recorded value |
+|---|---|
+| Repository | https://github.com/facebookresearch/dinov2 |
+| README licence statement | "DINOv2 code and model weights are released under the Apache License 2.0." Exceptions named in the same README: Cell-DINO is CC BY NC; Cell-DINO and XRay-DINO weights are under the FAIR Noncommercial Research License. **Neither is proposed.** **[verified 2026-10-24]** |
+| `LICENSE` file (main branch) | "Apache License, Version 2.0, January 2004" (http://www.apache.org/licenses/). The full Apache-2.0 text is present, with only the template copyright placeholder **[verified 2026-10-24]**. The page showed no latest-commit hash for the file, so the commit pin will be taken at download. |
+| Model | `dinov2_vits14` (ViT-S/14) |
+| Model-card licence (Hugging Face `facebook/dinov2-small`) | **NOT YET RECORDED.** The fetch permission was not answered in time, so it will be recorded at download time. If the card's licence differs from the repository's, **stop and report**. |
+| Downloaded file SHA-256 | NOT YET DOWNLOADED |
+| Exported ONNX SHA-256 | NOT YET EXPORTED |
+| Basis for licence status | Current official repository files. The old issue #128 (CC-BY-NC at the original release) is kept as history only and is **not** relied on. |
+
 ## B. Considered and not proposed for production
 
 | Model | Code licence | Weight licence / data | Status | Note |
