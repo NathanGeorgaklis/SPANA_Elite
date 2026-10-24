@@ -1,0 +1,27 @@
+{
+  "signoff_for": "GOLD_DUEL_HUMAN_LABEL.json",
+  "label_id": "GOLD_DUEL_01",
+  "label_version": 1,
+  "label_sha256": "05fe67c6245c0a70a6c517d881223f60d5681569b96934cc5b8ecccbc41d156e",
+  "reviewer": "Nathan Georgaklis",
+  "signed_at": "2026-10-19T09:15:53Z",
+  "reviewed_media": "GOLD_DUEL_01 12 s extract (viewing copy of sha256 164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9)",
+  "decision": "v1 signed off",
+  "reviewer_statements_verbatim": [
+    "23 runs out of play",
+    "v1 signed off"
+  ],
+  "scored_truth_confirmed": {
+    "event_type": "DUEL",
+    "outcome": "WON",
+    "target": "SOL #23",
+    "opponent": "MAR #4",
+    "label_window_s": [
+      7.3,
+      9.67
+    ]
+  },
+  "reviewer_context_note": "After winning the duel, #23 carries the ball out of play at the near post (frames ~11.0-11.9 s show #23 and the goalkeeper at the goal line; the source shows a goal-kick restart afterwards). This replaces the v1 context description 'goalkeeper encounter unresolved' for the 10.7-12.0 s span. It is outside the scored window and does not change the DUEL truth; that span remains NOT scored.",
+  "note": "The frozen v1 label file is unchanged (hash above). This sign-off is a separate record so the frozen label's hash is preserved.",
+  "inference_run_before_signoff": false
+}

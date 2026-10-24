@@ -1,0 +1,34 @@
+{
+  "tool": "tools_rb/make_gold_label_sheet.py (SPANA engine v2-rebuild, NEW)",
+  "video": "GOLD_DUEL_01_syo_mar_3036_3048.mp4",
+  "video_sha256": "164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9",
+  "fixture_sha256": "7929bb2803eecd7a856b64700095fcc447eecfce6020c7dd8d38915b90bd0a79",
+  "fps": 30.0,
+  "first": 250,
+  "last": 290,
+  "zoom_window_px": [
+    640,
+    220,
+    1200,
+    500
+  ],
+  "rows_per_sheet": 4,
+  "decode": "sequential from frame 0, no seek",
+  "model_outputs_shown": "NONE (no detector/tracker/ReID run; no prior labels shown)",
+  "outputs": {
+    "sheet_00_reference_seed_frame180.jpg": "8f6dfa66cf64cea0faab6dca15604db707b16960528fa292b4556d049656a9ff",
+    "sheet_01_frames_250-253.jpg": "b1bf4fca8705e86440987421eb00ffb2b245d4475dd740b98aa0509f37015649",
+    "sheet_02_frames_254-257.jpg": "4c42c8639eae967eccc3e98f4dca5bc7e7dfb68abd3fbea59567faa10be1e362",
+    "sheet_03_frames_258-261.jpg": "b6724c77b6c1f1b0215f232ea1b0d3e449c2b71dd07de8a54ef9f8dc23355e4e",
+    "sheet_04_frames_262-265.jpg": "c260d5956a325f906c61d703048e2a614c57fed732f5acc50f3d983d4279f2ac",
+    "sheet_05_frames_266-269.jpg": "a6393ea8431d4a6d567f29ca4ef61e71ff25a05b04c30ef9d217a4bec1cfa176",
+    "sheet_06_frames_270-273.jpg": "179e8184585b656c106108616d8e81b44cdd745d90932098c6809dc50dc3312c",
+    "sheet_07_frames_274-277.jpg": "18eedd9a969529fa1d22d99fb146c2ea8290f6476eb5ec2809e044db313e11b2",
+    "sheet_08_frames_278-281.jpg": "a5a1c7be392a43992007f0a7c11ddf1cd73622d24e1028f6dd3a54aab9d38e41",
+    "sheet_09_frames_282-285.jpg": "534b5b3b75c08d9278a52307aaa8133bab7580ef17f7c28677239af6333345ee",
+    "sheet_10_frames_286-289.jpg": "a7a7bf3425ce3da43255d6f0d1a2c852c1a8045c332cb2a33dce8fb35421fc50",
+    "sheet_11_frames_290-290.jpg": "a4c69ace1d529c6297a504c0b815a2b4225d90072b333b43d801264ecfd04f36",
+    "GOLD_HUMAN_LABELS_TEMPLATE.csv": "994d6bd61fe84bb36d3e60efac358d823065fbd4f417c69ce0bace99851cb061",
+    "LABELLING_INSTRUCTIONS.md": "1ccf1305b07f4b301f1376eb63852fcc3c6c04b84ec5122c63b1277c61d7e935"
+  }
+}
