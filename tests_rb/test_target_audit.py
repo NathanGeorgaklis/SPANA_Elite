@@ -326,6 +326,49 @@ class ReviewRegressions(unittest.TestCase):
         self.assertEqual(r.swaps(), [])
 
 
+class VerificationSwitch(unittest.TestCase):
+    def test_verification_moves_to_a_clearly_better_candidate_at_once(self):
+        """A same-kit look-alike at the image edge (edge crop: never bank-eligible, so it cannot be contrasted
+        against) starts verification. When the true target reappears inside the gate, clearly more similar and
+        passing, verification restarts on the target in that frame (not after a wasted window), and the target, not
+        the look-alike, is accepted after reacq_window_s."""
+        ppl = people(("PERSON_A", KIT_A, 0.8))
+        frames = [SceneFrame({"TARGET": box_at(110, 400, 40, 100)}) for _ in range(10)]
+        frames += [SceneFrame({}) for _ in range(40)]
+        frames += [SceneFrame({"PERSON_A": box_at(20, 400, 40, 100)}) for _ in range(6)]
+        frames += [SceneFrame({"PERSON_A": box_at(20, 400, 40, 100), "TARGET": box_at(170, 400, 40, 100)})
+                   for _ in range(40)]
+        r = run(frames, ppl)
+        ver = lambda k: r.frames[k].decision.get("reacquisition", {}).get("verifying")
+        self.assertIsNotNone(ver(55))
+        self.assertNotEqual(ver(56), ver(55))
+        self.assertEqual(r.frames[56].decision["reacquisition"]["elapsed_s"], 0.0)
+        self.assertEqual(r.swaps(), [])
+        first = min(r.tracking_frames()[10:] or [len(frames)])
+        self.assertLessEqual(first, 56 + int(CFG.get("reacq_window_s") * FPS) + 1)
+
+
+class ContactMemory(unittest.TestCase):
+    def test_closed_competitor_stops_counting_after_contact_memory(self):
+        """The interrupted-verification scene: a closed target-looking tracklet blocks the real return by contrast.
+        It may block only for contact_memory_s after closing: with a shorter contact memory the return is verified
+        much earlier than with the default (equal to population_closed_memory_s)."""
+        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
+        frames += [SceneFrame({}) for _ in range(40)]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(6)]
+        frames += [SceneFrame({}) for _ in range(30)]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(120)]
+
+        def first_new_verification(cfg):
+            r = run(frames, people(), cfg=cfg)
+            return min(k for k, f in enumerate(r.frames) if k >= 86
+                       and f.decision.get("reacquisition", {}).get("verifying"))
+        short = first_new_verification(TrackerConfig.with_overrides({"contact_memory_s": 0.5}))
+        default = first_new_verification(None)
+        self.assertLessEqual(short, 86 + int(FPS / 10))
+        self.assertGreater(default, short + int(FPS / 2))
+
+
 class DocumentedLimitations(unittest.TestCase):
     """KNOWN LIMIT (reported to the user, not hidden): with no competitor bank to contrast against, a lone
     same-kit look-alike whose appearance passes reacq_appearance_floor can be reacquired as the target. On rendered
