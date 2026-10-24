@@ -92,5 +92,22 @@ class TestNoMagicNumbers(unittest.TestCase):
         self.assertEqual(offenders, [], "numeric literals belong in config.py:\n" + "\n".join(offenders))
 
 
+class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
+    """R1-B: the frame-content fingerprint is for alignment debugging only. Only the video layer, provenance and the
+    output schema may refer to it; detection, appearance and state code must never read it."""
+    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py"}
+    TOKENS = ("thumb_sha1", "frame_fingerprint", "frame_thumb", "thumbs_digest")
+
+    def test_fingerprint_confined_to_video_layer(self):
+        offenders = []
+        for path in _py_files("player_tracker_rb"):
+            name = os.path.basename(path)
+            if name in self.ALLOWED:
+                continue
+            src = open(path, encoding="utf-8").read()
+            offenders += [f"{name}: {t}" for t in self.TOKENS if t in src]
+        self.assertEqual(offenders, [])
+
+
 if __name__ == "__main__":
     unittest.main()

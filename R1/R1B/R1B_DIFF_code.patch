@@ -1,0 +1,1627 @@
+diff --git a/R1/R1B/FRAME_FINGERPRINT.md b/R1/R1B/FRAME_FINGERPRINT.md
+new file mode 100644
+index 0000000..6d75a90
+--- /dev/null
++++ b/R1/R1B/FRAME_FINGERPRINT.md
+@@ -0,0 +1,28 @@
++# Frame-content fingerprint (R1-B)
++
++## What it is
++Each decoded frame gets a fingerprint, `thumb_sha1`, computed as follows:
++
++1. Convert the decoded BGR frame to greyscale with `cv2.COLOR_BGR2GRAY`.
++2. Resize it to `frame_thumbnail_size` (default 64×36 px) using `fingerprint_interpolation` (default `INTER_AREA`).
++3. Store the thumbnail as row-major `uint8` bytes.
++4. `thumb_sha1 = sha1(b"64x36:" + thumbnail_bytes)`.
++
++The settings live in `player_tracker_rb/config.py`, so they also feed into the config hash. The method is also written into every provenance sidecar under `frame_alignment.fingerprint_method`.
++
++A run additionally records `frame_thumbs_sha256`: one SHA-256 over the ordered list of per-frame fingerprints.
++
++## What it is for
++It is for **frame-alignment debugging only**. For example:
++- checking that two runs decoded the same pixels at the same frame index;
++- checking that a container seek and a decode-from-zero land on the same frame (the historical failure F15 was a resume landing +10 frames late);
++- checking later that a frame_log record belongs to the expected video frame (`frame_log[].v2.frame_thumb_sha1`).
++
++## What it is not
++- It is **not** an appearance, ReID or identity feature. It summarises the whole frame, not a player.
++- Detection, appearance, population, motion and state code must never read it. `tests_rb/test_package_hygiene.py::TestFingerprintIsNotAnIdentityFeature` enforces that only `video_io.py`, `provenance.py` and `output_schema.py` refer to it.
++
++## Reproducibility limits
++- The fingerprint is a hash of **decoded** pixels, so it is reproducible for the same file, the same OpenCV/FFmpeg build and the same settings.
++- A different decoder build may decode a few pixels differently, which changes the hash. That is why the sidecar records `cv2_version` and the backend.
++- Comparisons are meaningful between runs on the same machine and toolchain. Across machines, a mismatch means "investigate", not necessarily "misaligned".
+diff --git a/R1/R1B/R1B_CONFIG_REGISTRY.csv b/R1/R1B/R1B_CONFIG_REGISTRY.csv
+new file mode 100644
+index 0000000..e35a0e4
+--- /dev/null
++++ b/R1/R1B/R1B_CONFIG_REGISTRY.csv
+@@ -0,0 +1,91 @@
++name,group,role,source,evidence_level,validation_status,type,units,default,min_value,max_value,allowed,historical_value,meaning,evidence
++legacy_identity_trust_threshold,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_CODE,CONTRACT_VERIFIED,float,confidence (0-1),0.5,0.0,1.0,,,actor_attribution trusts a frame only if identity_confidence >= this (MEDIUM_THRESH).,event_engine_v1/actor_attribution.py:112-114; football_analysis/confidence.py:12 MEDIUM_THRESH
++detection_confidence_by_position_source,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,mapping,quantised confidence,"{""AMBIGUOUS_DETECTION"": 0.5, ""CONFIRMED_DETECTION"": 1.0, ""PREDICTED"": 0.0, ""WEAK_SPATIAL_RECOVERY"": 0.5}",,,,,The historical detection_confidence field is quantised by position_source; it is NOT a detector score.,GOLD.json 88246efe and PC.json 40fa0df1: every frame_log record except state REIDENTIFYING (see detection_confidence_reidentifying). R0 erratum E1: R0 said 'all records'.
++detection_confidence_reidentifying,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,float,quantised confidence,0.0,0.0,1.0,,,"Historical detection_confidence on REIDENTIFYING records, which carry position_source CONFIRMED_DETECTION but were written 0.0 (11 of 11 such records in the frozen exemplars).",GOLD.json (1 record) and PC.json (10 records); found by the R1-A contract tests
++box_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,Rounding for bbox and observed_position_box coordinates.,GOLD.json and PC.json: every box coordinate has 1 dp
++confidence_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,3,0,6,,,Rounding for historical confidence fields.,PC.json: confidence fields have at most 3 dp
++camera_shift_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,"Rounding for frame_log camera_shift [dx, dy] px.",GOLD.json and PC.json camera_shift
++state_pct_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,Rounding for summary.selected_state_pct values.,"GOLD.json summary {ACTIVE: 93.9, ...}"
++timestamp_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_CODE,CONTRACT_VERIFIED,int,decimal places,4,0,9,,,"Rounding for timestamps (event_adapter uses round(frame / fps, 4)).","player_tracker_mo/event_adapter.py:129,144"
++target_track_id,contract,CONTRACT,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,id,T001,,,,,track_id / identity_id / online_track_id of the one logical target.,D07 (approved by Nathan); historical seed track was T001 in both frozen JSONs
++population_track_id_prefix,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,str,id prefix,T,,,,,Prefix for non-target population tracklet ids (historical T### form).,GOLD.json track ids T001..T035
++track_source_label,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,str,label,ONLINE,,,,,Historical per-track 'source' field value.,GOLD.json and PC.json: source == ONLINE in every record
++untrusted_identity_confidence_ceiling,contract,CONTRACT,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,confidence (0-1),0.49,0.0,1.0,,,"When identity_trusted is false, the historical identity_confidence is forced to at most this value, so that surviving actor_attribution treats the frame as untrusted.",D19
++resume_allowed,video,RUNTIME,NEW_R1,DOCUMENTED,NOT_APPLICABLE,bool,flag,False,,,[false],,Checkpoint/resume of a Pass-1 run. Must stay False.,F15: a .mov resume landed +10 frames late (TASK3N STALE_VS_FRESH_REGISTRATION)
++seed_min_iou,video,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.5,0.0,1.0,,,The run is refused unless a raw detection at the seed frame overlaps the seed box by at least this.,D18
++frame_thumbnail_size,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,pair,"px (w, h)","[64, 36]",,,,,Size of the grey thumbnail whose SHA-1 is stored per frame for registration checks.,D20
++max_frames,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,optional_int,frames,,1,,,450,Optional cap on processed frames after the seed; None processes to the end of the video.,historical default 450 (run_mo); R1 processes the whole clip unless capped
++seek_mode,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,decode_from_zero,,,"[""decode_from_zero"", ""container_seek""]",,"How the reader reaches start_frame. decode_from_zero decodes and discards frames 0..start_frame-1 (no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",D20; F15 (a container-level resume on .mov landed +10 frames late); tools_rb/make_gold_label_sheet.py already decodes from frame 0 for this reason
++hash_chunk_bytes,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,bytes,1048576,4096,268435456,,,Read size used when hashing the source video with SHA-256.,R1-B provenance (performance only)
++fingerprint_interpolation,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,OpenCV interpolation name,INTER_AREA,,,"[""INTER_AREA"", ""INTER_LINEAR"", ""INTER_NEAREST""]",,Resize method for the frame-content fingerprint thumbnail (debugging/alignment only).,R1-B frame fingerprint (R1/R1B/FRAME_FINGERPRINT.md)
++timing_drift_tolerance_frames,video,RUNTIME,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,frames,0.5,0.0,1000.0,,,"If the container's reported timestamp differs from video_frame_index / fps by more than this many frame periods, the frame is counted as a timing-drift warning (variable frame rate suspected).",R1-B video-time mapping (constant-fps assumption check)
++detector_backend,detector,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,yolox_onnx,,,"[""yolox_onnx"", ""scripted""]",,Person detector backend.,D03; R1 approval §2 (YOLOX-s DEVELOPMENT/EVALUATION)
++detector_input_size,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,px (square network input),640,320,1920,"[640, 960, 1280]",,Detector network input size. To be chosen on GOLD by person-detection quality only (D17).,D17; R1 approval §3
++detector_min_score,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,detector score (0-1),0.1,0.0,1.0,,0.15,Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.,TASK3M: #23's partial body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)
++detector_nms_iou,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.65,0.0,1.0,,,Non-maximum-suppression IoU for person boxes.,D03
++detection_min_height_h,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.25,0.0,2.0,,,Detections shorter than this many target heights are ignored as competitors (noise).,D13
++onnx_intra_op_threads,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,threads,1,1,64,,,ONNX Runtime intra-op thread count (fixed for determinism).,D20
++onnx_inter_op_threads,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,threads,1,1,64,,,ONNX Runtime inter-op thread count.,D20
++onnx_sequential_execution,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,bool,flag,True,,,[true],,ONNX Runtime sequential execution mode.,D20
++appearance_backend,appearance,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,composite_lab_dinov2,,,"[""composite_lab_dinov2"", ""lab_only"", ""scripted""]",,Appearance backend.,D04; R1 approval §4
++composite_weight_lab,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,weight,0.35,0.0,1.0,,,Weight of the LAB part-colour similarity in the composite similarity.,D04: colour is supporting evidence only
++composite_weight_embedding,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,weight,0.65,0.0,1.0,,,"Weight of the generic embedding similarity (DINOv2, NOT player ReID) in the composite.",D04
++lab_upper_band,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,"fraction of box height (top, bottom)","[0.15, 0.5]",0.0,1.0,,,Vertical band of the box used for the upper-body (shirt) colour descriptor.,D04
++lab_lower_band,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,"fraction of box height (top, bottom)","[0.5, 0.8]",0.0,1.0,,,Vertical band used for the lower-body (shorts) colour descriptor.,D04
++lab_bins_per_channel,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,bins,8,2,64,,,Histogram bins per LAB channel.,D04
++crop_min_height_px,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,px (image resolution),24,4,512,,,Crops shorter than this give an invalid appearance feature (too few pixels to describe).,D12 crop quality
++crop_min_inside_fraction,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of box area,0.6,0.0,1.0,,,Minimum fraction of the box inside the image for a valid appearance feature.,D12 crop quality
++appearance_floor,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,composite similarity (0-1),0.55,0.0,1.0,,0.3,A box may become the target's observed box only if its similarity to the target bank is >= this.,"D08 test 1. Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable"
++contrastive_margin,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.08,0.0,1.0,,,Target similarity minus the best competitor similarity on the same box must be >= this.,D08 test 2; R1 approval §18
++ambiguity_margin,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.06,0.0,1.0,,0.08,The best target candidate must beat the second-best target candidate by >= this.,D08 test 5. Historical assignment margin 0.08 (near-miss 0.081 decided the GOLD swap)
++contact_memory_s,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,2.0,0.0,30.0,,,How long a competitor that overlapped the target keeps its pre-contact appearance for contrast.,D08
++target_height_window_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,Window of recent observed target boxes whose median height defines h.,D13
++gate_base_h,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.75,0.0,20.0,,90.0,Search-gate radius around the predicted target centre when just observed.,D13. Historical base_gate 90 px (unscaled)
++gate_growth_h_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h per s,2.0,0.0,50.0,,35.0,Gate growth while the target is unobserved (not while AMBIGUOUS).,D13. Historical gate_growth 35 px per frame
++gate_max_h,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,3.0,0.0,50.0,,350.0,Cap on the search-gate radius.,D13. Historical max_gate 350 px
++gate_grows_while_ambiguous,geometry,BEHAVIOURAL,NEW_R1,DOCUMENTED,NOT_APPLICABLE,bool,flag,False,,,[false],,Whether the gate grows during AMBIGUOUS. Must stay False.,F6: unbounded gate growth during AMBIGUOUS led to a relock 234.8 px away
++motion_veto_max_speed_h_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h per s,8.0,0.0,100.0,,,Camera-compensated target speed above this vetoes a candidate. A veto only: never proves identity.,D09; R1 approval §19
++motion_veto_max_scale_ratio_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,ratio per s,1.8,1.0,100.0,,,Box-height change faster than this factor per second vetoes a candidate.,D09
++population_match_iou_min,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.3,0.0,1.0,,,Minimum IoU to continue a population tracklet (geometry only; no identity claim).,D10
++population_max_unmatched_s,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.0,30.0,,,A population tracklet unmatched this long is dropped.,D10
++population_bank_max_samples,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,samples,8,1,1000,,,Appearance samples kept per population tracklet.,D10
++competitor_radius_h,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,1.5,0.0,20.0,,,"Any detection-backed body whose box centre is within this of the target gate is a competitor, from its first frame, regardless of team label or age.",D10; R1 approval §E
++merged_area_ratio,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,ratio to recent median target area,1.6,1.0,100.0,,,A candidate box larger than this multiple of the target's recent median area is merged-suspect.,"D11 (GOLD 266: area x3.1, one box for two players)"
++merged_aspect_band,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,ratio to recent median aspect (w/h),"[0.6, 1.6]",0.0,100.0,,,Aspect ratio outside this band relative to the target's median is merged-suspect.,D11
++merged_overlap_min,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of predicted box area,0.3,0.0,1.0,,,A box covering at least this fraction of BOTH the target's and a competitor's predicted boxes is merged-suspect.,D11
++bank_max_samples,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,samples,24,1,1000,,,Target appearance bank capacity (diversity-pruned).,D12
++bank_contact_iou,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.05,0.0,1.0,,,No bank update if any competitor box overlaps the target box by more than this.,D12
++bank_min_crop_quality,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,quality (0-1),0.6,0.0,1.0,,,No bank update from a crop below this quality.,D12
++bank_min_novelty,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.02,0.0,1.0,,,A new sample is added only if it differs from its nearest bank sample by at least this.,D12 diversity pruning
++post_reacq_quarantine_s,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,No bank update for this long after a reacquisition.,D12
++max_occluded_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,10,OCCLUDED becomes LOST after this long.,"D14. Historical occlusion_to_lost_frames 10 (frames, not seconds)"
++max_ambiguous_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,AMBIGUOUS becomes LOST after this long (it must age out).,D14; F6 (AMBIGUOUS never aged out historically)
++occluder_cover_min,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of predicted target box,0.3,0.0,1.0,,,"If a competitor covers at least this fraction of the target's predicted box, an unobserved target is OCCLUDED rather than LOST.",D14
++confidence_half_life_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.001,30.0,,,identity_confidence_rb halves for every this-many seconds the target goes unconfirmed.,D14
++reacq_appearance_floor,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,composite similarity (0-1),0.62,0.0,1.0,,,Appearance floor during reacquisition (stricter than ordinary association).,D15
++reacq_contrastive_margin,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.12,0.0,1.0,,0.08,"Contrastive margin during reacquisition, before any absence growth.",D15. Historical re-entry margin 0.08
++reacq_margin_growth_per_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference per s of absence,0.02,0.0,1.0,,,Longer absence raises the reacquisition margin by this much per second.,"D15; R1 approval §F (longer absence, stronger evidence)"
++reacq_margin_cap,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.25,0.0,1.0,,,Upper limit of the grown reacquisition margin.,D15
++reacq_window_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.0,30.0,,,Verification window W for a reacquisition candidate.,D15
++reacq_min_hit_fraction,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of window frames,0.6,0.0,1.0,,,The candidate must pass in at least this fraction of the window's frames (K of W).,D15
++lost_long_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,3.0,0.0,600.0,,,"After this long LOST, the positional prior is dropped (appearance only).",D15
++positional_prior_half_life_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.001,600.0,,,The positional prior's weight in reacquisition halves every this-many seconds since confirmation.,D15
++cut_hist_distance_min,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,Bhattacharyya distance (0-1),0.5,0.0,1.0,,,"A frame-to-frame grey-histogram distance at least this, together with flow failure, is a hard cut.",D16
++cut_flow_inlier_fraction_max,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of tracked features,0.2,0.0,1.0,,,Optical flow with fewer surviving inliers than this counts as flow failure.,D16
++flow_max_corners,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,features,300,10,10000,,,Maximum background features for global-motion estimation.,D16
++flow_quality_level,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,float,OpenCV corner quality (0-1),0.01,0.0,1.0,,,goodFeaturesToTrack quality level.,D16
++flow_min_distance_px,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,float,px (image resolution),8.0,1.0,1000.0,,,Minimum spacing between flow features.,D16
++flow_person_mask_pad_h,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.1,0.0,5.0,,,Padding around person boxes excluded from background flow.,D16
++hist_assoc_weight_appearance,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.4,,,,,Historical linear association weight (audit only).,"least-squares fit, task3m association_capture.json (116 candidates, max err 0.0007)"
++hist_assoc_weight_motion,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.2,,,,,Historical association weight (audit only).,same fit
++hist_assoc_weight_iou_last_box,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.1,,,,,Historical association weight (audit only).,same fit
++hist_assoc_weight_colour_hsv,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.15,,,,,"Historical HSV colour weight (audit only; inverted under contamination, F1e).",same fit
++hist_assoc_weight_size,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.05,,,,,Historical association weight (audit only).,same fit
++hist_min_appearance_floor,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,cosine similarity (yolo26n-reid),0.3,,,,,Historical appearance floor (audit only).,TASK3M_REID_APPEARANCE_AUDIT.md s2
++hist_ambiguity_margin,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,score margin,0.08,,,,,Historical assignment ambiguity margin (audit only).,TASK3M_MOTION_ASSOCIATION_AUDIT.md s2
++hist_base_gate_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,90.0,,,,,Historical base gate (audit only).,TASK3C finding 4
++hist_gate_growth_px_per_frame,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px per frame,35.0,,,,,Historical gate growth (audit only).,TASK3C finding 4
++hist_max_gate_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,350.0,,,,,Historical max gate (audit only).,TASK3C finding 4
++hist_fast_path_radius_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,45.0,,,,,Historical identity fast-path radius (audit only; the fast path is defect F1 and is not rebuilt).,TASK3M_MOTION_ASSOCIATION_AUDIT.md s2
++hist_occlusion_to_lost_frames,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,int,frames,10,,,,,Historical OCCLUDED->LOST limit (audit only).,TASK3C
++hist_max_frames_default,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_CODE,NOT_APPLICABLE,int,frames,450,,,,,Historical run_mo max_frames default (audit only).,pipeline.py:217
+diff --git a/R1/R1B/R1B_TEST_OUTPUT_mac.txt b/R1/R1B/R1B_TEST_OUTPUT_mac.txt
+new file mode 100644
+index 0000000..f8a6565
+--- /dev/null
++++ b/R1/R1B/R1B_TEST_OUTPUT_mac.txt
+@@ -0,0 +1,156 @@
++# R1-B test run on Mac: 2026-10-24T06:19:41Z
++# SPANA_GOLD_VIDEO set: GOLD extract (alignment-only test enabled)
++Python 3.10.12
++numpy 2.2.6 cv2 5.0.0
++test_hash_deterministic_and_sensitive (tests_rb.test_config.TestHashing) ... ok
++test_record_is_json_safe (tests_rb.test_config.TestHashing) ... ok
++test_defaults_pass_their_own_checks (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_every_param_documents_itself (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_historical_values_match_r0_constants_registry (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_names_unique (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_new_behavioural_values_are_not_claimed_validated (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_new_params_with_historical_counterparts_record_them (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_no_historical_fast_path_parameter_is_usable (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_reference_only_params_are_historical (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_time_params_are_seconds_and_geometry_in_h (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_h_conversions (tests_rb.test_config.TestUnits) ... ok
++test_same_duration_at_different_fps (tests_rb.test_config.TestUnits) ... ok
++test_seconds_to_frames (tests_rb.test_config.TestUnits) ... ok
++test_cross_checks (tests_rb.test_config.TestValidation) ... ok
++test_default_builds (tests_rb.test_config.TestValidation) ... ok
++test_immutable (tests_rb.test_config.TestValidation) ... ok
++test_reference_only_cannot_be_overridden (tests_rb.test_config.TestValidation) ... ok
++test_type_range_allowed_checks (tests_rb.test_config.TestValidation) ... ok
++test_unknown_override_rejected (tests_rb.test_config.TestValidation) ... ok
++test_valid_override_recorded (tests_rb.test_config.TestValidation) ... ok
++test_detection_confidence_is_quantised_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_exemplars_are_not_r1_documents (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_exemplars_validate_as_historical_contract (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_field_lists_match_exemplars_exactly (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_historical_rejections (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_selected_confidence_rule_matches_exemplars (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_strip_v2_is_identity_on_historical (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_target_triples_were_all_observed_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_detection_confidence_must_stay_quantised (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_final_tracks_carry_no_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_frame_numbering (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_held_box_reported_as_observed (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_held_box_written_as_confirmed_detection (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_merged_detection_cannot_be_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_non_historical_key_outside_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_one_selected_record_per_frame (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_population_record_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_processed_frames_must_match (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_provenance_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_reacquisition_events_must_match_episodes (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_target_id_must_stay_t001 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_trusted_identity_requires_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_unknown_reason_rejected (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_untrusted_identity_above_actor_attribution_threshold (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_untrusted_needs_a_reason (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_all_states_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_builder_refuses_bad_input (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_canonical_dump_deterministic (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_rounding_matches_historical_precision (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_strip_v2_leaves_valid_historical_document (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_synthetic_document_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_mapping_table_consistent (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_only_tracking_reaches_legacy_tracking (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_r1_state_mapping (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_fingerprint_confined_to_video_layer (tests_rb.test_package_hygiene.TestFingerprintIsNotAnIdentityFeature) ... ok
++test_rebuild_header_everywhere (tests_rb.test_package_hygiene.TestHeaders) ... ok
++test_package_imports_only_allowed_modules (tests_rb.test_package_hygiene.TestImports) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/config.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/provenance.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/video_io.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_no_numeric_thresholds_outside_config (tests_rb.test_package_hygiene.TestNoMagicNumbers) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/provenance.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/video_io.py' mode='r' encoding='utf-8'>
++  tree = ast.parse(open(path, encoding="utf-8").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_bad_seed_bbox_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_config_hash_recorded_and_sensitive (tests_rb.test_provenance.TestProvenance) ... ok
++test_contract_block_fields (tests_rb.test_provenance.TestProvenance) ... ok
++test_contract_block_fits_r1a_summary (tests_rb.test_provenance.TestProvenance) ... ok
++test_deterministic_across_runs (tests_rb.test_provenance.TestProvenance) ... ok
++test_digest_detects_real_differences (tests_rb.test_provenance.TestProvenance) ... ok
++test_dirty_tree_recorded (tests_rb.test_provenance.TestProvenance) ... ok
++test_git_failure_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_git_state_outside_repo_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_model_records_must_be_complete (tests_rb.test_provenance.TestProvenance) ... ok
++test_real_git_state_of_this_tree (tests_rb.test_provenance.TestProvenance) ... ok
++test_sidecar_fields (tests_rb.test_provenance.TestProvenance) ... ok
++test_sidecar_refused_without_close_verification (tests_rb.test_provenance.TestProvenance) ... ok
++test_write_sidecar_canonical_and_no_overwrite (tests_rb.test_provenance.TestProvenance) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_provenance.py:157: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/tmp/rb_prov_03arb8by/tmpd_igrh4b/clip_rb_video_provenance.json' mode='r' encoding='UTF-8'>
++  self.assertEqual(json.load(open(path)), json.loads(S.dumps_canonical(side)))
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_hash_mismatch_refused (tests_rb.test_video_io.TestFailureModes) ... ok
++test_invalid_paths (tests_rb.test_video_io.TestFailureModes) ... ok
++test_start_frame_beyond_stream_when_count_unknown (tests_rb.test_video_io.TestFailureModes) ... ok
++test_start_frame_out_of_range (tests_rb.test_video_io.TestFailureModes) ... ok
++test_unreadable_files (tests_rb.test_video_io.TestFailureModes) ... [mov,mp4,m4a,3gp,3g2,mj2 @ 0xadd9668819f0] moov atom not found
++[mov,mp4,m4a,3gp,3g2,mj2 @ 0xadd9668819f0] moov atom not found
++ok
++test_fingerprint_depends_on_documented_settings (tests_rb.test_video_io.TestFingerprint) ... ok
++test_fingerprint_reproducible_and_distinct (tests_rb.test_video_io.TestFingerprint) ... ok
++test_frames_build_valid_frame_records (tests_rb.test_video_io.TestFrameLogNumberingContract) ... ok
++test_numbering_matches_frozen_exemplars (tests_rb.test_video_io.TestFrameLogNumberingContract) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_video_io.py:282: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/fixtures/historical_contract/GOLD_DUEL_01_syo_mar_3036_3048_mo_tracking_results.json' mode='r' encoding='UTF-8'>
++  d = json.load(open(path))
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_video_io.py:282: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/fixtures/historical_contract/f5bd8ce0-pass_completed_01_mo_tracking_results.json' mode='r' encoding='UTF-8'>
++  d = json.load(open(path))
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_gold_seed_and_first_frames (tests_rb.test_video_io.TestGoldVideoAlignment) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_video_io.py:335: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/fixtures/GOLD_DUEL_01/GOLD_DUEL_01_BENCHMARK_FIXTURE.json' mode='r' encoding='UTF-8'>
++  fx = json.load(open(GOLD_FIXTURE))
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_no_resume_or_checkpoint_api (tests_rb.test_video_io.TestNoResume) ... ok
++test_reader_writes_nothing (tests_rb.test_video_io.TestNoResume) ... ok
++test_resume_cannot_be_enabled (tests_rb.test_video_io.TestNoResume) ... ok
++test_no_seek_during_run (tests_rb.test_video_io.TestSinglePositioning) ... ok
++test_change_during_iteration (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
++test_deleted_source_detected (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
++test_same_size_content_change_detected_at_close (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_video_io.py:231: ResourceWarning: unclosed file <_io.BufferedReader name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/tmp/rb_change_mr3pha6s/v.avi'>
++  data = bytearray(open(self.v, "rb").read())
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_chunk_size_does_not_change_hash (tests_rb.test_video_io.TestSourceHashing) ... ok
++test_sha256_recorded (tests_rb.test_video_io.TestSourceHashing) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_video_io.py:197: ResourceWarning: unclosed file <_io.BufferedReader name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/tmp/rb_video_21prw7re/v30.avi'>
++  want = hashlib.sha256(open(self.v30, "rb").read()).hexdigest()
++ResourceWarning: Enable tracemalloc to get the object allocation traceback
++ok
++test_first_logged_step_is_next_frame_and_sequence_is_contiguous (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_iterate_only_once (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_max_frames_cap (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_no_duplicate_or_skipped_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_seed_is_start_frame_both_seek_modes (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_seek_modes_decode_identical_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_legacy_snapshot_timestamp_is_relative (tests_rb.test_video_io.TestTimeMapping) ... ok
++test_time_mapping_30_and_non_30_fps (tests_rb.test_video_io.TestTimeMapping) ... ok
++
++----------------------------------------------------------------------
++Ran 100 tests in 5.273s
++
++OK
+diff --git a/player_tracker_rb/__init__.py b/player_tracker_rb/__init__.py
+index 10d7132..da8e604 100644
+--- a/player_tracker_rb/__init__.py
++++ b/player_tracker_rb/__init__.py
+@@ -9,6 +9,6 @@ the historical Pass-1 JSON contract (see output_schema) and adds clearly labelle
+ Allowed imports: Python standard library, numpy, cv2, onnxruntime, and this package. Never football_analysis,
+ player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ (D02, D21).
+ 
+-Stage R1-A (this commit): config and output_schema only. No tracking logic yet.
++Stages so far: R1-A (config, output_schema) and R1-B (video_io, provenance). No tracking logic yet.
+ """
+-__version__ = "0.1.0-r1a"
++__version__ = "0.2.0-r1b"
+diff --git a/player_tracker_rb/config.py b/player_tracker_rb/config.py
+index f9273f6..15e01f9 100644
+--- a/player_tracker_rb/config.py
++++ b/player_tracker_rb/config.py
+@@ -40,7 +40,10 @@ from dataclasses import dataclass, field
+ from types import MappingProxyType
+ from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+ 
+-CONFIG_REGISTRY_VERSION = "r1a-1"
++CONFIG_REGISTRY_VERSION = "r1b-1"
++
++# Unit constants (definitions, not tunable behaviour).
++MS_PER_SECOND = 1000.0
+ 
+ # ---------------------------------------------------------------------------------------------
+ # Vocabularies used by the registry itself
+@@ -163,6 +166,25 @@ PARAMS: Tuple[Param, ...] = (
+        "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
+        "historical default 450 (run_mo); R1 processes the whole clip unless capped", 1, None,
+        historical_value=450),
++    _p("seek_mode", "str", "name",
++       "How the reader reaches start_frame. decode_from_zero decodes and discards frames 0..start_frame-1 "
++       "(no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the "
++       "reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",
++       "decode_from_zero", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
++       "D20; F15 (a container-level resume on .mov landed +10 frames late); tools_rb/make_gold_label_sheet.py "
++       "already decodes from frame 0 for this reason", allowed=("decode_from_zero", "container_seek")),
++    _p("hash_chunk_bytes", "int", "bytes", "Read size used when hashing the source video with SHA-256.", 1048576,
++       N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B provenance (performance only)", 4096,
++       268435456),
++    _p("fingerprint_interpolation", "str", "OpenCV interpolation name",
++       "Resize method for the frame-content fingerprint thumbnail (debugging/alignment only).", "INTER_AREA", N,
++       "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B frame fingerprint (R1/R1B/FRAME_FINGERPRINT.md)",
++       allowed=("INTER_AREA", "INTER_LINEAR", "INTER_NEAREST")),
++    _p("timing_drift_tolerance_frames", "float", "frames",
++       "If the container's reported timestamp differs from video_frame_index / fps by more than this many "
++       "frame periods, the frame is counted as a timing-drift warning (variable frame rate suspected).", 0.5, N,
++       "DESIGN_CHOICE", UNV, "RUNTIME", "video", "R1-B video-time mapping (constant-fps assumption check)",
++       0.0, 1000.0),
+ 
+     # ---- detector (D03, D17) -----------------------------------------------------------------
+     _p("detector_backend", "str", "name", "Person detector backend.", "yolox_onnx", N, "DESIGN_CHOICE",
+diff --git a/player_tracker_rb/provenance.py b/player_tracker_rb/provenance.py
+new file mode 100644
+index 0000000..ff9c6e1
+--- /dev/null
++++ b/player_tracker_rb/provenance.py
+@@ -0,0 +1,177 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: player_tracker_rb/output_schema.py PROVENANCE_FIELDS (R1-A contract); R1/R1_DESIGN_DECISIONS.md
++#                 D18, D20, D22; R1-B instruction (Nathan, 2026-10-24: provenance fields, fail closed)
++"""
++player_tracker_rb.provenance: run provenance for the R1 tracker.
++
++Two records are produced:
++
++1. `contract_provenance(...)`: exactly the R1-A contract block `summary.v2.provenance` (PROVENANCE_FIELDS).
++   It is validated against output_schema before it is returned.
++
++2. `video_provenance_sidecar(...)`: the fuller R1-B record, written next to the tracking JSON as
++   `{video_basename}_rb_video_provenance.json`. It holds what the contract block has no slot for: frame
++   dimensions, file size, decoder backend and OpenCV version, seek mode, the frame-index and time rules, the
++   frame-fingerprint method and digests, and the end-of-run source re-verification. Keeping these in a sidecar
++   leaves the R1-A contract unchanged.
++
++Fail closed: if the git commit cannot be determined, or the record does not validate, a ProvenanceError is raised.
++A dirty working tree is recorded (git_dirty = True), not hidden.
++
++Determinism: `deterministic_digest(record)` hashes the record without its wall-clock fields (run_started_utc,
++and the absolute path, which depends on where the project is checked out). Two runs on the same inputs with the
++same code and config must give the same digest.
++"""
++from __future__ import annotations
++
++import datetime
++import hashlib
++import json
++import os
++import subprocess
++from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
++
++from . import __version__ as TRACKER_VERSION
++from . import output_schema as S
++from .config import TrackerConfig
++from .video_io import SequentialVideoReader, fingerprint_method
++
++SIDECAR_KIND = "spana_rb_video_provenance"
++SIDECAR_SUFFIX = "_rb_video_provenance.json"
++NONDETERMINISTIC_KEYS = ("run_started_utc", "abs_path", "sidecar_written_utc")
++
++
++class ProvenanceError(RuntimeError):
++    """Required provenance could not be recorded; the run must not continue."""
++
++
++PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++
++
++def git_state(repo_root: str = PACKAGE_ROOT) -> Tuple[str, bool]:
++    """(HEAD commit, dirty?) of the source tree that holds this package. Raises ProvenanceError if unknown."""
++    try:
++        head = subprocess.run(["git", "-C", repo_root, "rev-parse", "HEAD"], capture_output=True, text=True,
++                              check=True).stdout.strip()
++        status = subprocess.run(["git", "-C", repo_root, "status", "--porcelain", "--untracked-files=normal"],
++                                capture_output=True, text=True, check=True).stdout
++    except (OSError, subprocess.CalledProcessError) as e:
++        raise ProvenanceError(f"cannot determine the git commit of {repo_root}: {e}") from e
++    if not (head and all(c in "0123456789abcdef" for c in head)):
++        raise ProvenanceError(f"unexpected git HEAD {head!r}")
++    return head, bool(status.strip())
++
++
++def utc_now_iso() -> str:
++    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
++
++
++def validate_seed_bbox(seed_bbox: Sequence[float], width: int, height: int) -> List[float]:
++    if not (isinstance(seed_bbox, (list, tuple)) and len(seed_bbox) == 4):
++        raise ProvenanceError(f"seed_bbox must be [x1, y1, x2, y2], got {seed_bbox!r}")
++    try:
++        x1, y1, x2, y2 = (float(v) for v in seed_bbox)
++    except (TypeError, ValueError) as e:
++        raise ProvenanceError(f"seed_bbox must be numeric, got {seed_bbox!r}") from e
++    if not (x1 < x2 and y1 < y2):
++        raise ProvenanceError(f"seed_bbox must have x1 < x2 and y1 < y2, got {seed_bbox!r}")
++    if x1 < 0 or y1 < 0 or x2 > width or y2 > height:
++        raise ProvenanceError(f"seed_bbox {seed_bbox!r} lies outside the {width}x{height} frame")
++    return [x1, y1, x2, y2]
++
++
++def contract_provenance(reader: SequentialVideoReader, seed_bbox: Sequence[float], cfg: TrackerConfig,
++                        models: Optional[List[Dict[str, Any]]] = None,
++                        git: Callable[[], Tuple[str, bool]] = git_state,
++                        clock: Callable[[], str] = utc_now_iso) -> Dict[str, Any]:
++    """The summary.v2.provenance block, exactly as the R1-A contract defines it. Validated before return."""
++    info = reader.info
++    if info is None:
++        raise ProvenanceError("reader is not open")
++    box = validate_seed_bbox(seed_bbox, info.frame_width, info.frame_height)
++    commit, dirty = git()
++    models = list(models or [])
++    for m in models:
++        for k in ("role", "filename", "sha256", "status"):
++            if not m.get(k):
++                raise ProvenanceError(f"model record missing {k!r}: {m!r}")
++    rec = {
++        "video_path": info.path,
++        "video_sha256": info.sha256,
++        "fps": info.fps,
++        "frame_count": info.frame_count_reported,
++        "decode_mode": S.DECODE_MODE,
++        "seed_frame": info.start_frame,
++        "seed_bbox": [round(v, cfg.get("box_round_dp")) for v in box],
++        "models": models,
++        "config_hash": cfg.config_hash(),
++        "git_commit": commit,
++        "git_dirty": dirty,
++        "schema_version": S.V2_SCHEMA_VERSION,
++        "tracker_version": TRACKER_VERSION,
++        "run_started_utc": clock(),
++    }
++    errors: List[str] = []
++    S._check_fields(S.PROVENANCE_FIELDS, rec, "provenance", errors)
++    if errors:
++        raise ProvenanceError("; ".join(errors))
++    return rec
++
++
++def video_provenance_sidecar(reader: SequentialVideoReader, contract: Dict[str, Any], cfg: TrackerConfig,
++                             frame_thumbs: Optional[List[str]] = None) -> Dict[str, Any]:
++    """The fuller R1-B provenance record. Call after the frames have been read and the reader closed (verified)."""
++    from .video_io import thumbs_digest
++    info = reader.info
++    if reader.source_verified_at_close is not True:
++        raise ProvenanceError("source was not re-verified at close; refusing to write provenance")
++    align = reader.alignment_summary()
++    if frame_thumbs is not None and len(frame_thumbs) != align["processed_frames"]:
++        raise ProvenanceError("frame_thumbs length does not match processed_frames")
++    return {
++        "kind": SIDECAR_KIND,
++        "tracker": S.TRACKER_NAME,
++        "tracker_version": TRACKER_VERSION,
++        "schema_version": S.V2_SCHEMA_VERSION,
++        "config_registry_version": cfg.as_record()["registry_version"],
++        "config_hash": cfg.config_hash(),
++        "contract_provenance": contract,
++        "video": info.as_record(),
++        "frame_alignment": dict(align, **{
++            "fingerprint_method": fingerprint_method(cfg),
++            "frame_thumbs_sha256": thumbs_digest(frame_thumbs) if frame_thumbs is not None else None,
++        }),
++        "source_reverified_at_close": True,
++        "resume_supported": False,
++    }
++
++
++def _strip_nondeterministic(obj: Any) -> Any:
++    if isinstance(obj, dict):
++        return {k: _strip_nondeterministic(v) for k, v in obj.items() if k not in NONDETERMINISTIC_KEYS}
++    if isinstance(obj, list):
++        return [_strip_nondeterministic(v) for v in obj]
++    return obj
++
++
++def deterministic_digest(record: Dict[str, Any]) -> str:
++    """SHA-256 of the canonical record without wall-clock / checkout-location fields."""
++    text = json.dumps(_strip_nondeterministic(record), sort_keys=True, separators=(",", ":"), ensure_ascii=True,
++                      allow_nan=False)
++    return hashlib.sha256(text.encode("ascii")).hexdigest()
++
++
++def sidecar_path(out_dir: str, video_path: str) -> str:
++    base = os.path.splitext(os.path.basename(video_path))[0]
++    return os.path.join(out_dir, base + SIDECAR_SUFFIX)
++
++
++def write_sidecar(record: Dict[str, Any], path: str) -> str:
++    """Write canonical JSON (refuses to overwrite an existing file). Returns the file's SHA-256."""
++    if os.path.exists(path):
++        raise ProvenanceError(f"refusing to overwrite existing provenance file {path}")
++    text = S.dumps_canonical(record)
++    with open(path, "x", encoding="ascii") as f:
++        f.write(text)
++    return hashlib.sha256(text.encode("ascii")).hexdigest()
+diff --git a/player_tracker_rb/video_io.py b/player_tracker_rb/video_io.py
+new file mode 100644
+index 0000000..f1e55cb
+--- /dev/null
++++ b/player_tracker_rb/video_io.py
+@@ -0,0 +1,384 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R0/R0_TRACKER_INTERFACE_MAP.md §1.10-§1.11 (seed frame = initialization frame, frame_log frame f
++#                 = video frame start_frame + f, no resume); R1/R1_DESIGN_DECISIONS.md D18, D20; F15 (.mov resume
++#                 landed +10 frames late); R1-B instruction (Nathan, 2026-10-24)
++"""
++player_tracker_rb.video_io: sequential, fail-closed video reading for the R1 tracker.
++
++Frame numbering (the recovered Pass-1 contract, VERIFIED_CODE + VERIFIED_OUTPUT):
++  * The seed frame (video frame index `start_frame`) is the INITIALIZATION frame. It is read once and exposed as
++    `reader.seed`, with relative frame 0. It is never a frame_log step.
++  * The first logged step is the NEXT video frame: relative frame 1 = video frame start_frame + 1.
++  * In general: relative frame f  <->  video frame index start_frame + f.
++
++Time mapping (constant frame rate assumed and checked):
++  * video_time_s = video_frame_index / fps   (absolute time in the source; this is frame_log v2.timestamp_s)
++  * rel_time_s   = rel_frame / fps           (time since the seed; this is what the surviving event_adapter
++                                              writes as snapshot timestamp: round(frame_number / fps, 4))
++  * The container's own timestamp (CAP_PROP_POS_MSEC) is recorded per frame for diagnostics only. If it drifts
++    from video_time_s by more than `timing_drift_tolerance_frames`, a timing-drift warning is counted.
++
++Reading rules:
++  * Reaching start_frame: `seek_mode` "decode_from_zero" (default) decodes and discards frames 0..start_frame-1
++    with no container seek at all; "container_seek" performs ONE CAP_PROP_POS_FRAMES seek and verifies the
++    reported position. After that, decoding is strictly sequential (`read()` only). No further seek, ever.
++  * There is no checkpoint, no resume and no way to start in the middle of a run (F15). Nothing is written to disk.
++  * Fail closed: an unreadable or missing source, a bad start frame, a hash mismatch, a frame-size change, a
++    position mismatch, or a change to the source file during the run raises a VideoError subclass.
++    The source file is stat-checked before every frame and fully re-hashed at close().
++
++Frame-content fingerprint (see R1/R1B/FRAME_FINGERPRINT.md):
++  * SHA-1 of a small greyscale thumbnail of each decoded frame. It exists ONLY to debug and verify frame alignment
++    (e.g. that two runs, or two seek modes, decoded the same frame at the same index). It is not an appearance
++    feature, carries no identity meaning, and must never be read by detection, appearance or state code.
++"""
++from __future__ import annotations
++
++import hashlib
++import math
++import os
++from dataclasses import dataclass, field
++from typing import Any, Callable, Dict, Iterator, List, Optional
++
++import cv2
++import numpy as np
++
++from .config import MS_PER_SECOND, TrackerConfig
++
++
++# ---------------------------------------------------------------------------------------------
++# Errors (all fail-closed)
++# ---------------------------------------------------------------------------------------------
++class VideoError(RuntimeError):
++    """Base class: the video layer refuses to continue."""
++
++
++class VideoNotFoundError(VideoError):
++    pass
++
++
++class VideoUnreadableError(VideoError):
++    pass
++
++
++class StartFrameOutOfRangeError(VideoError):
++    pass
++
++
++class SourceHashMismatchError(VideoError):
++    pass
++
++
++class SourceChangedError(VideoError):
++    pass
++
++
++class FrameAlignmentError(VideoError):
++    pass
++
++
++# ---------------------------------------------------------------------------------------------
++# Hashing and fingerprints
++# ---------------------------------------------------------------------------------------------
++def sha256_file(path: str, chunk_bytes: int) -> str:
++    h = hashlib.sha256()
++    with open(path, "rb") as f:
++        for block in iter(lambda: f.read(chunk_bytes), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++_INTERPOLATIONS = {"INTER_AREA": cv2.INTER_AREA, "INTER_LINEAR": cv2.INTER_LINEAR,
++                   "INTER_NEAREST": cv2.INTER_NEAREST}
++
++
++def frame_fingerprint(image: np.ndarray, cfg: TrackerConfig) -> str:
++    """SHA-1 of the greyscale thumbnail (size `frame_thumbnail_size`, resize `fingerprint_interpolation`).
++    Debugging/alignment only. Not an identity feature."""
++    if image is None or image.ndim < 2:
++        raise ValueError("frame_fingerprint needs a 2-D (grey) or 3-D (BGR) image")
++    grey = image if image.ndim == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
++    w, h = (int(v) for v in cfg.get("frame_thumbnail_size"))
++    thumb = cv2.resize(grey, (w, h), interpolation=_INTERPOLATIONS[cfg.get("fingerprint_interpolation")])
++    thumb = np.ascontiguousarray(thumb, dtype=np.uint8)
++    hdr = f"{w}x{h}:".encode("ascii")
++    return hashlib.sha1(hdr + thumb.tobytes()).hexdigest()
++
++
++def fingerprint_method(cfg: TrackerConfig) -> Dict[str, Any]:
++    w, h = (int(v) for v in cfg.get("frame_thumbnail_size"))
++    return {"algorithm": "sha1(b'WxH:' + uint8 greyscale thumbnail bytes, row-major)",
++            "thumbnail_size": [w, h], "colour_conversion": "cv2.COLOR_BGR2GRAY",
++            "interpolation": cfg.get("fingerprint_interpolation"), "cv2_version": cv2.__version__,
++            "purpose": "frame-alignment debugging only; not an identity or appearance feature"}
++
++
++# ---------------------------------------------------------------------------------------------
++# Data records
++# ---------------------------------------------------------------------------------------------
++@dataclass(frozen=True)
++class VideoFrame:
++    rel_frame: int               # 0 = seed (initialization) frame; frame_log frames are 1, 2, ...
++    video_frame_index: int       # start_frame + rel_frame
++    video_time_s: float          # video_frame_index / fps
++    rel_time_s: float            # rel_frame / fps
++    pos_msec_reported: Optional[float]   # container timestamp, diagnostics only
++    thumb_sha1: str              # frame-content fingerprint (alignment debugging only)
++    image: np.ndarray = field(repr=False, compare=False)
++
++
++@dataclass
++class VideoInfo:
++    path: str
++    abs_path: str
++    sha256: str
++    size_bytes: int
++    mtime_ns: int
++    fps: float
++    frame_width: int
++    frame_height: int
++    frame_count_reported: Optional[int]
++    backend: str
++    cv2_version: str
++    seek_mode: str
++    start_frame: int
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"path": self.path, "abs_path": self.abs_path, "sha256": self.sha256, "size_bytes": self.size_bytes,
++                "fps": self.fps, "frame_width": self.frame_width, "frame_height": self.frame_height,
++                "frame_count_reported": self.frame_count_reported, "backend": self.backend,
++                "cv2_version": self.cv2_version, "seek_mode": self.seek_mode, "start_frame": self.start_frame}
++
++
++# ---------------------------------------------------------------------------------------------
++# The reader
++# ---------------------------------------------------------------------------------------------
++class SequentialVideoReader:
++    """Open a video, position at start_frame once, then decode strictly sequentially.
++
++        with SequentialVideoReader(path, start_frame, cfg, expected_sha256=...) as r:
++            seed = r.seed                 # relative frame 0 (initialization frame)
++            for fr in r:                  # relative frames 1, 2, ... (frame_log steps)
++                ...
++        # leaving the block re-hashes the source and raises SourceChangedError if it changed.
++
++    `capture_factory` exists only so tests can observe the calls made on the capture object.
++    """
++
++    def __init__(self, path: str, start_frame: int, cfg: TrackerConfig, expected_sha256: Optional[str] = None,
++                 capture_factory: Callable[[str], Any] = cv2.VideoCapture):
++        if isinstance(start_frame, bool) or not isinstance(start_frame, int):
++            raise StartFrameOutOfRangeError(f"start_frame must be an int, got {start_frame!r}")
++        if start_frame < 0:
++            raise StartFrameOutOfRangeError(f"start_frame must be >= 0, got {start_frame}")
++        if cfg.get("resume_allowed"):
++            raise VideoError("resume is not supported")  # unreachable: config only allows False
++        self._cfg = cfg
++        self._path = path
++        self._start = start_frame
++        self._expected = expected_sha256
++        self._factory = capture_factory
++        self._cap = None
++        self._closed = False
++        self._iterating = False
++        self._next_rel = 1
++        self._seek_calls = 0
++        self.info: Optional[VideoInfo] = None
++        self.seed: Optional[VideoFrame] = None
++        self.frames_decoded_after_seed = 0
++        self.timing_drift_warnings = 0
++        self.timing_drift_max_frames = 0.0
++        self.position_reports_available = True
++        self.eof_reached = False
++        self.source_verified_at_close: Optional[bool] = None
++        self._open()
++
++    # ---- context manager ------------------------------------------------------------------------
++    def __enter__(self) -> "SequentialVideoReader":
++        return self
++
++    def __exit__(self, exc_type, exc, tb) -> None:
++        self.close(verify=exc_type is None)
++
++    # ---- opening --------------------------------------------------------------------------------
++    def _stat(self):
++        try:
++            st = os.stat(self._path)
++        except OSError as e:
++            raise SourceChangedError(f"source video no longer accessible: {e}") from e
++        return st.st_size, st.st_mtime_ns
++
++    def _open(self) -> None:
++        path = self._path
++        if not isinstance(path, str) or not path:
++            raise VideoNotFoundError(f"invalid video path {path!r}")
++        if not os.path.isfile(path):
++            raise VideoNotFoundError(f"video not found: {path}")
++        size0, mtime0 = self._stat()
++        digest = sha256_file(path, self._cfg.get("hash_chunk_bytes"))
++        if self._expected is not None and digest != self._expected:
++            raise SourceHashMismatchError(f"source sha256 {digest} != expected {self._expected}")
++        if (size0, mtime0) != self._stat():
++            raise SourceChangedError("source video changed while it was being hashed")
++        cap = self._factory(path)
++        if cap is None or not cap.isOpened():
++            raise VideoUnreadableError(f"OpenCV cannot open video: {path}")
++        self._cap = cap
++        fps = float(cap.get(cv2.CAP_PROP_FPS))
++        if not (math.isfinite(fps) and fps > 0):
++            self._release()
++            raise VideoUnreadableError(f"video reports no usable frame rate (fps={fps!r}): {path}")
++        n_rep = cap.get(cv2.CAP_PROP_FRAME_COUNT)
++        frame_count = int(round(n_rep)) if (math.isfinite(n_rep) and n_rep > 0) else None
++        if frame_count is not None and self._start >= frame_count:
++            self._release()
++            raise StartFrameOutOfRangeError(
++                f"start_frame {self._start} outside the video (reported frame count {frame_count})")
++        try:
++            backend = str(cap.getBackendName())
++        except Exception:  # noqa: BLE001 - backend name is informational
++            backend = "UNKNOWN"
++        seek_mode = self._cfg.get("seek_mode")
++        self._position(seek_mode)
++        ok, img = cap.read()
++        if not ok or img is None:
++            self._release()
++            if self._start == 0:
++                raise VideoUnreadableError(f"could not decode the first frame: {path}")
++            raise StartFrameOutOfRangeError(f"start_frame {self._start} could not be decoded (end of stream)")
++        self._check_position_after_read(self._start)
++        h_px, w_px = int(img.shape[0]), int(img.shape[1])
++        self.info = VideoInfo(path=path, abs_path=os.path.abspath(path), sha256=digest, size_bytes=size0,
++                              mtime_ns=mtime0, fps=fps, frame_width=w_px, frame_height=h_px,
++                              frame_count_reported=frame_count, backend=backend, cv2_version=cv2.__version__,
++                              seek_mode=seek_mode, start_frame=self._start)
++        self.seed = self._make_frame(0, img)
++
++    def _position(self, seek_mode: str) -> None:
++        cap = self._cap
++        if self._start == 0:
++            return
++        if seek_mode == "decode_from_zero":
++            for i in range(self._start):
++                ok = cap.grab()
++                if not ok:
++                    self._release()
++                    raise StartFrameOutOfRangeError(
++                        f"start_frame {self._start} outside the video (stream ended at frame {i})")
++            return
++        if seek_mode == "container_seek":
++            self._seek_calls += 1
++            cap.set(cv2.CAP_PROP_POS_FRAMES, float(self._start))
++            pos = cap.get(cv2.CAP_PROP_POS_FRAMES)
++            if math.isfinite(pos) and pos >= 0 and int(round(pos)) != self._start:
++                self._release()
++                raise FrameAlignmentError(f"container seek to {self._start} landed at {pos}")
++            return
++        raise VideoError(f"unknown seek_mode {seek_mode!r}")
++
++    def _check_position_after_read(self, video_index: int) -> None:
++        pos = self._cap.get(cv2.CAP_PROP_POS_FRAMES)
++        if not (math.isfinite(pos) and pos >= 0):
++            self.position_reports_available = False
++            return
++        if int(round(pos)) != video_index + 1:
++            raise FrameAlignmentError(
++                f"decoder position {pos} after reading video frame {video_index} (expected {video_index + 1})")
++
++    def _make_frame(self, rel: int, img: np.ndarray) -> VideoFrame:
++        fps = self.info.fps
++        vid = self._start + rel
++        vt = vid / fps
++        msec = self._cap.get(cv2.CAP_PROP_POS_MSEC)
++        pos_msec = float(msec) if math.isfinite(msec) and msec >= 0 else None
++        if pos_msec is not None:
++            drift_frames = abs(pos_msec / MS_PER_SECOND - vt) * fps
++            self.timing_drift_max_frames = max(self.timing_drift_max_frames, drift_frames)
++            if drift_frames > self._cfg.get("timing_drift_tolerance_frames"):
++                self.timing_drift_warnings += 1
++        return VideoFrame(rel_frame=rel, video_frame_index=vid, video_time_s=vt, rel_time_s=rel / fps,
++                          pos_msec_reported=pos_msec, thumb_sha1=frame_fingerprint(img, self._cfg), image=img)
++
++    # ---- sequential iteration -------------------------------------------------------------------
++    def __iter__(self) -> Iterator[VideoFrame]:
++        if self._iterating or self._next_rel != 1:
++            raise VideoError("frames can be iterated only once per reader (no rewind, no resume)")
++        self._iterating = True
++        return self._gen()
++
++    def _gen(self) -> Iterator[VideoFrame]:
++        cap_frames = self._cfg.get("max_frames")
++        while not self._closed:
++            if cap_frames is not None and self._next_rel > cap_frames:
++                return
++            if self._stat() != (self.info.size_bytes, self.info.mtime_ns):
++                raise SourceChangedError("source video changed during the run")
++            ok, img = self._cap.read()
++            if not ok or img is None:
++                self.eof_reached = True
++                return
++            rel = self._next_rel
++            vid = self._start + rel
++            self._check_position_after_read(vid)
++            if (int(img.shape[0]), int(img.shape[1])) != (self.info.frame_height, self.info.frame_width):
++                raise FrameAlignmentError(f"frame size changed at video frame {vid}: {img.shape[:2]}")
++            fr = self._make_frame(rel, img)
++            self._next_rel += 1
++            self.frames_decoded_after_seed += 1
++            yield fr
++
++    # ---- closing --------------------------------------------------------------------------------
++    def _release(self) -> None:
++        if self._cap is not None:
++            try:
++                self._cap.release()
++            finally:
++                self._cap = None
++
++    def close(self, verify: bool = True) -> None:
++        """Release the decoder; with verify=True re-hash the source and fail closed if it changed."""
++        if self._closed:
++            return
++        self._closed = True
++        self._release()
++        if verify and self.info is not None:
++            if self._stat() != (self.info.size_bytes, self.info.mtime_ns):
++                self.source_verified_at_close = False
++                raise SourceChangedError("source video changed during the run (size/mtime)")
++            if sha256_file(self._path, self._cfg.get("hash_chunk_bytes")) != self.info.sha256:
++                self.source_verified_at_close = False
++                raise SourceChangedError("source video content changed during the run (sha256)")
++            self.source_verified_at_close = True
++
++    @property
++    def seek_calls(self) -> int:
++        return self._seek_calls
++
++    def alignment_summary(self) -> Dict[str, Any]:
++        """Frame-alignment facts for the provenance sidecar (no image data)."""
++        last_rel = self._next_rel - 1
++        return {
++            "frame_index_rule": "video_frame_index = start_frame + frame; frame 0 = seed (initialization) frame",
++            "seed_video_frame_index": self._start,
++            "seed_thumb_sha1": self.seed.thumb_sha1 if self.seed else None,
++            "first_logged_frame": 1,
++            "processed_frames": self.frames_decoded_after_seed,
++            "last_logged_frame": last_rel if last_rel >= 1 else None,
++            "last_video_frame_index": self._start + last_rel if last_rel >= 1 else None,
++            "eof_reached": self.eof_reached,
++            "time_rule": "video_time_s = video_frame_index / fps; rel_time_s = frame / fps",
++            "timing_drift_warnings": self.timing_drift_warnings,
++            "timing_drift_max_frames": self.timing_drift_max_frames,
++            "position_reports_available": self.position_reports_available,
++            "container_seek_calls": self._seek_calls,
++        }
++
++
++def thumbs_digest(thumbs: List[str]) -> str:
++    """One SHA-256 over the ordered list of per-frame fingerprints (compact alignment summary)."""
++    h = hashlib.sha256()
++    for t in thumbs:
++        h.update(t.encode("ascii"))
++        h.update(b"\n")
++    return h.hexdigest()
+diff --git a/tests_rb/_synth_video.py b/tests_rb/_synth_video.py
+new file mode 100644
+index 0000000..3ab5af4
+--- /dev/null
++++ b/tests_rb/_synth_video.py
+@@ -0,0 +1,46 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-B instruction (frame-numbering and video-time tests); test helper only, no tracking logic
++"""Test helper: writes small synthetic videos whose frames carry their own video frame index as a binary code,
++so a test can read back exactly which source frame was decoded (independent of the fingerprint under test)."""
++import os
++
++import cv2
++import numpy as np
++
++W, H = 160, 96
++BITS = 10                      # up to 1023 frames
++BLOCK = W // BITS
++
++
++def make_frame(index: int, width: int = W, height: int = H) -> np.ndarray:
++    img = np.zeros((height, width, 3), np.uint8)
++    block = width // BITS
++    for b in range(BITS):
++        if (index >> b) & 1:
++            img[: height // 2, b * block:(b + 1) * block] = 255
++    img[height // 2:, :] = (37 * index) % 200 + 20      # varies per frame, keeps fingerprints distinct
++    return img
++
++
++def read_index(img: np.ndarray) -> int:
++    height, width = img.shape[:2]
++    block = width // BITS
++    top = img[: height // 2]
++    v = 0
++    for b in range(BITS):
++        if top[:, b * block:(b + 1) * block].mean() > 127:
++            v |= 1 << b
++    return v
++
++
++def write_video(path: str, n_frames: int, fps: float, fourcc: str = "MJPG", size=(W, H)) -> str:
++    w = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*fourcc), fps, size)
++    if not w.isOpened():
++        raise RuntimeError(f"cannot write test video {path} with {fourcc}")
++    for i in range(n_frames):
++        w.write(make_frame(i, *size))
++    w.release()
++    if not os.path.isfile(path) or os.path.getsize(path) == 0:
++        raise RuntimeError(f"test video {path} was not written")
++    return path
+diff --git a/tests_rb/test_package_hygiene.py b/tests_rb/test_package_hygiene.py
+index 9ad98db..ef5f269 100644
+--- a/tests_rb/test_package_hygiene.py
++++ b/tests_rb/test_package_hygiene.py
+@@ -92,5 +92,22 @@ class TestNoMagicNumbers(unittest.TestCase):
+         self.assertEqual(offenders, [], "numeric literals belong in config.py:\n" + "\n".join(offenders))
+ 
+ 
++class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
++    """R1-B: the frame-content fingerprint is for alignment debugging only. Only the video layer, provenance and the
++    output schema may refer to it; detection, appearance and state code must never read it."""
++    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py"}
++    TOKENS = ("thumb_sha1", "frame_fingerprint", "frame_thumb", "thumbs_digest")
++
++    def test_fingerprint_confined_to_video_layer(self):
++        offenders = []
++        for path in _py_files("player_tracker_rb"):
++            name = os.path.basename(path)
++            if name in self.ALLOWED:
++                continue
++            src = open(path, encoding="utf-8").read()
++            offenders += [f"{name}: {t}" for t in self.TOKENS if t in src]
++        self.assertEqual(offenders, [])
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests_rb/test_provenance.py b/tests_rb/test_provenance.py
+new file mode 100644
+index 0000000..419e5e6
+--- /dev/null
++++ b/tests_rb/test_provenance.py
+@@ -0,0 +1,164 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-B instruction (provenance fields, fail closed, determinism); player_tracker_rb/output_schema.py
++#                 PROVENANCE_FIELDS (R1-A contract)
++"""Tests for player_tracker_rb.provenance: contract block, sidecar, config hash, git, determinism, fail-closed."""
++import json
++import os
++import shutil
++import tempfile
++import unittest
++
++from player_tracker_rb import __version__
++from player_tracker_rb import output_schema as S
++from player_tracker_rb import provenance as P
++from player_tracker_rb import video_io as V
++from player_tracker_rb.config import TrackerConfig
++from tests_rb import _synth_docs as SD
++from tests_rb import _synth_video as SV
++
++FIXED_GIT = lambda: ("a" * 40, False)                      # noqa: E731
++FIXED_CLOCK = lambda: "2026-10-24T00:00:00Z"               # noqa: E731
++SEED_BOX = [10.0, 5.0, 60.0, 90.0]
++
++
++def run_once(path, start, cfg, git=FIXED_GIT, clock=FIXED_CLOCK, seed_box=SEED_BOX):
++    with V.SequentialVideoReader(path, start, cfg) as r:
++        thumbs = [f.thumb_sha1 for f in r]
++        contract = P.contract_provenance(r, seed_box, cfg, git=git, clock=clock)
++    side = P.video_provenance_sidecar(r, contract, cfg, frame_thumbs=thumbs)
++    return contract, side
++
++
++class TestProvenance(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.tmp = tempfile.mkdtemp(prefix="rb_prov_")
++        cls.v = SV.write_video(os.path.join(cls.tmp, "clip.avi"), 50, 25.0)
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def test_contract_block_fields(self):
++        cfg = TrackerConfig.default()
++        contract, side = run_once(self.v, 8, cfg)
++        self.assertEqual(set(contract), set(S.PROVENANCE_FIELDS))
++        self.assertEqual(contract["video_sha256"], V.sha256_file(self.v, 4096))
++        self.assertEqual(contract["seed_frame"], 8)
++        self.assertEqual(contract["fps"], 25.0)
++        self.assertEqual(contract["frame_count"], 50)
++        self.assertEqual(contract["decode_mode"], S.DECODE_MODE)
++        self.assertEqual(contract["config_hash"], cfg.config_hash())
++        self.assertEqual(contract["git_commit"], "a" * 40)
++        self.assertEqual(contract["schema_version"], S.V2_SCHEMA_VERSION)
++        self.assertEqual(contract["tracker_version"], __version__)
++        self.assertEqual(contract["models"], [])
++
++    def test_contract_block_fits_r1a_summary(self):
++        cfg = TrackerConfig.default()
++        contract, _ = run_once(self.v, 8, cfg)
++        doc = SD.build_doc(cfg)
++        doc["summary"]["v2"]["provenance"] = dict(contract, fps=doc["summary"]["fps"],
++                                                  seed_frame=doc["summary"]["start_frame"])
++        doc["summary"]["v2"]["config_hash"] = contract["config_hash"]
++        self.assertEqual(S.validate_summary(doc["summary"], require_v2=True), [])
++
++    def test_sidecar_fields(self):
++        cfg = TrackerConfig.default()
++        contract, side = run_once(self.v, 8, cfg)
++        vid = side["video"]
++        for k in ("path", "sha256", "size_bytes", "fps", "frame_width", "frame_height", "frame_count_reported",
++                  "backend", "cv2_version", "seek_mode", "start_frame"):
++            self.assertIn(k, vid)
++        self.assertEqual((vid["frame_width"], vid["frame_height"]), (SV.W, SV.H))
++        al = side["frame_alignment"]
++        self.assertEqual(al["seed_video_frame_index"], 8)
++        self.assertEqual(al["first_logged_frame"], 1)
++        self.assertEqual(al["processed_frames"], 50 - 9)
++        self.assertEqual(al["last_video_frame_index"], 49)
++        self.assertIn("video_frame_index = start_frame + frame", al["frame_index_rule"])
++        self.assertIn("video_time_s = video_frame_index / fps", al["time_rule"])
++        self.assertTrue(side["source_reverified_at_close"])
++        self.assertFalse(side["resume_supported"])
++        self.assertEqual(side["config_hash"], cfg.config_hash())
++
++    def test_config_hash_recorded_and_sensitive(self):
++        a, _ = run_once(self.v, 8, TrackerConfig.default())
++        b, _ = run_once(self.v, 8, TrackerConfig.with_overrides({"seed_min_iou": 0.6}))
++        self.assertNotEqual(a["config_hash"], b["config_hash"])
++        self.assertEqual(b["config_hash"], TrackerConfig.with_overrides({"seed_min_iou": 0.6}).config_hash())
++
++    def test_deterministic_across_runs(self):
++        cfg = TrackerConfig.default()
++        c1, s1 = run_once(self.v, 8, cfg, clock=lambda: "2026-10-24T01:00:00Z")
++        c2, s2 = run_once(self.v, 8, cfg, clock=lambda: "2026-10-24T02:00:00Z")
++        self.assertNotEqual(c1["run_started_utc"], c2["run_started_utc"])
++        self.assertEqual(P.deterministic_digest(s1), P.deterministic_digest(s2))
++        self.assertEqual(s1["frame_alignment"]["frame_thumbs_sha256"], s2["frame_alignment"]["frame_thumbs_sha256"])
++        self.assertEqual(S.dumps_canonical(P._strip_nondeterministic(s1)),
++                         S.dumps_canonical(P._strip_nondeterministic(s2)))
++
++    def test_digest_detects_real_differences(self):
++        cfg = TrackerConfig.default()
++        _, s1 = run_once(self.v, 8, cfg)
++        _, s2 = run_once(self.v, 9, cfg)
++        self.assertNotEqual(P.deterministic_digest(s1), P.deterministic_digest(s2))
++
++    def test_git_failure_fails_closed(self):
++        def broken():
++            raise P.ProvenanceError("no git")
++        with self.assertRaises(P.ProvenanceError):
++            run_once(self.v, 8, TrackerConfig.default(), git=broken)
++
++    def test_real_git_state_of_this_tree(self):
++        head, dirty = P.git_state()
++        self.assertEqual(len(head), 40)
++        self.assertIsInstance(dirty, bool)
++
++    def test_git_state_outside_repo_fails_closed(self):
++        with self.assertRaises(P.ProvenanceError):
++            P.git_state(self.tmp)
++
++    def test_dirty_tree_recorded(self):
++        contract, _ = run_once(self.v, 8, TrackerConfig.default(), git=lambda: ("b" * 40, True))
++        self.assertTrue(contract["git_dirty"])
++
++    def test_bad_seed_bbox_fails_closed(self):
++        for box in ([0, 0, 0, 10], [50, 5, 10, 90], [-1, 0, 10, 10], [0, 0, SV.W + 1, 10], [1, 2, 3], ["a", 0, 1, 1]):
++            with self.subTest(box=box):
++                with self.assertRaises(P.ProvenanceError):
++                    run_once(self.v, 8, TrackerConfig.default(), seed_box=box)
++
++    def test_model_records_must_be_complete(self):
++        cfg = TrackerConfig.default()
++        with V.SequentialVideoReader(self.v, 0, cfg) as r:
++            with self.assertRaises(P.ProvenanceError):
++                P.contract_provenance(r, SEED_BOX, cfg, models=[{"role": "detector", "filename": "x.onnx"}],
++                                      git=FIXED_GIT, clock=FIXED_CLOCK)
++
++    def test_sidecar_refused_without_close_verification(self):
++        cfg = TrackerConfig.default()
++        r = V.SequentialVideoReader(self.v, 0, cfg)
++        contract = P.contract_provenance(r, SEED_BOX, cfg, git=FIXED_GIT, clock=FIXED_CLOCK)
++        with self.assertRaises(P.ProvenanceError):
++            P.video_provenance_sidecar(r, contract, cfg)
++        r.close(verify=False)
++        with self.assertRaises(P.ProvenanceError):
++            P.video_provenance_sidecar(r, contract, cfg)
++
++    def test_write_sidecar_canonical_and_no_overwrite(self):
++        cfg = TrackerConfig.default()
++        _, side = run_once(self.v, 8, cfg)
++        out = tempfile.mkdtemp(dir=self.tmp)
++        path = P.sidecar_path(out, self.v)
++        self.assertTrue(path.endswith("clip" + P.SIDECAR_SUFFIX))
++        digest = P.write_sidecar(side, path)
++        self.assertEqual(json.load(open(path)), json.loads(S.dumps_canonical(side)))
++        self.assertEqual(len(digest), 64)
++        with self.assertRaises(P.ProvenanceError):
++            P.write_sidecar(side, path)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_video_io.py b/tests_rb/test_video_io.py
+new file mode 100644
+index 0000000..f8171cf
+--- /dev/null
++++ b/tests_rb/test_video_io.py
+@@ -0,0 +1,352 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-B instruction (Nathan, 2026-10-24, required tests); R0/R0_TRACKER_INTERFACE_MAP.md §1.10-§1.11;
++#                 fixtures/historical_contract (frozen 3N Pass-1 JSONs: frame_log numbering)
++"""Tests for player_tracker_rb.video_io: start frame, sequential progression, numbering, time mapping, fps,
++failure modes, source hashing, single positioning, source-change detection and absence of resume."""
++import hashlib
++import inspect
++import json
++import os
++import shutil
++import tempfile
++import unittest
++
++import cv2
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb import video_io as V
++from player_tracker_rb.config import ConfigError, TrackerConfig
++from tests_rb import _synth_video as SV
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++HIST = os.path.join(ROOT, "fixtures", "historical_contract")
++GOLD_JSON = os.path.join(HIST, "GOLD_DUEL_01_syo_mar_3036_3048_mo_tracking_results.json")
++PC_JSON = os.path.join(HIST, "f5bd8ce0-pass_completed_01_mo_tracking_results.json")
++
++
++def cfg(**over):
++    return TrackerConfig.with_overrides(over)
++
++
++class _Base(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.tmp = tempfile.mkdtemp(prefix="rb_video_")
++        cls.v30 = SV.write_video(os.path.join(cls.tmp, "v30.avi"), 60, 30.0)
++        cls.v25 = SV.write_video(os.path.join(cls.tmp, "v25.avi"), 40, 25.0)
++        cls.v2997 = SV.write_video(os.path.join(cls.tmp, "v2997.avi"), 40, 29.97)
++        cls.v56 = SV.write_video(os.path.join(cls.tmp, "v56.avi"), 40, 56.502242152466366)
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def read_all(self, path, start, c=None, **kw):
++        with V.SequentialVideoReader(path, start, c or cfg(), **kw) as r:
++            frames = list(r)
++            seed = r.seed
++            info = r.info
++            summary = r.alignment_summary()
++        return seed, frames, info, summary, r
++
++
++class TestStartAndSequence(_Base):
++    def test_seed_is_start_frame_both_seek_modes(self):
++        for mode in ("decode_from_zero", "container_seek"):
++            for start in (0, 1, 7, 30, 59):
++                with self.subTest(mode=mode, start=start):
++                    with V.SequentialVideoReader(self.v30, start, cfg(seek_mode=mode)) as r:
++                        self.assertEqual(r.seed.rel_frame, 0)
++                        self.assertEqual(r.seed.video_frame_index, start)
++                        self.assertEqual(SV.read_index(r.seed.image), start)
++
++    def test_first_logged_step_is_next_frame_and_sequence_is_contiguous(self):
++        seed, frames, info, summ, _ = self.read_all(self.v30, 10)
++        self.assertEqual([f.rel_frame for f in frames], list(range(1, 60 - 10)))
++        self.assertEqual([f.video_frame_index for f in frames], list(range(11, 60)))
++        self.assertEqual([SV.read_index(f.image) for f in frames], list(range(11, 60)))   # decoded content
++        self.assertEqual(summ["first_logged_frame"], 1)
++        self.assertEqual(summ["processed_frames"], 49)
++        self.assertEqual(summ["last_video_frame_index"], 59)
++        self.assertTrue(summ["eof_reached"])
++
++    def test_no_duplicate_or_skipped_frames(self):
++        _, frames, _, _, _ = self.read_all(self.v30, 0)
++        rel = [f.rel_frame for f in frames]
++        self.assertEqual(len(rel), len(set(rel)))
++        self.assertEqual(rel, list(range(1, len(rel) + 1)))
++        content = [SV.read_index(f.image) for f in frames]
++        self.assertEqual(content, [f.video_frame_index for f in frames])
++
++    def test_seek_modes_decode_identical_frames(self):
++        a = self.read_all(self.v30, 23, cfg(seek_mode="decode_from_zero"))
++        b = self.read_all(self.v30, 23, cfg(seek_mode="container_seek"))
++        self.assertEqual(a[0].thumb_sha1, b[0].thumb_sha1)
++        self.assertEqual([f.thumb_sha1 for f in a[1]], [f.thumb_sha1 for f in b[1]])
++
++    def test_max_frames_cap(self):
++        _, frames, _, summ, _ = self.read_all(self.v30, 5, cfg(max_frames=7))
++        self.assertEqual([f.rel_frame for f in frames], list(range(1, 8)))
++        self.assertFalse(summ["eof_reached"])
++
++    def test_iterate_only_once(self):
++        with V.SequentialVideoReader(self.v30, 0, cfg(max_frames=3)) as r:
++            list(r)
++            with self.assertRaises(V.VideoError):
++                iter(r)
++
++
++class _CountingCapture:
++    """Wraps cv2.VideoCapture and records every set() call (positioning)."""
++    instances = []
++
++    def __init__(self, path):
++        self._c = cv2.VideoCapture(path)
++        self.set_calls = []
++        _CountingCapture.instances.append(self)
++
++    def set(self, prop, value):
++        self.set_calls.append((prop, value))
++        return self._c.set(prop, value)
++
++    def __getattr__(self, name):
++        return getattr(self._c, name)
++
++
++class TestSinglePositioning(_Base):
++    def test_no_seek_during_run(self):
++        for mode, expected_sets in (("decode_from_zero", 0), ("container_seek", 1)):
++            with self.subTest(mode=mode):
++                _CountingCapture.instances.clear()
++                _, frames, _, summ, r = self.read_all(self.v30, 12, cfg(seek_mode=mode),
++                                                      capture_factory=_CountingCapture)
++                cap = _CountingCapture.instances[-1]
++                self.assertEqual(len(cap.set_calls), expected_sets)
++                self.assertEqual(summ["container_seek_calls"], expected_sets)
++                self.assertEqual(len(frames), 60 - 13)
++
++
++class TestTimeMapping(_Base):
++    def test_time_mapping_30_and_non_30_fps(self):
++        for path, fps in ((self.v30, 30.0), (self.v25, 25.0), (self.v2997, 29.97), (self.v56, 56.502)):
++            with self.subTest(fps=fps):
++                seed, frames, info, summ, _ = self.read_all(path, 4)
++                self.assertAlmostEqual(info.fps, fps, places=3)
++                for f in [seed] + frames:
++                    self.assertEqual(f.video_frame_index, 4 + f.rel_frame)
++                    self.assertEqual(f.video_time_s, f.video_frame_index / info.fps)
++                    self.assertEqual(f.rel_time_s, f.rel_frame / info.fps)
++                    if f.pos_msec_reported is not None:
++                        self.assertAlmostEqual(f.pos_msec_reported / 1000.0, f.video_time_s, delta=0.5 / info.fps)
++                self.assertEqual(summ["timing_drift_warnings"], 0)
++
++    def test_legacy_snapshot_timestamp_is_relative(self):
++        # event_adapter writes timestamp = round(frame_number / fps, 4) with frame_number = frame_log frame.
++        seed, frames, info, _, _ = self.read_all(self.v25, 10)
++        dp = cfg().get("timestamp_round_dp")
++        for f in frames:
++            self.assertEqual(round(f.rel_time_s, dp), round(f.rel_frame / info.fps, dp))
++
++
++class TestFailureModes(_Base):
++    def test_invalid_paths(self):
++        for p in ("", os.path.join(self.tmp, "missing.mp4"), self.tmp):
++            with self.subTest(path=p):
++                with self.assertRaises(V.VideoNotFoundError):
++                    V.SequentialVideoReader(p, 0, cfg())
++
++    def test_unreadable_files(self):
++        junk = os.path.join(self.tmp, "junk.mp4")
++        with open(junk, "wb") as f:
++            f.write(os.urandom(4096))
++        empty = os.path.join(self.tmp, "empty.mp4")
++        open(empty, "wb").close()
++        for p in (junk, empty):
++            with self.subTest(path=os.path.basename(p)):
++                with self.assertRaises(V.VideoUnreadableError):
++                    V.SequentialVideoReader(p, 0, cfg())
++
++    def test_start_frame_out_of_range(self):
++        for mode in ("decode_from_zero", "container_seek"):
++            for start in (60, 61, 10_000):
++                with self.subTest(mode=mode, start=start):
++                    with self.assertRaises(V.StartFrameOutOfRangeError):
++                        V.SequentialVideoReader(self.v30, start, cfg(seek_mode=mode))
++        for bad in (-1, 1.5, "3", True, None):
++            with self.subTest(bad=bad):
++                with self.assertRaises(V.StartFrameOutOfRangeError):
++                    V.SequentialVideoReader(self.v30, bad, cfg())
++
++    def test_start_frame_beyond_stream_when_count_unknown(self):
++        class NoCount(_CountingCapture):
++            def get(self, prop):
++                if prop == cv2.CAP_PROP_FRAME_COUNT:
++                    return -1.0
++                return self._c.get(prop)
++        with self.assertRaises(V.StartFrameOutOfRangeError):
++            V.SequentialVideoReader(self.v30, 75, cfg(), capture_factory=NoCount)
++
++    def test_hash_mismatch_refused(self):
++        with self.assertRaises(V.SourceHashMismatchError):
++            V.SequentialVideoReader(self.v30, 0, cfg(), expected_sha256="0" * 64)
++
++
++class TestSourceHashing(_Base):
++    def test_sha256_recorded(self):
++        want = hashlib.sha256(open(self.v30, "rb").read()).hexdigest()
++        with V.SequentialVideoReader(self.v30, 0, cfg(), expected_sha256=want) as r:
++            self.assertEqual(r.info.sha256, want)
++            self.assertEqual(r.info.size_bytes, os.path.getsize(self.v30))
++        self.assertTrue(r.source_verified_at_close)
++
++    def test_chunk_size_does_not_change_hash(self):
++        a = V.sha256_file(self.v30, 4096)
++        b = V.sha256_file(self.v30, 1048576)
++        self.assertEqual(a, b)
++
++
++class TestSourceChangeFailsClosed(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.mkdtemp(prefix="rb_change_")
++        self.v = SV.write_video(os.path.join(self.tmp, "v.avi"), 30, 30.0)
++
++    def tearDown(self):
++        shutil.rmtree(self.tmp, ignore_errors=True)
++
++    def test_change_during_iteration(self):
++        r = V.SequentialVideoReader(self.v, 0, cfg())
++        it = iter(r)
++        next(it)
++        with open(self.v, "ab") as f:
++            f.write(b"x")
++        with self.assertRaises(V.SourceChangedError):
++            next(it)
++        r.close(verify=False)
++
++    def test_same_size_content_change_detected_at_close(self):
++        r = V.SequentialVideoReader(self.v, 0, cfg(max_frames=2))
++        list(r)
++        st = os.stat(self.v)
++        data = bytearray(open(self.v, "rb").read())
++        data[-1] ^= 0xFF
++        with open(self.v, "wb") as f:
++            f.write(data)
++        os.utime(self.v, ns=(st.st_atime_ns, st.st_mtime_ns))     # same size and mtime: only the hash can tell
++        with self.assertRaises(V.SourceChangedError):
++            r.close()
++        self.assertFalse(r.source_verified_at_close)
++
++    def test_deleted_source_detected(self):
++        r = V.SequentialVideoReader(self.v, 0, cfg())
++        it = iter(r)
++        next(it)
++        os.remove(self.v)
++        with self.assertRaises(V.SourceChangedError):
++            next(it)
++        r.close(verify=False)
++
++
++class TestNoResume(_Base):
++    def test_no_resume_or_checkpoint_api(self):
++        sig = inspect.signature(V.SequentialVideoReader.__init__)
++        for name in sig.parameters:
++            self.assertNotIn("resume", name.lower())
++            self.assertNotIn("checkpoint", name.lower())
++        for mod in (V,):
++            for name, _ in inspect.getmembers(mod):
++                self.assertNotIn("resume", name.lower())
++                self.assertNotIn("checkpoint", name.lower())
++        for name, _ in inspect.getmembers(V.SequentialVideoReader):
++            self.assertNotIn("resume", name.lower())
++            self.assertNotIn("checkpoint", name.lower())
++
++    def test_resume_cannot_be_enabled(self):
++        with self.assertRaises(ConfigError):
++            TrackerConfig.with_overrides({"resume_allowed": True})
++        with self.assertRaises(TypeError):
++            V.SequentialVideoReader(self.v30, 0, cfg(), resume=True)
++
++    def test_reader_writes_nothing(self):
++        before = sorted(os.listdir(self.tmp))
++        self.read_all(self.v30, 3)
++        self.assertEqual(sorted(os.listdir(self.tmp)), before)
++
++
++class TestFrameLogNumberingContract(_Base):
++    """Relative numbering against the recovered Pass-1 schema (frozen 3N exemplars)."""
++
++    def test_numbering_matches_frozen_exemplars(self):
++        for path in (GOLD_JSON, PC_JSON):
++            with self.subTest(os.path.basename(path)):
++                d = json.load(open(path))
++                start, n = d["summary"]["start_frame"], d["summary"]["processed_frames"]
++                hist_frames = [fr["frame"] for fr in d["frame_log"]]
++                self.assertEqual(hist_frames, list(range(1, n + 1)))
++                # A synthetic video long enough to contain the same span, read by R1-B, must produce the same
++                # frame numbers: seed = start_frame (not logged), then 1..n.
++                vid = SV.write_video(os.path.join(self.tmp, f"span_{start}_{n}.avi"), start + n + 1, 30.0)
++                with V.SequentialVideoReader(vid, start, cfg(max_frames=n)) as r:
++                    frames = list(r)
++                    self.assertEqual(r.seed.video_frame_index, start)
++                self.assertEqual([f.rel_frame for f in frames], hist_frames)
++                self.assertEqual([SV.read_index(f.image) for f in frames], [start + f for f in hist_frames])
++
++    def test_frames_build_valid_frame_records(self):
++        c = cfg()
++        _, frames, info, _, _ = self.read_all(self.v30, 20, c)
++        for f in frames:
++            rec = S.build_frame_record(c, frame=f.rel_frame, is_cut=False, camera_shift_px=[0.0, 0.0],
++                                       n_detections=0, overlap_contests=[], tracks=[],
++                                       v2={"video_frame_index": f.video_frame_index, "timestamp_s": f.video_time_s,
++                                           "frame_thumb_sha1": f.thumb_sha1, "cut_detected": False,
++                                           "camera_shift_h": None, "target_height_px": None})
++            self.assertEqual(S.validate_frame_record(rec, require_v2=False), [])
++            self.assertEqual(rec["v2"]["video_frame_index"], 20 + rec["frame"])
++
++
++class TestFingerprint(_Base):
++    def test_fingerprint_reproducible_and_distinct(self):
++        a = self.read_all(self.v30, 0)[1]
++        b = self.read_all(self.v30, 0)[1]
++        self.assertEqual([f.thumb_sha1 for f in a], [f.thumb_sha1 for f in b])
++        self.assertEqual(len({f.thumb_sha1 for f in a}), len(a))   # synthetic frames all differ
++
++    def test_fingerprint_depends_on_documented_settings(self):
++        img = SV.make_frame(5)
++        x = V.frame_fingerprint(img, cfg())
++        y = V.frame_fingerprint(img, cfg(frame_thumbnail_size=(32, 18)))
++        self.assertNotEqual(x, y)
++        self.assertEqual(x, V.frame_fingerprint(img.copy(), cfg()))
++        m = V.fingerprint_method(cfg())
++        self.assertIn("alignment", m["purpose"])
++        self.assertIn("not an identity", m["purpose"])
++
++
++GOLD_FIXTURE = os.path.join(ROOT, "fixtures", "GOLD_DUEL_01", "GOLD_DUEL_01_BENCHMARK_FIXTURE.json")
++
++
++@unittest.skipUnless(os.environ.get("SPANA_GOLD_VIDEO") and os.path.isfile(os.environ.get("SPANA_GOLD_VIDEO", "")),
++                     "set SPANA_GOLD_VIDEO to the GOLD extract to run the real-video alignment test")
++class TestGoldVideoAlignment(unittest.TestCase):
++    """GOLD used only as a video/frame-alignment fixture: sha256, fps, size, seed frame. No event fields read."""
++
++    def test_gold_seed_and_first_frames(self):
++        fx = json.load(open(GOLD_FIXTURE))
++        path = os.environ["SPANA_GOLD_VIDEO"]
++        out = {}
++        for mode in ("decode_from_zero", "container_seek"):
++            with V.SequentialVideoReader(path, fx["seed_frame"], cfg(seek_mode=mode, max_frames=30),
++                                         expected_sha256=fx["video_sha256"]) as r:
++                frames = list(r)
++                out[mode] = (r.seed.thumb_sha1, [f.thumb_sha1 for f in frames], r.info)
++        info = out["decode_from_zero"][2]
++        self.assertEqual(info.fps, fx["fps"])
++        self.assertEqual((info.frame_width, info.frame_height), (fx["width"], fx["height"]))
++        self.assertEqual(info.frame_count_reported, fx["frame_count"])
++        self.assertEqual(out["decode_from_zero"][0], out["container_seek"][0])
++        self.assertEqual(out["decode_from_zero"][1], out["container_seek"][1])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tools_rb/video_provenance_check.py b/tools_rb/video_provenance_check.py
+new file mode 100644
+index 0000000..4db4015
+--- /dev/null
++++ b/tools_rb/video_provenance_check.py
+@@ -0,0 +1,93 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-B instruction (GOLD may be used only as a video/provenance/frame-alignment fixture);
++#                 player_tracker_rb/video_io.py, player_tracker_rb/provenance.py
++"""Run the R1-B video/provenance layer on a real clip, twice, and check alignment and determinism.
++
++Reads ONLY these fixture fields: video_sha256, seed_frame, seed_bbox, fps, frame_count, width, height.
++Event fields (expected event, outcome, label window) are never read.
++
++Checks:
++  1. run A and run B (seek_mode decode_from_zero): identical deterministic digest and per-frame fingerprints;
++  2. run C (seek_mode container_seek): identical per-frame fingerprints to run A (no seek misregistration);
++  3. the fixture's fps / frame count / frame size / sha256 agree with what the reader measured;
++  4. frame numbering: frames 1..N map to video frames seed+1..seed+N with no gaps.
++Writes the run-A sidecar and a check report into OUT_DIR (refuses to overwrite).
++
++Usage: python3 tools_rb/video_provenance_check.py VIDEO FIXTURE_JSON OUT_DIR
++"""
++import json
++import os
++import sys
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from player_tracker_rb import output_schema as S  # noqa: E402
++from player_tracker_rb import provenance as P  # noqa: E402
++from player_tracker_rb import video_io as V  # noqa: E402
++from player_tracker_rb.config import TrackerConfig  # noqa: E402
++
++FIXTURE_FIELDS_USED = ("video_sha256", "seed_frame", "seed_bbox", "fps", "frame_count", "width", "height")
++
++
++def run(video, fx, cfg):
++    with V.SequentialVideoReader(video, fx["seed_frame"], cfg, expected_sha256=fx["video_sha256"]) as r:
++        frames = [(f.rel_frame, f.video_frame_index, f.thumb_sha1) for f in r]
++        contract = P.contract_provenance(r, fx["seed_bbox"], cfg)
++    side = P.video_provenance_sidecar(r, contract, cfg, frame_thumbs=[t for _, _, t in frames])
++    return r, frames, contract, side
++
++
++def main(video, fixture_json, out_dir):
++    full = json.load(open(fixture_json))
++    fx = {k: full[k] for k in FIXTURE_FIELDS_USED}
++    os.makedirs(out_dir, exist_ok=True)
++    base = TrackerConfig.default()
++    rA, fA, cA, sA = run(video, fx, base)
++    rB, fB, cB, sB = run(video, fx, base)
++    rC, fC, cC, sC = run(video, fx, TrackerConfig.with_overrides({"seek_mode": "container_seek"}))
++    seed = fx["seed_frame"]
++    n = len(fA)
++    checks = {
++        "A_vs_B_deterministic_digest_equal": P.deterministic_digest(sA) == P.deterministic_digest(sB),
++        "A_vs_B_frame_thumbs_equal": fA == fB,
++        "A_vs_B_seed_thumb_equal": rA.seed.thumb_sha1 == rB.seed.thumb_sha1,
++        "A_decode_from_zero_vs_C_container_seek_frame_thumbs_equal": [t for *_, t in fA] == [t for *_, t in fC],
++        "A_vs_C_seed_thumb_equal": rA.seed.thumb_sha1 == rC.seed.thumb_sha1,
++        "frames_are_1_to_N": [f for f, _, _ in fA] == list(range(1, n + 1)),
++        "video_index_is_seed_plus_frame": all(v == seed + f for f, v, _ in fA),
++        "fixture_fps_matches": abs(rA.info.fps - fx["fps"]) < 1e-9,
++        "fixture_frame_count_matches": rA.info.frame_count_reported == fx["frame_count"],
++        "fixture_frame_size_matches": (rA.info.frame_width, rA.info.frame_height) == (fx["width"], fx["height"]),
++        "fixture_sha256_matches": rA.info.sha256 == fx["video_sha256"],
++        "processed_frames_is_frame_count_minus_seed_minus_1": n == fx["frame_count"] - seed - 1,
++        "eof_reached": rA.eof_reached,
++        "no_timing_drift_warnings": rA.timing_drift_warnings == 0,
++        "source_reverified_at_close_all_runs": all(x.source_verified_at_close for x in (rA, rB, rC)),
++        "container_seek_calls_A_B_C": [rA.seek_calls, rB.seek_calls, rC.seek_calls] == [0, 0, 1],
++    }
++    sidecar_file = P.sidecar_path(out_dir, video)
++    sidecar_sha = P.write_sidecar(sA, sidecar_file)
++    report = {
++        "tool": "tools_rb/video_provenance_check.py",
++        "fixture": os.path.basename(fixture_json), "fixture_fields_used": list(FIXTURE_FIELDS_USED),
++        "event_fields_read": False,
++        "deterministic_digest_A": P.deterministic_digest(sA), "deterministic_digest_B": P.deterministic_digest(sB),
++        "frame_thumbs_sha256_A": sA["frame_alignment"]["frame_thumbs_sha256"],
++        "frame_thumbs_sha256_C": sC["frame_alignment"]["frame_thumbs_sha256"],
++        "seed_thumb_sha1": rA.seed.thumb_sha1, "processed_frames": n,
++        "timing_drift_max_frames": rA.timing_drift_max_frames,
++        "config_hash": cA["config_hash"], "git_commit": cA["git_commit"], "git_dirty": cA["git_dirty"],
++        "sidecar_file": os.path.basename(sidecar_file), "sidecar_sha256": sidecar_sha,
++        "checks": checks, "all_checks_pass": all(checks.values()),
++    }
++    report_path = os.path.join(out_dir, "VIDEO_PROVENANCE_CHECK.json")
++    if os.path.exists(report_path):
++        raise SystemExit(f"refusing to overwrite {report_path}")
++    with open(report_path, "x") as f:
++        f.write(S.dumps_canonical(report))
++    print(json.dumps(report, indent=2, sort_keys=True))
++    return 0 if report["all_checks_pass"] else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main(*sys.argv[1:4]))

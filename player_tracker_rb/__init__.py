@@ -9,6 +9,6 @@ the historical Pass-1 JSON contract (see output_schema) and adds clearly labelle
 Allowed imports: Python standard library, numpy, cv2, onnxruntime, and this package. Never football_analysis,
 player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ (D02, D21).
 
-Stage R1-A (this commit): config and output_schema only. No tracking logic yet.
+Stages so far: R1-A (config, output_schema) and R1-B (video_io, provenance). No tracking logic yet.
 """
-__version__ = "0.1.0-r1a"
+__version__ = "0.2.0-r1b"

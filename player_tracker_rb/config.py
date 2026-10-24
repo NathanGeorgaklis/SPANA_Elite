@@ -40,7 +40,10 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1a-1"
+CONFIG_REGISTRY_VERSION = "r1b-1"
+
+# Unit constants (definitions, not tunable behaviour).
+MS_PER_SECOND = 1000.0
 
 # ---------------------------------------------------------------------------------------------
 # Vocabularies used by the registry itself
@@ -163,6 +166,25 @@ PARAMS: Tuple[Param, ...] = (
        "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
        "historical default 450 (run_mo); R1 processes the whole clip unless capped", 1, None,
        historical_value=450),
+    _p("seek_mode", "str", "name",
+       "How the reader reaches start_frame. decode_from_zero decodes and discards frames 0..start_frame-1 "
+       "(no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the "
+       "reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",
+       "decode_from_zero", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
+       "D20; F15 (a container-level resume on .mov landed +10 frames late); tools_rb/make_gold_label_sheet.py "
+       "already decodes from frame 0 for this reason", allowed=("decode_from_zero", "container_seek")),
+    _p("hash_chunk_bytes", "int", "bytes", "Read size used when hashing the source video with SHA-256.", 1048576,
+       N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B provenance (performance only)", 4096,
+       268435456),
+    _p("fingerprint_interpolation", "str", "OpenCV interpolation name",
+       "Resize method for the frame-content fingerprint thumbnail (debugging/alignment only).", "INTER_AREA", N,
+       "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B frame fingerprint (R1/R1B/FRAME_FINGERPRINT.md)",
+       allowed=("INTER_AREA", "INTER_LINEAR", "INTER_NEAREST")),
+    _p("timing_drift_tolerance_frames", "float", "frames",
+       "If the container's reported timestamp differs from video_frame_index / fps by more than this many "
+       "frame periods, the frame is counted as a timing-drift warning (variable frame rate suspected).", 0.5, N,
+       "DESIGN_CHOICE", UNV, "RUNTIME", "video", "R1-B video-time mapping (constant-fps assumption check)",
+       0.0, 1000.0),
 
     # ---- detector (D03, D17) -----------------------------------------------------------------
     _p("detector_backend", "str", "name", "Person detector backend.", "yolox_onnx", N, "DESIGN_CHOICE",
