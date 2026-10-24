@@ -1,0 +1,84 @@
+{
+  "bytes": 2331,
+  "errors": [],
+  "fps": 30.0,
+  "frozen_at_utc": "2026-10-24T03:23:22.772679+00:00",
+  "labels_csv": "GOLD_HUMAN_LABELS_v1.csv",
+  "rule": "Do not modify this label file. Corrections require GOLD_HUMAN_LABELS_v2.csv.",
+  "sha256": "490a8af14005b09e2302fea81b9831b0e702958620a4508f33cdaae7bcb0d428",
+  "status": "FROZEN",
+  "summary": {
+    "first_clean_reappearance": [
+      273
+    ],
+    "human_uncertain_by_field": {
+      "mar4_visibility": [],
+      "merged_or_hidden": [],
+      "overlap_23_4": [],
+      "t23_visibility": []
+    },
+    "human_uncertain_frames": [],
+    "merged_frames": [
+      262,
+      263,
+      264,
+      265,
+      269,
+      270,
+      271,
+      272
+    ],
+    "n_frames": 41,
+    "overlap_frames": [
+      261,
+      262,
+      263,
+      264,
+      265,
+      266,
+      267,
+      268,
+      269,
+      270,
+      271,
+      272
+    ],
+    "t23_hidden_behind_4_frames": [
+      266,
+      267,
+      268
+    ],
+    "t23_hidden_frames": [
+      264,
+      265,
+      266,
+      267,
+      268
+    ],
+    "t23_identity_not_resolvable": [
+      266,
+      267,
+      268
+    ],
+    "t23_partial_frames": [
+      258,
+      259,
+      260,
+      261,
+      262,
+      263
+    ],
+    "t23_visibility_counts": {
+      "HIDDEN": 5,
+      "HUMAN_UNCERTAIN": 0,
+      "OUT_OF_FRAME": 0,
+      "PARTIAL": 6,
+      "VISIBLE": 30
+    }
+  },
+  "valid": true,
+  "window": [
+    250,
+    290
+  ]
+}
