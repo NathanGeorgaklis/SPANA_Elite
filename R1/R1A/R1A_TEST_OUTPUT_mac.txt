@@ -1,0 +1,81 @@
+# R1-A test run on Mac: 2026-10-24T05:41:01Z
+Python 3.10.12
+numpy 2.2.6 cv2 5.0.0
+test_hash_deterministic_and_sensitive (tests_rb.test_config.TestHashing) ... ok
+test_record_is_json_safe (tests_rb.test_config.TestHashing) ... ok
+test_defaults_pass_their_own_checks (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_every_param_documents_itself (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_historical_values_match_r0_constants_registry (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_names_unique (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_new_behavioural_values_are_not_claimed_validated (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_new_params_with_historical_counterparts_record_them (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_no_historical_fast_path_parameter_is_usable (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_reference_only_params_are_historical (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_time_params_are_seconds_and_geometry_in_h (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_h_conversions (tests_rb.test_config.TestUnits) ... ok
+test_same_duration_at_different_fps (tests_rb.test_config.TestUnits) ... ok
+test_seconds_to_frames (tests_rb.test_config.TestUnits) ... ok
+test_cross_checks (tests_rb.test_config.TestValidation) ... ok
+test_default_builds (tests_rb.test_config.TestValidation) ... ok
+test_immutable (tests_rb.test_config.TestValidation) ... ok
+test_reference_only_cannot_be_overridden (tests_rb.test_config.TestValidation) ... ok
+test_type_range_allowed_checks (tests_rb.test_config.TestValidation) ... ok
+test_unknown_override_rejected (tests_rb.test_config.TestValidation) ... ok
+test_valid_override_recorded (tests_rb.test_config.TestValidation) ... ok
+test_detection_confidence_is_quantised_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_exemplars_are_not_r1_documents (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_exemplars_validate_as_historical_contract (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_field_lists_match_exemplars_exactly (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_historical_rejections (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_selected_confidence_rule_matches_exemplars (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_strip_v2_is_identity_on_historical (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_target_triples_were_all_observed_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_detection_confidence_must_stay_quantised (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_final_tracks_carry_no_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_frame_numbering (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_held_box_reported_as_observed (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_held_box_written_as_confirmed_detection (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_merged_detection_cannot_be_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_non_historical_key_outside_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_one_selected_record_per_frame (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_population_record_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_processed_frames_must_match (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_provenance_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_reacquisition_events_must_match_episodes (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_target_id_must_stay_t001 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_trusted_identity_requires_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_unknown_reason_rejected (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_untrusted_identity_above_actor_attribution_threshold (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_untrusted_needs_a_reason (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_all_states_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_builder_refuses_bad_input (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_canonical_dump_deterministic (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_rounding_matches_historical_precision (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_strip_v2_leaves_valid_historical_document (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_synthetic_document_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_mapping_table_consistent (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_only_tracking_reaches_legacy_tracking (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_r1_state_mapping (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_rebuild_header_everywhere (tests_rb.test_package_hygiene.TestHeaders) ... ok
+test_package_imports_only_allowed_modules (tests_rb.test_package_hygiene.TestImports) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/config.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:64: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_no_numeric_thresholds_outside_config (tests_rb.test_package_hygiene.TestNoMagicNumbers) ... /sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:87: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 0.874s
+
+OK

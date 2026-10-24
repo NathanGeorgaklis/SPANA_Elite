@@ -1,0 +1,96 @@
+# SPANA engine v2-rebuild
+# REBUILT 2026-10 — NOT ORIGINAL SOURCE
+# Evidence basis: R1/R1_DESIGN_DECISIONS.md D02, D21; R1/R1_APPROVALS.md (rebuild header; no hidden magic thresholds)
+"""Package hygiene for player_tracker_rb:
+
+* every new Python file (player_tracker_rb/, tests_rb/, tools_rb/) carries the rebuild header;
+* no imports from the historical packages, the event engine or recovered/ (D02), and no runtime dependency
+  beyond the standard library, numpy, cv2 and onnxruntime (D21);
+* no numeric literal in tracker code outside config.py, apart from a small structural allow-list (box length,
+  0/1, percentages). A behavioural threshold must be a config parameter.
+"""
+import ast
+import os
+import sys
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PKG = os.path.join(ROOT, "player_tracker_rb")
+HEADER = ("# SPANA engine v2-rebuild", "# REBUILT 2026-10 — NOT ORIGINAL SOURCE", "# Evidence basis:")
+FORBIDDEN_TOP = {"football_analysis", "player_tracker", "player_tracker_mo", "event_engine_v1", "recovered",
+                 "ultralytics", "torch", "torchvision", "scipy", "sklearn", "easyocr", "new_tracker_snapshots"}
+ALLOWED_THIRD_PARTY = {"numpy", "cv2", "onnxruntime"}
+# Structural numbers only: identity values, box/pair lengths, percent scale.
+ALLOWED_LITERALS = {0, 1, -1, 2, 4, 0.0, 1.0, -1.0, 100.0}
+
+
+def _py_files(*dirs):
+    for d in dirs:
+        full = os.path.join(ROOT, d)
+        for dirpath, _, files in os.walk(full):
+            if "__pycache__" in dirpath:
+                continue
+            for f in sorted(files):
+                if f.endswith(".py"):
+                    yield os.path.join(dirpath, f)
+
+
+def _stdlib():
+    names = getattr(sys, "stdlib_module_names", None)
+    if names:
+        return set(names)
+    return {"abc", "argparse", "ast", "collections", "copy", "csv", "dataclasses", "datetime", "functools",
+            "hashlib", "io", "itertools", "json", "math", "os", "pathlib", "platform", "re", "shutil", "statistics",
+            "subprocess", "sys", "tempfile", "time", "types", "typing", "unittest", "__future__", "warnings"}
+
+
+class TestHeaders(unittest.TestCase):
+    def test_rebuild_header_everywhere(self):
+        files = list(_py_files("player_tracker_rb", "tests_rb", "tools_rb"))
+        self.assertTrue(files)
+        for path in files:
+            with self.subTest(os.path.relpath(path, ROOT)):
+                with open(path, encoding="utf-8") as f:
+                    head = [f.readline().rstrip("\n") for _ in range(3)]
+                self.assertEqual(head[0], HEADER[0])
+                self.assertEqual(head[1], HEADER[1])
+                self.assertTrue(head[2].startswith(HEADER[2]) and len(head[2]) > len(HEADER[2]) + 3)
+
+
+class TestImports(unittest.TestCase):
+    def test_package_imports_only_allowed_modules(self):
+        std = _stdlib()
+        for path in _py_files("player_tracker_rb"):
+            tree = ast.parse(open(path, encoding="utf-8").read())
+            for node in ast.walk(tree):
+                mods = []
+                if isinstance(node, ast.Import):
+                    mods = [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level and node.level > 0:
+                        continue  # relative import inside the package
+                    mods = [node.module or ""]
+                for m in mods:
+                    top = m.split(".")[0]
+                    with self.subTest(file=os.path.basename(path), module=m):
+                        self.assertNotIn(top, FORBIDDEN_TOP)
+                        self.assertTrue(top in std or top in ALLOWED_THIRD_PARTY or top == "player_tracker_rb",
+                                        f"unexpected dependency {m}")
+
+
+class TestNoMagicNumbers(unittest.TestCase):
+    def test_no_numeric_thresholds_outside_config(self):
+        offenders = []
+        for path in _py_files("player_tracker_rb"):
+            if os.path.basename(path) == "config.py":
+                continue
+            tree = ast.parse(open(path, encoding="utf-8").read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
+                        and not isinstance(node.value, bool) and node.value not in ALLOWED_LITERALS:
+                    offenders.append(f"{os.path.basename(path)}:{node.lineno}: {node.value!r}")
+        self.assertEqual(offenders, [], "numeric literals belong in config.py:\n" + "\n".join(offenders))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,2704 @@
+{
+  "snapshots": [
+    {
+      "player_id": "P1",
+      "frame_number": 0,
+      "timestamp": 0.0,
+      "bbox": [
+        659.5,
+        309.3,
+        758.2,
+        444.9
+      ],
+      "centre_x": 708.85,
+      "centre_y": 377.1,
+      "tracking_confidence": 1.0,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 1,
+      "timestamp": 0.0333,
+      "bbox": [
+        659.5,
+        309.3,
+        758.2,
+        444.9
+      ],
+      "centre_x": 708.85,
+      "centre_y": 377.1,
+      "tracking_confidence": 0.917,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 2,
+      "timestamp": 0.0667,
+      "bbox": [
+        671.4,
+        316.0,
+        756.8,
+        451.0
+      ],
+      "centre_x": 714.1,
+      "centre_y": 383.5,
+      "tracking_confidence": 0.875,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 3,
+      "timestamp": 0.1,
+      "bbox": [
+        691.3,
+        319.5,
+        772.7,
+        455.7
+      ],
+      "centre_x": 732.0,
+      "centre_y": 387.6,
+      "tracking_confidence": 0.865,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 4,
+      "timestamp": 0.1333,
+      "bbox": [
+        697.3,
+        321.7,
+        769.7,
+        456.5
+      ],
+      "centre_x": 733.5,
+      "centre_y": 389.1,
+      "tracking_confidence": 0.85,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 5,
+      "timestamp": 0.1667,
+      "bbox": [
+        701.6,
+        323.9,
+        765.7,
+        461.3
+      ],
+      "centre_x": 733.65,
+      "centre_y": 392.6,
+      "tracking_confidence": 0.848,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 6,
+      "timestamp": 0.2,
+      "bbox": [
+        701.6,
+        324.0,
+        765.6,
+        461.3
+      ],
+      "centre_x": 733.6,
+      "centre_y": 392.65,
+      "tracking_confidence": 0.87,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 7,
+      "timestamp": 0.2333,
+      "bbox": [
+        706.9,
+        328.1,
+        776.5,
+        468.0
+      ],
+      "centre_x": 741.7,
+      "centre_y": 398.05,
+      "tracking_confidence": 0.869,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 8,
+      "timestamp": 0.2667,
+      "bbox": [
+        712.6,
+        335.5,
+        791.8,
+        472.8
+      ],
+      "centre_x": 752.2,
+      "centre_y": 404.15,
+      "tracking_confidence": 0.842,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 9,
+      "timestamp": 0.3,
+      "bbox": [
+        718.5,
+        341.5,
+        803.9,
+        468.5
+      ],
+      "centre_x": 761.2,
+      "centre_y": 405.0,
+      "tracking_confidence": 0.842,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 10,
+      "timestamp": 0.3333,
+      "bbox": [
+        726.6,
+        347.1,
+        801.4,
+        475.4
+      ],
+      "centre_x": 764.0,
+      "centre_y": 411.25,
+      "tracking_confidence": 0.837,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 11,
+      "timestamp": 0.3667,
+      "bbox": [
+        734.1,
+        350.6,
+        809.3,
+        480.1
+      ],
+      "centre_x": 771.7,
+      "centre_y": 415.35,
+      "tracking_confidence": 0.842,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 12,
+      "timestamp": 0.4,
+      "bbox": [
+        734.1,
+        350.6,
+        809.2,
+        480.1
+      ],
+      "centre_x": 771.65,
+      "centre_y": 415.35,
+      "tracking_confidence": 0.841,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 13,
+      "timestamp": 0.4333,
+      "bbox": [
+        739.1,
+        351.2,
+        817.3,
+        480.9
+      ],
+      "centre_x": 778.2,
+      "centre_y": 416.05,
+      "tracking_confidence": 0.847,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 14,
+      "timestamp": 0.4667,
+      "bbox": [
+        751.0,
+        348.1,
+        822.7,
+        480.7
+      ],
+      "centre_x": 786.85,
+      "centre_y": 414.4,
+      "tracking_confidence": 0.832,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 15,
+      "timestamp": 0.5,
+      "bbox": [
+        764.1,
+        347.5,
+        833.9,
+        480.9
+      ],
+      "centre_x": 799.0,
+      "centre_y": 414.2,
+      "tracking_confidence": 0.832,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 16,
+      "timestamp": 0.5333,
+      "bbox": [
+        766.0,
+        346.8,
+        849.9,
+        482.8
+      ],
+      "centre_x": 807.95,
+      "centre_y": 414.8,
+      "tracking_confidence": 0.821,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 17,
+      "timestamp": 0.5667,
+      "bbox": [
+        766.4,
+        351.1,
+        853.9,
+        476.4
+      ],
+      "centre_x": 810.15,
+      "centre_y": 413.75,
+      "tracking_confidence": 0.834,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 18,
+      "timestamp": 0.6,
+      "bbox": [
+        766.5,
+        351.0,
+        853.9,
+        476.4
+      ],
+      "centre_x": 810.2,
+      "centre_y": 413.7,
+      "tracking_confidence": 0.835,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 19,
+      "timestamp": 0.6333,
+      "bbox": [
+        774.6,
+        353.8,
+        860.6,
+        478.1
+      ],
+      "centre_x": 817.6,
+      "centre_y": 415.95,
+      "tracking_confidence": 0.859,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 20,
+      "timestamp": 0.6667,
+      "bbox": [
+        786.1,
+        356.4,
+        867.0,
+        482.7
+      ],
+      "centre_x": 826.55,
+      "centre_y": 419.55,
+      "tracking_confidence": 0.85,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 21,
+      "timestamp": 0.7,
+      "bbox": [
+        794.5,
+        358.4,
+        878.1,
+        482.2
+      ],
+      "centre_x": 836.3,
+      "centre_y": 420.3,
+      "tracking_confidence": 0.835,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 22,
+      "timestamp": 0.7333,
+      "bbox": [
+        797.8,
+        358.8,
+        879.9,
+        483.6
+      ],
+      "centre_x": 838.85,
+      "centre_y": 421.2,
+      "tracking_confidence": 0.833,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 23,
+      "timestamp": 0.7667,
+      "bbox": [
+        801.5,
+        357.1,
+        874.8,
+        483.7
+      ],
+      "centre_x": 838.15,
+      "centre_y": 420.4,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 24,
+      "timestamp": 0.8,
+      "bbox": [
+        801.5,
+        357.1,
+        874.8,
+        483.7
+      ],
+      "centre_x": 838.15,
+      "centre_y": 420.4,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 25,
+      "timestamp": 0.8333,
+      "bbox": [
+        807.1,
+        353.0,
+        865.6,
+        481.7
+      ],
+      "centre_x": 836.35,
+      "centre_y": 417.35,
+      "tracking_confidence": 0.829,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 26,
+      "timestamp": 0.8667,
+      "bbox": [
+        812.0,
+        351.4,
+        880.4,
+        480.8
+      ],
+      "centre_x": 846.2,
+      "centre_y": 416.1,
+      "tracking_confidence": 0.813,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 27,
+      "timestamp": 0.9,
+      "bbox": [
+        817.6,
+        349.2,
+        884.8,
+        479.0
+      ],
+      "centre_x": 851.2,
+      "centre_y": 414.1,
+      "tracking_confidence": 0.835,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 28,
+      "timestamp": 0.9333,
+      "bbox": [
+        821.7,
+        348.0,
+        883.7,
+        474.5
+      ],
+      "centre_x": 852.7,
+      "centre_y": 411.25,
+      "tracking_confidence": 0.811,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 29,
+      "timestamp": 0.9667,
+      "bbox": [
+        826.3,
+        348.0,
+        887.4,
+        472.1
+      ],
+      "centre_x": 856.85,
+      "centre_y": 410.05,
+      "tracking_confidence": 0.805,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 30,
+      "timestamp": 1.0,
+      "bbox": [
+        826.3,
+        348.0,
+        887.4,
+        472.2
+      ],
+      "centre_x": 856.85,
+      "centre_y": 410.1,
+      "tracking_confidence": 0.804,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 31,
+      "timestamp": 1.0333,
+      "bbox": [
+        830.7,
+        347.9,
+        895.9,
+        470.9
+      ],
+      "centre_x": 863.3,
+      "centre_y": 409.4,
+      "tracking_confidence": 0.802,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 32,
+      "timestamp": 1.0667,
+      "bbox": [
+        834.5,
+        347.7,
+        906.1,
+        468.7
+      ],
+      "centre_x": 870.3,
+      "centre_y": 408.2,
+      "tracking_confidence": 0.823,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 33,
+      "timestamp": 1.1,
+      "bbox": [
+        840.7,
+        345.4,
+        912.9,
+        466.0
+      ],
+      "centre_x": 876.8,
+      "centre_y": 405.7,
+      "tracking_confidence": 0.826,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 34,
+      "timestamp": 1.1333,
+      "bbox": [
+        848.0,
+        342.3,
+        921.2,
+        464.9
+      ],
+      "centre_x": 884.6,
+      "centre_y": 403.6,
+      "tracking_confidence": 0.824,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 35,
+      "timestamp": 1.1667,
+      "bbox": [
+        859.2,
+        339.1,
+        925.3,
+        463.7
+      ],
+      "centre_x": 892.25,
+      "centre_y": 401.4,
+      "tracking_confidence": 0.811,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 36,
+      "timestamp": 1.2,
+      "bbox": [
+        859.2,
+        339.1,
+        925.3,
+        463.7
+      ],
+      "centre_x": 892.25,
+      "centre_y": 401.4,
+      "tracking_confidence": 0.811,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 37,
+      "timestamp": 1.2333,
+      "bbox": [
+        865.0,
+        334.3,
+        925.6,
+        461.6
+      ],
+      "centre_x": 895.3,
+      "centre_y": 397.95,
+      "tracking_confidence": 0.827,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 38,
+      "timestamp": 1.2667,
+      "bbox": [
+        867.2,
+        332.7,
+        933.1,
+        459.2
+      ],
+      "centre_x": 900.15,
+      "centre_y": 395.95,
+      "tracking_confidence": 0.838,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 39,
+      "timestamp": 1.3,
+      "bbox": [
+        868.6,
+        331.1,
+        940.8,
+        454.2
+      ],
+      "centre_x": 904.7,
+      "centre_y": 392.65,
+      "tracking_confidence": 0.856,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 40,
+      "timestamp": 1.3333,
+      "bbox": [
+        875.2,
+        331.4,
+        945.3,
+        453.0
+      ],
+      "centre_x": 910.25,
+      "centre_y": 392.2,
+      "tracking_confidence": 0.844,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 41,
+      "timestamp": 1.3667,
+      "bbox": [
+        875.8,
+        332.9,
+        946.1,
+        452.4
+      ],
+      "centre_x": 910.95,
+      "centre_y": 392.65,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 42,
+      "timestamp": 1.4,
+      "bbox": [
+        875.8,
+        332.9,
+        946.1,
+        452.4
+      ],
+      "centre_x": 910.95,
+      "centre_y": 392.65,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 43,
+      "timestamp": 1.4333,
+      "bbox": [
+        880.6,
+        333.3,
+        944.4,
+        451.2
+      ],
+      "centre_x": 912.5,
+      "centre_y": 392.25,
+      "tracking_confidence": 0.854,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 44,
+      "timestamp": 1.4667,
+      "bbox": [
+        883.1,
+        332.6,
+        944.6,
+        450.5
+      ],
+      "centre_x": 913.85,
+      "centre_y": 391.55,
+      "tracking_confidence": 0.844,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 45,
+      "timestamp": 1.5,
+      "bbox": [
+        889.3,
+        328.5,
+        942.8,
+        450.5
+      ],
+      "centre_x": 916.05,
+      "centre_y": 389.5,
+      "tracking_confidence": 0.849,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 46,
+      "timestamp": 1.5333,
+      "bbox": [
+        887.5,
+        323.4,
+        942.6,
+        448.4
+      ],
+      "centre_x": 915.05,
+      "centre_y": 385.9,
+      "tracking_confidence": 0.845,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 47,
+      "timestamp": 1.5667,
+      "bbox": [
+        882.4,
+        319.0,
+        941.6,
+        447.6
+      ],
+      "centre_x": 912.0,
+      "centre_y": 383.3,
+      "tracking_confidence": 0.818,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 48,
+      "timestamp": 1.6,
+      "bbox": [
+        882.3,
+        319.1,
+        941.6,
+        447.6
+      ],
+      "centre_x": 911.95,
+      "centre_y": 383.35,
+      "tracking_confidence": 0.821,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 49,
+      "timestamp": 1.6333,
+      "bbox": [
+        885.3,
+        314.3,
+        941.5,
+        447.4
+      ],
+      "centre_x": 913.4,
+      "centre_y": 380.85,
+      "tracking_confidence": 0.829,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 50,
+      "timestamp": 1.6667,
+      "bbox": [
+        884.8,
+        311.4,
+        942.4,
+        441.6
+      ],
+      "centre_x": 913.6,
+      "centre_y": 376.5,
+      "tracking_confidence": 0.829,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 51,
+      "timestamp": 1.7,
+      "bbox": [
+        883.1,
+        308.9,
+        942.7,
+        440.9
+      ],
+      "centre_x": 912.9,
+      "centre_y": 374.9,
+      "tracking_confidence": 0.818,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 52,
+      "timestamp": 1.7333,
+      "bbox": [
+        879.8,
+        308.2,
+        943.9,
+        439.7
+      ],
+      "centre_x": 911.85,
+      "centre_y": 373.95,
+      "tracking_confidence": 0.836,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 53,
+      "timestamp": 1.7667,
+      "bbox": [
+        876.9,
+        308.5,
+        945.4,
+        439.1
+      ],
+      "centre_x": 911.15,
+      "centre_y": 373.8,
+      "tracking_confidence": 0.843,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 54,
+      "timestamp": 1.8,
+      "bbox": [
+        876.9,
+        308.5,
+        945.5,
+        439.1
+      ],
+      "centre_x": 911.2,
+      "centre_y": 373.8,
+      "tracking_confidence": 0.844,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 55,
+      "timestamp": 1.8333,
+      "bbox": [
+        873.5,
+        309.2,
+        945.1,
+        438.3
+      ],
+      "centre_x": 909.3,
+      "centre_y": 373.75,
+      "tracking_confidence": 0.83,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 56,
+      "timestamp": 1.8667,
+      "bbox": [
+        872.0,
+        311.6,
+        949.7,
+        438.9
+      ],
+      "centre_x": 910.85,
+      "centre_y": 375.25,
+      "tracking_confidence": 0.81,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 57,
+      "timestamp": 1.9,
+      "bbox": [
+        872.6,
+        314.4,
+        952.9,
+        438.8
+      ],
+      "centre_x": 912.75,
+      "centre_y": 376.6,
+      "tracking_confidence": 0.82,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 58,
+      "timestamp": 1.9333,
+      "bbox": [
+        875.7,
+        316.0,
+        951.6,
+        439.3
+      ],
+      "centre_x": 913.65,
+      "centre_y": 377.65,
+      "tracking_confidence": 0.772,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 59,
+      "timestamp": 1.9667,
+      "bbox": [
+        880.3,
+        316.7,
+        947.1,
+        438.3
+      ],
+      "centre_x": 913.7,
+      "centre_y": 377.5,
+      "tracking_confidence": 0.807,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 60,
+      "timestamp": 2.0,
+      "bbox": [
+        880.3,
+        316.7,
+        947.1,
+        438.3
+      ],
+      "centre_x": 913.7,
+      "centre_y": 377.5,
+      "tracking_confidence": 0.809,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 61,
+      "timestamp": 2.0333,
+      "bbox": [
+        884.3,
+        316.9,
+        936.5,
+        436.5
+      ],
+      "centre_x": 910.4,
+      "centre_y": 376.7,
+      "tracking_confidence": 0.833,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 62,
+      "timestamp": 2.0667,
+      "bbox": [
+        886.4,
+        317.1,
+        933.4,
+        433.3
+      ],
+      "centre_x": 909.9,
+      "centre_y": 375.2,
+      "tracking_confidence": 0.808,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 63,
+      "timestamp": 2.1,
+      "bbox": [
+        887.0,
+        317.7,
+        932.3,
+        431.5
+      ],
+      "centre_x": 909.65,
+      "centre_y": 374.6,
+      "tracking_confidence": 0.819,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 64,
+      "timestamp": 2.1333,
+      "bbox": [
+        887.8,
+        317.5,
+        934.9,
+        429.6
+      ],
+      "centre_x": 911.35,
+      "centre_y": 373.55,
+      "tracking_confidence": 0.832,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 65,
+      "timestamp": 2.1667,
+      "bbox": [
+        887.8,
+        317.2,
+        936.6,
+        428.0
+      ],
+      "centre_x": 912.2,
+      "centre_y": 372.6,
+      "tracking_confidence": 0.802,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 66,
+      "timestamp": 2.2,
+      "bbox": [
+        887.8,
+        317.2,
+        936.6,
+        428.0
+      ],
+      "centre_x": 912.2,
+      "centre_y": 372.6,
+      "tracking_confidence": 0.802,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 67,
+      "timestamp": 2.2333,
+      "bbox": [
+        888.6,
+        316.4,
+        937.6,
+        428.7
+      ],
+      "centre_x": 913.1,
+      "centre_y": 372.55,
+      "tracking_confidence": 0.775,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 68,
+      "timestamp": 2.2667,
+      "bbox": [
+        887.8,
+        315.7,
+        944.3,
+        427.0
+      ],
+      "centre_x": 916.05,
+      "centre_y": 371.35,
+      "tracking_confidence": 0.785,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 69,
+      "timestamp": 2.3,
+      "bbox": [
+        883.1,
+        314.9,
+        950.4,
+        421.4
+      ],
+      "centre_x": 916.75,
+      "centre_y": 368.15,
+      "tracking_confidence": 0.811,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 70,
+      "timestamp": 2.3333,
+      "bbox": [
+        880.0,
+        314.0,
+        948.6,
+        419.9
+      ],
+      "centre_x": 914.3,
+      "centre_y": 366.95,
+      "tracking_confidence": 0.803,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 71,
+      "timestamp": 2.3667,
+      "bbox": [
+        882.3,
+        312.9,
+        952.6,
+        419.4
+      ],
+      "centre_x": 917.45,
+      "centre_y": 366.15,
+      "tracking_confidence": 0.802,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 72,
+      "timestamp": 2.4,
+      "bbox": [
+        882.4,
+        312.9,
+        952.6,
+        419.4
+      ],
+      "centre_x": 917.5,
+      "centre_y": 366.15,
+      "tracking_confidence": 0.804,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 73,
+      "timestamp": 2.4333,
+      "bbox": [
+        882.5,
+        312.8,
+        959.5,
+        418.7
+      ],
+      "centre_x": 921.0,
+      "centre_y": 365.75,
+      "tracking_confidence": 0.798,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 74,
+      "timestamp": 2.4667,
+      "bbox": [
+        883.1,
+        312.9,
+        956.3,
+        418.9
+      ],
+      "centre_x": 919.7,
+      "centre_y": 365.9,
+      "tracking_confidence": 0.811,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 75,
+      "timestamp": 2.5,
+      "bbox": [
+        884.8,
+        312.6,
+        945.7,
+        414.7
+      ],
+      "centre_x": 915.25,
+      "centre_y": 363.65,
+      "tracking_confidence": 0.81,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 76,
+      "timestamp": 2.5333,
+      "bbox": [
+        887.6,
+        312.4,
+        943.1,
+        409.8
+      ],
+      "centre_x": 915.35,
+      "centre_y": 361.1,
+      "tracking_confidence": 0.793,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 77,
+      "timestamp": 2.5667,
+      "bbox": [
+        887.6,
+        311.3,
+        943.6,
+        408.9
+      ],
+      "centre_x": 915.6,
+      "centre_y": 360.1,
+      "tracking_confidence": 0.82,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 78,
+      "timestamp": 2.6,
+      "bbox": [
+        887.6,
+        311.3,
+        943.6,
+        408.9
+      ],
+      "centre_x": 915.6,
+      "centre_y": 360.1,
+      "tracking_confidence": 0.821,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 79,
+      "timestamp": 2.6333,
+      "bbox": [
+        885.2,
+        307.7,
+        943.6,
+        407.0
+      ],
+      "centre_x": 914.4,
+      "centre_y": 357.35,
+      "tracking_confidence": 0.833,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 80,
+      "timestamp": 2.6667,
+      "bbox": [
+        879.6,
+        303.5,
+        941.6,
+        406.3
+      ],
+      "centre_x": 910.6,
+      "centre_y": 354.9,
+      "tracking_confidence": 0.822,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 81,
+      "timestamp": 2.7,
+      "bbox": [
+        872.9,
+        300.7,
+        947.2,
+        404.2
+      ],
+      "centre_x": 910.05,
+      "centre_y": 352.45,
+      "tracking_confidence": 0.804,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 82,
+      "timestamp": 2.7333,
+      "bbox": [
+        867.0,
+        297.9,
+        937.9,
+        397.8
+      ],
+      "centre_x": 902.45,
+      "centre_y": 347.85,
+      "tracking_confidence": 0.747,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 83,
+      "timestamp": 2.7667,
+      "bbox": [
+        873.5,
+        300.6,
+        926.6,
+        393.7
+      ],
+      "centre_x": 900.05,
+      "centre_y": 347.15,
+      "tracking_confidence": 0.744,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 84,
+      "timestamp": 2.8,
+      "bbox": [
+        873.6,
+        300.5,
+        926.6,
+        393.4
+      ],
+      "centre_x": 900.1,
+      "centre_y": 346.95,
+      "tracking_confidence": 0.751,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 85,
+      "timestamp": 2.8333,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.732,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 86,
+      "timestamp": 2.8667,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.575,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 87,
+      "timestamp": 2.9,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.569,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 88,
+      "timestamp": 2.9333,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.562,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 89,
+      "timestamp": 2.9667,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.429,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 90,
+      "timestamp": 3.0,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.382,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 91,
+      "timestamp": 3.0333,
+      "bbox": [
+        874.6,
+        296.6,
+        918.3,
+        388.7
+      ],
+      "centre_x": 896.45,
+      "centre_y": 342.65,
+      "tracking_confidence": 0.358,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 92,
+      "timestamp": 3.0667,
+      "bbox": [
+        843.3,
+        296.2,
+        897.1,
+        386.1
+      ],
+      "centre_x": 870.2,
+      "centre_y": 341.15,
+      "tracking_confidence": 0.789,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 93,
+      "timestamp": 3.1,
+      "bbox": [
+        843.3,
+        296.2,
+        897.1,
+        386.1
+      ],
+      "centre_x": 870.2,
+      "centre_y": 341.15,
+      "tracking_confidence": 0.469,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 94,
+      "timestamp": 3.1333,
+      "bbox": [
+        846.1,
+        298.7,
+        912.4,
+        397.8
+      ],
+      "centre_x": 879.25,
+      "centre_y": 348.25,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 95,
+      "timestamp": 3.1667,
+      "bbox": [
+        845.5,
+        298.4,
+        920.6,
+        397.5
+      ],
+      "centre_x": 883.05,
+      "centre_y": 347.95,
+      "tracking_confidence": 0.813,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 96,
+      "timestamp": 3.2,
+      "bbox": [
+        845.5,
+        298.3,
+        920.6,
+        397.5
+      ],
+      "centre_x": 883.05,
+      "centre_y": 347.9,
+      "tracking_confidence": 0.816,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 97,
+      "timestamp": 3.2333,
+      "bbox": [
+        849.7,
+        298.3,
+        925.8,
+        401.9
+      ],
+      "centre_x": 887.75,
+      "centre_y": 350.1,
+      "tracking_confidence": 0.835,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 98,
+      "timestamp": 3.2667,
+      "bbox": [
+        858.3,
+        298.6,
+        922.9,
+        398.1
+      ],
+      "centre_x": 890.6,
+      "centre_y": 348.35,
+      "tracking_confidence": 0.813,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 99,
+      "timestamp": 3.3,
+      "bbox": [
+        870.8,
+        297.8,
+        927.9,
+        397.2
+      ],
+      "centre_x": 899.35,
+      "centre_y": 347.5,
+      "tracking_confidence": 0.768,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 100,
+      "timestamp": 3.3333,
+      "bbox": [
+        870.8,
+        297.8,
+        927.9,
+        397.2
+      ],
+      "centre_x": 899.35,
+      "centre_y": 347.5,
+      "tracking_confidence": 0.456,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 101,
+      "timestamp": 3.3667,
+      "bbox": [
+        888.8,
+        294.6,
+        944.8,
+        395.5
+      ],
+      "centre_x": 916.8,
+      "centre_y": 345.05,
+      "tracking_confidence": 0.808,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 102,
+      "timestamp": 3.4,
+      "bbox": [
+        888.7,
+        294.6,
+        944.8,
+        395.5
+      ],
+      "centre_x": 916.75,
+      "centre_y": 345.05,
+      "tracking_confidence": 0.817,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 103,
+      "timestamp": 3.4333,
+      "bbox": [
+        894.2,
+        292.5,
+        949.4,
+        394.0
+      ],
+      "centre_x": 921.8,
+      "centre_y": 343.25,
+      "tracking_confidence": 0.81,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 104,
+      "timestamp": 3.4667,
+      "bbox": [
+        898.0,
+        291.9,
+        951.4,
+        393.6
+      ],
+      "centre_x": 924.7,
+      "centre_y": 342.75,
+      "tracking_confidence": 0.824,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 105,
+      "timestamp": 3.5,
+      "bbox": [
+        901.9,
+        291.4,
+        955.2,
+        384.6
+      ],
+      "centre_x": 928.55,
+      "centre_y": 338.0,
+      "tracking_confidence": 0.815,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 106,
+      "timestamp": 3.5333,
+      "bbox": [
+        905.1,
+        290.9,
+        953.3,
+        383.5
+      ],
+      "centre_x": 929.2,
+      "centre_y": 337.2,
+      "tracking_confidence": 0.798,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 107,
+      "timestamp": 3.5667,
+      "bbox": [
+        908.4,
+        287.9,
+        948.9,
+        383.2
+      ],
+      "centre_x": 928.65,
+      "centre_y": 335.55,
+      "tracking_confidence": 0.801,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 108,
+      "timestamp": 3.6,
+      "bbox": [
+        908.4,
+        287.9,
+        948.9,
+        383.2
+      ],
+      "centre_x": 928.65,
+      "centre_y": 335.55,
+      "tracking_confidence": 0.804,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 109,
+      "timestamp": 3.6333,
+      "bbox": [
+        913.4,
+        284.1,
+        952.4,
+        381.0
+      ],
+      "centre_x": 932.9,
+      "centre_y": 332.55,
+      "tracking_confidence": 0.797,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 110,
+      "timestamp": 3.6667,
+      "bbox": [
+        916.1,
+        278.9,
+        958.6,
+        381.0
+      ],
+      "centre_x": 937.35,
+      "centre_y": 329.95,
+      "tracking_confidence": 0.834,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 111,
+      "timestamp": 3.7,
+      "bbox": [
+        916.7,
+        274.7,
+        968.7,
+        381.7
+      ],
+      "centre_x": 942.7,
+      "centre_y": 328.2,
+      "tracking_confidence": 0.82,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 112,
+      "timestamp": 3.7333,
+      "bbox": [
+        915.3,
+        271.3,
+        976.0,
+        374.8
+      ],
+      "centre_x": 945.65,
+      "centre_y": 323.05,
+      "tracking_confidence": 0.812,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 113,
+      "timestamp": 3.7667,
+      "bbox": [
+        914.3,
+        269.3,
+        978.5,
+        369.1
+      ],
+      "centre_x": 946.4,
+      "centre_y": 319.2,
+      "tracking_confidence": 0.826,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 114,
+      "timestamp": 3.8,
+      "bbox": [
+        914.3,
+        269.3,
+        978.5,
+        369.1
+      ],
+      "centre_x": 946.4,
+      "centre_y": 319.2,
+      "tracking_confidence": 0.828,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 115,
+      "timestamp": 3.8333,
+      "bbox": [
+        913.6,
+        268.1,
+        977.4,
+        368.4
+      ],
+      "centre_x": 945.5,
+      "centre_y": 318.25,
+      "tracking_confidence": 0.833,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 116,
+      "timestamp": 3.8667,
+      "bbox": [
+        912.3,
+        268.4,
+        974.1,
+        368.3
+      ],
+      "centre_x": 943.2,
+      "centre_y": 318.35,
+      "tracking_confidence": 0.826,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 117,
+      "timestamp": 3.9,
+      "bbox": [
+        912.5,
+        266.4,
+        977.5,
+        367.7
+      ],
+      "centre_x": 945.0,
+      "centre_y": 317.05,
+      "tracking_confidence": 0.834,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 118,
+      "timestamp": 3.9333,
+      "bbox": [
+        916.0,
+        263.8,
+        983.8,
+        368.3
+      ],
+      "centre_x": 949.9,
+      "centre_y": 316.05,
+      "tracking_confidence": 0.82,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 119,
+      "timestamp": 3.9667,
+      "bbox": [
+        921.4,
+        259.3,
+        990.4,
+        366.3
+      ],
+      "centre_x": 955.9,
+      "centre_y": 312.8,
+      "tracking_confidence": 0.805,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 120,
+      "timestamp": 4.0,
+      "bbox": [
+        921.4,
+        259.3,
+        990.4,
+        366.3
+      ],
+      "centre_x": 955.9,
+      "centre_y": 312.8,
+      "tracking_confidence": 0.808,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 121,
+      "timestamp": 4.0333,
+      "bbox": [
+        929.2,
+        254.6,
+        991.5,
+        365.5
+      ],
+      "centre_x": 960.35,
+      "centre_y": 310.05,
+      "tracking_confidence": 0.84,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 122,
+      "timestamp": 4.0667,
+      "bbox": [
+        934.9,
+        251.0,
+        992.5,
+        361.4
+      ],
+      "centre_x": 963.7,
+      "centre_y": 306.2,
+      "tracking_confidence": 0.784,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 123,
+      "timestamp": 4.1,
+      "bbox": [
+        936.9,
+        247.5,
+        993.7,
+        353.8
+      ],
+      "centre_x": 965.3,
+      "centre_y": 300.65,
+      "tracking_confidence": 0.784,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 124,
+      "timestamp": 4.1333,
+      "bbox": [
+        933.6,
+        246.7,
+        994.2,
+        352.1
+      ],
+      "centre_x": 963.9,
+      "centre_y": 299.4,
+      "tracking_confidence": 0.786,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 125,
+      "timestamp": 4.1667,
+      "bbox": [
+        930.5,
+        246.1,
+        1001.2,
+        351.0
+      ],
+      "centre_x": 965.85,
+      "centre_y": 298.55,
+      "tracking_confidence": 0.781,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 126,
+      "timestamp": 4.2,
+      "bbox": [
+        930.5,
+        246.1,
+        1001.2,
+        350.9
+      ],
+      "centre_x": 965.85,
+      "centre_y": 298.5,
+      "tracking_confidence": 0.789,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 127,
+      "timestamp": 4.2333,
+      "bbox": [
+        940.2,
+        246.8,
+        1007.8,
+        351.9
+      ],
+      "centre_x": 974.0,
+      "centre_y": 299.35,
+      "tracking_confidence": 0.767,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 128,
+      "timestamp": 4.2667,
+      "bbox": [
+        941.1,
+        250.3,
+        1010.5,
+        351.7
+      ],
+      "centre_x": 975.8,
+      "centre_y": 301.0,
+      "tracking_confidence": 0.777,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 129,
+      "timestamp": 4.3,
+      "bbox": [
+        940.6,
+        250.2,
+        984.4,
+        351.9
+      ],
+      "centre_x": 962.5,
+      "centre_y": 301.05,
+      "tracking_confidence": 0.738,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 130,
+      "timestamp": 4.3333,
+      "bbox": [
+        938.9,
+        249.6,
+        994.5,
+        352.0
+      ],
+      "centre_x": 966.7,
+      "centre_y": 300.8,
+      "tracking_confidence": 0.816,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 131,
+      "timestamp": 4.3667,
+      "bbox": [
+        939.9,
+        245.9,
+        982.8,
+        351.3
+      ],
+      "centre_x": 961.35,
+      "centre_y": 298.6,
+      "tracking_confidence": 0.796,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 132,
+      "timestamp": 4.4,
+      "bbox": [
+        939.9,
+        245.9,
+        982.8,
+        351.3
+      ],
+      "centre_x": 961.35,
+      "centre_y": 298.6,
+      "tracking_confidence": 0.799,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 133,
+      "timestamp": 4.4333,
+      "bbox": [
+        943.1,
+        240.6,
+        983.5,
+        351.5
+      ],
+      "centre_x": 963.3,
+      "centre_y": 296.05,
+      "tracking_confidence": 0.724,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 134,
+      "timestamp": 4.4667,
+      "bbox": [
+        942.1,
+        238.5,
+        984.2,
+        351.0
+      ],
+      "centre_x": 963.15,
+      "centre_y": 294.75,
+      "tracking_confidence": 0.784,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 135,
+      "timestamp": 4.5,
+      "bbox": [
+        937.8,
+        236.4,
+        983.7,
+        347.3
+      ],
+      "centre_x": 960.75,
+      "centre_y": 291.85,
+      "tracking_confidence": 0.797,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 136,
+      "timestamp": 4.5333,
+      "bbox": [
+        934.1,
+        237.4,
+        982.3,
+        339.8
+      ],
+      "centre_x": 958.2,
+      "centre_y": 288.6,
+      "tracking_confidence": 0.76,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 137,
+      "timestamp": 4.5667,
+      "bbox": [
+        927.8,
+        235.9,
+        978.0,
+        339.1
+      ],
+      "centre_x": 952.9,
+      "centre_y": 287.5,
+      "tracking_confidence": 0.749,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 138,
+      "timestamp": 4.6,
+      "bbox": [
+        927.7,
+        235.9,
+        978.0,
+        339.1
+      ],
+      "centre_x": 952.85,
+      "centre_y": 287.5,
+      "tracking_confidence": 0.75,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 139,
+      "timestamp": 4.6333,
+      "bbox": [
+        923.9,
+        238.4,
+        971.8,
+        339.6
+      ],
+      "centre_x": 947.85,
+      "centre_y": 289.0,
+      "tracking_confidence": 0.773,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 140,
+      "timestamp": 4.6667,
+      "bbox": [
+        920.0,
+        240.4,
+        965.7,
+        339.7
+      ],
+      "centre_x": 942.85,
+      "centre_y": 290.05,
+      "tracking_confidence": 0.779,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 141,
+      "timestamp": 4.7,
+      "bbox": [
+        912.2,
+        239.5,
+        962.9,
+        339.8
+      ],
+      "centre_x": 937.55,
+      "centre_y": 289.65,
+      "tracking_confidence": 0.819,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 142,
+      "timestamp": 4.7333,
+      "bbox": [
+        901.1,
+        236.3,
+        955.4,
+        340.4
+      ],
+      "centre_x": 928.25,
+      "centre_y": 288.35,
+      "tracking_confidence": 0.78,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 143,
+      "timestamp": 4.7667,
+      "bbox": [
+        894.5,
+        233.8,
+        943.1,
+        337.9
+      ],
+      "centre_x": 918.8,
+      "centre_y": 285.85,
+      "tracking_confidence": 0.771,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 144,
+      "timestamp": 4.8,
+      "bbox": [
+        894.4,
+        233.9,
+        943.1,
+        337.9
+      ],
+      "centre_x": 918.75,
+      "centre_y": 285.9,
+      "tracking_confidence": 0.778,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 145,
+      "timestamp": 4.8333,
+      "bbox": [
+        896.8,
+        227.1,
+        939.0,
+        336.4
+      ],
+      "centre_x": 917.9,
+      "centre_y": 281.75,
+      "tracking_confidence": 0.719,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 146,
+      "timestamp": 4.8667,
+      "bbox": [
+        886.7,
+        228.5,
+        934.4,
+        336.1
+      ],
+      "centre_x": 910.55,
+      "centre_y": 282.3,
+      "tracking_confidence": 0.772,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 147,
+      "timestamp": 4.9,
+      "bbox": [
+        888.4,
+        230.9,
+        929.3,
+        333.0
+      ],
+      "centre_x": 908.85,
+      "centre_y": 281.95,
+      "tracking_confidence": 0.797,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 148,
+      "timestamp": 4.9333,
+      "bbox": [
+        883.1,
+        231.4,
+        922.7,
+        333.3
+      ],
+      "centre_x": 902.9,
+      "centre_y": 282.35,
+      "tracking_confidence": 0.803,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 149,
+      "timestamp": 4.9667,
+      "bbox": [
+        877.9,
+        231.9,
+        915.6,
+        330.9
+      ],
+      "centre_x": 896.75,
+      "centre_y": 281.4,
+      "tracking_confidence": 0.805,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 150,
+      "timestamp": 5.0,
+      "bbox": [
+        877.9,
+        231.9,
+        915.6,
+        330.9
+      ],
+      "centre_x": 896.75,
+      "centre_y": 281.4,
+      "tracking_confidence": 0.81,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 151,
+      "timestamp": 5.0333,
+      "bbox": [
+        872.2,
+        235.6,
+        912.0,
+        330.3
+      ],
+      "centre_x": 892.1,
+      "centre_y": 282.95,
+      "tracking_confidence": 0.847,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 152,
+      "timestamp": 5.0667,
+      "bbox": [
+        869.3,
+        236.7,
+        908.1,
+        331.9
+      ],
+      "centre_x": 888.7,
+      "centre_y": 284.3,
+      "tracking_confidence": 0.841,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 153,
+      "timestamp": 5.1,
+      "bbox": [
+        865.8,
+        235.6,
+        904.6,
+        330.8
+      ],
+      "centre_x": 885.2,
+      "centre_y": 283.2,
+      "tracking_confidence": 0.839,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 154,
+      "timestamp": 5.1333,
+      "bbox": [
+        865.8,
+        235.6,
+        904.6,
+        330.8
+      ],
+      "centre_x": 885.2,
+      "centre_y": 283.2,
+      "tracking_confidence": 0.488,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 155,
+      "timestamp": 5.1667,
+      "bbox": [
+        853.9,
+        235.0,
+        897.5,
+        330.5
+      ],
+      "centre_x": 875.7,
+      "centre_y": 282.75,
+      "tracking_confidence": 0.818,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 156,
+      "timestamp": 5.2,
+      "bbox": [
+        853.9,
+        234.9,
+        897.3,
+        330.6
+      ],
+      "centre_x": 875.6,
+      "centre_y": 282.75,
+      "tracking_confidence": 0.823,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 157,
+      "timestamp": 5.2333,
+      "bbox": [
+        853.9,
+        234.9,
+        897.3,
+        330.6
+      ],
+      "centre_x": 875.6,
+      "centre_y": 282.75,
+      "tracking_confidence": 0.479,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 158,
+      "timestamp": 5.2667,
+      "bbox": [
+        841.5,
+        233.8,
+        879.8,
+        329.5
+      ],
+      "centre_x": 860.65,
+      "centre_y": 281.65,
+      "tracking_confidence": 0.794,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 159,
+      "timestamp": 5.3,
+      "bbox": [
+        839.0,
+        234.5,
+        878.9,
+        328.9
+      ],
+      "centre_x": 858.95,
+      "centre_y": 281.7,
+      "tracking_confidence": 0.76,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 160,
+      "timestamp": 5.3333,
+      "bbox": [
+        832.4,
+        235.5,
+        874.8,
+        329.9
+      ],
+      "centre_x": 853.6,
+      "centre_y": 282.7,
+      "tracking_confidence": 0.793,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 161,
+      "timestamp": 5.3667,
+      "bbox": [
+        826.9,
+        237.7,
+        864.0,
+        327.9
+      ],
+      "centre_x": 845.45,
+      "centre_y": 282.8,
+      "tracking_confidence": 0.801,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 162,
+      "timestamp": 5.4,
+      "bbox": [
+        827.1,
+        237.7,
+        864.0,
+        327.9
+      ],
+      "centre_x": 845.55,
+      "centre_y": 282.8,
+      "tracking_confidence": 0.809,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 163,
+      "timestamp": 5.4333,
+      "bbox": [
+        822.0,
+        237.3,
+        858.5,
+        329.1
+      ],
+      "centre_x": 840.25,
+      "centre_y": 283.2,
+      "tracking_confidence": 0.8,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 164,
+      "timestamp": 5.4667,
+      "bbox": [
+        816.4,
+        236.4,
+        857.8,
+        329.7
+      ],
+      "centre_x": 837.1,
+      "centre_y": 283.05,
+      "tracking_confidence": 0.798,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 165,
+      "timestamp": 5.5,
+      "bbox": [
+        816.4,
+        236.4,
+        857.8,
+        329.7
+      ],
+      "centre_x": 837.1,
+      "centre_y": 283.05,
+      "tracking_confidence": 0.469,
+      "tracking_state": "OCCLUDED"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 166,
+      "timestamp": 5.5333,
+      "bbox": [
+        807.0,
+        236.1,
+        851.2,
+        328.7
+      ],
+      "centre_x": 829.1,
+      "centre_y": 282.4,
+      "tracking_confidence": 0.776,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 167,
+      "timestamp": 5.5667,
+      "bbox": [
+        802.2,
+        234.9,
+        843.2,
+        326.5
+      ],
+      "centre_x": 822.7,
+      "centre_y": 280.7,
+      "tracking_confidence": 0.77,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 168,
+      "timestamp": 5.6,
+      "bbox": [
+        802.2,
+        234.9,
+        843.2,
+        326.6
+      ],
+      "centre_x": 822.7,
+      "centre_y": 280.75,
+      "tracking_confidence": 0.776,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 169,
+      "timestamp": 5.6333,
+      "bbox": [
+        798.2,
+        234.0,
+        834.0,
+        327.1
+      ],
+      "centre_x": 816.1,
+      "centre_y": 280.55,
+      "tracking_confidence": 0.755,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 170,
+      "timestamp": 5.6667,
+      "bbox": [
+        791.1,
+        233.4,
+        826.7,
+        325.1
+      ],
+      "centre_x": 808.9,
+      "centre_y": 279.25,
+      "tracking_confidence": 0.769,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 171,
+      "timestamp": 5.7,
+      "bbox": [
+        786.8,
+        233.5,
+        820.7,
+        323.8
+      ],
+      "centre_x": 803.75,
+      "centre_y": 278.65,
+      "tracking_confidence": 0.771,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 172,
+      "timestamp": 5.7333,
+      "bbox": [
+        782.1,
+        233.5,
+        817.4,
+        325.8
+      ],
+      "centre_x": 799.75,
+      "centre_y": 279.65,
+      "tracking_confidence": 0.789,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 173,
+      "timestamp": 5.7667,
+      "bbox": [
+        776.1,
+        236.0,
+        808.4,
+        326.4
+      ],
+      "centre_x": 792.25,
+      "centre_y": 281.2,
+      "tracking_confidence": 0.793,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 174,
+      "timestamp": 5.8,
+      "bbox": [
+        776.1,
+        236.0,
+        808.4,
+        326.4
+      ],
+      "centre_x": 792.25,
+      "centre_y": 281.2,
+      "tracking_confidence": 0.801,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 175,
+      "timestamp": 5.8333,
+      "bbox": [
+        770.7,
+        238.0,
+        807.3,
+        326.3
+      ],
+      "centre_x": 789.0,
+      "centre_y": 282.15,
+      "tracking_confidence": 0.799,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 176,
+      "timestamp": 5.8667,
+      "bbox": [
+        764.9,
+        239.5,
+        799.1,
+        325.2
+      ],
+      "centre_x": 782.0,
+      "centre_y": 282.35,
+      "tracking_confidence": 0.848,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 177,
+      "timestamp": 5.9,
+      "bbox": [
+        759.2,
+        240.4,
+        793.0,
+        324.2
+      ],
+      "centre_x": 776.1,
+      "centre_y": 282.3,
+      "tracking_confidence": 0.819,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 178,
+      "timestamp": 5.9333,
+      "bbox": [
+        751.3,
+        239.7,
+        787.7,
+        326.9
+      ],
+      "centre_x": 769.5,
+      "centre_y": 283.3,
+      "tracking_confidence": 0.841,
+      "tracking_state": "TRACKING"
+    },
+    {
+      "player_id": "P1",
+      "frame_number": 179,
+      "timestamp": 5.9667,
+      "bbox": [
+        744.6,
+        238.2,
+        776.6,
+        326.1
+      ],
+      "centre_x": 760.6,
+      "centre_y": 282.15,
+      "tracking_confidence": 0.833,
+      "tracking_state": "TRACKING"
+    }
+  ]
+}
