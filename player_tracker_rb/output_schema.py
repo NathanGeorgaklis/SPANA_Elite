@@ -1,7 +1,7 @@
 # SPANA engine v2-rebuild
 # REBUILT 2026-10 — NOT ORIGINAL SOURCE
 # Evidence basis: R0/R0_TRACKER_INTERFACE_MAP.md §0-§6 (historical Pass-1 JSON contract, recovered from frozen
-#                 GOLD.json 88246efe and PC.json 40fa0df1 plus surviving consumers event_adapter.py and
+#                 historical exemplars HE1 (88246efe) and HE2 (40fa0df1) plus surviving consumers event_adapter.py and
 #                 actor_attribution.py); R1/R1_DESIGN_DECISIONS.md D01, D05, D06, D07, D19, D20
 """
 player_tracker_rb.output_schema: the Pass-1 tracking JSON contract, historical part plus additive v2 part.
@@ -78,8 +78,8 @@ CONFIDENCE_FIELDS: Tuple[str, ...] = tuple(n for n, t in TRACK_FIELDS if t == "n
 # Historical online state vocabulary (7 observed values; TERMINATED appears only as a pipeline default).
 HISTORICAL_STATES: Tuple[str, ...] = ("ACTIVE", "PROVISIONAL", "AMBIGUOUS", "OCCLUDED", "TEMPORARILY_LOST",
                                       "REIDENTIFYING", "OUT_OF_FRAME")
-# final_tracks additionally uses TERMINATED (GOLD 20 of 35, PC 45 of 70 final records; never in frame_log),
-# and there merged_into may name the absorbing track (GOLD 'T014' etc.; always None in frame_log).
+# final_tracks additionally uses TERMINATED (HE1 20 of 35, HE2 45 of 70 final records; never in frame_log),
+# and there merged_into may name the absorbing track (HE1 'T014' etc.; always None in frame_log).
 # Both are VERIFIED_OUTPUT facts found by validating the frozen exemplars in R1-A.
 FINAL_TRACK_EXTRA_STATES: Tuple[str, ...] = ("TERMINATED",)
 OCCLUSION_STATUSES: Tuple[str, ...] = ("NONE", "PARTIAL", "FULL", "AMBIGUOUS", "WEAK_SPATIAL_RECOVERY")
@@ -143,7 +143,7 @@ def legacy_state_for(historical_state: str) -> str:
 
 
 # Historical (state, occlusion_status, position_source) written for each R1 situation. Every triple here was
-# observed in GOLD.json (R0_TRACKER_INTERFACE_MAP §4, joint table), so R1 never emits a combination unseen in
+# observed in HE1 (R0_TRACKER_INTERFACE_MAP §4, joint table), so R1 never emits a combination unseen in
 # the historical outputs.
 OBSERVED_HISTORICAL_TRIPLES: Tuple[Tuple[str, str, str], ...] = (
     ("ACTIVE", "NONE", "CONFIRMED_DETECTION"),

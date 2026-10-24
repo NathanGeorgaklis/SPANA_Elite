@@ -86,3 +86,23 @@ Start with `config.py` and `output_schema.py` and their tests.
 - Every milestone archive contains the complete project state.
 
 **Next action.** Wait for the labels. Then validate, hash, commit, snapshot, verify, and report a label summary including any HUMAN_UNCERTAIN frames. **Stop for final implementation approval.**
+
+## 2026-10-24 18:29 (Sydney): Generic player tracker requirement (binding for every R1 stage)
+
+Nathan issued `R1/R1_GENERIC_TRACKER_REQUIREMENT.md` (verbatim copy). In summary:
+
+- `player_tracker_rb/` knows only a TARGET_PLAYER, which is seeded from generic inputs (seed frame and box), and other people, which are generic PERSON_CANDIDATEs.
+- **No benchmark-specific logic anywhere.** That rules out shirt numbers, clubs, team colours, clips, frame numbers, camera positions, stadiums, and known distractors.
+- Benchmark subjects (for example the T001 → SOL #23 mapping) may live only in labels, fixtures, tests, evaluation reports and notes.
+- Any nearby person can compete for the target identity, without first needing a persistent ID or a role or team label.
+- Neither shirt-number OCR nor kit colour may ever establish identity on its own.
+- A failure exposed by a benchmark must be fixed as a general rule, never a frame-specific one.
+- Reacquisition must be generic and stricter than ordinary association, and must answer AMBIGUOUS or LOST when evidence is insufficient.
+- Core unit tests use neutral identities: TARGET, PERSON_A, PERSON_B, PERSON_C. GOLD is a real-footage integration benchmark only.
+- **The test for every design decision:** "Would this still work if the selected player were someone completely different in another match?"
+
+**Applied the same day (commit "r1-generic"):**
+- Benchmark wording removed from `player_tracker_rb/`. The historical exemplars are cited only as HE1 and HE2.
+- The R1-A synthetic fixture now uses neutral, made-up seed values.
+- `tests_rb/test_package_hygiene.py::TestNoBenchmarkKnowledgeInTracker` fails if benchmark terms appear in the package.
+- No logic or contract change. The config hash is unchanged, because evidence text is not hashed.

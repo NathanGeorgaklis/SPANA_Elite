@@ -1,0 +1,703 @@
+diff --git a/R1/R1_APPROVALS.md b/R1/R1_APPROVALS.md
+index 3922cd4..46d6493 100644
+--- a/R1/R1_APPROVALS.md
++++ b/R1/R1_APPROVALS.md
+@@ -86,3 +86,23 @@ Start with `config.py` and `output_schema.py` and their tests.
+ - Every milestone archive contains the complete project state.
+ 
+ **Next action.** Wait for the labels. Then validate, hash, commit, snapshot, verify, and report a label summary including any HUMAN_UNCERTAIN frames. **Stop for final implementation approval.**
++
++## 2026-10-24 18:29 (Sydney): Generic player tracker requirement (binding for every R1 stage)
++
++Nathan issued `R1/R1_GENERIC_TRACKER_REQUIREMENT.md` (verbatim copy). In summary:
++
++- `player_tracker_rb/` knows only a TARGET_PLAYER, which is seeded from generic inputs (seed frame and box), and other people, which are generic PERSON_CANDIDATEs.
++- **No benchmark-specific logic anywhere.** That rules out shirt numbers, clubs, team colours, clips, frame numbers, camera positions, stadiums, and known distractors.
++- Benchmark subjects (for example the T001 → SOL #23 mapping) may live only in labels, fixtures, tests, evaluation reports and notes.
++- Any nearby person can compete for the target identity, without first needing a persistent ID or a role or team label.
++- Neither shirt-number OCR nor kit colour may ever establish identity on its own.
++- A failure exposed by a benchmark must be fixed as a general rule, never a frame-specific one.
++- Reacquisition must be generic and stricter than ordinary association, and must answer AMBIGUOUS or LOST when evidence is insufficient.
++- Core unit tests use neutral identities: TARGET, PERSON_A, PERSON_B, PERSON_C. GOLD is a real-footage integration benchmark only.
++- **The test for every design decision:** "Would this still work if the selected player were someone completely different in another match?"
++
++**Applied the same day (commit "r1-generic"):**
++- Benchmark wording removed from `player_tracker_rb/`. The historical exemplars are cited only as HE1 and HE2.
++- The R1-A synthetic fixture now uses neutral, made-up seed values.
++- `tests_rb/test_package_hygiene.py::TestNoBenchmarkKnowledgeInTracker` fails if benchmark terms appear in the package.
++- No logic or contract change. The config hash is unchanged, because evidence text is not hashed.
+diff --git a/R1/R1_CONFIG_REGISTRY_after_generic.csv b/R1/R1_CONFIG_REGISTRY_after_generic.csv
+new file mode 100644
+index 0000000..1015edd
+--- /dev/null
++++ b/R1/R1_CONFIG_REGISTRY_after_generic.csv
+@@ -0,0 +1,91 @@
++name,group,role,source,evidence_level,validation_status,type,units,default,min_value,max_value,allowed,historical_value,meaning,evidence
++legacy_identity_trust_threshold,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_CODE,CONTRACT_VERIFIED,float,confidence (0-1),0.5,0.0,1.0,,,actor_attribution trusts a frame only if identity_confidence >= this (MEDIUM_THRESH).,event_engine_v1/actor_attribution.py:112-114; football_analysis/confidence.py:12 MEDIUM_THRESH
++detection_confidence_by_position_source,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,mapping,quantised confidence,"{""AMBIGUOUS_DETECTION"": 0.5, ""CONFIRMED_DETECTION"": 1.0, ""PREDICTED"": 0.0, ""WEAK_SPATIAL_RECOVERY"": 0.5}",,,,,The historical detection_confidence field is quantised by position_source; it is NOT a detector score.,historical exemplars HE1 (88246efe) and HE2 (40fa0df1): every frame_log record except state REIDENTIFYING (see detection_confidence_reidentifying). R0 erratum E1: R0 said 'all records'.
++detection_confidence_reidentifying,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,float,quantised confidence,0.0,0.0,1.0,,,"Historical detection_confidence on REIDENTIFYING records, which carry position_source CONFIRMED_DETECTION but were written 0.0 (11 of 11 such records in the frozen exemplars).",HE1 (1 record) and HE2 (10 records); found by the R1-A contract tests
++box_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,Rounding for bbox and observed_position_box coordinates.,HE1 and HE2: every box coordinate has 1 dp
++confidence_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,3,0,6,,,Rounding for historical confidence fields.,HE2: confidence fields have at most 3 dp
++camera_shift_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,"Rounding for frame_log camera_shift [dx, dy] px.",HE1 and HE2 camera_shift
++state_pct_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,int,decimal places,1,0,6,,,Rounding for summary.selected_state_pct values.,HE1 summary selected_state_pct (1 dp values)
++timestamp_round_dp,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_CODE,CONTRACT_VERIFIED,int,decimal places,4,0,9,,,"Rounding for timestamps (event_adapter uses round(frame / fps, 4)).","player_tracker_mo/event_adapter.py:129,144"
++target_track_id,contract,CONTRACT,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,id,T001,,,,,track_id / identity_id / online_track_id of the one logical target.,D07 (approved by Nathan); historical seed track was T001 in both frozen JSONs
++population_track_id_prefix,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,str,id prefix,T,,,,,Prefix for non-target population tracklet ids (historical T### form).,HE1 track ids T001..T035
++track_source_label,contract,CONTRACT,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,CONTRACT_VERIFIED,str,label,ONLINE,,,,,Historical per-track 'source' field value.,HE1 and HE2: source == ONLINE in every record
++untrusted_identity_confidence_ceiling,contract,CONTRACT,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,confidence (0-1),0.49,0.0,1.0,,,"When identity_trusted is false, the historical identity_confidence is forced to at most this value, so that surviving actor_attribution treats the frame as untrusted.",D19
++resume_allowed,video,RUNTIME,NEW_R1,DOCUMENTED,NOT_APPLICABLE,bool,flag,False,,,[false],,Checkpoint/resume of a Pass-1 run. Must stay False.,F15: a .mov resume landed +10 frames late (TASK3N STALE_VS_FRESH_REGISTRATION)
++seed_min_iou,video,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.5,0.0,1.0,,,The run is refused unless a raw detection at the seed frame overlaps the seed box by at least this.,D18
++frame_thumbnail_size,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,pair,"px (w, h)","[64, 36]",,,,,Size of the grey thumbnail whose SHA-1 is stored per frame for registration checks.,D20
++max_frames,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,optional_int,frames,,1,,,450,Optional cap on processed frames after the seed; None processes to the end of the video.,historical default 450 (run_mo); R1 processes the whole clip unless capped
++seek_mode,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,decode_from_zero,,,"[""decode_from_zero"", ""container_seek""]",,"How the reader reaches start_frame. decode_from_zero decodes and discards frames 0..start_frame-1 (no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",D20; F15 (a container-level resume on .mov landed +10 frames late); the R1 label-sheet tool already decodes from frame 0 for this reason
++hash_chunk_bytes,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,bytes,1048576,4096,268435456,,,Read size used when hashing the source video with SHA-256.,R1-B provenance (performance only)
++fingerprint_interpolation,video,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,OpenCV interpolation name,INTER_AREA,,,"[""INTER_AREA"", ""INTER_LINEAR"", ""INTER_NEAREST""]",,Resize method for the frame-content fingerprint thumbnail (debugging/alignment only).,R1-B frame fingerprint (R1/R1B/FRAME_FINGERPRINT.md)
++timing_drift_tolerance_frames,video,RUNTIME,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,frames,0.5,0.0,1000.0,,,"If the container's reported timestamp differs from video_frame_index / fps by more than this many frame periods, the frame is counted as a timing-drift warning (variable frame rate suspected).",R1-B video-time mapping (constant-fps assumption check)
++detector_backend,detector,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,yolox_onnx,,,"[""yolox_onnx"", ""scripted""]",,Person detector backend.,D03; R1 approval §2 (YOLOX-s DEVELOPMENT/EVALUATION)
++detector_input_size,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,px (square network input),640,320,1920,"[640, 960, 1280]",,Detector network input size. To be chosen on development footage by person-detection quality only (D17).,D17; R1 approval §3
++detector_min_score,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,detector score (0-1),0.1,0.0,1.0,,0.15,Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.,TASK3M: a partially visible target body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)
++detector_nms_iou,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.65,0.0,1.0,,,Non-maximum-suppression IoU for person boxes.,D03
++detection_min_height_h,detector,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.25,0.0,2.0,,,Detections shorter than this many target heights are ignored as competitors (noise).,D13
++onnx_intra_op_threads,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,threads,1,1,64,,,ONNX Runtime intra-op thread count (fixed for determinism).,D20
++onnx_inter_op_threads,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,threads,1,1,64,,,ONNX Runtime inter-op thread count.,D20
++onnx_sequential_execution,runtime,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,bool,flag,True,,,[true],,ONNX Runtime sequential execution mode.,D20
++appearance_backend,appearance,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,str,name,composite_lab_dinov2,,,"[""composite_lab_dinov2"", ""lab_only"", ""scripted""]",,Appearance backend.,D04; R1 approval §4
++composite_weight_lab,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,weight,0.35,0.0,1.0,,,Weight of the LAB part-colour similarity in the composite similarity.,D04: colour is supporting evidence only
++composite_weight_embedding,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,weight,0.65,0.0,1.0,,,"Weight of the generic embedding similarity (DINOv2, NOT player ReID) in the composite.",D04
++lab_upper_band,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,"fraction of box height (top, bottom)","[0.15, 0.5]",0.0,1.0,,,Vertical band of the box used for the upper-body (shirt) colour descriptor.,D04
++lab_lower_band,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,"fraction of box height (top, bottom)","[0.5, 0.8]",0.0,1.0,,,Vertical band used for the lower-body (shorts) colour descriptor.,D04
++lab_bins_per_channel,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,bins,8,2,64,,,Histogram bins per LAB channel.,D04
++crop_min_height_px,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,px (image resolution),24,4,512,,,Crops shorter than this give an invalid appearance feature (too few pixels to describe).,D12 crop quality
++crop_min_inside_fraction,appearance,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of box area,0.6,0.0,1.0,,,Minimum fraction of the box inside the image for a valid appearance feature.,D12 crop quality
++appearance_floor,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,composite similarity (0-1),0.55,0.0,1.0,,0.3,A box may become the target's observed box only if its similarity to the target bank is >= this.,"D08 test 1. Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable"
++contrastive_margin,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.08,0.0,1.0,,,Target similarity minus the best competitor similarity on the same box must be >= this.,D08 test 2; R1 approval §18
++ambiguity_margin,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.06,0.0,1.0,,0.08,The best target candidate must beat the second-best target candidate by >= this.,"D08 test 5. Historical assignment margin 0.08 (a near-miss of 0.081 decided a historical identity swap, F1)"
++contact_memory_s,identity,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,2.0,0.0,30.0,,,How long a competitor that overlapped the target keeps its pre-contact appearance for contrast.,D08
++target_height_window_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,Window of recent observed target boxes whose median height defines h.,D13
++gate_base_h,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.75,0.0,20.0,,90.0,Search-gate radius around the predicted target centre when just observed.,D13. Historical base_gate 90 px (unscaled)
++gate_growth_h_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h per s,2.0,0.0,50.0,,35.0,Gate growth while the target is unobserved (not while AMBIGUOUS).,D13. Historical gate_growth 35 px per frame
++gate_max_h,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,3.0,0.0,50.0,,350.0,Cap on the search-gate radius.,D13. Historical max_gate 350 px
++gate_grows_while_ambiguous,geometry,BEHAVIOURAL,NEW_R1,DOCUMENTED,NOT_APPLICABLE,bool,flag,False,,,[false],,Whether the gate grows during AMBIGUOUS. Must stay False.,F6: unbounded gate growth during AMBIGUOUS led to a relock 234.8 px away
++motion_veto_max_speed_h_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h per s,8.0,0.0,100.0,,,Camera-compensated target speed above this vetoes a candidate. A veto only: never proves identity.,D09; R1 approval §19
++motion_veto_max_scale_ratio_per_s,geometry,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,ratio per s,1.8,1.0,100.0,,,Box-height change faster than this factor per second vetoes a candidate.,D09
++population_match_iou_min,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.3,0.0,1.0,,,Minimum IoU to continue a population tracklet (geometry only; no identity claim).,D10
++population_max_unmatched_s,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.0,30.0,,,A population tracklet unmatched this long is dropped.,D10
++population_bank_max_samples,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,samples,8,1,1000,,,Appearance samples kept per population tracklet.,D10
++competitor_radius_h,population,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,1.5,0.0,20.0,,,"Any detection-backed body whose box centre is within this of the target gate is a competitor, from its first frame, regardless of team label or age.",D10; R1 approval §E
++merged_area_ratio,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,ratio to recent median target area,1.6,1.0,100.0,,,A candidate box larger than this multiple of the target's recent median area is merged-suspect.,D11; F2 (a historical merged box for two players measured x3.1 the target area)
++merged_aspect_band,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,pair,ratio to recent median aspect (w/h),"[0.6, 1.6]",0.0,100.0,,,Aspect ratio outside this band relative to the target's median is merged-suspect.,D11
++merged_overlap_min,merged,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of predicted box area,0.3,0.0,1.0,,,A box covering at least this fraction of BOTH the target's and a competitor's predicted boxes is merged-suspect.,D11
++bank_max_samples,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,int,samples,24,1,1000,,,Target appearance bank capacity (diversity-pruned).,D12
++bank_contact_iou,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,IoU ratio,0.05,0.0,1.0,,,No bank update if any competitor box overlaps the target box by more than this.,D12
++bank_min_crop_quality,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,quality (0-1),0.6,0.0,1.0,,,No bank update from a crop below this quality.,D12
++bank_min_novelty,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.02,0.0,1.0,,,A new sample is added only if it differs from its nearest bank sample by at least this.,D12 diversity pruning
++post_reacq_quarantine_s,bank,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,No bank update for this long after a reacquisition.,D12
++max_occluded_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,10,OCCLUDED becomes LOST after this long.,"D14. Historical occlusion_to_lost_frames 10 (frames, not seconds)"
++max_ambiguous_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.0,30.0,,,AMBIGUOUS becomes LOST after this long (it must age out).,D14; F6 (AMBIGUOUS never aged out historically)
++occluder_cover_min,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of predicted target box,0.3,0.0,1.0,,,"If a competitor covers at least this fraction of the target's predicted box, an unobserved target is OCCLUDED rather than LOST.",D14
++confidence_half_life_s,state,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.001,30.0,,,identity_confidence_rb halves for every this-many seconds the target goes unconfirmed.,D14
++reacq_appearance_floor,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,composite similarity (0-1),0.62,0.0,1.0,,,Appearance floor during reacquisition (stricter than ordinary association).,D15
++reacq_contrastive_margin,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.12,0.0,1.0,,0.08,"Contrastive margin during reacquisition, before any absence growth.",D15. Historical re-entry margin 0.08
++reacq_margin_growth_per_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference per s of absence,0.02,0.0,1.0,,,Longer absence raises the reacquisition margin by this much per second.,"D15; R1 approval §F (longer absence, stronger evidence)"
++reacq_margin_cap,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,similarity difference,0.25,0.0,1.0,,,Upper limit of the grown reacquisition margin.,D15
++reacq_window_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,0.5,0.0,30.0,,,Verification window W for a reacquisition candidate.,D15
++reacq_min_hit_fraction,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of window frames,0.6,0.0,1.0,,,The candidate must pass in at least this fraction of the window's frames (K of W).,D15
++lost_long_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,3.0,0.0,600.0,,,"After this long LOST, the positional prior is dropped (appearance only).",D15
++positional_prior_half_life_s,reacquisition,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,s,1.0,0.001,600.0,,,The positional prior's weight in reacquisition halves every this-many seconds since confirmation.,D15
++cut_hist_distance_min,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,Bhattacharyya distance (0-1),0.5,0.0,1.0,,,"A frame-to-frame grey-histogram distance at least this, together with flow failure, is a hard cut.",D16
++cut_flow_inlier_fraction_max,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,fraction of tracked features,0.2,0.0,1.0,,,Optical flow with fewer surviving inliers than this counts as flow failure.,D16
++flow_max_corners,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,int,features,300,10,10000,,,Maximum background features for global-motion estimation.,D16
++flow_quality_level,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,float,OpenCV corner quality (0-1),0.01,0.0,1.0,,,goodFeaturesToTrack quality level.,D16
++flow_min_distance_px,camera,RUNTIME,NEW_R1,DESIGN_CHOICE,NOT_APPLICABLE,float,px (image resolution),8.0,1.0,1000.0,,,Minimum spacing between flow features.,D16
++flow_person_mask_pad_h,camera,BEHAVIOURAL,NEW_R1,DESIGN_CHOICE,UNVALIDATED,float,h,0.1,0.0,5.0,,,Padding around person boxes excluded from background flow.,D16
++hist_assoc_weight_appearance,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.4,,,,,Historical linear association weight (audit only).,"least-squares fit, task3m association_capture.json (116 candidates, max err 0.0007)"
++hist_assoc_weight_motion,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.2,,,,,Historical association weight (audit only).,same fit
++hist_assoc_weight_iou_last_box,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.1,,,,,Historical association weight (audit only).,same fit
++hist_assoc_weight_colour_hsv,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.15,,,,,"Historical HSV colour weight (audit only; inverted under contamination, F1e).",same fit
++hist_assoc_weight_size,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_OUTPUT,NOT_APPLICABLE,float,weight,0.05,,,,,Historical association weight (audit only).,same fit
++hist_min_appearance_floor,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,cosine similarity (yolo26n-reid),0.3,,,,,Historical appearance floor (audit only).,TASK3M_REID_APPEARANCE_AUDIT.md s2
++hist_ambiguity_margin,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,score margin,0.08,,,,,Historical assignment ambiguity margin (audit only).,TASK3M_MOTION_ASSOCIATION_AUDIT.md s2
++hist_base_gate_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,90.0,,,,,Historical base gate (audit only).,TASK3C finding 4
++hist_gate_growth_px_per_frame,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px per frame,35.0,,,,,Historical gate growth (audit only).,TASK3C finding 4
++hist_max_gate_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,350.0,,,,,Historical max gate (audit only).,TASK3C finding 4
++hist_fast_path_radius_px,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,float,px,45.0,,,,,Historical identity fast-path radius (audit only; the fast path is defect F1 and is not rebuilt).,TASK3M_MOTION_ASSOCIATION_AUDIT.md s2
++hist_occlusion_to_lost_frames,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,DOCUMENTED,NOT_APPLICABLE,int,frames,10,,,,,Historical OCCLUDED->LOST limit (audit only).,TASK3C
++hist_max_frames_default,historical,REFERENCE_ONLY,HISTORICAL_REFERENCE,VERIFIED_CODE,NOT_APPLICABLE,int,frames,450,,,,,Historical run_mo max_frames default (audit only).,pipeline.py:217
+diff --git a/R1/R1_GENERIC/TEST_OUTPUT_mac.txt b/R1/R1_GENERIC/TEST_OUTPUT_mac.txt
+new file mode 100644
+index 0000000..a59ebef
+--- /dev/null
++++ b/R1/R1_GENERIC/TEST_OUTPUT_mac.txt
+@@ -0,0 +1,111 @@
++# r1-generic test run on Mac: 2026-10-24T07:33:52Z
++Python 3.10.12
++test_hash_deterministic_and_sensitive (tests_rb.test_config.TestHashing) ... ok
++test_record_is_json_safe (tests_rb.test_config.TestHashing) ... ok
++test_defaults_pass_their_own_checks (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_every_param_documents_itself (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_historical_values_match_r0_constants_registry (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_names_unique (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_new_behavioural_values_are_not_claimed_validated (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_new_params_with_historical_counterparts_record_them (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_no_historical_fast_path_parameter_is_usable (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_reference_only_params_are_historical (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_time_params_are_seconds_and_geometry_in_h (tests_rb.test_config.TestRegistryCompleteness) ... ok
++test_h_conversions (tests_rb.test_config.TestUnits) ... ok
++test_same_duration_at_different_fps (tests_rb.test_config.TestUnits) ... ok
++test_seconds_to_frames (tests_rb.test_config.TestUnits) ... ok
++test_cross_checks (tests_rb.test_config.TestValidation) ... ok
++test_default_builds (tests_rb.test_config.TestValidation) ... ok
++test_immutable (tests_rb.test_config.TestValidation) ... ok
++test_reference_only_cannot_be_overridden (tests_rb.test_config.TestValidation) ... ok
++test_type_range_allowed_checks (tests_rb.test_config.TestValidation) ... ok
++test_unknown_override_rejected (tests_rb.test_config.TestValidation) ... ok
++test_valid_override_recorded (tests_rb.test_config.TestValidation) ... ok
++test_detection_confidence_is_quantised_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_exemplars_are_not_r1_documents (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_exemplars_validate_as_historical_contract (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_field_lists_match_exemplars_exactly (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_historical_rejections (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_selected_confidence_rule_matches_exemplars (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_strip_v2_is_identity_on_historical (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_target_triples_were_all_observed_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
++test_detection_confidence_must_stay_quantised (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_final_tracks_carry_no_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_frame_numbering (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_held_box_reported_as_observed (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_held_box_written_as_confirmed_detection (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_merged_detection_cannot_be_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_non_historical_key_outside_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_one_selected_record_per_frame (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_population_record_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_processed_frames_must_match (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_provenance_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_reacquisition_events_must_match_episodes (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_target_id_must_stay_t001 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_trusted_identity_requires_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_unknown_reason_rejected (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_untrusted_identity_above_actor_attribution_threshold (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_untrusted_needs_a_reason (tests_rb.test_output_schema.TestInvariantViolations) ... ok
++test_all_states_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_builder_refuses_bad_input (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_canonical_dump_deterministic (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_rounding_matches_historical_precision (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_strip_v2_leaves_valid_historical_document (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_synthetic_document_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
++test_mapping_table_consistent (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_only_tracking_reaches_legacy_tracking (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_r1_state_mapping (tests_rb.test_output_schema.TestStateMapping) ... ok
++test_fingerprint_confined_to_video_layer (tests_rb.test_package_hygiene.TestFingerprintIsNotAnIdentityFeature) ... ok
++test_rebuild_header_everywhere (tests_rb.test_package_hygiene.TestHeaders) ... ok
++test_package_imports_only_allowed_modules (tests_rb.test_package_hygiene.TestImports) ... ok
++test_no_benchmark_terms_in_package (tests_rb.test_package_hygiene.TestNoBenchmarkKnowledgeInTracker) ... ok
++test_patterns_catch_examples (tests_rb.test_package_hygiene.TestNoBenchmarkKnowledgeInTracker) ... ok
++test_no_numeric_thresholds_outside_config (tests_rb.test_package_hygiene.TestNoMagicNumbers) ... ok
++test_bad_seed_bbox_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_config_hash_recorded_and_sensitive (tests_rb.test_provenance.TestProvenance) ... ok
++test_contract_block_fields (tests_rb.test_provenance.TestProvenance) ... ok
++test_contract_block_fits_r1a_summary (tests_rb.test_provenance.TestProvenance) ... ok
++test_deterministic_across_runs (tests_rb.test_provenance.TestProvenance) ... ok
++test_digest_detects_real_differences (tests_rb.test_provenance.TestProvenance) ... ok
++test_dirty_tree_recorded (tests_rb.test_provenance.TestProvenance) ... ok
++test_git_failure_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_git_state_outside_repo_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
++test_model_records_must_be_complete (tests_rb.test_provenance.TestProvenance) ... ok
++test_real_git_state_of_this_tree (tests_rb.test_provenance.TestProvenance) ... ok
++test_sidecar_fields (tests_rb.test_provenance.TestProvenance) ... ok
++test_sidecar_refused_without_close_verification (tests_rb.test_provenance.TestProvenance) ... ok
++test_write_sidecar_canonical_and_no_overwrite (tests_rb.test_provenance.TestProvenance) ... ok
++test_hash_mismatch_refused (tests_rb.test_video_io.TestFailureModes) ... ok
++test_invalid_paths (tests_rb.test_video_io.TestFailureModes) ... ok
++test_start_frame_beyond_stream_when_count_unknown (tests_rb.test_video_io.TestFailureModes) ... ok
++test_start_frame_out_of_range (tests_rb.test_video_io.TestFailureModes) ... ok
++test_unreadable_files (tests_rb.test_video_io.TestFailureModes) ... [mov,mp4,m4a,3gp,3g2,mj2 @ 0xb089f37de2b0] moov atom not found
++[mov,mp4,m4a,3gp,3g2,mj2 @ 0xb089f37de2b0] moov atom not found
++ok
++test_fingerprint_depends_on_documented_settings (tests_rb.test_video_io.TestFingerprint) ... ok
++test_fingerprint_reproducible_and_distinct (tests_rb.test_video_io.TestFingerprint) ... ok
++test_frames_build_valid_frame_records (tests_rb.test_video_io.TestFrameLogNumberingContract) ... ok
++test_numbering_matches_frozen_exemplars (tests_rb.test_video_io.TestFrameLogNumberingContract) ... ok
++test_gold_seed_and_first_frames (tests_rb.test_video_io.TestGoldVideoAlignment) ... ok
++test_no_resume_or_checkpoint_api (tests_rb.test_video_io.TestNoResume) ... ok
++test_reader_writes_nothing (tests_rb.test_video_io.TestNoResume) ... ok
++test_resume_cannot_be_enabled (tests_rb.test_video_io.TestNoResume) ... ok
++test_no_seek_during_run (tests_rb.test_video_io.TestSinglePositioning) ... ok
++test_change_during_iteration (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
++test_deleted_source_detected (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
++test_same_size_content_change_detected_at_close (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
++test_chunk_size_does_not_change_hash (tests_rb.test_video_io.TestSourceHashing) ... ok
++test_sha256_recorded (tests_rb.test_video_io.TestSourceHashing) ... ok
++test_first_logged_step_is_next_frame_and_sequence_is_contiguous (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_iterate_only_once (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_max_frames_cap (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_no_duplicate_or_skipped_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_seed_is_start_frame_both_seek_modes (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_seek_modes_decode_identical_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
++test_legacy_snapshot_timestamp_is_relative (tests_rb.test_video_io.TestTimeMapping) ... ok
++test_time_mapping_30_and_non_30_fps (tests_rb.test_video_io.TestTimeMapping) ... ok
++
++----------------------------------------------------------------------
++Ran 102 tests in 5.652s
++
++OK
+diff --git a/R1/R1_GENERIC_TRACKER_REQUIREMENT.md b/R1/R1_GENERIC_TRACKER_REQUIREMENT.md
+new file mode 100644
+index 0000000..b62def2
+--- /dev/null
++++ b/R1/R1_GENERIC_TRACKER_REQUIREMENT.md
+@@ -0,0 +1,253 @@
++# SPANA ELITE
++## GENERIC PLAYER TRACKER REQUIREMENT
++
++The `player_tracker_rb/` code must be fully generic.
++
++It must NOT contain production logic that is specific to:
++
++- SOL #23;
++- MAR #4;
++- any shirt number;
++- any club;
++- any team colour;
++- any benchmark clip;
++- any specific frame number;
++- any specific camera position;
++- any specific stadium;
++- any known distractor such as the royal-blue ball boy.
++
++Those entities may appear only in:
++- human-label files;
++- benchmark fixtures;
++- test data;
++- evaluation reports;
++- diagnostic notes.
++
++They must never influence the generic tracking algorithm.
++
++## TARGET PLAYER ABSTRACTION
++
++The tracker should know only:
++
++`TARGET_PLAYER`
++
++The target must be initialized from generic seed information such as:
++
++- seed frame;
++- seed bounding box;
++- optional human-selected target crop;
++- optional future user-selected identity metadata.
++
++The tracker should not need to know:
++- the player's name;
++- shirt number;
++- team;
++- position;
++- benchmark identity.
++
++## OTHER PEOPLE
++
++Every other person in the scene should initially be treated generically as:
++
++`PERSON_CANDIDATE`
++
++They may later become temporary tracklets or competitors.
++
++The tracker must not assume that another detected person is:
++- teammate;
++- opponent;
++- spectator;
++- referee;
++- ball boy;
++
++unless a separate validated classifier provides that information.
++
++Even then, team/role classification must not be required for basic target identity tracking.
++
++## GENERIC IDENTITY QUESTION
++
++At every frame, the tracker should answer:
++
++> Which current detection, if any, has sufficient evidence to represent the same physical person selected at initialization?
++
++The decision should be based on generic evidence such as:
++
++- appearance similarity;
++- contrast against nearby competitors;
++- spatial continuity;
++- scale consistency;
++- motion plausibility;
++- temporal continuity;
++- occlusion context;
++- detection quality;
++- candidate uniqueness.
++
++It must not use benchmark-specific knowledge.
++
++## GENERIC COMPETITOR HANDLING
++
++Any nearby person can compete with the target identity.
++
++This includes:
++
++- same-team player;
++- opponent;
++- referee;
++- substitute;
++- spectator;
++- ball boy;
++- staff member;
++- partially visible person.
++
++A competitor does not need to have a persistent track ID before it can block a target match.
++
++The tracker should ask:
++
++> Is this candidate sufficiently like the target, and sufficiently more like the target than nearby alternatives?
++
++## NO SHIRT-NUMBER DEPENDENCY
++
++Shirt-number recognition must not be required for target tracking.
++
++If number recognition is later added, it may be used only as optional supporting evidence.
++
++The tracker must still work when:
++- numbers are invisible;
++- numbers are blurred;
++- players turn away;
++- two players share similar-looking digits;
++- OCR fails.
++
++## NO TEAM-COLOUR DEPENDENCY
++
++Kit colour can be one appearance cue, but it must never uniquely establish identity.
++
++Many players on the same team wear identical colours.
++
++Colour can help reject obviously incompatible candidates, but cannot prove identity by itself.
++
++## NO FRAME-SPECIFIC RULES
++
++Never implement logic such as:
++
++- "after frame 266";
++- "near frame 273";
++- "during the GOLD collision";
++- "if target is on the left side here";
++- "ignore this region in this clip."
++
++If a benchmark exposes a failure, translate it into a general rule.
++
++Example:
++
++BAD:
++> At frame 267, do not switch to the player in front.
++
++GOOD:
++> When the target becomes fully occluded by another person, do not confirm the occluder as the target unless independent appearance evidence supports that identity.
++
++## GENERIC REACQUISITION
++
++Reacquisition must work for any target player.
++
++After loss or occlusion, the tracker should:
++
++1. generate plausible candidates;
++2. compare them to trusted target history;
++3. compare them against nearby competitors;
++4. apply stricter evidence than ordinary frame-to-frame association;
++5. return AMBIGUOUS or LOST if evidence is insufficient.
++
++Do not use known future position or benchmark labels.
++
++## GENERIC APPEARANCE MEMORY
++
++The target appearance bank must be built from trusted observations of whichever player the user selected.
++
++It should not contain hard-coded references to any benchmark player.
++
++The appearance bank should support:
++- multiple poses;
++- front/back views;
++- scale changes;
++- lighting changes;
++- partial visibility.
++
++Only trusted observations may update it.
++
++## GENERIC OUTPUT
++
++The tracker output should use neutral identifiers such as:
++
++`target_id: "T001"`
++
++and generic candidate/tracklet IDs.
++
++Do not write:
++- `SOL23`;
++- `MAR4`;
++- player names;
++- club names
++
++into production identity logic.
++
++Benchmark reports may map:
++
++`T001 -> SOL #23`
++
++for human readability, but this mapping must live outside the tracker.
++
++## BENCHMARKS MUST NOT LEAK INTO THE TRACKER
++
++GOLD is a test of the generic tracker.
++
++The tracker must not know it is processing GOLD.
++
++Running GOLD should use exactly the same tracker code and decision logic as any future user-uploaded football clip.
++
++The only differences should be inputs such as:
++- video;
++- seed frame;
++- seed box;
++- configuration.
++
++## REQUIRED TEST PRINCIPLE
++
++For every important tracking rule, create synthetic tests with neutral identities:
++
++- TARGET;
++- PERSON_A;
++- PERSON_B;
++- PERSON_C.
++
++Do not build core unit tests around SOL #23 and MAR #4.
++
++GOLD remains a real-footage integration benchmark only.
++
++## FUTURE PRODUCT REQUIREMENT
++
++SPANA Elite must eventually support:
++
++> User selects any player in any football video → tracker follows that physical player.
++
++Therefore every architectural decision must be evaluated against:
++
++> Would this still work if the selected player were someone completely different in another match?
++
++If the answer is no, redesign it.
++
++## FINAL RULE
++
++SOL #23 and MAR #4 are benchmark subjects.
++
++They are not part of the SPANA Elite tracking algorithm.
++
++The production tracker must understand:
++
++TARGET PLAYER
++
++versus
++
++OTHER PHYSICAL PEOPLE
++
++and nothing benchmark-specific beyond that.
+\ No newline at end of file
+diff --git a/player_tracker_rb/config.py b/player_tracker_rb/config.py
+index 15e01f9..93f7923 100644
+--- a/player_tracker_rb/config.py
++++ b/player_tracker_rb/config.py
+@@ -28,6 +28,10 @@ Units:
+   boxes: see `h_to_px`. Pixels appear only where the quantity really is about image resolution
+   (crop size, optical-flow feature spacing) or where the historical contract fixes it.
+ 
++Historical exemplars cited in evidence strings: HE1 = frozen 3N Pass-1 output sha256 88246efe..., HE2 = frozen 3N
++Pass-1 output sha256 40fa0df1... (fixtures/historical_contract/, HISTORICAL_CONTRACT_HASHES.sha256). They are
++contract evidence only; no clip, player or frame knowledge enters any decision (R1/R1_GENERIC_TRACKER_REQUIREMENT.md).
++
+ Every NEW_R1 value is UNVALIDATED until synthetic tests (R1) and DEV tracking labels (R2) say otherwise.
+ Values must never be tuned on event results.
+ """
+@@ -51,7 +55,7 @@ MS_PER_SECOND = 1000.0
+ SOURCES = ("HISTORICAL_REFERENCE", "NEW_R1")
+ EVIDENCE_LEVELS = ("VERIFIED_CODE", "VERIFIED_OUTPUT", "VERIFIED_TEST", "DOCUMENTED", "INFERRED",
+                    "UNKNOWN", "DESIGN_CHOICE")
+-VALIDATION_STATUSES = ("UNVALIDATED", "SYNTHETIC_TESTED", "GOLD_DEV_CHECKED", "R2_VALIDATED",
++VALIDATION_STATUSES = ("UNVALIDATED", "SYNTHETIC_TESTED", "BENCHMARK_DEV_CHECKED", "R2_VALIDATED",
+                        "CONTRACT_VERIFIED", "NOT_APPLICABLE")
+ ROLES = ("BEHAVIOURAL", "CONTRACT", "RUNTIME", "REFERENCE_ONLY")
+ 
+@@ -118,23 +122,23 @@ PARAMS: Tuple[Param, ...] = (
+        MappingProxyType({"CONFIRMED_DETECTION": 1.0, "AMBIGUOUS_DETECTION": 0.5,
+                          "WEAK_SPATIAL_RECOVERY": 0.5, "PREDICTED": 0.0}),
+        H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract",
+-       "GOLD.json 88246efe and PC.json 40fa0df1: every frame_log record except state REIDENTIFYING "
++       "historical exemplars HE1 (88246efe) and HE2 (40fa0df1): every frame_log record except state REIDENTIFYING "
+        "(see detection_confidence_reidentifying). R0 erratum E1: R0 said 'all records'."),
+     _p("detection_confidence_reidentifying", "float", "quantised confidence",
+        "Historical detection_confidence on REIDENTIFYING records, which carry position_source "
+        "CONFIRMED_DETECTION but were written 0.0 (11 of 11 such records in the frozen exemplars).",
+        0.0, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract",
+-       "GOLD.json (1 record) and PC.json (10 records); found by the R1-A contract tests", 0.0, 1.0),
++       "HE1 (1 record) and HE2 (10 records); found by the R1-A contract tests", 0.0, 1.0),
+     _p("box_round_dp", "int", "decimal places",
+        "Rounding for bbox and observed_position_box coordinates.", 1, H, "VERIFIED_OUTPUT",
+-       "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json: every box coordinate has 1 dp", 0, 6),
++       "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2: every box coordinate has 1 dp", 0, 6),
+     _p("confidence_round_dp", "int", "decimal places",
+        "Rounding for historical confidence fields.", 3, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED",
+-       "CONTRACT", "contract", "PC.json: confidence fields have at most 3 dp", 0, 6),
++       "CONTRACT", "contract", "HE2: confidence fields have at most 3 dp", 0, 6),
+     _p("camera_shift_round_dp", "int", "decimal places", "Rounding for frame_log camera_shift [dx, dy] px.",
+-       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json camera_shift", 0, 6),
++       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2 camera_shift", 0, 6),
+     _p("state_pct_round_dp", "int", "decimal places", "Rounding for summary.selected_state_pct values.",
+-       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json summary {ACTIVE: 93.9, ...}", 0, 6),
++       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 summary selected_state_pct (1 dp values)", 0, 6),
+     _p("timestamp_round_dp", "int", "decimal places",
+        "Rounding for timestamps (event_adapter uses round(frame / fps, 4)).", 4, H, "VERIFIED_CODE",
+        "CONTRACT_VERIFIED", "CONTRACT", "contract", "player_tracker_mo/event_adapter.py:129,144", 0, 9),
+@@ -143,9 +147,9 @@ PARAMS: Tuple[Param, ...] = (
+        "D07 (approved by Nathan); historical seed track was T001 in both frozen JSONs"),
+     _p("population_track_id_prefix", "str", "id prefix",
+        "Prefix for non-target population tracklet ids (historical T### form).", "T", H, "VERIFIED_OUTPUT",
+-       "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json track ids T001..T035"),
++       "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 track ids T001..T035"),
+     _p("track_source_label", "str", "label", "Historical per-track 'source' field value.", "ONLINE", H,
+-       "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json: source == ONLINE in every record"),
++       "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2: source == ONLINE in every record"),
+     _p("untrusted_identity_confidence_ceiling", "float", "confidence (0-1)",
+        "When identity_trusted is false, the historical identity_confidence is forced to at most this value, "
+        "so that surviving actor_attribution treats the frame as untrusted.",
+@@ -171,7 +175,7 @@ PARAMS: Tuple[Param, ...] = (
+        "(no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the "
+        "reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",
+        "decode_from_zero", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
+-       "D20; F15 (a container-level resume on .mov landed +10 frames late); tools_rb/make_gold_label_sheet.py "
++       "D20; F15 (a container-level resume on .mov landed +10 frames late); the R1 label-sheet tool "
+        "already decodes from frame 0 for this reason", allowed=("decode_from_zero", "container_seek")),
+     _p("hash_chunk_bytes", "int", "bytes", "Read size used when hashing the source video with SHA-256.", 1048576,
+        N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B provenance (performance only)", 4096,
+@@ -191,13 +195,13 @@ PARAMS: Tuple[Param, ...] = (
+        "NOT_APPLICABLE", "RUNTIME", "detector", "D03; R1 approval §2 (YOLOX-s DEVELOPMENT/EVALUATION)",
+        allowed=("yolox_onnx", "scripted")),
+     _p("detector_input_size", "int", "px (square network input)",
+-       "Detector network input size. To be chosen on GOLD by person-detection quality only (D17).", 640, N,
++       "Detector network input size. To be chosen on development footage by person-detection quality only (D17).", 640, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; R1 approval §3", 320, 1920,
+        allowed=(640, 960, 1280)),
+     _p("detector_min_score", "float", "detector score (0-1)",
+        "Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.",
+        0.10, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
+-       "TASK3M: #23's partial body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)",
++       "TASK3M: a partially visible target body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)",
+        0.0, 1.0, historical_value=0.15),
+     _p("detector_nms_iou", "float", "IoU ratio", "Non-maximum-suppression IoU for person boxes.", 0.65, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D03", 0.0, 1.0),
+@@ -250,7 +254,7 @@ PARAMS: Tuple[Param, ...] = (
+     _p("ambiguity_margin", "float", "similarity difference",
+        "The best target candidate must beat the second-best target candidate by >= this.", 0.06, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+-       "D08 test 5. Historical assignment margin 0.08 (near-miss 0.081 decided the GOLD swap)",
++       "D08 test 5. Historical assignment margin 0.08 (a near-miss of 0.081 decided a historical identity swap, F1)",
+        0.0, 1.0, historical_value=0.08),
+     _p("contact_memory_s", "float", "s",
+        "How long a competitor that overlapped the target keeps its pre-contact appearance for contrast.",
+@@ -294,7 +298,7 @@ PARAMS: Tuple[Param, ...] = (
+     # ---- merged-detection guard (D11) --------------------------------------------------------
+     _p("merged_area_ratio", "float", "ratio to recent median target area",
+        "A candidate box larger than this multiple of the target's recent median area is merged-suspect.", 1.6, N,
+-       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11 (GOLD 266: area x3.1, one box for two players)",
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11; F2 (a historical merged box for two players measured x3.1 the target area)",
+        1.0, 100.0),
+     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
+        "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,
+diff --git a/player_tracker_rb/output_schema.py b/player_tracker_rb/output_schema.py
+index d1db413..75dec89 100644
+--- a/player_tracker_rb/output_schema.py
++++ b/player_tracker_rb/output_schema.py
+@@ -1,7 +1,7 @@
+ # SPANA engine v2-rebuild
+ # REBUILT 2026-10 — NOT ORIGINAL SOURCE
+ # Evidence basis: R0/R0_TRACKER_INTERFACE_MAP.md §0-§6 (historical Pass-1 JSON contract, recovered from frozen
+-#                 GOLD.json 88246efe and PC.json 40fa0df1 plus surviving consumers event_adapter.py and
++#                 historical exemplars HE1 (88246efe) and HE2 (40fa0df1) plus surviving consumers event_adapter.py and
+ #                 actor_attribution.py); R1/R1_DESIGN_DECISIONS.md D01, D05, D06, D07, D19, D20
+ """
+ player_tracker_rb.output_schema: the Pass-1 tracking JSON contract, historical part plus additive v2 part.
+@@ -78,8 +78,8 @@ CONFIDENCE_FIELDS: Tuple[str, ...] = tuple(n for n, t in TRACK_FIELDS if t == "n
+ # Historical online state vocabulary (7 observed values; TERMINATED appears only as a pipeline default).
+ HISTORICAL_STATES: Tuple[str, ...] = ("ACTIVE", "PROVISIONAL", "AMBIGUOUS", "OCCLUDED", "TEMPORARILY_LOST",
+                                       "REIDENTIFYING", "OUT_OF_FRAME")
+-# final_tracks additionally uses TERMINATED (GOLD 20 of 35, PC 45 of 70 final records; never in frame_log),
+-# and there merged_into may name the absorbing track (GOLD 'T014' etc.; always None in frame_log).
++# final_tracks additionally uses TERMINATED (HE1 20 of 35, HE2 45 of 70 final records; never in frame_log),
++# and there merged_into may name the absorbing track (HE1 'T014' etc.; always None in frame_log).
+ # Both are VERIFIED_OUTPUT facts found by validating the frozen exemplars in R1-A.
+ FINAL_TRACK_EXTRA_STATES: Tuple[str, ...] = ("TERMINATED",)
+ OCCLUSION_STATUSES: Tuple[str, ...] = ("NONE", "PARTIAL", "FULL", "AMBIGUOUS", "WEAK_SPATIAL_RECOVERY")
+@@ -143,7 +143,7 @@ def legacy_state_for(historical_state: str) -> str:
+ 
+ 
+ # Historical (state, occlusion_status, position_source) written for each R1 situation. Every triple here was
+-# observed in GOLD.json (R0_TRACKER_INTERFACE_MAP §4, joint table), so R1 never emits a combination unseen in
++# observed in HE1 (R0_TRACKER_INTERFACE_MAP §4, joint table), so R1 never emits a combination unseen in
+ # the historical outputs.
+ OBSERVED_HISTORICAL_TRIPLES: Tuple[Tuple[str, str, str], ...] = (
+     ("ACTIVE", "NONE", "CONFIRMED_DETECTION"),
+diff --git a/tests_rb/_synth_docs.py b/tests_rb/_synth_docs.py
+index a12780e..5755c32 100644
+--- a/tests_rb/_synth_docs.py
++++ b/tests_rb/_synth_docs.py
+@@ -9,9 +9,9 @@ from player_tracker_rb import output_schema as S
+ from player_tracker_rb.config import TrackerConfig
+ 
+ FPS = 30.0
+-START = 180
+-SEED_BOX = [635.3, 304.1, 757.8, 438.3]
+-BOX = [659.5, 309.3, 758.2, 444.9]
++START = 100
++SEED_BOX = [400.0, 200.0, 460.0, 330.0]   # neutral, made-up values
++BOX = [402.5, 201.5, 462.5, 331.5]
+ 
+ 
+ def confidences(identity, overall=None):
+diff --git a/tests_rb/test_package_hygiene.py b/tests_rb/test_package_hygiene.py
+index ef5f269..8592a88 100644
+--- a/tests_rb/test_package_hygiene.py
++++ b/tests_rb/test_package_hygiene.py
+@@ -109,5 +109,37 @@ class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
+         self.assertEqual(offenders, [])
+ 
+ 
++class TestNoBenchmarkKnowledgeInTracker(unittest.TestCase):
++    """R1/R1_GENERIC_TRACKER_REQUIREMENT.md: the production package knows only TARGET_PLAYER and other physical
++    people. Benchmark subjects, clips, distractors and club names may appear only in labels, fixtures, tests,
++    evaluation reports and notes, never in player_tracker_rb/ (code, comments or docstrings)."""
++    import re as _re
++    PATTERNS = (r"\bGOLD\b", r"gold_", r"\bSOL\b", r"\bMAR\b", r"#\s?23\b", r"#\s?4\b", r"\bsyo\b",
++                r"syo_mar", r"duel_01", r"pass_completed", r"ball[ _-]?boy", r"royal[ -]?blue", r"\bPC\.json\b",
++                r"\bGOLD\.json\b", r"3036_3048")
++
++    def test_no_benchmark_terms_in_package(self):
++        offenders = []
++        for path in _py_files("player_tracker_rb"):
++            with open(path, encoding="utf-8") as fh:
++                lines = fh.readlines()
++            for n, line in enumerate(lines, start=1):
++                for pat in self.PATTERNS:
++                    if self._re.search(pat, line, flags=self._re.IGNORECASE if pat.islower() else 0):
++                        offenders.append(f"{os.path.basename(path)}:{n}: {pat}")
++        self.assertEqual(offenders, [], "benchmark-specific terms in the production package:\n" + "\n".join(offenders))
++
++    def test_patterns_catch_examples(self):
++        bad = ["GOLD 266", "SOL #23", "MAR #4", "make_gold_label_sheet", "royal-blue ball boy", "syo_mar_3036_3048"]
++        for text in bad:
++            with self.subTest(text=text):
++                self.assertTrue(any(self._re.search(p, text, flags=self._re.IGNORECASE if p.islower() else 0)
++                                    for p in self.PATTERNS))
++        for ok in ("resolution", "marked", "Solver", "golden-section"):
++            with self.subTest(text=ok):
++                self.assertFalse(any(self._re.search(p, ok, flags=self._re.IGNORECASE if p.islower() else 0)
++                                     for p in self.PATTERNS))
++
++
+ if __name__ == "__main__":
+     unittest.main()

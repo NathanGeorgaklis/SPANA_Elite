@@ -28,6 +28,10 @@ Units:
   boxes: see `h_to_px`. Pixels appear only where the quantity really is about image resolution
   (crop size, optical-flow feature spacing) or where the historical contract fixes it.
 
+Historical exemplars cited in evidence strings: HE1 = frozen 3N Pass-1 output sha256 88246efe..., HE2 = frozen 3N
+Pass-1 output sha256 40fa0df1... (fixtures/historical_contract/, HISTORICAL_CONTRACT_HASHES.sha256). They are
+contract evidence only; no clip, player or frame knowledge enters any decision (R1/R1_GENERIC_TRACKER_REQUIREMENT.md).
+
 Every NEW_R1 value is UNVALIDATED until synthetic tests (R1) and DEV tracking labels (R2) say otherwise.
 Values must never be tuned on event results.
 """
@@ -51,7 +55,7 @@ MS_PER_SECOND = 1000.0
 SOURCES = ("HISTORICAL_REFERENCE", "NEW_R1")
 EVIDENCE_LEVELS = ("VERIFIED_CODE", "VERIFIED_OUTPUT", "VERIFIED_TEST", "DOCUMENTED", "INFERRED",
                    "UNKNOWN", "DESIGN_CHOICE")
-VALIDATION_STATUSES = ("UNVALIDATED", "SYNTHETIC_TESTED", "GOLD_DEV_CHECKED", "R2_VALIDATED",
+VALIDATION_STATUSES = ("UNVALIDATED", "SYNTHETIC_TESTED", "BENCHMARK_DEV_CHECKED", "R2_VALIDATED",
                        "CONTRACT_VERIFIED", "NOT_APPLICABLE")
 ROLES = ("BEHAVIOURAL", "CONTRACT", "RUNTIME", "REFERENCE_ONLY")
 
@@ -118,23 +122,23 @@ PARAMS: Tuple[Param, ...] = (
        MappingProxyType({"CONFIRMED_DETECTION": 1.0, "AMBIGUOUS_DETECTION": 0.5,
                          "WEAK_SPATIAL_RECOVERY": 0.5, "PREDICTED": 0.0}),
        H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract",
-       "GOLD.json 88246efe and PC.json 40fa0df1: every frame_log record except state REIDENTIFYING "
+       "historical exemplars HE1 (88246efe) and HE2 (40fa0df1): every frame_log record except state REIDENTIFYING "
        "(see detection_confidence_reidentifying). R0 erratum E1: R0 said 'all records'."),
     _p("detection_confidence_reidentifying", "float", "quantised confidence",
        "Historical detection_confidence on REIDENTIFYING records, which carry position_source "
        "CONFIRMED_DETECTION but were written 0.0 (11 of 11 such records in the frozen exemplars).",
        0.0, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract",
-       "GOLD.json (1 record) and PC.json (10 records); found by the R1-A contract tests", 0.0, 1.0),
+       "HE1 (1 record) and HE2 (10 records); found by the R1-A contract tests", 0.0, 1.0),
     _p("box_round_dp", "int", "decimal places",
        "Rounding for bbox and observed_position_box coordinates.", 1, H, "VERIFIED_OUTPUT",
-       "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json: every box coordinate has 1 dp", 0, 6),
+       "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2: every box coordinate has 1 dp", 0, 6),
     _p("confidence_round_dp", "int", "decimal places",
        "Rounding for historical confidence fields.", 3, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED",
-       "CONTRACT", "contract", "PC.json: confidence fields have at most 3 dp", 0, 6),
+       "CONTRACT", "contract", "HE2: confidence fields have at most 3 dp", 0, 6),
     _p("camera_shift_round_dp", "int", "decimal places", "Rounding for frame_log camera_shift [dx, dy] px.",
-       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json camera_shift", 0, 6),
+       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2 camera_shift", 0, 6),
     _p("state_pct_round_dp", "int", "decimal places", "Rounding for summary.selected_state_pct values.",
-       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json summary {ACTIVE: 93.9, ...}", 0, 6),
+       1, H, "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 summary selected_state_pct (1 dp values)", 0, 6),
     _p("timestamp_round_dp", "int", "decimal places",
        "Rounding for timestamps (event_adapter uses round(frame / fps, 4)).", 4, H, "VERIFIED_CODE",
        "CONTRACT_VERIFIED", "CONTRACT", "contract", "player_tracker_mo/event_adapter.py:129,144", 0, 9),
@@ -143,9 +147,9 @@ PARAMS: Tuple[Param, ...] = (
        "D07 (approved by Nathan); historical seed track was T001 in both frozen JSONs"),
     _p("population_track_id_prefix", "str", "id prefix",
        "Prefix for non-target population tracklet ids (historical T### form).", "T", H, "VERIFIED_OUTPUT",
-       "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json track ids T001..T035"),
+       "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 track ids T001..T035"),
     _p("track_source_label", "str", "label", "Historical per-track 'source' field value.", "ONLINE", H,
-       "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "GOLD.json and PC.json: source == ONLINE in every record"),
+       "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "contract", "HE1 and HE2: source == ONLINE in every record"),
     _p("untrusted_identity_confidence_ceiling", "float", "confidence (0-1)",
        "When identity_trusted is false, the historical identity_confidence is forced to at most this value, "
        "so that surviving actor_attribution treats the frame as untrusted.",
@@ -171,7 +175,7 @@ PARAMS: Tuple[Param, ...] = (
        "(no container seek at all); container_seek does ONE CAP_PROP_POS_FRAMES seek and then verifies the "
        "reported position. Either way, decoding after start_frame is strictly sequential with no further seeks.",
        "decode_from_zero", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video",
-       "D20; F15 (a container-level resume on .mov landed +10 frames late); tools_rb/make_gold_label_sheet.py "
+       "D20; F15 (a container-level resume on .mov landed +10 frames late); the R1 label-sheet tool "
        "already decodes from frame 0 for this reason", allowed=("decode_from_zero", "container_seek")),
     _p("hash_chunk_bytes", "int", "bytes", "Read size used when hashing the source video with SHA-256.", 1048576,
        N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "video", "R1-B provenance (performance only)", 4096,
@@ -191,13 +195,13 @@ PARAMS: Tuple[Param, ...] = (
        "NOT_APPLICABLE", "RUNTIME", "detector", "D03; R1 approval §2 (YOLOX-s DEVELOPMENT/EVALUATION)",
        allowed=("yolox_onnx", "scripted")),
     _p("detector_input_size", "int", "px (square network input)",
-       "Detector network input size. To be chosen on GOLD by person-detection quality only (D17).", 640, N,
+       "Detector network input size. To be chosen on development footage by person-detection quality only (D17).", 640, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; R1 approval §3", 320, 1920,
        allowed=(640, 960, 1280)),
     _p("detector_min_score", "float", "detector score (0-1)",
        "Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.",
        0.10, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
-       "TASK3M: #23's partial body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)",
+       "TASK3M: a partially visible target body scored 0.47-0.59; historical Pass-2 conf 0.15 (HISTORICAL_REFERENCE)",
        0.0, 1.0, historical_value=0.15),
     _p("detector_nms_iou", "float", "IoU ratio", "Non-maximum-suppression IoU for person boxes.", 0.65, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D03", 0.0, 1.0),
@@ -250,7 +254,7 @@ PARAMS: Tuple[Param, ...] = (
     _p("ambiguity_margin", "float", "similarity difference",
        "The best target candidate must beat the second-best target candidate by >= this.", 0.06, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
-       "D08 test 5. Historical assignment margin 0.08 (near-miss 0.081 decided the GOLD swap)",
+       "D08 test 5. Historical assignment margin 0.08 (a near-miss of 0.081 decided a historical identity swap, F1)",
        0.0, 1.0, historical_value=0.08),
     _p("contact_memory_s", "float", "s",
        "How long a competitor that overlapped the target keeps its pre-contact appearance for contrast.",
@@ -294,7 +298,7 @@ PARAMS: Tuple[Param, ...] = (
     # ---- merged-detection guard (D11) --------------------------------------------------------
     _p("merged_area_ratio", "float", "ratio to recent median target area",
        "A candidate box larger than this multiple of the target's recent median area is merged-suspect.", 1.6, N,
-       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11 (GOLD 266: area x3.1, one box for two players)",
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11; F2 (a historical merged box for two players measured x3.1 the target area)",
        1.0, 100.0),
     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
        "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,

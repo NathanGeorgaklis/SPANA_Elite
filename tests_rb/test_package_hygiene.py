@@ -109,5 +109,37 @@ class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
         self.assertEqual(offenders, [])
 
 
+class TestNoBenchmarkKnowledgeInTracker(unittest.TestCase):
+    """R1/R1_GENERIC_TRACKER_REQUIREMENT.md: the production package knows only TARGET_PLAYER and other physical
+    people. Benchmark subjects, clips, distractors and club names may appear only in labels, fixtures, tests,
+    evaluation reports and notes, never in player_tracker_rb/ (code, comments or docstrings)."""
+    import re as _re
+    PATTERNS = (r"\bGOLD\b", r"gold_", r"\bSOL\b", r"\bMAR\b", r"#\s?23\b", r"#\s?4\b", r"\bsyo\b",
+                r"syo_mar", r"duel_01", r"pass_completed", r"ball[ _-]?boy", r"royal[ -]?blue", r"\bPC\.json\b",
+                r"\bGOLD\.json\b", r"3036_3048")
+
+    def test_no_benchmark_terms_in_package(self):
+        offenders = []
+        for path in _py_files("player_tracker_rb"):
+            with open(path, encoding="utf-8") as fh:
+                lines = fh.readlines()
+            for n, line in enumerate(lines, start=1):
+                for pat in self.PATTERNS:
+                    if self._re.search(pat, line, flags=self._re.IGNORECASE if pat.islower() else 0):
+                        offenders.append(f"{os.path.basename(path)}:{n}: {pat}")
+        self.assertEqual(offenders, [], "benchmark-specific terms in the production package:\n" + "\n".join(offenders))
+
+    def test_patterns_catch_examples(self):
+        bad = ["GOLD 266", "SOL #23", "MAR #4", "make_gold_label_sheet", "royal-blue ball boy", "syo_mar_3036_3048"]
+        for text in bad:
+            with self.subTest(text=text):
+                self.assertTrue(any(self._re.search(p, text, flags=self._re.IGNORECASE if p.islower() else 0)
+                                    for p in self.PATTERNS))
+        for ok in ("resolution", "marked", "Solver", "golden-section"):
+            with self.subTest(text=ok):
+                self.assertFalse(any(self._re.search(p, ok, flags=self._re.IGNORECASE if p.islower() else 0)
+                                     for p in self.PATTERNS))
+
+
 if __name__ == "__main__":
     unittest.main()

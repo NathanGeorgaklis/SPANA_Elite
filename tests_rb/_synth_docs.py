@@ -9,9 +9,9 @@ from player_tracker_rb import output_schema as S
 from player_tracker_rb.config import TrackerConfig
 
 FPS = 30.0
-START = 180
-SEED_BOX = [635.3, 304.1, 757.8, 438.3]
-BOX = [659.5, 309.3, 758.2, 444.9]
+START = 100
+SEED_BOX = [400.0, 200.0, 460.0, 330.0]   # neutral, made-up values
+BOX = [402.5, 201.5, 462.5, 331.5]
 
 
 def confidences(identity, overall=None):
