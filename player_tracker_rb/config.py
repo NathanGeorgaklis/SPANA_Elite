@@ -443,8 +443,9 @@ PARAMS: Tuple[Param, ...] = (
     _p("population_bank_max_samples", "int", "samples", "Appearance samples kept per population tracklet.",
        8, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", "D10", 1, 1000),
     _p("competitor_radius_h", "float", "h",
-       "Any detection-backed body whose box centre is within this of the target gate is a competitor, from "
-       "its first frame, regardless of team label or age.", 1.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
+       "Any detection-backed body whose box centre is within this of the query box centre (in R1-F: the target "
+       "gate), or that overlaps the query box, is a competitor, from its first frame, regardless of team label "
+       "or age.", 1.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
        "population", "D10; R1 approval §E", 0.0, 20.0),
     _p("population_duplicate_iou", "float", "IoU ratio",
        "Two same-frame detections with IoU at least this are one body detected twice: the lower-scored one is "
@@ -504,6 +505,13 @@ PARAMS: Tuple[Param, ...] = (
        "based merge tests (AREA_RATIO, ASPECT_WIDE, PERSISTENT_MERGE) need an established reference: a box seen "
        "once may itself have been partial.", 0.2, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
        "R1-E (NEW); R1-E development-clip population check (part-box references)", 0.0, 30.0),
+    _p("population_part_box_min_height_ratio", "float", "ratio to the containing box's height",
+       "A detection inside a larger one is NESTED (an alternative or part-body box of the same person) only if it "
+       "is at least this tall relative to the larger box. A much smaller box inside is another, farther body "
+       "that the larger one occludes: both are tracked bodies (the larger is still CONTAINS_OTHER).", 0.3, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-E (NEW); R1-E code review M2. Development-clip part boxes measured 0.36-0.58 of the host height", 0.0,
+       1.0),
     _p("merged_claim_min_box_fraction", "float", "fraction of the detection's area",
        "A tracklet counts towards a MULTI_CLAIM merge only if its predicted box fills at least this fraction of "
        "the detection (and it was observed within population_max_gap_s). A small far body behind a large near "
@@ -516,16 +524,17 @@ PARAMS: Tuple[Param, ...] = (
        "historical online ids T001, T064, T076 (R0 plan; blind_r2_009, shot_close_range)", 1, 12),
 
     # ---- merged-detection guard (D11) --------------------------------------------------------
-    _p("merged_area_ratio", "float", "ratio to recent median target area",
-       "A candidate box larger than this multiple of the target's recent median area is merged-suspect.", 1.6, N,
+    _p("merged_area_ratio", "float", "ratio to a body's established recent median area",
+       "A box larger than this multiple of the established recent median area of the body it continues (the "
+       "target's in R1-F; a population tracklet's in R1-E) is merged-suspect.", 1.6, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11; F2 (a historical merged box for two players measured x3.1 the target area)",
        1.0, 100.0),
     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
        "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 100.0),
     _p("merged_overlap_min", "float", "fraction of predicted box area",
-       "A box covering at least this fraction of BOTH the target's and a competitor's predicted boxes is "
-       "merged-suspect.", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 1.0),
+       "A box covering at least this fraction of the predicted boxes of two or more distinct tracked bodies (D11: "
+       "the target's and a competitor's) is merged-suspect (subject to merged_claim_min_box_fraction).", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 1.0),
 
     # ---- appearance bank hygiene (D12, R1 approval §20) --------------------------------------
     _p("bank_max_samples", "int", "samples", "Target appearance bank capacity (diversity-pruned).", 24, N,
@@ -584,9 +593,10 @@ PARAMS: Tuple[Param, ...] = (
     _p("cut_hist_distance_min", "float", "Bhattacharyya distance (0-1)",
        "A frame-to-frame grey-histogram distance at least this, together with flow failure, is a hard cut.",
        0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "D16", 0.0, 1.0),
-    _p("cut_flow_inlier_fraction_max", "float", "fraction of tracked features",
-       "Optical flow whose RANSAC inliers are at most this fraction of the background features found in the "
-       "previous frame counts as flow failure.", 0.2, N, "DESIGN_CHOICE",
+    _p("cut_flow_inlier_fraction_max", "float", "fraction of tracked background features",
+       "Optical flow whose RANSAC inliers are at most this fraction of the background features successfully "
+       "tracked into this frame (features landing on a person box are discarded, not counted as failures) counts "
+       "as flow failure.", 0.2, N, "DESIGN_CHOICE",
        UNV, "BEHAVIOURAL", "camera", "D16", 0.0, 1.0),
     _p("flow_max_corners", "int", "features", "Maximum background features for global-motion estimation.",
        300, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "D16", 10, 10000),
@@ -626,6 +636,16 @@ PARAMS: Tuple[Param, ...] = (
     _p("camera_max_rotation_rad_per_s", "float", "rad per s",
        "An estimated image rotation faster than this is implausible (estimate rejected: UNKNOWN).", 0.5, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera roll", 0.0, 100.0),
+    _p("cut_residual_min", "float", "normalised residual (0-1)",
+       "A fitted camera transform whose normalised photometric residual mean|a'-b'| / (mean|a'| + mean|b'|) "
+       "(a = previous frame warped onto this one, b = this frame; background only, blurred, mean-centred) is at "
+       "least this does not explain the image change and is rejected (HIGH_RESIDUAL; e.g. a static broadcast "
+       "overlay dominating the features across a cut). Synthetic: true pan/zoom ~0.02, unrelated shots ~0.5.",
+       0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW); R1-E code review H2", 0.0, 1.0),
+    _p("cut_residual_blur_px", "float", "px (flow working resolution)",
+       "Gaussian sigma applied to both frames before the photometric residual (suppresses noise and "
+       "interpolation error).", 1.5, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "camera", "R1-E (NEW)",
+       0.1, 50.0),
     _p("camera_unknown_breaks_continuity", "bool", "flag",
        "If True, a frame whose camera motion cannot be estimated (UNKNOWN) breaks position continuity exactly "
        "like a detected cut (fail closed: a cut between similar-looking shots is not distinguishable from a "
@@ -688,6 +708,8 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
             errs.append(f"{band} must be (low, high) with low < high")
     if v["merged_aspect_band"][0] >= 1.0 or v["merged_aspect_band"][1] <= 1.0:
         errs.append("merged_aspect_band must contain 1.0 (the target's own aspect)")
+    if v["population_merged_region_hold_s"] > v["population_closed_memory_s"]:
+        errs.append("population_merged_region_hold_s must be <= population_closed_memory_s")
     if v["population_max_gap_s"] > v["population_max_unmatched_s"]:
         errs.append("population_max_gap_s must be <= population_max_unmatched_s")
     if v["lost_long_s"] < v["max_ambiguous_s"] or v["lost_long_s"] < v["max_occluded_s"]:

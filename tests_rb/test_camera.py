@@ -126,6 +126,53 @@ class TestContinuity(unittest.TestCase):
         if m.status == C.UNKNOWN:
             self.assertFalse(m.continuity_broken)
 
+    def test_cut_with_static_broadcast_overlay_breaks_continuity(self):
+        """A static score bug / logo is identical in both shots: its corners can dominate the flow features and
+        fit a perfect 'no motion' transform across a cut. The photometric residual of the warped previous frame
+        exposes the cut (regression for the R1-E code review finding H2)."""
+        def shot(seed, base):
+            r = np.random.default_rng(seed)
+            img = np.zeros((H, W, 3), np.uint8)
+            img[:] = base
+            noise = cv2.GaussianBlur(r.integers(0, 40, (H, W)).astype(np.uint8), (0, 0), 6)
+            img = cv2.add(img, cv2.merge([noise] * 3))
+            for _ in range(4):
+                cv2.line(img, (int(r.integers(0, W)), 0), (int(r.integers(0, W)), H), (230, 230, 230), 3)
+            cv2.rectangle(img, (40, 30), (420, 80), (20, 20, 20), -1)
+            cv2.putText(img, "HOME 1 - 0 AWAY 63:12", (50, 68), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+            cv2.putText(img, "SPORTS HD", (1050, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+            return img
+        est = C.CameraMotionEstimator(CFG)
+        est.update(shot(1, (40, 120, 40)), [], DT)
+        m = est.update(shot(2, (60, 60, 140)), [], DT)
+        self.assertNotEqual(m.status, C.ESTIMATED)
+        self.assertTrue(m.continuity_broken)
+        self.assertIn(C.HIGH_RESIDUAL, m.reasons)
+
+    def test_overlay_does_not_hide_a_real_pan(self):
+        """The same static overlay on a genuinely panning shot: the estimate must still be the pan (or be
+        rejected), never a confident 'no motion'."""
+        est = C.CameraMotionEstimator(CFG)
+        frames = []
+        for cx in (1200, 1220):
+            img = view(WORLD, cx, 700, 1.0).copy()
+            cv2.rectangle(img, (40, 30), (420, 80), (20, 20, 20), -1)
+            cv2.putText(img, "HOME 1 - 0 AWAY 63:12", (50, 68), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+            frames.append(img)
+        est.update(frames[0], [], DT)
+        m = est.update(frames[1], [], DT)
+        if m.status == C.ESTIMATED:
+            self.assertAlmostEqual(m.shift_px[0], -20.0, delta=1.0)
+        else:
+            self.assertTrue(m.continuity_broken)
+
+    def test_residual_small_for_true_motion(self):
+        est = C.CameraMotionEstimator(CFG)
+        est.update(view(WORLD, 1200, 700, 1.0), [], DT)
+        m = est.update(view(WORLD, 1212, 703, 1.02), [], DT)
+        self.assertEqual(m.status, C.ESTIMATED)
+        self.assertLess(m.residual, CFG.get("cut_residual_min") / 4)
+
     def test_flat_frame_unknown(self):
         est = C.CameraMotionEstimator(CFG)
         est.update(np.full((H, W, 3), 90, np.uint8), [], DT)

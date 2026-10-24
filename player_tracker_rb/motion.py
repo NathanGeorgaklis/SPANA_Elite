@@ -18,6 +18,8 @@ Update from an observation at time t (dt = t - t_obs > 0):
     r     += alpha * (ln(h_obs / h_ref) / dt - r), |r| <= ln(motion_veto_max_scale_ratio_per_s)
 A PARTIAL observation (part of the body hidden or outside the image) moves the reference box but updates neither
 v nor r, and the next observation after a partial one does not update them either (its centre jump is not motion).
+Neither does an observation after a frame whose camera motion could not be compensated (the reference box is in a
+stale image frame, so the centre jump would include camera motion).
 
 Prediction at time t: extrapolate for de = min(t - t_obs, motion_max_extrapolation_s):
     c = c_ref + v * de,   w, h = w_ref, h_ref * exp(r * de)
@@ -182,7 +184,7 @@ class MotionModel:
         c = self._cfg
         dt = self._dt(st, t)
         vx, vy, r = st.vx, st.vy, st.log_h_rate
-        if not partial and not st.ref_partial:
+        if not partial and not st.ref_partial and st.camera_compensated:
             alpha = 1.0 - math.exp(-dt / c.get("motion_velocity_tau_s"))
             bx, by = centre(b)
             rx, ry = centre(st.ref_box)

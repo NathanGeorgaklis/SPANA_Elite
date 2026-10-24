@@ -1,0 +1,125 @@
+{
+ "camera": {
+  "photometric_residual": {
+   "max": 0.06721598654985428,
+   "median": 0.019803008064627647,
+   "min": 0.0006246288539841771,
+   "n": 179,
+   "p10": 0.0029697815887629988,
+   "p90": 0.03790691196918488
+  },
+  "reason_counts": {},
+  "shift_frac_width_per_s": {
+   "max": 0.32189861745606463,
+   "median": 0.05337847966504346,
+   "min": 1.599048059067199e-05,
+   "n": 179,
+   "p10": 0.000447369530880691,
+   "p90": 0.23064232190002157
+  },
+  "status_counts": {
+   "ESTIMATED": 179,
+   "FIRST_FRAME": 1
+  },
+  "zoom_factor_per_s": {
+   "max": 1.0342781032419437,
+   "median": 0.9965002837940486,
+   "min": 0.8744643232096443,
+   "n": 179,
+   "p10": 0.9540944691442882,
+   "p90": 1.0031426591870831
+  }
+ },
+ "candidate_files_sha256": {
+  "raw_s_grid2x2__0000.json": "33037c311a763e04a7b67e23a82fc18b9257538e64a73fee64a4831d8713ca4d",
+  "raw_s_grid2x2__0040.json": "bed2244fbab14f482d064f0584483c9a53e6fe845c7e429d7580b494da48aed6",
+  "raw_s_grid2x2__0080.json": "17ed4df7114aaf29a7e0b3de83603bef54920356e31947e658ea4367064b5c42",
+  "raw_s_grid2x2__0120.json": "23c4ed123c5798e7d2c92fce92533de83f3f431b7f1c45a0b25aeff38b53fa19",
+  "raw_s_grid2x2__0160.json": "e683c8b5ce2186b66617452eb5088f2ffd2d5f630352171ed6e205e35f2f95d8"
+ },
+ "code_sha256": {
+  "player_tracker_rb/camera.py": "51fc31cc212c236e0aa68cff42796ad7724b835d100858b38760cbd37bd7e48d",
+  "player_tracker_rb/config.py": "cdcfaff34ec8b5bc86399f24656d8dce737c780aef2d0f89b94d374a4030a4d1",
+  "player_tracker_rb/motion.py": "6fffc01dbf030e17857d9ad2ff62912dd9f44fbc1ef5dfa7363fd54272e68781",
+  "player_tracker_rb/population.py": "1b7989145c3bb846be2eb90a78bca688ee2f6803e975babb6f80e93e8abfa8fa",
+  "tools_rb/population_eval.py": "2b187122a2db69583b313d79aa75408f468e64abd7faee592233f712cd17ffac"
+ },
+ "config_hash": "8882a812bbfe8a0484c73e06145e616ea325bccd543f627073f9de292c986cb4",
+ "config_registry_version": "r1e-1",
+ "detector_setting": "s_grid2x2",
+ "fixture_fields_used": [
+  "seed_frame",
+  "video_sha256"
+ ],
+ "fps": 30.0,
+ "frames": 180,
+ "invariant_errors": [],
+ "labels_identity_or_event_results_used": false,
+ "population": {
+  "bank_eligible_share": 0.5225160829163689,
+  "closures_by_reason": {
+   "CONTACT_AMBIGUITY": 25,
+   "LEFT_FRAME": 9,
+   "MERGED_CONTACT": 32,
+   "UNMATCHED_TIMEOUT": 42
+  },
+  "competitor_probe_height": "median observed box height of the frame",
+  "competitors_per_observed_tracklet": {
+   "max": 24.0,
+   "median": 3.0,
+   "min": 0.0,
+   "n": 1399,
+   "p10": 0.0,
+   "p90": 13.0
+  },
+  "contact_events_by_kind": {
+   "AMBIGUOUS_ASSOCIATION": 12,
+   "MERGED_DETECTION": 128
+  },
+  "duplicates_suppressed": 0,
+  "hidden_frames_by_source": {
+   "HELD": 276,
+   "PREDICTED": 421
+  },
+  "merge_reasons": {
+   "AREA_RATIO": 27,
+   "ASPECT_WIDE": 11,
+   "MULTI_CLAIM": 12,
+   "PERSISTENT_MERGE": 26,
+   "UNRESOLVED_MERGE": 84
+  },
+  "observation_flags": {
+   "ALTERNATIVE": 262,
+   "CONTAINS_OTHER": 261,
+   "CONTESTED": 25,
+   "IN_MERGED_REGION": 203,
+   "MERGED_SUSPECTED": 128,
+   "NESTED": 289,
+   "OVERLAPS_OTHER": 865,
+   "PARTIAL": 132,
+   "TOUCHES_IMAGE_EDGE": 144
+  },
+  "observed_tracklet_boxes": 1399,
+  "provisional_share": 0.3288062902072909,
+  "tracklet_lifetime_s": {
+   "max": 4.666666666666667,
+   "median": 0.5333333333333333,
+   "min": 0.03333333333333333,
+   "n": 121,
+   "p10": 0.03333333333333333,
+   "p90": 1.1666666666666667
+  },
+  "tracklets_seen": 121,
+  "tracklets_started": 121
+ },
+ "runtime_ms_per_frame": {
+  "max": 75.99062498775311,
+  "median": 6.930625000677537,
+  "min": 5.906584003241733,
+  "n": 180,
+  "p10": 6.291054395842366,
+  "p90": 8.26658749138005
+ },
+ "tool": "tools_rb/population_eval.py",
+ "video_sha256": "164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9"
+}

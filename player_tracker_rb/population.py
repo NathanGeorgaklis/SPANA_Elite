@@ -14,14 +14,17 @@ one starts, with the old ids recorded as `possible_predecessors`. Linking identi
 job of the identity layers (R1-F / R1-G), with appearance and contrast, not of the population.
 
 Per frame (update), in order:
-  0. Camera. If the frame's CameraMotion breaks continuity (CUT, or UNKNOWN when configured), every live tracklet
-     and merged region is closed (CAMERA_CUT / CAMERA_UNKNOWN) and remembered positions are marked invalid.
+  0. Camera. If the frame's CameraMotion breaks continuity (CUT, or UNKNOWN when configured), or reports
+     FIRST_FRAME after the first processed frame (an estimator reset vouches for nothing), every live tracklet and
+     merged region is closed (CAMERA_CUT / CAMERA_UNKNOWN / CAMERA_RESET) and remembered positions are invalid.
      Otherwise every remembered box is moved by the ESTIMATED transform (pan/zoom compensation).
   1. Duplicates and nesting. Two detections with IoU >= population_duplicate_iou are one body detected twice: the
      lower-scored one is DUPLICATE_SUPPRESSED (kept in the record, never a tracklet or competitor) and the kept one
      is DUPLICATE_ABSORBED (never an appearance sample). A detection lying >= population_nested_containment inside
-     a larger one is NESTED (a part-body or alternative box of the same person, or a body hidden that deep); the
-     larger is CONTAINS_OTHER. Nothing is deleted for overlapping: nested boxes stay observations and competitors.
+     a larger one makes the larger CONTAINS_OTHER (never an appearance sample); if it is also at least
+     population_part_box_min_height_ratio of the larger box's height it is NESTED (a part-body or alternative box
+     of the same person); a much smaller box inside is a farther body that the larger occludes, tracked normally.
+     Nothing is deleted for overlapping: nested boxes stay observations and competitors.
   2. Association (geometry only). A live tracklet may take a detection (nested or not) if IoU(predicted box,
      detection) >= population_match_iou_min and the motion check passes (motion.py: bounded speed and scale; a
      veto, never proof; a box shorter than population_partial_height_ratio x the prediction is checked as partial).
@@ -45,10 +48,13 @@ Per frame (update), in order:
      against that body. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
-     RESOLVED (removed) when at least n separate bodies are observed in it, and EXPIRES
-     population_merged_region_hold_s after the last size or multi-claim evidence; on the expiry frame it still
-     passes its claimants on as possible predecessors. Detections in a region are IN_MERGED_REGION and are never
-     appearance samples, because a second body may still be hidden in it.
+     RESOLVED (removed) when at least n separate bodies are observed in it. It LAPSES
+     population_merged_region_hold_s after the last size or multi-claim evidence: a lapsed region no longer makes
+     a box merged, but is remembered until population_closed_memory_s after that evidence. Detections in a region
+     are IN_MERGED_REGION and are never appearance samples, because a second body may still be hidden in it.
+     MERGE LINEAGE: a tracklet born in an unresolved or lapsed region, or with a possible predecessor that carries
+     merge lineage, may hold two bodies; it is MERGE_LINEAGE and never an appearance sample for its whole life.
+     Only a resolved region (the bodies seen apart again) produces lineage-free tracklets.
   4. Contested links. A tracklet-detection link is ambiguous if a rival detection (for that tracklet) or a rival
      tracklet (for that detection) has IoU within population_assoc_ambiguity_margin of it. Every tracklet in the
      connected group is closed (CONTACT_AMBIGUITY) and each of the group's detections starts a new tracklet whose
@@ -62,9 +68,12 @@ Per frame (update), in order:
   7. Overlap context: every overlapping pair among the frame's bodies (observations and hidden predictions), with
      IoU and both cover fractions.
   8. Appearance-bank eligibility (contamination guard): only an observed, uncontested, unmerged, non-partial,
-     non-duplicate tracklet box that contains no other detection and is isolated (max IoU with any other body <= bank_contact_iou and covered
-     <= bank_max_covered_fraction), in a frame with a measured or first camera, and at most once per
-     population_bank_sample_interval_s. sample_appearance() then applies the AppearanceBank's own quality checks.
+     non-duplicate tracklet box that contains no other detection and is isolated (max IoU with any other body <=
+     bank_contact_iou and covered <= bank_max_covered_fraction), in a frame whose camera was measured (or which
+     starts continuity: first frame, cut or reset, where every tracklet is new), and at most once per
+     population_bank_sample_interval_s, and never NESTED or MERGE_LINEAGE. sample_appearance(rel_frame, image, ...)
+     must be given the last update's frame and samples a tracklet at most once per frame; the AppearanceBank then
+     applies its own quality checks.
      The population never touches the target's bank.
 
 Observed vs inferred: TrackletView.observation_source is DETECTION only when a detection was assigned this frame
@@ -75,7 +84,7 @@ Determinism: no randomness; every ordering is explicit (ids are issued in a fixe
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -96,6 +105,7 @@ UNMATCHED_TIMEOUT = "UNMATCHED_TIMEOUT"
 LEFT_FRAME = "LEFT_FRAME"
 CAMERA_CUT = "CAMERA_CUT"
 CAMERA_UNKNOWN = "CAMERA_UNKNOWN"
+CAMERA_RESET = "CAMERA_RESET"              # FIRST_FRAME camera status after the first processed frame
 CONTACT_AMBIGUITY = "CONTACT_AMBIGUITY"
 MERGED_CONTACT = "MERGED_CONTACT"
 
@@ -113,7 +123,8 @@ CAMERA_UNCOMPENSATED = "CAMERA_UNCOMPENSATED"
 NESTED = "NESTED"                         # lies inside a larger detection (alternative box or hidden body)
 ALTERNATIVE = "ALTERNATIVE"               # an alternative box of a nested group: no tracklet, still a competitor
 CONTAINS_OTHER = "CONTAINS_OTHER"         # contains a nested detection: never an appearance sample
-IN_MERGED_REGION = "IN_MERGED_REGION"     # overlaps where a merged detection was seen within population_max_unmatched_s
+IN_MERGED_REGION = "IN_MERGED_REGION"
+MERGE_LINEAGE = "MERGE_LINEAGE"            # born from an unresolved merge: may hold two bodies; never a bank sample     # overlaps where a merged detection was seen within population_max_unmatched_s
 
 # merge reasons
 MULTI_CLAIM = "MULTI_CLAIM"
@@ -136,7 +147,8 @@ EVENT_MERGED = "MERGED_DETECTION"
 OBSERVATION = "OBSERVATION"
 HIDDEN_BODY = "HIDDEN"
 RECENTLY_CLOSED = "RECENTLY_CLOSED"
-LAST_SEEN = "LAST_SEEN"
+LAST_OBSERVED = "LAST_OBSERVED"            # a closed tracklet's last box was its last detection (camera-compensated)
+LAST_PREDICTED = "LAST_PREDICTED"          # ... or a predicted/held box
 
 Box = Tuple[float, float, float, float]
 
@@ -255,12 +267,15 @@ class ClosedTracklet:
     position_valid: bool             # False after a continuity break (cut): the position means nothing now
     possible_successors: Tuple[str, ...]
     bank: AppearanceBank = field(compare=False, repr=False)
+    last_box_source: str = LAST_PREDICTED
+    merge_lineage: bool = False
 
     def as_record(self) -> Dict[str, Any]:
         return {"tracklet_id": self.tracklet_id, "reason": self.reason, "closed_frame": self.closed_frame,
                 "closed_time_s": self.closed_time_s, "last_box": list(self.last_box),
                 "last_observed_frame": self.last_observed_frame, "position_valid": self.position_valid,
-                "possible_successors": list(self.possible_successors), "bank_samples": len(self.bank)}
+                "possible_successors": list(self.possible_successors), "bank_samples": len(self.bank),
+                "last_box_source": self.last_box_source, "merge_lineage": self.merge_lineage}
 
 
 @dataclass(frozen=True)
@@ -321,7 +336,7 @@ class Competitor:
     kind: str                        # OBSERVATION, HIDDEN or RECENTLY_CLOSED
     tracklet_id: Optional[str]
     box: Box
-    box_source: str                  # DETECTION, PREDICTED, HELD or LAST_SEEN
+    box_source: str                  # DETECTION, PREDICTED, HELD, LAST_OBSERVED or LAST_PREDICTED
     position_valid: bool
     distance_h: Optional[float]      # centre distance to the query box in h (None if the position is invalid)
     provisional: Optional[bool]
@@ -352,6 +367,7 @@ class _Tracklet:
     last_sample_t: Optional[float] = None
     predecessors: Tuple[str, ...] = ()
     successors: List[str] = field(default_factory=list)
+    merge_lineage: bool = False
 
 
 @dataclass
@@ -445,19 +461,20 @@ class Population:
         return float(np.median([x[1] for x in tr.sizes])), float(np.median([x[2] for x in tr.sizes]))
 
     def _close(self, tr: _Tracklet, reason: str, frame: int, t: float, last_box: Box, position_valid: bool,
-               closed: List[ClosedTracklet]) -> None:
+               closed: List[ClosedTracklet], source: str) -> None:
         ct = ClosedTracklet(tr.tid, reason, frame, t, last_box, tr.last_obs_frame, position_valid,
-                            tuple(tr.successors), tr.bank)
+                            tuple(tr.successors), tr.bank, source, tr.merge_lineage)
         closed.append(ct)
 
-    def _birth(self, box: Box, frame: int, t: float, partial: bool, predecessors: Sequence[str]) -> _Tracklet:
+    def _birth(self, box: Box, frame: int, t: float, partial: bool, predecessors: Sequence[str],
+               merge_lineage: bool) -> _Tracklet:
         self._order += 1
         tr = _Tracklet(tid=self._new_id(), order=self._order,
                        motion=self._mm.start(box, t, partial=partial), first_frame=frame, first_time=t,
                        last_obs_frame=frame, sizes=[] if partial else [(t,) + _wh(box)],
                        bank=AppearanceBank(self._cfg, require_trust=True,
                                            capacity=self._cfg.get("population_bank_max_samples")),
-                       predecessors=tuple(sorted(set(predecessors))))
+                       predecessors=tuple(sorted(set(predecessors))), merge_lineage=bool(merge_lineage))
         return tr
 
     # -- main ------------------------------------------------------------------------------------------------
@@ -482,10 +499,11 @@ class Population:
         events: List[ContactEvent] = []
 
         # ---- 0. camera ----------------------------------------------------------------------------------
-        if camera.continuity_broken:
-            reason = CAMERA_CUT if camera.status == CUT else CAMERA_UNKNOWN
+        reset = camera.status == FIRST_FRAME and self._last_frame is not None
+        if camera.continuity_broken or reset:
+            reason = CAMERA_RESET if reset else (CAMERA_CUT if camera.status == CUT else CAMERA_UNKNOWN)
             for tr in self._live:
-                self._close(tr, reason, rel_frame, t, tr.motion.ref_box, False, closed)
+                self._close(tr, reason, rel_frame, t, tr.motion.ref_box, False, closed, LAST_OBSERVED)
             self._live, self._regions = [], []
             self._memory = [_invalidate(m) for m in self._memory]
         else:
@@ -523,12 +541,20 @@ class Population:
         if len(bodies) > 1:
             cont_dd = containment(np.asarray([boxes[i] for i in bodies]), np.asarray([boxes[i] for i in bodies]))
             area = {i: _wh(boxes[i])[0] * _wh(boxes[i])[1] for i in bodies}
+            contains_any: Set[int] = set()
             for a, j in enumerate(bodies):
-                hosts = [(cont_dd[a, b], -i) for b, i in enumerate(bodies)
-                         if i != j and area[i] > area[j] and cont_dd[a, b] >= c.get("population_nested_containment")]
+                inside = [(cont_dd[a, b], -i) for b, i in enumerate(bodies)
+                          if i != j and area[i] > area[j] and cont_dd[a, b] >= c.get("population_nested_containment")]
+                contains_any |= {-x[1] for x in inside}
+                # only a box tall enough to be a part of its host's body is NESTED (an alternative observation);
+                # a much smaller box inside is another, farther body that the host occludes
+                hosts = [x for x in inside if _wh(boxes[j])[1] >= c.get("population_part_box_min_height_ratio")
+                         * _wh(boxes[-x[1]])[1]]
                 if hosts:
                     nested_in[j] = -max(hosts)[1]
-        contains_other = {nested_in[j] for j in bodies if nested_in[j] is not None}
+        else:
+            contains_any = set()
+        contains_other = set(contains_any)
 
         def group_of(i: int) -> int:
             while nested_in[i] is not None:
@@ -551,13 +577,16 @@ class Population:
             for a, tr in enumerate(live):
                 for b, i in enumerate(bodies):
                     iou_td[(tr.tid, i)] = float(m[a, b])
+        # height a box must reach to count as the whole body: the larger of the prediction and the last non-partial
+        # observed height (a prediction made from a partial box is itself partial)
+        full_h = {tr.tid: max([_wh(pbox[tr.tid])[1]] + [tr.sizes[-1][2]] if tr.sizes else [_wh(pbox[tr.tid])[1]])
+                  for tr in live}
         valid: Dict[Tuple[str, int], float] = {}
         for tr in eligible:
             for i in bodies:
                 v = iou_td.get((tr.tid, i), 0.0)
                 if v >= c.get("population_match_iou_min"):
-                    short = (boxes[i][3] - boxes[i][1]) < c.get("population_partial_height_ratio") * \
-                        (pbox[tr.tid][3] - pbox[tr.tid][1])
+                    short = (boxes[i][3] - boxes[i][1]) < c.get("population_partial_height_ratio") * full_h[tr.tid]
                     chk = self._mm.check(tr.motion, boxes[i], t, partial=edge[i] or short)
                     if chk.plausible:
                         valid[(tr.tid, i)] = v
@@ -596,16 +625,24 @@ class Population:
         region_of: Dict[int, int] = {}
         in_region: Dict[int, List[int]] = {k: [] for k in range(len(self._regions))}
         if self._regions and track:
-            rm = box_iou_matrix(np.asarray([rg.box for rg in self._regions]), np.asarray([boxes[i] for i in track]))
+            # a detection is IN a region if it overlaps it like a continuation (IoU) or lies inside it (one body
+            # coming out of a box of three has a small IoU with that box but is contained in it)
+            rboxes = np.asarray([rg.box for rg in self._regions])
+            dboxes = np.asarray([boxes[i] for i in track])
+            rm = box_iou_matrix(rboxes, dboxes)
+            rc = containment(dboxes, rboxes).T
+            member = (rm >= match_min) | (rc >= c.get("population_nested_containment"))
             for b, i in enumerate(track):
-                k = int(np.argmax(rm[:, b]))                 # first maximum: deterministic
-                if rm[k, b] >= match_min:
+                cands_k = [k for k in range(len(self._regions)) if member[k, b]]
+                if cands_k:
+                    k = max(cands_k, key=lambda q: (rm[q, b], rc[q, b], -q))     # deterministic
                     region_of[i] = k
                     in_region[k].append(i)
         resolved = {k for k, ds in in_region.items() if len(ds) >= self._regions[k].n_bodies}
         hold = c.get("population_merged_region_hold_s")
-        # an expired region no longer makes a box merged, but this frame's detections in it still inherit its
-        # claimants as possible predecessors (and are refused as appearance samples); it is removed at the end
+        # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
+        # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies
+        # is unknown. It is forgotten population_closed_memory_s after its last evidence, or when it resolves.
         expired = {k for k, rg in enumerate(self._regions) if t - rg.last_evidence_t > hold}
         lo, hi = c.get("merged_aspect_band")
         refs = {tr.tid: self._size_ref(tr, t) for tr in live}
@@ -629,7 +666,8 @@ class Population:
             elif i in region_of:
                 ref_wh = self._regions[region_of[i]].ref_wh
             w, h = _wh(boxes[i])
-            is_partial = edge[i]
+            is_partial = edge[i] or (i in assigned_d and h < c.get("population_partial_height_ratio")
+                                     * full_h[assigned_d[i]])
             if ref_wh is not None:
                 rw, rh = ref_wh
                 hr = h / rh
@@ -699,7 +737,7 @@ class Population:
             for tid in claimants[i]:
                 if tid not in closed_now and tid not in contested_t:
                     tr = by_tid[tid]
-                    self._close(tr, MERGED_CONTACT, rel_frame, t, pbox[tid], True, closed)
+                    self._close(tr, MERGED_CONTACT, rel_frame, t, pbox[tid], True, closed, LAST_PREDICTED)
                     closed_now.add(tid)
                     ended.append(tid)
             events.append(ContactEvent(EVENT_MERGED, tuple(ended), (i,), ()))
@@ -709,7 +747,7 @@ class Population:
             ref_wh = max(est, key=lambda wh: (wh[0] * wh[1], wh)) if est else None
             if i in region_of:
                 rg = self._regions[region_of[i]]
-                members = [boxes[j] for j in in_region[region_of[i]]]
+                members = [boxes[j] for j in in_region[region_of[i]]] or [boxes[i]]
                 rg.box = (min(b[0] for b in members), min(b[1] for b in members), max(b[2] for b in members),
                           max(b[3] for b in members))
                 if evidence:
@@ -733,7 +771,8 @@ class Population:
                     continue
                 tr = by_tid[tid]
                 last = boxes[assigned_t[tid]] if tid in assigned_t else pbox[tid]
-                self._close(tr, CONTACT_AMBIGUITY, rel_frame, t, last, True, closed)
+                self._close(tr, CONTACT_AMBIGUITY, rel_frame, t, last, True, closed,
+                            LAST_OBSERVED if tid in assigned_t else LAST_PREDICTED)
                 closed_now.add(tid)
                 ended.append(tid)
                 assigned_t.pop(tid, None)
@@ -760,15 +799,21 @@ class Population:
             flags_now[tid] = fl
         # births
         hidden_now = [tr for tr in live if tr.tid not in observed_now and tr.tid not in closed_now]
+        lineage_of = {m_.tracklet_id: m_.merge_lineage for m_ in self._memory}
+        lineage_of.update({ct.tracklet_id: ct.merge_lineage for ct in closed})
+        lineage_of.update({tr.tid: tr.merge_lineage for tr in live})
         for i in track:
             if i in merged or i in assigned_d:
                 continue
             for tr in hidden_now:
                 if cont_pd.get((tr.tid, i), 0.0) >= c.get("population_contact_cover_min"):
                     predecessors[i].add(tr.tid)
+            lineage = False
             if i in region_of:
                 predecessors[i].update(self._regions[region_of[i]].claimants)
-            tr = self._birth(boxes[i], rel_frame, t, partial[i], predecessors[i])
+                lineage = region_of[i] not in resolved            # unresolved or lapsed: may hold two bodies
+            lineage = lineage or any(lineage_of.get(p_, False) for p_ in predecessors[i])
+            tr = self._birth(boxes[i], rel_frame, t, partial[i], predecessors[i], lineage)
             births[i] = tr
             observed_now[tr.tid] = i
             flags_now[tr.tid] = {CONTESTED} if i in contested_d else set()
@@ -784,10 +829,13 @@ class Population:
         for i, b in births.items():
             for p in b.predecessors:
                 succ_map.setdefault(p, []).append(b.tid)
-        closed = [ClosedTracklet(ct.tracklet_id, ct.reason, ct.closed_frame, ct.closed_time_s, ct.last_box,
-                                 ct.last_observed_frame, ct.position_valid,
-                                 tuple(sorted(set(ct.possible_successors) | set(succ_map.get(ct.tracklet_id, ())))),
-                                 ct.bank) for ct in closed]
+        def add_succ(ct: ClosedTracklet) -> ClosedTracklet:
+            extra = succ_map.get(ct.tracklet_id)
+            if not extra:
+                return ct
+            return replace(ct, possible_successors=tuple(sorted(set(ct.possible_successors) | set(extra))))
+        closed = [add_succ(ct) for ct in closed]
+        self._memory = [add_succ(m_) for m_ in self._memory]
 
         # ---- 6. unmatched tracklets -----------------------------------------------------------------------
         new_live: List[_Tracklet] = []
@@ -799,10 +847,10 @@ class Population:
                 continue
             p = preds[tr.tid]
             if self._inside_fraction(p.box) < c.get("population_min_inside_fraction"):
-                self._close(tr, LEFT_FRAME, rel_frame, t, p.box, True, closed)
+                self._close(tr, LEFT_FRAME, rel_frame, t, p.box, True, closed, LAST_PREDICTED)
                 continue
             if p.dt_s > c.get("population_max_unmatched_s"):
-                self._close(tr, UNMATCHED_TIMEOUT, rel_frame, t, p.box, True, closed)
+                self._close(tr, UNMATCHED_TIMEOUT, rel_frame, t, p.box, True, closed, LAST_PREDICTED)
                 continue
             new_live.append(tr)
         new_live.extend(births[i] for i in sorted(births))
@@ -824,8 +872,10 @@ class Population:
                     tr.contact_during_gap = True
                     break
 
-        # merged regions expire when not continued
-        self._regions = [rg for k, rg in enumerate(self._regions) if k not in resolved and k not in expired]
+        # merged regions are forgotten when resolved, or population_closed_memory_s after their last evidence
+        keep_region_s = c.get("population_closed_memory_s")
+        self._regions = [rg for k, rg in enumerate(self._regions)
+                         if k not in resolved and t - rg.last_evidence_t <= keep_region_s]
 
         # ---- 7. overlap context --------------------------------------------------------------------------
         pairs: List[OverlapPair] = []
@@ -881,7 +931,9 @@ class Population:
 
         # ---- 8. views and bank eligibility ---------------------------------------------------------------
         views: List[TrackletView] = []
-        cam_ok = camera.status in (ESTIMATED, FIRST_FRAME) or camera.continuity_broken
+        # the camera vouches for this frame's boxes when it was measured, or when continuity was just broken (every
+        # tracklet is then new and observed in this frame alone)
+        cam_ok = camera.status == ESTIMATED or camera.continuity_broken or self._last_frame is None or reset
         interval = c.get("population_bank_sample_interval_s")
         for tr in self._live:
             i = observed_now.get(tr.tid)
@@ -910,8 +962,12 @@ class Population:
                     fl.add(IN_MERGED_REGION)
                 if CONTAINS_OTHER in o.flags:
                     fl.add(CONTAINS_OTHER)
+                if NESTED in o.flags:
+                    fl.add(NESTED)
+                if tr.merge_lineage:
+                    fl.add(MERGE_LINEAGE)
                 for flag in (CONTESTED, PARTIAL, TOUCHES_IMAGE_EDGE, DUPLICATE_ABSORBED, IN_MERGED_REGION,
-                             CONTAINS_OTHER):
+                             CONTAINS_OTHER, NESTED, MERGE_LINEAGE):
                     if flag in fl:
                         refusals.append(flag)
                 if not (o.max_iou_other <= c.get("bank_contact_iou")
@@ -923,6 +979,8 @@ class Population:
                     refusals.append(SAMPLE_NOT_DUE)
             if not comp:
                 fl.add(CAMERA_UNCOMPENSATED)
+            if tr.merge_lineage:
+                fl.add(MERGE_LINEAGE)
             views.append(TrackletView(
                 tracklet_id=tr.tid, status=(NEW if tr.first_frame == rel_frame else
                                             (ACTIVE if i is not None else HIDDEN)),
@@ -1008,22 +1066,28 @@ class Population:
                 ok, dist = near(m.last_box)
                 if not ok:
                     continue
-                out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, LAST_SEEN, True,
-                                      dist, None, (m.reason,), m.bank))
+                out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
+                                      True, dist, None, (m.reason,), m.bank))
             else:
-                out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, LAST_SEEN, False,
-                                      None, None, (m.reason,), m.bank))
+                out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
+                                      False, None, None, (m.reason,), m.bank))
         kind_rank = {OBSERVATION: 0, HIDDEN_BODY: 1, RECENTLY_CLOSED: 2}
         out.sort(key=lambda x: (kind_rank[x.kind], math.inf if x.distance_h is None else x.distance_h, x.ref))
         return tuple(out)
 
-    def sample_appearance(self, image: np.ndarray, extractor: AppearanceExtractor) -> Dict[str, Tuple[str, Tuple[str, ...]]]:
-        """Offer this frame's bank-eligible tracklet boxes to their own banks. Returns {tracklet_id: (status,
-        refusals)} for every tracklet that was offered a sample."""
+    def sample_appearance(self, rel_frame: int, image: np.ndarray,
+                          extractor: AppearanceExtractor) -> Dict[str, Tuple[str, Tuple[str, ...]]]:
+        """Offer the LAST update()'s bank-eligible tracklet boxes to their own banks. `rel_frame` must be that
+        update's frame and `image` its image (fail closed otherwise); a tracklet is sampled at most once per frame.
+        Returns {tracklet_id: (status, refusals)} for every tracklet that was offered a sample."""
         res = self._last
         if res is None:
             return {}
-        if image.shape[0] != self._h or image.shape[1] != self._w:
+        if rel_frame != res.rel_frame:
+            raise PopulationError(f"sample_appearance for frame {rel_frame!r}, but the last update was frame "
+                                  f"{res.rel_frame}")
+        if not isinstance(image, np.ndarray) or image.ndim != 3 or image.shape[0] != self._h \
+                or image.shape[1] != self._w:
             raise PopulationError("image size differs from the population's image size")
         bodies = [o for o in res.observations if o.is_body]
         hidden = [v for v in res.tracklets if not v.observed]
@@ -1039,18 +1103,18 @@ class Population:
             ctx = BankUpdateContext(identity_trusted=True, merged_suspected=False,
                                     max_competitor_iou=o.max_iou_other, seconds_since_reacquisition=None)
             tr = live[v.tracklet_id]
+            if tr.last_sample_t == res.time_s:
+                continue                                            # already sampled in this frame
             out[v.tracklet_id] = tr.bank.add(feat, ctx)
             tr.last_sample_t = res.time_s
         return out
 
 
 def _invalidate(m: ClosedTracklet) -> ClosedTracklet:
-    return ClosedTracklet(m.tracklet_id, m.reason, m.closed_frame, m.closed_time_s, m.last_box,
-                          m.last_observed_frame, False, m.possible_successors, m.bank)
+    return replace(m, position_valid=False)
 
 
 def _warp_memory(m: ClosedTracklet, cam: CameraMotion) -> ClosedTracklet:
     if not m.position_valid:
         return m
-    return ClosedTracklet(m.tracklet_id, m.reason, m.closed_frame, m.closed_time_s, cam.warp_box(m.last_box),
-                          m.last_observed_frame, True, m.possible_successors, m.bank)
+    return replace(m, last_box=cam.warp_box(m.last_box))

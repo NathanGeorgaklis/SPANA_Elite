@@ -1,0 +1,358 @@
+# R1-E test run on Mac (SPANA_REQUIRE_MODELS=1, SPANA_GOLD_VIDEO set): 2026-10-24T11:37:29Z
+Python 3.10.12
+numpy 2.2.6 cv2 5.0.0 onnxruntime 1.23.2
+onnxruntime cpuid_info warning: Unknown CPU vendor. cpuinfo_vendor value: 0
+test_best_match_ranks_by_composite_from_one_sample (tests_rb.test_appearance.TestBank) ... ok
+test_capacity_eviction_choice (tests_rb.test_appearance.TestBank) ... ok
+test_capacity_one_reports_not_stored (tests_rb.test_appearance.TestBank) ... ok
+test_competitor_bank_needs_no_trust_but_still_quality (tests_rb.test_appearance.TestBank) ... ok
+test_context_boundaries_accepted (tests_rb.test_appearance.TestBank) ... ok
+test_context_refusals (tests_rb.test_appearance.TestBank) ... ok
+test_inconsistent_sample_refused (tests_rb.test_appearance.TestBank) ... ok
+test_invalid_capacity (tests_rb.test_appearance.TestBank) ... ok
+test_partial_body_at_image_edge_refused_end_to_end (tests_rb.test_appearance.TestBank) ... ok
+test_poor_or_partial_crops_refused (tests_rb.test_appearance.TestBank) ... ok
+test_redundant_sample_not_stored (tests_rb.test_appearance.TestBank) ... ok
+test_trusted_observation_accepted (tests_rb.test_appearance.TestBank) ... ok
+test_covered_at_limit_not_flagged (tests_rb.test_appearance.TestCropQuality) ... ok
+test_covered_fraction_is_union (tests_rb.test_appearance.TestCropQuality) ... ok
+test_formula (tests_rb.test_appearance.TestCropQuality) ... ok
+test_low_resolution_invalid (tests_rb.test_appearance.TestCropQuality) ... ok
+test_mostly_outside_invalid_and_edge_flag (tests_rb.test_appearance.TestCropQuality) ... ok
+test_non_finite_box_refused (tests_rb.test_appearance.TestCropQuality) ... ok
+test_occluded_by_other_person (tests_rb.test_appearance.TestCropQuality) ... ok
+test_others_must_be_explicit (tests_rb.test_appearance.TestCropQuality) ... ok
+test_deterministic_and_normalised (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_input_size_mismatch_refused (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_outputs_read_by_name_and_pooling (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_people_differ (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_pinned_hash (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_provenance_says_generic (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_refusals (tests_rb.test_appearance.TestDinov2Backend) ... ok
+test_channel_order_and_normalisation (tests_rb.test_appearance.TestEmbeddingPreprocessNoModel) ... ok
+test_extreme_shapes_and_bad_crops (tests_rb.test_appearance.TestEmbeddingPreprocessNoModel) ... ok
+test_geometry_and_padding (tests_rb.test_appearance.TestEmbeddingPreprocessNoModel) ... ok
+test_pooling (tests_rb.test_appearance.TestEmbeddingPreprocessNoModel) ... ok
+test_bad_vectors_raise (tests_rb.test_appearance.TestEmbeddingSimilarity) ... ok
+test_bounds (tests_rb.test_appearance.TestEmbeddingSimilarity) ... ok
+test_broken_backend_fails_closed (tests_rb.test_appearance.TestExtractor) ... ok
+test_invalid_crop_gives_no_features (tests_rb.test_appearance.TestExtractor) ... ok
+test_lab_missing_not_usable (tests_rb.test_appearance.TestExtractor) ... ok
+test_no_embedder_flagged_not_usable (tests_rb.test_appearance.TestExtractor) ... ok
+test_valid_crop (tests_rb.test_appearance.TestExtractor) ... ok
+test_both_cues_agree_supported (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_colour_alone_cannot_establish_identity (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_composite_formula (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_contaminated_crop_never_supports (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_embedding_alone_cannot_establish_identity (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_exact_floors_supported (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_missing_or_non_finite_never_supports (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_same_kit_different_person_not_supported (tests_rb.test_appearance.TestIdentitySupport) ... ok
+test_background_sides_ignored (tests_rb.test_appearance.TestLab) ... ok
+test_bounds_and_identity (tests_rb.test_appearance.TestLab) ... ok
+test_missing_and_bad_descriptor (tests_rb.test_appearance.TestLab) ... ok
+test_neutral_kits_robust_to_small_tint (tests_rb.test_appearance.TestLab) ... ok
+test_same_kit_high_different_kit_low (tests_rb.test_appearance.TestLab) ... ok
+test_shape_and_normalisation (tests_rb.test_appearance.TestLab) ... ok
+test_too_few_pixels_gives_no_descriptor (tests_rb.test_appearance.TestLab) ... ok
+test_cut_between_similar_shots_breaks_continuity_by_default (tests_rb.test_camera.TestContinuity)
+A cut whose histogram does not change is indistinguishable from a flow failure: UNKNOWN, which breaks ... ok
+test_cut_with_static_broadcast_overlay_breaks_continuity (tests_rb.test_camera.TestContinuity)
+A static score bug / logo is identical in both shots: its corners can dominate the flow features and ... ok
+test_flat_frame_unknown (tests_rb.test_camera.TestContinuity) ... ok
+test_hard_cut (tests_rb.test_camera.TestContinuity) ... ok
+test_implausible_motion_rejected (tests_rb.test_camera.TestContinuity) ... ok
+test_overlay_does_not_hide_a_real_pan (tests_rb.test_camera.TestContinuity)
+The same static overlay on a genuinely panning shot: the estimate must still be the pan (or be ... ok
+test_residual_small_for_true_motion (tests_rb.test_camera.TestContinuity) ... ok
+test_resolution_change_is_a_cut (tests_rb.test_camera.TestContinuity) ... ok
+test_deterministic (tests_rb.test_camera.TestEstimation) ... ok
+test_first_frame (tests_rb.test_camera.TestEstimation) ... ok
+test_moving_people_masked (tests_rb.test_camera.TestEstimation)
+A large textured foreground object moving the opposite way must not drag the estimate: its box is ... ok
+test_pan (tests_rb.test_camera.TestEstimation) ... ok
+test_resolution_invariance (tests_rb.test_camera.TestEstimation) ... ok
+test_zoom (tests_rb.test_camera.TestEstimation) ... ok
+test_invalid_input (tests_rb.test_camera.TestRecordsAndValidation) ... ok
+test_matrix_helpers (tests_rb.test_camera.TestRecordsAndValidation) ... ok
+test_hash_deterministic_and_sensitive (tests_rb.test_config.TestHashing) ... ok
+test_record_is_json_safe (tests_rb.test_config.TestHashing) ... ok
+test_defaults_pass_their_own_checks (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_every_param_documents_itself (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_historical_values_match_r0_constants_registry (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_names_unique (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_new_behavioural_values_are_not_claimed_validated (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_new_params_with_historical_counterparts_record_them (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_no_historical_fast_path_parameter_is_usable (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_reference_only_params_are_historical (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_time_params_are_seconds_and_geometry_in_h (tests_rb.test_config.TestRegistryCompleteness) ... ok
+test_h_conversions (tests_rb.test_config.TestUnits) ... ok
+test_same_duration_at_different_fps (tests_rb.test_config.TestUnits) ... ok
+test_seconds_to_frames (tests_rb.test_config.TestUnits) ... ok
+test_cross_checks (tests_rb.test_config.TestValidation) ... ok
+test_default_builds (tests_rb.test_config.TestValidation) ... ok
+test_immutable (tests_rb.test_config.TestValidation) ... ok
+test_reference_only_cannot_be_overridden (tests_rb.test_config.TestValidation) ... ok
+test_type_range_allowed_checks (tests_rb.test_config.TestValidation) ... ok
+test_unknown_override_rejected (tests_rb.test_config.TestValidation) ... ok
+test_valid_override_recorded (tests_rb.test_config.TestValidation) ... ok
+test_clip (tests_rb.test_detector.TestGeometry) ... ok
+test_letterbox_full_frame (tests_rb.test_detector.TestGeometry) ... ok
+test_letterbox_reversal_known_values (tests_rb.test_detector.TestGeometry) ... ok
+test_letterbox_round_trip (tests_rb.test_detector.TestGeometry) ... ok
+test_tile_layout_covers_image (tests_rb.test_detector.TestGeometry) ... ok
+test_generic_interface_names_no_backend (tests_rb.test_detector.TestNoBackendLeakage) ... ok
+test_only_backend_module_imports_onnxruntime (tests_rb.test_detector.TestNoBackendLeakage) ... ok
+test_clipping_and_edge_flag (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_confidence_filter (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_deterministic_tie_order (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_empty (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_fully_outside_box_dropped (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_multiple_people_generic_output (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_nms_suppresses_duplicates_keeps_overlapping_people (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_nms_threshold_from_config (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_no_identity_or_role_fields (tests_rb.test_detector.TestScriptedPipeline) ... ok
+test_cut_box_seen_uncut_by_neighbour_tile (tests_rb.test_detector.TestTileMerging) ... ok
+test_cut_fragment_of_whole_box_dropped_even_with_higher_score (tests_rb.test_detector.TestTileMerging) ... ok
+test_no_tiling_is_plain_nms (tests_rb.test_detector.TestTileMerging) ... ok
+test_partly_hidden_second_person_kept (tests_rb.test_detector.TestTileMerging) ... ok
+test_two_cut_pieces_of_one_person (tests_rb.test_detector.TestTileMerging) ... ok
+test_bad_image_refused (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_blank_image_gives_no_people (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_hash_mismatch_refused (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_input_size_mismatch_refused (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_invalid_model_refused (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_missing_model_refused (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_model_hash_pinned (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_preprocessing_geometry (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_provenance_and_model_record (tests_rb.test_detector.TestYoloxBackend) ... ok
+test_deterministic_repeated_inference (tests_rb.test_detector.TestYoloxOnRealFootage) ... ok
+test_partial_people_at_image_border (tests_rb.test_detector.TestYoloxOnRealFootage) ... ok
+test_people_found_and_output_is_generic (tests_rb.test_detector.TestYoloxOnRealFootage) ... ok
+test_cut_refuses_compensation (tests_rb.test_motion.TestCamera) ... ok
+test_first_frame_is_a_no_op (tests_rb.test_motion.TestCamera) ... ok
+test_no_velocity_update_after_uncompensated_frame (tests_rb.test_motion.TestCamera)
+L5: after an UNKNOWN camera frame (configured not to break continuity) the reference box is in a stale ... ok
+test_pan_moves_reference (tests_rb.test_motion.TestCamera) ... ok
+test_unknown_marks_uncompensated (tests_rb.test_motion.TestCamera) ... ok
+test_zoom_scales_box_and_velocity (tests_rb.test_motion.TestCamera) ... ok
+test_partial_does_not_update_velocity_or_size_rate (tests_rb.test_motion.TestPartial) ... ok
+test_fps_invariance_of_velocity (tests_rb.test_motion.TestPrediction) ... ok
+test_predicted_then_held_never_detection (tests_rb.test_motion.TestPrediction) ... ok
+test_prediction_follows_velocity (tests_rb.test_motion.TestPrediction) ... ok
+test_velocity_bounded (tests_rb.test_motion.TestPrediction) ... ok
+test_bad_inputs (tests_rb.test_motion.TestValidation) ... ok
+test_allowance_grows_with_time (tests_rb.test_motion.TestVeto) ... ok
+test_large_jump_vetoed (tests_rb.test_motion.TestVeto) ... ok
+test_no_identity_output (tests_rb.test_motion.TestVeto) ... ok
+test_scale_veto_and_partial_exemption (tests_rb.test_motion.TestVeto) ... ok
+test_small_move_plausible (tests_rb.test_motion.TestVeto) ... ok
+test_veto_is_scale_invariant (tests_rb.test_motion.TestVeto) ... ok
+test_detection_confidence_is_quantised_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_exemplars_are_not_r1_documents (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_exemplars_validate_as_historical_contract (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_field_lists_match_exemplars_exactly (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_historical_rejections (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_selected_confidence_rule_matches_exemplars (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_strip_v2_is_identity_on_historical (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_target_triples_were_all_observed_historically (tests_rb.test_output_schema.TestHistoricalExemplars) ... ok
+test_detection_confidence_must_stay_quantised (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_final_tracks_carry_no_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_frame_numbering (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_held_box_reported_as_observed (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_held_box_written_as_confirmed_detection (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_merged_detection_cannot_be_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_non_historical_key_outside_v2 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_one_selected_record_per_frame (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_population_record_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_processed_frames_must_match (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_provenance_rules (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_reacquisition_events_must_match_episodes (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_target_id_must_stay_t001 (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_trusted_identity_requires_tracking (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_unknown_reason_rejected (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_untrusted_identity_above_actor_attribution_threshold (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_untrusted_needs_a_reason (tests_rb.test_output_schema.TestInvariantViolations) ... ok
+test_all_states_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_builder_refuses_bad_input (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_canonical_dump_deterministic (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_rounding_matches_historical_precision (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_strip_v2_leaves_valid_historical_document (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_synthetic_document_valid (tests_rb.test_output_schema.TestR1Documents) ... ok
+test_mapping_table_consistent (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_only_tracking_reaches_legacy_tracking (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_r1_state_mapping (tests_rb.test_output_schema.TestStateMapping) ... ok
+test_fingerprint_confined_to_video_layer (tests_rb.test_package_hygiene.TestFingerprintIsNotAnIdentityFeature) ... ok
+test_rebuild_header_everywhere (tests_rb.test_package_hygiene.TestHeaders) ... ok
+test_package_imports_only_allowed_modules (tests_rb.test_package_hygiene.TestImports) ... ok
+test_no_benchmark_terms_in_package (tests_rb.test_package_hygiene.TestNoBenchmarkKnowledgeInTracker) ... ok
+test_patterns_catch_examples (tests_rb.test_package_hygiene.TestNoBenchmarkKnowledgeInTracker) ... ok
+test_no_numeric_thresholds_outside_config (tests_rb.test_package_hygiene.TestNoMagicNumbers) ... ok
+test_crossing_never_mixes_people_in_a_bank (tests_rb.test_population.TestBankContamination) ... ok
+test_same_kit_crossing_banks_sample_only_isolated_people (tests_rb.test_population.TestBankContamination)
+Two people in IDENTICAL colours cross: colour cannot tell them apart, so the only protection is ... ok
+test_sampling_interval_respected (tests_rb.test_population.TestBankContamination) ... ok
+test_births_are_provisional_competitors_from_first_frame (tests_rb.test_population.TestBasics) ... ok
+test_candidate_order_does_not_change_the_partition (tests_rb.test_population.TestBasics)
+Permuting the detector's output order changes indices only: which detections are grouped into which ... ok
+test_continuity_and_ids (tests_rb.test_population.TestBasics) ... ok
+test_deterministic (tests_rb.test_population.TestBasics) ... ok
+test_input_validation (tests_rb.test_population.TestBasics) ... ok
+test_fast_pan_compensated (tests_rb.test_population.TestCamera) ... ok
+test_hard_cut_breaks_all_continuity (tests_rb.test_population.TestCamera) ... ok
+test_pan_without_compensation_would_break (tests_rb.test_population.TestCamera) ... ok
+test_unknown_camera_breaks_by_default (tests_rb.test_population.TestCamera) ... ok
+test_unknown_camera_when_configured_not_to_break (tests_rb.test_population.TestCamera) ... ok
+test_zoom_compensated (tests_rb.test_population.TestCamera) ... ok
+test_exclusions (tests_rb.test_population.TestCompetitors) ... ok
+test_hidden_and_far_bodies (tests_rb.test_population.TestCompetitors) ... ok
+test_hidden_predecessor_is_identifiable_for_self_exclusion (tests_rb.test_population.TestCompetitors)
+Rule 28 support: a body re-detected as a new tracklet while its old tracklet is still HIDDEN at the same ... ok
+test_provisional_competitor_blocks_from_birth (tests_rb.test_population.TestCompetitors) ... ok
+test_crossing_events_link_predecessors (tests_rb.test_population.TestCrossings) ... ok
+test_crossing_matrix_never_swaps (tests_rb.test_population.TestCrossings) ... ok
+test_same_kit_is_irrelevant_population_is_geometry_only (tests_rb.test_population.TestCrossings) ... ok
+test_side_by_side_slight_overlap_keeps_continuity (tests_rb.test_population.TestCrossings) ... ok
+test_gap_longer_than_max_gap_starts_new_tracklet_with_predecessor (tests_rb.test_population.TestDisappearance) ... ok
+test_leaving_frame_closes (tests_rb.test_population.TestDisappearance) ... ok
+test_long_gap_closes_and_holds (tests_rb.test_population.TestDisappearance) ... ok
+test_predicted_box_follows_velocity_during_gap (tests_rb.test_population.TestDisappearance) ... ok
+test_short_gap_in_open_space_continues (tests_rb.test_population.TestDisappearance) ... ok
+test_short_gap_with_contact_starts_new_tracklet (tests_rb.test_population.TestDisappearance) ... ok
+test_pan_then_cut (tests_rb.test_population.TestEndToEnd) ... ok
+test_fps_invariance (tests_rb.test_population.TestInvariance) ... ok
+test_gap_rules_in_seconds (tests_rb.test_population.TestInvariance) ... ok
+test_resolution_invariance (tests_rb.test_population.TestInvariance) ... ok
+test_state_stays_bounded_over_a_long_run (tests_rb.test_population.TestLongRun)
+~3 minutes at 30 fps with people constantly entering, crossing, merging and leaving: live tracklets, ... ok
+test_area_ratio_single_claimant (tests_rb.test_population.TestMerged) ... ok
+test_aspect_wide_side_by_side (tests_rb.test_population.TestMerged) ... ok
+test_multi_claim_merged_box (tests_rb.test_population.TestMerged) ... ok
+test_persistent_merge_is_not_tracked (tests_rb.test_population.TestMerged) ... ok
+test_split_after_merge_links_both_claimants_and_refuses_bank (tests_rb.test_population.TestMerged) ... ok
+test_alternative_box_mostly_inside_is_nested_but_side_by_side_contact_is_not (tests_rb.test_population.TestNestedPartBoxes) ... ok
+test_far_person_nested_in_near_box_keeps_both_tracklets (tests_rb.test_population.TestNestedPartBoxes)
+Two real people: a small far person standing inside the box of a large near person (visible between ... ok
+test_nested_box_is_still_a_competitor (tests_rb.test_population.TestNestedPartBoxes) ... ok
+test_nested_part_boxes_are_not_tracklets_and_cause_no_merge (tests_rb.test_population.TestNestedPartBoxes) ... ok
+test_over_wide_alternative_box_does_not_hijack_or_merge (tests_rb.test_population.TestNestedPartBoxes)
+The detector sometimes adds a wider box (person + shadow) around a tracked person: the tracklet keeps ... ok
+test_partial_birth_growing_to_full_is_not_a_merge (tests_rb.test_population.TestNestedPartBoxes)
+A person first seen as an upper-body box (rest hidden) whose box then grows to the full body: the ... ok
+test_near_person_passing_in_front_is_not_merged (tests_rb.test_population.TestOcclusionVsMerge) ... ok
+test_new_large_box_over_small_hidden_body_is_not_area_merged (tests_rb.test_population.TestOcclusionVsMerge) ... ok
+test_occluder_box_is_not_an_appearance_sample_while_covering (tests_rb.test_population.TestOcclusionVsMerge) ... ok
+test_duplicate_order_independent_of_input_order (tests_rb.test_population.TestPartialAndDuplicates) ... ok
+test_duplicates_suppressed_but_kept (tests_rb.test_population.TestPartialAndDuplicates) ... ok
+test_edge_partial (tests_rb.test_population.TestPartialAndDuplicates) ... ok
+test_genuine_overlapping_people_are_not_deleted (tests_rb.test_population.TestPartialAndDuplicates) ... ok
+test_partial_height_continues_without_size_update (tests_rb.test_population.TestPartialAndDuplicates) ... ok
+test_no_identity_fields (tests_rb.test_population.TestRecords) ... ok
+test_records_are_json_safe (tests_rb.test_population.TestRecords) ... ok
+test_box_born_from_an_unresolved_merge_never_feeds_a_bank (tests_rb.test_population.TestReviewRegressions)
+H1: two people merge into one box and stay merged longer than the region hold. The box that becomes a ... ok
+test_camera_reset_mid_stream_breaks_continuity (tests_rb.test_population.TestReviewRegressions)
+L3: a FIRST_FRAME camera status after the first frame (estimator reset) cannot vouch for continuity. ... ok
+test_clean_split_clears_lineage (tests_rb.test_population.TestReviewRegressions)
+A merged region that resolves (both bodies come out separately) is evidence of separation: the new ... ok
+test_closed_tracklets_learn_their_successors (tests_rb.test_population.TestReviewRegressions)
+L1: a tracklet closed earlier still records the later birth that names it as predecessor. ... ok
+test_merge_lineage_inherits_through_gaps (tests_rb.test_population.TestReviewRegressions)
+H1 variant: the merged box goes undetected longer than the hold, then returns. ... ok
+test_near_person_first_seen_containing_a_far_person_gets_a_tracklet (tests_rb.test_population.TestReviewRegressions)
+M2: a small far person is tracked; a large near person is first detected with the far person's box ... ok
+test_sample_appearance_once_per_frame_and_frame_checked (tests_rb.test_population.TestReviewRegressions)
+M3: a second call for the same frame adds nothing, and the image must belong to the frame. ... ok
+test_short_box_is_partial_without_an_established_reference (tests_rb.test_population.TestReviewRegressions)
+M1: a young tracklet's box loses its lower part (hidden by a non-person). The short box continues the ... ok
+test_contact_during_gap_bars_reassociation (tests_rb.test_population_audit.Probe)
+TARGET stands still and is undetected for 3 frames while PERSON_A walks across its position; PERSON_A is ... ok
+test_crossing_contested_births_flagged_and_refused (tests_rb.test_population_audit.Probe) ... ok
+test_cut_invalidates_previously_closed_memory (tests_rb.test_population_audit.Probe)
+A tracklet closed BEFORE a cut (still in memory) must lose its position at the cut. ... ok
+test_hidden_uncompensated_flag (tests_rb.test_population_audit.Probe) ... ok
+test_memory_follows_pan (tests_rb.test_population_audit.Probe) ... ok
+test_merged_region_follows_pan (tests_rb.test_population_audit.Probe)
+A merge seen under a pan: the region moves with the image, so a box at the merged bodies' new image ... ok
+test_open_space_gap_reassociates_without_contact_flag (tests_rb.test_population_audit.Probe) ... ok
+test_rival_tracklet_alone_contests (tests_rb.test_population_audit.Probe)
+Two tracklets whose predictions both match ONE detection about equally (one person hidden behind the ... ok
+test_unknown_camera_tracklet_not_bank_eligible (tests_rb.test_population_audit.Probe) ... ok
+test_zoom_keeps_size_reference (tests_rb.test_population_audit.Probe)
+A steady zoom-in with a person standing still: the growing box must not become AREA_RATIO merged. ... ok
+test_three_person_merge_split_keeps_links_and_refuses_bank (tests_rb.test_population_audit.ProbeAuditDefects)
+Defect 1: a body coming out of a 3-person merged box has IoU < 0.3 with the region, but lies inside it. ... ok
+test_three_person_region_counts_three_bodies (tests_rb.test_population_audit.ProbeAuditDefects)
+A region formed from three distinct bodies stays unresolved while only two have come out. ... ok
+test_box_containing_tiny_nested_box_is_refused (tests_rb.test_population_audit.ProbeBank) ... ok
+test_small_partly_occluded_person_refused_by_cover_not_iou (tests_rb.test_population_audit.ProbeBank)
+A small far body half behind a large near one: IoU is tiny (the occluder is big) but half the far body ... ok
+test_large_masked_person_does_not_fail_the_estimate (tests_rb.test_population_audit.ProbeCameraDenominator)
+Defect 2: background features discarded by the person mask are not flow failures. A large person in ... ok
+test_current_frame_person_mask_used (tests_rb.test_population_audit.ProbeCameraMasks)
+A large person steps in front of the camera between two frames (absent before): background points it now ... ok
+test_prev_frame_person_mask_used (tests_rb.test_population_audit.ProbeCameraMasks)
+The big foreground person is detected in the previous frame but missed in this one: the previous-frame ... ok
+test_rotation_bound (tests_rb.test_population_audit.ProbeCameraMasks) ... ok
+test_box_over_long_hidden_body_is_not_multi_claim (tests_rb.test_population_audit.ProbeLongHiddenClaim)
+PERSON_B vanished > population_max_gap_s ago (still alive as HIDDEN); PERSON_A then walks over its last ... ok
+test_camera_shift_bound_scales_with_dt (tests_rb.test_population_audit.ProbeMisc) ... ok
+test_predicted_to_held_transition_in_seconds (tests_rb.test_population_audit.ProbeMisc) ... ok
+test_scale_veto_blocks_association (tests_rb.test_population_audit.ProbeMisc)
+A box whose height jumps 37% in one frame overlaps the prediction well (IoU ~0.7) but is not the same ... ok
+test_single_sample_is_not_an_established_size_reference (tests_rb.test_population_audit.ProbeMisc)
+A person first seen once with a smaller box (e.g. partly hidden), then fully: a one-frame size is not a ... ok
+test_two_boxes_fitting_one_tracklet_equally_is_contested (tests_rb.test_population_audit.ProbeRivalDetection)
+PERSON_A is tracked alone; then two separate boxes appear that both fit its prediction about equally ... ok
+test_detection_fitting_two_tracklets_is_contested (tests_rb.test_population_audit.ProbeRivalTracklet)
+PERSON_B is clearly re-detected; a second box lies between PERSON_A's and PERSON_B's predictions and fits ... ok
+test_persistent_merge_under_zoom_out_stays_merged (tests_rb.test_population_audit.ProbeZoomMerge)
+Two people merged into one box while the camera zooms out: the merged region's size reference must ... ok
+test_bad_seed_bbox_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
+test_config_hash_recorded_and_sensitive (tests_rb.test_provenance.TestProvenance) ... ok
+test_contract_block_fields (tests_rb.test_provenance.TestProvenance) ... ok
+test_contract_block_fits_r1a_summary (tests_rb.test_provenance.TestProvenance) ... ok
+test_deterministic_across_runs (tests_rb.test_provenance.TestProvenance) ... ok
+test_digest_detects_real_differences (tests_rb.test_provenance.TestProvenance) ... ok
+test_dirty_tree_recorded (tests_rb.test_provenance.TestProvenance) ... ok
+test_git_failure_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
+test_git_state_outside_repo_fails_closed (tests_rb.test_provenance.TestProvenance) ... ok
+test_model_records_must_be_complete (tests_rb.test_provenance.TestProvenance) ... ok
+test_real_git_state_of_this_tree (tests_rb.test_provenance.TestProvenance) ... ok
+test_sidecar_fields (tests_rb.test_provenance.TestProvenance) ... ok
+test_sidecar_refused_without_close_verification (tests_rb.test_provenance.TestProvenance) ... ok
+test_write_sidecar_canonical_and_no_overwrite (tests_rb.test_provenance.TestProvenance) ... ok
+test_hash_mismatch_refused (tests_rb.test_video_io.TestFailureModes) ... ok
+test_invalid_paths (tests_rb.test_video_io.TestFailureModes) ... ok
+test_start_frame_beyond_stream_when_count_unknown (tests_rb.test_video_io.TestFailureModes) ... ok
+test_start_frame_out_of_range (tests_rb.test_video_io.TestFailureModes) ... ok
+test_unreadable_files (tests_rb.test_video_io.TestFailureModes) ... [mov,mp4,m4a,3gp,3g2,mj2 @ 0xc78293500010] moov atom not found
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0xc78293500010] moov atom not found
+ok
+test_fingerprint_depends_on_documented_settings (tests_rb.test_video_io.TestFingerprint) ... ok
+test_fingerprint_reproducible_and_distinct (tests_rb.test_video_io.TestFingerprint) ... ok
+test_frames_build_valid_frame_records (tests_rb.test_video_io.TestFrameLogNumberingContract) ... ok
+test_numbering_matches_frozen_exemplars (tests_rb.test_video_io.TestFrameLogNumberingContract) ... ok
+test_gold_seed_and_first_frames (tests_rb.test_video_io.TestGoldVideoAlignment) ... ok
+test_no_resume_or_checkpoint_api (tests_rb.test_video_io.TestNoResume) ... ok
+test_reader_writes_nothing (tests_rb.test_video_io.TestNoResume) ... ok
+test_resume_cannot_be_enabled (tests_rb.test_video_io.TestNoResume) ... ok
+test_no_seek_during_run (tests_rb.test_video_io.TestSinglePositioning) ... ok
+test_change_during_iteration (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
+test_deleted_source_detected (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
+test_same_size_content_change_detected_at_close (tests_rb.test_video_io.TestSourceChangeFailsClosed) ... ok
+test_chunk_size_does_not_change_hash (tests_rb.test_video_io.TestSourceHashing) ... ok
+test_sha256_recorded (tests_rb.test_video_io.TestSourceHashing) ... ok
+test_first_logged_step_is_next_frame_and_sequence_is_contiguous (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_iterate_only_once (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_max_frames_cap (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_no_duplicate_or_skipped_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_seed_is_start_frame_both_seek_modes (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_seek_modes_decode_identical_frames (tests_rb.test_video_io.TestStartAndSequence) ... ok
+test_legacy_snapshot_timestamp_is_relative (tests_rb.test_video_io.TestTimeMapping) ... ok
+test_time_mapping_30_and_non_30_fps (tests_rb.test_video_io.TestTimeMapping) ... ok
+
+----------------------------------------------------------------------
+Ran 310 tests in 27.518s
+
+OK

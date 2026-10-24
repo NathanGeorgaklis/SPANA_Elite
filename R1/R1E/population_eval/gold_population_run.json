@@ -1,5 +1,13 @@
 {
  "camera": {
+  "photometric_residual": {
+   "max": 0.06239372864365578,
+   "median": 0.018172115087509155,
+   "min": 0.0006246288539841771,
+   "n": 179,
+   "p10": 0.002969434019178152,
+   "p90": 0.03301150873303414
+  },
   "reason_counts": {},
   "shift_frac_width_per_s": {
    "max": 0.32189861745606463,
@@ -22,7 +30,21 @@
    "p90": 1.0031426591870831
   }
  },
- "config_hash": "e65093a4c563d9a851bc6dafe908da369d699ce1c96c522c2ccff171fa1cb3e9",
+ "candidate_files_sha256": {
+  "raw_s_grid2x2__0000.json": "33037c311a763e04a7b67e23a82fc18b9257538e64a73fee64a4831d8713ca4d",
+  "raw_s_grid2x2__0040.json": "bed2244fbab14f482d064f0584483c9a53e6fe845c7e429d7580b494da48aed6",
+  "raw_s_grid2x2__0080.json": "17ed4df7114aaf29a7e0b3de83603bef54920356e31947e658ea4367064b5c42",
+  "raw_s_grid2x2__0120.json": "23c4ed123c5798e7d2c92fce92533de83f3f431b7f1c45a0b25aeff38b53fa19",
+  "raw_s_grid2x2__0160.json": "e683c8b5ce2186b66617452eb5088f2ffd2d5f630352171ed6e205e35f2f95d8"
+ },
+ "code_sha256": {
+  "player_tracker_rb/camera.py": "180dff779e6cbe3ed97a85b7273199ca285c7b66055ee2af98547c7eda106480",
+  "player_tracker_rb/config.py": "17350a50f9526f2f555866664a36c2720ac4f9d81d43c1fa37a16ca08e760e96",
+  "player_tracker_rb/motion.py": "6fffc01dbf030e17857d9ad2ff62912dd9f44fbc1ef5dfa7363fd54272e68781",
+  "player_tracker_rb/population.py": "21e6125e1769d6a0d96a40ddf7f6c043739b7b68e743a4fc330d58df0358f45e",
+  "tools_rb/population_eval.py": "2b187122a2db69583b313d79aa75408f468e64abd7faee592233f712cd17ffac"
+ },
+ "config_hash": "8882a812bbfe8a0484c73e06145e616ea325bccd543f627073f9de292c986cb4",
  "config_registry_version": "r1e-1",
  "detector_setting": "s_grid2x2",
  "fixture_fields_used": [
@@ -34,69 +56,70 @@
  "invariant_errors": [],
  "labels_identity_or_event_results_used": false,
  "population": {
-  "bank_eligible_share": 0.6008583690987125,
+  "bank_eligible_share": 0.5223021582733813,
   "closures_by_reason": {
    "CONTACT_AMBIGUITY": 25,
    "LEFT_FRAME": 9,
    "MERGED_CONTACT": 31,
-   "UNMATCHED_TIMEOUT": 42
+   "UNMATCHED_TIMEOUT": 43
   },
   "competitor_probe_height": "median observed box height of the frame",
   "competitors_per_observed_tracklet": {
    "max": 24.0,
    "median": 3.0,
    "min": 0.0,
-   "n": 1398,
+   "n": 1390,
    "p10": 0.0,
    "p90": 13.0
   },
   "contact_events_by_kind": {
    "AMBIGUOUS_ASSOCIATION": 12,
-   "MERGED_DETECTION": 128
+   "MERGED_DETECTION": 138
   },
   "duplicates_suppressed": 0,
   "hidden_frames_by_source": {
-   "HELD": 275,
-   "PREDICTED": 413
+   "HELD": 282,
+   "PREDICTED": 430
   },
   "merge_reasons": {
    "AREA_RATIO": 27,
    "ASPECT_WIDE": 11,
    "MULTI_CLAIM": 12,
-   "PERSISTENT_MERGE": 27,
-   "UNRESOLVED_MERGE": 84
+   "PERSISTENT_MERGE": 26,
+   "UNRESOLVED_MERGE": 94
   },
   "observation_flags": {
-   "ALTERNATIVE": 263,
-   "CONTAINS_OTHER": 231,
+   "ALTERNATIVE": 261,
+   "CONTAINS_OTHER": 261,
    "CONTESTED": 25,
-   "IN_MERGED_REGION": 130,
-   "MERGED_SUSPECTED": 128,
-   "NESTED": 290,
-   "OVERLAPS_OTHER": 859,
-   "PARTIAL": 124,
+   "IN_MERGED_REGION": 219,
+   "MERGED_SUSPECTED": 138,
+   "NESTED": 289,
+   "OVERLAPS_OTHER": 870,
+   "PARTIAL": 133,
    "TOUCHES_IMAGE_EDGE": 144
   },
-  "observed_tracklet_boxes": 1398,
-  "provisional_share": 0.3283261802575107,
+  "observed_tracklet_boxes": 1390,
+  "provisional_share": 0.32877697841726616,
   "tracklet_lifetime_s": {
    "max": 4.666666666666667,
    "median": 0.5333333333333333,
    "min": 0.03333333333333333,
-   "n": 120,
+   "n": 121,
    "p10": 0.03333333333333333,
-   "p90": 1.173333333333334
+   "p90": 1.1666666666666667
   },
-  "tracklets_seen": 120,
-  "tracklets_started": 120
+  "tracklets_seen": 121,
+  "tracklets_started": 121
  },
  "runtime_ms_per_frame": {
-  "max": 11.650707994704135,
-  "median": 4.256958498444874,
-  "min": 3.2645419996697456,
+  "max": 19.043791995500214,
+  "median": 6.653979507973418,
+  "min": 1.8422499997541308,
   "n": 180,
-  "p10": 3.691441600676626,
-  "p90": 5.045745501411147
+  "p10": 5.626341592869721,
+  "p90": 7.769170493702403
  },
- "tool": "tools_rb/population_eval.py"
+ "tool": "tools_rb/population_eval.py",
+ "video_sha256": "164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9"
 }

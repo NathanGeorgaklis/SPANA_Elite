@@ -96,6 +96,22 @@ class TestBasics(Base):
         a, b = run(frames), run(frames)
         self.assertEqual(a.records_json(), b.records_json())
 
+    def test_candidate_order_does_not_change_the_partition(self):
+        """Permuting the detector's output order changes indices only: which detections are grouped into which
+        tracklet (over the whole run) must be identical."""
+        base = combine(crossing(50, FPS, speed_h_per_s=3, dy_h=0.1, merge_iou=0.4),
+                       walker(50, FPS, x0=900, name="TARGET", drop=(20, 21)))
+        perm = [Frame(list(reversed(f.dets)), list(reversed(f.owners)), f.camera) for f in base]
+
+        def partition(rn):
+            groups = {}
+            for r in rn.results:
+                for v in r.tracklets:
+                    if v.observed:
+                        groups.setdefault(v.tracklet_id, []).append((r.rel_frame, tuple(round(x, 6) for x in v.box)))
+            return sorted(tuple(g) for g in groups.values())
+        self.assertEqual(partition(run(base)), partition(run(perm)))
+
     def test_input_validation(self):
         cfg = TrackerConfig.default()
         pop = P.Population(cfg, W, H)
@@ -213,6 +229,8 @@ class TestCrossings(Base):
                         rn = run(frames)
                         self.assert_no_swap(rn)
                         self.check_all(rn)
+                        # coverage: once apart again, both people are tracked (no pass by fragmenting forever)
+                        self.assertEqual(sum(v.observed for v in rn.results[-1].tracklets), 2)
                         n += 1
         self.assertEqual(n, 36)
 
@@ -452,7 +470,10 @@ class TestNestedPartBoxes(Base):
         self.assert_no_swap(rn)
         self.check_all(rn)
         last = rn.results[-1]
-        self.assertIn(P.NESTED, last.observations[1].flags)
+        # far too small to be a part of the near body: a separate, occluded body (not NESTED), and the near box
+        # contains it (never an appearance sample)
+        self.assertNotIn(P.NESTED, last.observations[1].flags)
+        self.assertIn(P.CONTAINS_OTHER, last.observations[0].flags)
         self.assertIsNotNone(last.observations[0].tracklet_id)
         self.assertIsNotNone(last.observations[1].tracklet_id)
         for v in last.tracklets:
@@ -476,6 +497,130 @@ class TestNestedPartBoxes(Base):
         for r in rn.results:
             self.assertFalse(any(P.MERGED_SUSPECTED in o.flags for o in r.observations))
         self.assert_no_swap(rn)
+
+
+class TestReviewRegressions(Base):
+    """Regressions for the R1-E independent code review (general failure classes, neutral names)."""
+
+    def test_box_born_from_an_unresolved_merge_never_feeds_a_bank(self):
+        """H1: two people merge into one box and stay merged longer than the region hold. The box that becomes a
+        tracklet after the region expires may still hold two bodies: it carries MERGE_LINEAGE and is never an
+        appearance sample."""
+        a, b = box_at(400, 360, 50, 100), box_at(460, 360, 50, 100)
+        m = (a[0], a[1], b[2], b[3])
+        frames = [Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]) for _ in range(3)]
+        frames += [Frame([cand(m)], [("PERSON_A", "PERSON_B")]) for _ in range(45)]
+        rn = run(frames)
+        born = None
+        for r in rn.results[3:]:
+            for v in r.tracklets:
+                if v.observed:
+                    born = v
+                    self.assertFalse(v.bank_eligible, f"rel {r.rel_frame}: merged lineage sampled")
+                    self.assertIn(P.MERGE_LINEAGE, v.bank_refusals)
+                    self.assertIn(P.MERGE_LINEAGE, v.flags)
+        self.assertIsNotNone(born, "coverage: the merged box is tracked again after the hold (as lineage)")
+
+    def test_merge_lineage_inherits_through_gaps(self):
+        """H1 variant: the merged box goes undetected longer than the hold, then returns."""
+        a, b = box_at(400, 360, 50, 100), box_at(460, 360, 50, 100)
+        m = (a[0], a[1], b[2], b[3])
+        frames = [Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]) for _ in range(3)]
+        frames += [Frame([cand(m)], [("PERSON_A", "PERSON_B")]) for _ in range(3)]
+        frames += [Frame([], []) for _ in range(20)]
+        frames += [Frame([cand(m)], [("PERSON_A", "PERSON_B")]) for _ in range(30)]
+        rn = run(frames)
+        for r in rn.results[6:]:
+            for v in r.tracklets:
+                if v.observed:
+                    self.assertFalse(v.bank_eligible, f"rel {r.rel_frame}")
+
+    def test_clean_split_clears_lineage(self):
+        """A merged region that resolves (both bodies come out separately) is evidence of separation: the new
+        tracklets are not merge lineage, and once isolated they may be sampled."""
+        a, b = box_at(400, 360, 50, 100), box_at(460, 360, 50, 100)
+        m = (a[0], a[1], b[2], b[3])
+        frames = [Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]) for _ in range(3)]
+        frames += [Frame([cand(m)], [("PERSON_A", "PERSON_B")]) for _ in range(3)]
+        for k in range(1, 30):
+            frames.append(Frame([cand(box_at(400 - 8 * k, 360, 50, 100)), cand(box_at(460 + 8 * k, 360, 50, 100))],
+                                [("PERSON_A",), ("PERSON_B",)]))
+        rn = run(frames)
+        last = rn.results[-1]
+        self.assertEqual(len(last.tracklets), 2)
+        for v in last.tracklets:
+            self.assertNotIn(P.MERGE_LINEAGE, v.flags)
+            self.assertTrue(v.bank_eligible)
+        self.assert_no_swap(rn)
+
+    def test_short_box_is_partial_without_an_established_reference(self):
+        """M1: a young tracklet's box loses its lower part (hidden by a non-person). The short box continues the
+        tracklet as PARTIAL: no velocity or size update, no bank sample, and the full body continues afterwards."""
+        frames = [Frame([cand(box_at(400, 400, 40, 100))], [("PERSON_A",)]) for _ in range(3)]
+        frames += [Frame([cand((380.0, 350.0, 420.0, 405.0))], [("PERSON_A",)]) for _ in range(3)]
+        frames += [Frame([cand(box_at(400, 400, 40, 100))], [("PERSON_A",)]) for _ in range(5)]
+        rn = run(frames)
+        self.assertEqual(len({v.tracklet_id for r in rn.results for v in r.tracklets}), 1)
+        for r in rn.results[3:6]:
+            v = r.tracklets[0]
+            self.assertIn(P.PARTIAL, v.flags)
+            self.assertIn(P.PARTIAL, v.bank_refusals)
+        st = rn.population._live[0].motion
+        self.assertAlmostEqual(st.vy, 0.0, places=6)
+        self.assertAlmostEqual(st.log_h_rate, 0.0, places=6)
+
+    def test_near_person_first_seen_containing_a_far_person_gets_a_tracklet(self):
+        """M2: a small far person is tracked; a large near person is first detected with the far person's box
+        inside its own. A box that small cannot be a part of the near body: both are bodies, both tracked."""
+        far = [box_at(400, 380, 20, 45) for _ in range(30)]
+        frames = [Frame([cand(far[k])], [("PERSON_B",)]) for k in range(5)]
+        near = box_at(405, 400, 80, 230)
+        frames += [Frame([cand(near), cand(far[k])], [("PERSON_A",), ("PERSON_B",)]) for k in range(5, 30)]
+        rn = run(frames)
+        last = rn.results[-1]
+        self.assertIsNotNone(last.observations[0].tracklet_id)
+        self.assertIsNotNone(last.observations[1].tracklet_id)
+        self.assertNotIn(P.ALTERNATIVE, last.observations[0].flags)
+        self.assertIn(P.CONTAINS_OTHER, last.observations[0].flags)
+        for v in last.tracklets:
+            self.assertFalse(v.bank_eligible)
+        self.assert_no_swap(rn)
+
+    def test_sample_appearance_once_per_frame_and_frame_checked(self):
+        """M3: a second call for the same frame adds nothing, and the image must belong to the frame."""
+        cfg = TrackerConfig.default()
+        ext = AppearanceExtractor(cfg, _ColourEmbedding())
+        pop = P.Population(cfg, W, H)
+        img = np.full((H, W, 3), (40, 120, 40), np.uint8)
+        b = box_at(400, 400, 40, 100)
+        x1, y1, x2, y2 = (int(v) for v in b)
+        img[y1:y2, x1:x2] = (40, 40, 220)
+        pop.update(0, 0.0, [cand(b)], identity_motion("FIRST_FRAME"))
+        first = pop.sample_appearance(0, img, ext)
+        self.assertTrue(first)
+        self.assertEqual(pop.sample_appearance(0, img, ext), {})
+        with self.assertRaises(P.PopulationError):
+            pop.sample_appearance(1, img, ext)
+
+    def test_closed_tracklets_learn_their_successors(self):
+        """L1: a tracklet closed earlier still records the later birth that names it as predecessor."""
+        a, b = box_at(400, 360, 50, 100), box_at(460, 360, 50, 100)
+        m = (a[0], a[1], b[2], b[3])
+        frames = [Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]) for _ in range(3)]
+        frames += [Frame([cand(m)], [("PERSON_A", "PERSON_B")]) for _ in range(30)]
+        rn = run(frames)
+        mem = {m_.tracklet_id: m_ for m_ in rn.population.recently_closed()}
+        born = [v for v in rn.results[-1].tracklets if v.observed][0]
+        for pred in born.possible_predecessors:
+            self.assertIn(born.tracklet_id, mem[pred].possible_successors)
+            self.assertIn(mem[pred].last_box_source, (P.LAST_OBSERVED, P.LAST_PREDICTED))
+
+    def test_camera_reset_mid_stream_breaks_continuity(self):
+        """L3: a FIRST_FRAME camera status after the first frame (estimator reset) cannot vouch for continuity."""
+        frames = walker(10, FPS)
+        frames.append(Frame(list(frames[-1].dets), [("TARGET",)], identity_motion("FIRST_FRAME")))
+        rn = run(frames)
+        self.assertEqual([c.reason for c in rn.results[10].closed], [P.CAMERA_RESET])
 
 
 class TestPartialAndDuplicates(Base):
@@ -628,6 +773,23 @@ class TestCompetitors(Base):
         self.assertEqual(kinds, [P.HIDDEN_BODY])                    # PERSON_A hidden nearby; PERSON_B too far
         self.assertIn(comp[0].box_source, (PREDICTED, HELD))
 
+    def test_hidden_predecessor_is_identifiable_for_self_exclusion(self):
+        """Rule 28 support: a body re-detected as a new tracklet while its old tracklet is still HIDDEN at the same
+        place appears twice (old hidden + new observed). The population cannot know they are one body, so it keeps
+        both as competitors, but it records the link (possible_predecessors / possible_successors) so the identity
+        layer can exclude the target's own predecessor instead of treating it as a different person."""
+        rn = run(walker(30, FPS, drop=tuple(range(10, 18))))
+        r = rn.results[18]
+        new = [v for v in r.tracklets if v.observed][0]
+        old = [v for v in r.tracklets if not v.observed][0]
+        self.assertIn(old.tracklet_id, new.possible_predecessors)
+        self.assertIn(new.tracklet_id, old.possible_successors)
+        comp = rn.population.competitors(new.box, 80.0, exclude_tracklet_ids=[new.tracklet_id])
+        self.assertEqual([c.tracklet_id for c in comp], [old.tracklet_id])
+        comp = rn.population.competitors(new.box, 80.0,
+                                         exclude_tracklet_ids=[new.tracklet_id, *new.possible_predecessors])
+        self.assertEqual(comp, ())
+
     def test_exclusions(self):
         rn = run(combine(walker(3, FPS, x0=400), walker(3, FPS, x0=430, name="PERSON_A")))
         q = rn.results[-1].observations[0].bbox
@@ -669,7 +831,7 @@ class TestBankContamination(Base):
         sampled = []
 
         def hook(k, pop, res):
-            out = pop.sample_appearance(self._render(k, frames[k]), ext)
+            out = pop.sample_appearance(k, self._render(k, frames[k]), ext)
             sampled.extend(tid for tid, (st, _) in out.items() if st == "ACCEPTED")
 
         rn = run(frames, cfg=cfg, hook=hook)
@@ -712,7 +874,7 @@ class TestBankContamination(Base):
             return img
 
         def hook(k, pop, res):
-            out = pop.sample_appearance(render(frames[k]), ext)
+            out = pop.sample_appearance(k, render(frames[k]), ext)
             accepted.extend(k for tid, (st, _) in out.items() if st == "ACCEPTED")
 
         rn = run(frames, cfg=cfg, hook=hook)
@@ -730,7 +892,7 @@ class TestBankContamination(Base):
         offered = []
 
         def hook(k, pop, res):
-            out = pop.sample_appearance(self._render(k, frames[k]), ext)
+            out = pop.sample_appearance(k, self._render(k, frames[k]), ext)
             offered.extend([k] * len(out))
 
         run(frames, cfg=cfg, hook=hook)

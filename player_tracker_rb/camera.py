@@ -18,7 +18,13 @@ Method (per frame, D16):
   4. A similarity transform (translation, uniform scale, rotation) by RANSAC (cv2.estimateAffinePartial2D).
   5. Bounds: a shift faster than camera_max_shift_frac_per_s, a zoom faster than camera_max_scale_ratio_per_s or a
      rotation faster than camera_max_rotation_rad_per_s is implausible, and the estimate is rejected.
-  6. Hard cut: grey-histogram Bhattacharyya distance >= cut_hist_distance_min AND flow failure.
+  6. Photometric check: the previous frame is warped with the fitted transform and compared with this frame over
+     the background (person boxes of BOTH frames masked; both blurred by cut_residual_blur_px and mean-centred, so a uniform
+     exposure change does not count). residual = mean|a' - b'| / (mean|a'| + mean|b'|), in [0, 1] and independent
+     of the image's texture contrast. A transform that leaves a residual
+     >= cut_residual_min does not explain the image change (e.g. a static broadcast overlay dominated the features
+     across a cut): the estimate is rejected (HIGH_RESIDUAL), which is a flow failure.
+  7. Hard cut: grey-histogram Bhattacharyya distance >= cut_hist_distance_min AND flow failure.
 
 Status of every frame:
   FIRST_FRAME  no previous frame (no continuity to break);
@@ -60,6 +66,7 @@ IMPLAUSIBLE_SHIFT = "IMPLAUSIBLE_SHIFT"
 IMPLAUSIBLE_SCALE = "IMPLAUSIBLE_SCALE"
 IMPLAUSIBLE_ROTATION = "IMPLAUSIBLE_ROTATION"
 HISTOGRAM_CHANGE = "HISTOGRAM_CHANGE"
+HIGH_RESIDUAL = "HIGH_RESIDUAL"
 RESOLUTION_CHANGED = "RESOLUTION_CHANGED"
 
 Matrix = Tuple[Tuple[float, float, float], Tuple[float, float, float]]
@@ -80,11 +87,12 @@ class CameraMotion:
     rotation_rad: float
     n_features: int                   # background features found in the previous frame
     n_tracked: int                    # features tracked into this frame (outside person boxes)
-    inlier_fraction: Optional[float]  # RANSAC inliers / n_features (None if no transform was fitted)
+    inlier_fraction: Optional[float]  # RANSAC inliers / n_tracked (None if no transform was fitted)
     hist_distance: Optional[float]    # grey-histogram Bhattacharyya distance to the previous frame
     reasons: Tuple[str, ...]
     continuity_broken: bool
     measured_matrix: Optional[Matrix] = None  # a fitted transform that was REJECTED (audit only; never applied)
+    residual: Optional[float] = None          # photometric residual of the fitted transform (0-1), if one was fitted
 
     @property
     def compensated(self) -> bool:
@@ -113,21 +121,23 @@ class CameraMotion:
                 "n_tracked": self.n_tracked, "inlier_fraction": self.inlier_fraction,
                 "hist_distance": self.hist_distance, "reasons": list(self.reasons),
                 "continuity_broken": self.continuity_broken,
-                "measured_matrix": None if self.measured_matrix is None else [list(r) for r in self.measured_matrix]}
+                "measured_matrix": None if self.measured_matrix is None else [list(r) for r in self.measured_matrix],
+                "residual": self.residual}
 
 
 def identity_motion(status: str, *, reasons: Sequence[str] = (), n_features: int = 0, n_tracked: int = 0,
                     inlier_fraction: Optional[float] = None, hist_distance: Optional[float] = None,
-                    continuity_broken: bool = False, measured_matrix: Optional[Matrix] = None) -> CameraMotion:
+                    continuity_broken: bool = False, measured_matrix: Optional[Matrix] = None,
+                    residual: Optional[float] = None) -> CameraMotion:
     if status == ESTIMATED:
         raise CameraError("identity_motion is not a measurement; ESTIMATED needs a fitted matrix")
     return CameraMotion(status, IDENTITY, (0.0, 0.0), 1.0, 0.0, int(n_features), int(n_tracked), inlier_fraction,
-                        hist_distance, tuple(reasons), bool(continuity_broken), measured_matrix)
+                        hist_distance, tuple(reasons), bool(continuity_broken), measured_matrix, residual)
 
 
 def motion_from_matrix(matrix: Sequence[Sequence[float]], width: int, height: int, *, n_features: int = 0,
                        n_tracked: int = 0, inlier_fraction: Optional[float] = None,
-                       hist_distance: Optional[float] = None) -> CameraMotion:
+                       hist_distance: Optional[float] = None, residual: Optional[float] = None) -> CameraMotion:
     """An ESTIMATED CameraMotion from a 2x3 similarity matrix (source pixels). Also used by tests."""
     m = np.asarray(matrix, dtype=np.float64).reshape(2, 3)
     if not np.all(np.isfinite(m)):
@@ -140,7 +150,7 @@ def motion_from_matrix(matrix: Sequence[Sequence[float]], width: int, height: in
     ny = m[1, 0] * cx + m[1, 1] * cy + m[1, 2]
     mat: Matrix = (tuple(float(v) for v in m[0]), tuple(float(v) for v in m[1]))  # type: ignore[assignment]
     return CameraMotion(ESTIMATED, mat, (float(nx - cx), float(ny - cy)), float(scale), float(rot),
-                        int(n_features), int(n_tracked), inlier_fraction, hist_distance, (), False)
+                        int(n_features), int(n_tracked), inlier_fraction, hist_distance, (), False, None, residual)
 
 
 def _check_image(image: Any) -> None:
@@ -200,6 +210,26 @@ class CameraMotionEstimator:
                 mask[y1:y2, x1:x2] = 0
         return mask
 
+    def _residual(self, prev_work: np.ndarray, work: np.ndarray, m: np.ndarray, mask: np.ndarray) -> float:
+        """Normalised photometric residual in [0, 1] between the warped previous frame a and this frame b over the
+        background (`mask` > 0 and inside the warped image), both blurred and mean-centred (a', b'):
+            residual = mean|a' - b'| / (mean|a'| + mean|b'|)
+        0 when the transform explains the change; about 0.5-0.7 for unrelated images, at any texture contrast.
+        1.0 if nothing is comparable."""
+        sigma = self._cfg.get("cut_residual_blur_px")
+        h, w = work.shape[:2]
+        a = cv2.GaussianBlur(prev_work, (0, 0), sigma).astype(np.float32)
+        b = cv2.GaussianBlur(work, (0, 0), sigma).astype(np.float32)
+        warped = cv2.warpAffine(a, m, (w, h), flags=cv2.INTER_LINEAR, borderValue=-1.0)
+        valid = (warped >= 0) & (mask > 0)
+        if not np.any(valid):
+            return 1.0
+        da, db = warped[valid] - warped[valid].mean(), b[valid] - b[valid].mean()
+        contrast = float(np.abs(da).mean() + np.abs(db).mean())
+        if contrast <= 0.0:
+            return 1.0
+        return float(np.abs(da - db).mean() / contrast)
+
     # -- main ------------------------------------------------------------------------------------------------
     def update(self, image: np.ndarray, person_boxes: Sequence[Sequence[float]], dt_s: float) -> CameraMotion:
         """Motion from the previous frame to `image`. `person_boxes` are this frame's detections (source px);
@@ -256,15 +286,21 @@ class CameraMotionEstimator:
                 if m is None or inl is None:
                     reasons.append(NO_TRANSFORM)
                 else:
-                    inlier_frac = float(inl.reshape(-1).astype(bool).sum()) / n_feat
+                    inlier_frac = float(inl.reshape(-1).astype(bool).sum()) / n_tracked
                     if inlier_frac <= c.get("cut_flow_inlier_fraction_max"):
                         reasons.append(LOW_INLIER_FRACTION)
                     else:
                         full = m.astype(np.float64).copy()
                         full[:, 2] /= s      # working px -> source px (the linear part is unchanged)
+                        prev_mask = self._mask(prev_work.shape, prev_boxes, s)
+                        warped_prev_mask = cv2.warpAffine(prev_mask, m, (work.shape[1], work.shape[0]),
+                                                          flags=cv2.INTER_NEAREST, borderValue=0)
+                        resid = self._residual(prev_work, work, m, np.minimum(cur_mask, warped_prev_mask))
                         motion = motion_from_matrix(full, shape[1], shape[0], n_features=n_feat,
                                                     n_tracked=n_tracked, inlier_fraction=inlier_frac,
-                                                    hist_distance=hist_d)
+                                                    hist_distance=hist_d, residual=resid)
+                        if resid >= c.get("cut_residual_min"):
+                            reasons.append(HIGH_RESIDUAL)
                         shift = math.hypot(*motion.shift_px) / shape[1]
                         if shift > c.get("camera_max_shift_frac_per_s") * dt_s:
                             reasons.append(IMPLAUSIBLE_SHIFT)
@@ -277,11 +313,12 @@ class CameraMotionEstimator:
         if not reasons and motion is not None:
             return motion
         measured = None if motion is None else motion.matrix
+        resid = None if motion is None else motion.residual
         if hist_change:
             return identity_motion(CUT, reasons=tuple(reasons) + (HISTOGRAM_CHANGE,), n_features=n_feat,
                                    n_tracked=n_tracked, inlier_fraction=inlier_frac, hist_distance=hist_d,
-                                   continuity_broken=True, measured_matrix=measured)
+                                   continuity_broken=True, measured_matrix=measured, residual=resid)
         return identity_motion(UNKNOWN, reasons=tuple(reasons), n_features=n_feat, n_tracked=n_tracked,
                                inlier_fraction=inlier_frac, hist_distance=hist_d,
                                continuity_broken=bool(c.get("camera_unknown_breaks_continuity")),
-                               measured_matrix=measured)
+                               measured_matrix=measured, residual=resid)

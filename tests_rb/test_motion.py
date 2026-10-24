@@ -152,6 +152,15 @@ class TestCamera(unittest.TestCase):
         self.assertFalse(self.mm.predict(st, st.t_obs + 0.1).camera_compensated)
         self.assertEqual(st.ref_box, self.st.ref_box)
 
+    def test_no_velocity_update_after_uncompensated_frame(self):
+        """L5: after an UNKNOWN camera frame (configured not to break continuity) the reference box is in a stale
+        image frame; the next observation's centre jump includes camera motion and must not become velocity."""
+        st = self.mm.apply_camera(self.st, identity_motion(UNKNOWN, continuity_broken=False))
+        v0 = (st.vx, st.vy)
+        st2 = self.mm.update(st, box(300 + 2 * H_PX, 360), st.t_obs + 1 / 30)
+        self.assertEqual((st2.vx, st2.vy), v0)
+        self.assertTrue(st2.camera_compensated)
+
     def test_first_frame_is_a_no_op(self):
         self.assertEqual(self.mm.apply_camera(self.st, identity_motion(FIRST_FRAME)), self.st)
 

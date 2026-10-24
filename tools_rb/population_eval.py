@@ -21,6 +21,7 @@ check that MERGED and CONTACT decisions are made where people really touch.
 
 Usage: python3 tools_rb/population_eval.py VIDEO FIXTURE_JSON DETECTOR_EVAL_DIR SETTING OUT_JSON
 """
+import hashlib
 import json
 import os
 import sys
@@ -45,18 +46,25 @@ CODE_FILES = ("player_tracker_rb/population.py", "player_tracker_rb/motion.py", 
 COMPETITOR_PROBE_H = "median observed box height of the frame"
 
 
+def file_sha256(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
 def code_hashes():
-    import hashlib
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out = {}
-    for rel in CODE_FILES:
-        with open(os.path.join(root, rel), "rb") as f:
-            out[rel] = hashlib.sha256(f.read()).hexdigest()
-    return out
+    return {rel: file_sha256(os.path.join(root, rel)) for rel in CODE_FILES}
+
+
+def candidate_files(det_dir, setting):
+    files = sorted(f for f in os.listdir(det_dir) if f.startswith(f"raw_{setting}__") and f.endswith(".json"))
+    if not files:
+        raise SystemExit(f"no saved candidates for setting {setting!r} in {det_dir}")
+    return files
 
 
 def load_candidates(det_dir, setting):
-    files = sorted(f for f in os.listdir(det_dir) if f.startswith(f"raw_{setting}__") and f.endswith(".json"))
+    files = candidate_files(det_dir, setting)
     frames = [fr for f in files for fr in json.load(open(os.path.join(det_dir, f)))["frames"]]
     if [f["rel"] for f in frames] != list(range(len(frames))):
         raise SystemExit("detector candidates do not cover frames 0..N-1 exactly once")
@@ -124,6 +132,7 @@ def main(video, fx_json, det_dir, setting, out_json):
     cands = load_candidates(det_dir, setting)
     cam_status, cam_reasons, closures, events, merge_reasons, flags = {}, {}, {}, {}, {}, {}
     hidden_src, shifts, scales, n_comp, timings, inv_errors = {}, [], [], [], [], []
+    residuals = []
     births, first_seen, last_seen = 0, {}, {}
     n_obs_tracked = n_bank_eligible = n_provisional = n_dup = 0
     sheet = []
@@ -134,7 +143,9 @@ def main(video, fx_json, det_dir, setting, out_json):
         pop = P.Population(cfg, width, height)
         for fr in [reader.seed] + list(reader):
             r_ = fr.rel_frame
-            c = cands.get(r_, np.zeros((0, 6)))
+            if r_ not in cands:
+                raise SystemExit(f"no saved candidates for rel frame {r_} (fail closed)")
+            c = cands[r_]
             dets = [PersonCandidate(tuple(float(v) for v in row[:4]), float(row[4]), bool(row[5]), "saved")
                     for row in c]
             t0 = time.perf_counter()
@@ -144,6 +155,8 @@ def main(video, fx_json, det_dir, setting, out_json):
             count(cam_status, cam.status)
             for x in cam.reasons:
                 count(cam_reasons, x)
+            if cam.residual is not None:
+                residuals.append(cam.residual)
             if cam.compensated:
                 shifts.append(float(np.hypot(*cam.shift_px)) * fps / width)
                 scales.append(float(cam.scale) ** fps)
@@ -180,11 +193,13 @@ def main(video, fx_json, det_dir, setting, out_json):
     report = {
         "tool": "tools_rb/population_eval.py", "fixture_fields_used": sorted(fx), "detector_setting": setting,
         "labels_identity_or_event_results_used": False, "fps": fps, "frames": len(timings),
-        "config_registry_version": cfg.as_record()["registry_version"] if hasattr(cfg, "as_record") else None,
-        "config_hash": cfg.config_hash() if hasattr(cfg, "config_hash") else None,
+        "config_registry_version": cfg.as_record()["registry_version"], "config_hash": cfg.config_hash(),
+        "video_sha256": fx["video_sha256"],
+        "candidate_files_sha256": {f: file_sha256(os.path.join(det_dir, f)) for f in candidate_files(det_dir, setting)},
         "code_sha256": code_hashes(),
         "camera": {"status_counts": cam_status, "reason_counts": cam_reasons,
-                   "shift_frac_width_per_s": stats(shifts), "zoom_factor_per_s": stats(scales)},
+                   "shift_frac_width_per_s": stats(shifts), "zoom_factor_per_s": stats(scales),
+                   "photometric_residual": stats(residuals)},
         "population": {"tracklets_started": births, "tracklets_seen": len(first_seen),
                        "tracklet_lifetime_s": stats(lifetimes), "closures_by_reason": closures,
                        "contact_events_by_kind": events, "observation_flags": flags,
