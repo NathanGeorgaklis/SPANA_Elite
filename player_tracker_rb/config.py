@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1e-1"
+CONFIG_REGISTRY_VERSION = "r1f-1"
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -518,6 +518,11 @@ PARAMS: Tuple[Param, ...] = (
        "body fills little of the near body's box: that is occlusion, not one box for two bodies.", 0.25, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
        "R1-E (NEW); D11; R1-E development-clip population check (occluders were flagged as merges)", 0.0, 1.0),
+    _p("population_merge_emerge_pad_h", "float", "h",
+       "A body first seen after a merge formed counts as coming OUT of the merged region if its box touches the "
+       "region's box expanded by this many heights h of that box (a person re-emerging from a merge appears beside it, "
+       "often without overlapping it).", 0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "R1-F (NEW); R1-F synthetic crossing finding (merge never resolved, target lineage permanent)", 0.0, 5.0),
     _p("population_track_id_digits", "int", "digits",
        "Zero-padded width of the numeric part of a population tracklet id (prefix + number).", 3, H,
        "VERIFIED_OUTPUT", "CONTRACT_VERIFIED", "CONTRACT", "population",
@@ -565,6 +570,14 @@ PARAMS: Tuple[Param, ...] = (
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "state", "D14", 0.001, 30.0),
 
     # ---- reacquisition (D15) -----------------------------------------------------------------
+    _p("identity_contact_cover_min", "float", "fraction of the smaller box's area",
+       "A competitor is IN CONTACT with a target candidate box if either box covers at least this fraction of "
+       "the other. A competitor in contact whose appearance is unknown (no bank yet, e.g. provisional) blocks the "
+       "candidate: contrast cannot be verified (D10).", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+       "R1-F (NEW); D08, D10", 0.0, 1.0),
+    _p("target_bank_sample_interval_s", "float", "s",
+       "Minimum time between samples offered to the target appearance bank.", 0.25, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "bank", "R1-F (NEW); D12", 0.0, 30.0),
     _p("reacq_appearance_floor", "float", "composite similarity (0-1)",
        "Appearance floor during reacquisition (stricter than ordinary association).", 0.85, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition",
@@ -694,6 +707,9 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
         errs.append("composite_weight_lab + composite_weight_embedding must equal 1.0")
     if not v["untrusted_identity_confidence_ceiling"] < v["legacy_identity_trust_threshold"]:
         errs.append("untrusted_identity_confidence_ceiling must be < legacy_identity_trust_threshold")
+    if v["contact_memory_s"] > v["population_closed_memory_s"]:
+        errs.append("contact_memory_s must be <= population_closed_memory_s (the population keeps closed "
+                    "competitors, with their banks, only that long)")
     if v["reacq_appearance_floor"] < v["appearance_floor"]:
         errs.append("reacq_appearance_floor must be >= appearance_floor (reacquisition is stricter)")
     if v["reacq_contrastive_margin"] < v["contrastive_margin"]:

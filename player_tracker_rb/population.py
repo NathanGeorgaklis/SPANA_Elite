@@ -48,7 +48,11 @@ Per frame (update), in order:
      against that body. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
-     RESOLVED (removed) when at least n separate bodies are observed in it. It LAPSES
+     RESOLVED (removed) when at least n separate bodies are observed in it, or touching it (>=
+     population_contact_cover_min of the body inside the region box expanded by population_merge_emerge_pad_h
+     region heights) and first seen after the merge formed (a body coming out of a merge
+     appears beside it; a body tracked before the merge does not count); tracklets born in a region with merge
+     lineage lose it when the region resolves. It LAPSES
      population_merged_region_hold_s after the last size or multi-claim evidence: a lapsed region no longer makes
      a box merged, but is remembered until population_closed_memory_s after that evidence. Detections in a region
      are IN_MERGED_REGION and are never appearance samples, because a second body may still be hidden in it.
@@ -342,12 +346,13 @@ class Competitor:
     provisional: Optional[bool]
     flags: Tuple[str, ...]
     bank: Optional[AppearanceBank] = field(compare=False, repr=False, default=None)
+    closed_age_s: Optional[float] = None   # RECENTLY_CLOSED only: seconds since the tracklet closed
 
     def as_record(self) -> Dict[str, Any]:
         return {"ref": self.ref, "kind": self.kind, "tracklet_id": self.tracklet_id, "box": list(self.box),
                 "box_source": self.box_source, "position_valid": self.position_valid,
                 "distance_h": self.distance_h, "provisional": self.provisional, "flags": list(self.flags),
-                "bank_samples": None if self.bank is None else len(self.bank)}
+                "bank_samples": None if self.bank is None else len(self.bank), "closed_age_s": self.closed_age_s}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -377,6 +382,8 @@ class _MergedRegion:
     claimants: Tuple[str, ...]
     n_bodies: int                         # bodies believed inside (>= 2)
     last_evidence_t: float                # last frame with size or multi-claim evidence of a merge here
+    created_t: float = 0.0                # when the merge was first seen
+    born: Set[str] = field(default_factory=set)   # tracklets born in it with MERGE_LINEAGE
 
 
 def _distinct_bodies(tids: Sequence[str], by_tid: Dict[str, "_Tracklet"]) -> int:
@@ -446,6 +453,10 @@ class Population:
         ix = max(0.0, min(float(self._w), b[2]) - max(0.0, b[0]))
         iy = max(0.0, min(float(self._h), b[3]) - max(0.0, b[1]))
         return ix * iy / (w * h)
+
+    def inside_fraction(self, box: Sequence[float]) -> float:
+        """Fraction of a box's area inside the image."""
+        return self._inside_fraction(_box(box))
 
     def _touches_edge(self, b: Box) -> bool:
         m = self._cfg.get("detector_edge_touch_margin_px")
@@ -612,6 +623,7 @@ class Population:
 
         # ---- 3. merged detections ----------------------------------------------------------------------
         by_tid = {tr.tid: tr for tr in live}
+        by_tid0 = by_tid
         cont_pd: Dict[Tuple[str, int], float] = {}
         if live and track:
             cm = containment(np.asarray([pbox[tr.tid] for tr in live]), np.asarray([boxes[i] for i in track]))
@@ -638,7 +650,24 @@ class Population:
                     k = max(cands_k, key=lambda q: (rm[q, b], rc[q, b], -q))     # deterministic
                     region_of[i] = k
                     in_region[k].append(i)
-        resolved = {k for k, ds in in_region.items() if len(ds) >= self._regions[k].n_bodies}
+        # A region RESOLVES when at least as many separate bodies as it holds are seen: bodies in it, plus bodies
+        # first seen after the merge formed whose box touches it (a body coming out of a merge appears beside it).
+        # A body that was already tracked when the merge formed is not one of the merged bodies.
+        cmin = c.get("population_contact_cover_min")
+        emerged: Dict[int, Set[int]] = {k: set() for k in range(len(self._regions))}
+        for k, rg in enumerate(self._regions):
+            for i in track:
+                if region_of.get(i) == k:
+                    continue
+                if i in assigned_d and by_tid0[assigned_d[i]].first_time < rg.created_t:
+                    continue
+                pad = c.get("population_merge_emerge_pad_h") * _wh(rg.box)[1]
+                rb = np.asarray([(rg.box[0] - pad, rg.box[1] - pad, rg.box[2] + pad, rg.box[3] + pad)])
+                bi = np.asarray([boxes[i]])
+                if float(containment(bi, rb)[0, 0]) >= cmin:
+                    emerged[k].add(i)
+        resolved = {k for k in range(len(self._regions))
+                    if len(set(in_region[k]) | emerged[k]) >= self._regions[k].n_bodies}
         hold = c.get("population_merged_region_hold_s")
         # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
         # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies
@@ -760,7 +789,7 @@ class Population:
                         rg.ref_wh = ref_wh
             elif evidence:
                 n_in = _distinct_bodies(src, by_tid) if src else 0
-                self._regions.append(_MergedRegion(boxes[i], ref_wh, tuple(sorted(set(src))), max(2, n_in), t))
+                self._regions.append(_MergedRegion(boxes[i], ref_wh, tuple(sorted(set(src))), max(2, n_in), t, t))
         # contested groups: every tracklet in the group ends; every detection starts again
         births: Dict[int, _Tracklet] = {}
         for root in sorted(groups, key=lambda r: (r[0], r[1])):
@@ -812,8 +841,11 @@ class Population:
             if i in region_of:
                 predecessors[i].update(self._regions[region_of[i]].claimants)
                 lineage = region_of[i] not in resolved            # unresolved or lapsed: may hold two bodies
+            region_lineage = lineage
             lineage = lineage or any(lineage_of.get(p_, False) for p_ in predecessors[i])
             tr = self._birth(boxes[i], rel_frame, t, partial[i], predecessors[i], lineage)
+            if region_lineage:
+                self._regions[region_of[i]].born.add(tr.tid)
             births[i] = tr
             observed_now[tr.tid] = i
             flags_now[tr.tid] = {CONTESTED} if i in contested_d else set()
@@ -872,6 +904,11 @@ class Population:
                     tr.contact_during_gap = True
                     break
 
+        # a resolved region proves its bodies were seen apart again: tracklets born in it lose their merge lineage
+        for k in resolved:
+            for tr in new_live:
+                if tr.tid in self._regions[k].born:
+                    tr.merge_lineage = False
         # merged regions are forgotten when resolved, or population_closed_memory_s after their last evidence
         keep_region_s = c.get("population_closed_memory_s")
         self._regions = [rg for k, rg in enumerate(self._regions)
@@ -1067,10 +1104,10 @@ class Population:
                 if not ok:
                     continue
                 out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
-                                      True, dist, None, (m.reason,), m.bank))
+                                      True, dist, None, (m.reason,), m.bank, res.time_s - m.closed_time_s))
             else:
                 out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
-                                      False, None, None, (m.reason,), m.bank))
+                                      False, None, None, (m.reason,), m.bank, res.time_s - m.closed_time_s))
         kind_rank = {OBSERVATION: 0, HIDDEN_BODY: 1, RECENTLY_CLOSED: 2}
         out.sort(key=lambda x: (kind_rank[x.kind], math.inf if x.distance_h is None else x.distance_h, x.ref))
         return tuple(out)

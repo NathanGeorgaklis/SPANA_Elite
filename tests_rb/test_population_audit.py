@@ -391,3 +391,72 @@ class ProbeCameraDenominator(unittest.TestCase):
         m = est.update(imgs[1], [(240, 60, 1140, 660)], DT)
         self.assertEqual(m.status, C.ESTIMATED, m.reasons)
         self.assertAlmostEqual(m.shift_px[0], -10.0, delta=0.5)
+
+
+class MergeResolutionByEmergence(unittest.TestCase):
+    """R1-F finding (first failing layer: population). A person in front is undetected while overlapping the person
+    behind, so the visible box 'absorbs' them (a correct MULTI_CLAIM merge). When the hidden person re-emerges, its
+    box lies BESIDE the merged region, not inside it. The region must still resolve (bodies first seen after the
+    merge, touching it, are the bodies coming out of it), and tracklets born in the region lose MERGE_LINEAGE."""
+
+    def _scene(self, passer_by=False):
+        frames = []
+        for k in range(70):
+            ax = 300 + 5 * k
+            bx = 650 - 5 * k
+            a = box_at(ax, 400, 40, 100)
+            b = box_at(bx, 415, 40, 100)
+            dets, owners = [cand(a)], [("PERSON_A",)]
+            ov = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+            if ov <= 0:
+                dets.append(cand(b))
+                owners.append(("PERSON_B",))
+            if passer_by:
+                dets.append(cand(box_at(900, 400, 40, 100)))
+                owners.append(("PERSON_C",))
+            frames.append(Frame(dets, owners))
+        return frames
+
+    def test_emerging_body_resolves_the_merge_and_clears_lineage(self):
+        rn = run(self._scene())
+        merged = [r.rel_frame for r in rn.results if any(P.MERGED_SUSPECTED in o.flags for o in r.observations)]
+        self.assertTrue(merged, "the absorbed person must first produce a merge")
+        last = rn.results[-1]
+        self.assertEqual(sum(v.observed for v in last.tracklets), 2)
+        for v in last.tracklets:
+            self.assertNotIn(P.MERGE_LINEAGE, v.flags)
+        self.assertFalse(any(P.MERGED_SUSPECTED in o.flags for o in last.observations))
+
+    def test_a_body_that_existed_before_the_merge_does_not_resolve_it(self):
+        """A passer-by that was already tracked elsewhere when the merge formed is not a body coming out of it."""
+        frames = []
+        for k in range(40):
+            a, b = box_at(400, 400, 40, 100), box_at(436, 400, 40, 100)
+            c = box_at(700 - 6 * k, 380, 40, 100)              # walks across, touching the merged box later
+            if k < 10:
+                frames.append(Frame([cand(a), cand(b), cand(c)], [("PERSON_A",), ("PERSON_B",), ("PERSON_C",)]))
+            else:
+                m = (a[0], a[1], b[2], b[3])
+                frames.append(Frame([cand(m), cand(c)], [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
+        rn = run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
+        for r in rn.results[10:]:
+            o = r.observations[0]
+            self.assertIn(P.MERGED_SUSPECTED, o.flags, f"rel {r.rel_frame}")
+
+    def test_body_emerging_exactly_beside_the_region_resolves_it(self):
+        """The re-emerging body's box touches the merged box but does not overlap it."""
+        frames = []
+        for k in range(60):
+            a = box_at(400, 400, 40, 100)
+            if k < 10:
+                b = box_at(470, 400, 40, 100)
+                frames.append(Frame([cand(a), cand(b)], [("PERSON_A",), ("PERSON_B",)]))
+            elif k < 20:
+                frames.append(Frame([cand(box_at(418, 400, 76, 100))], [("PERSON_A", "PERSON_B")]))
+            else:
+                frames.append(Frame([cand(a), cand(box_at(441, 400, 40, 100))], [("PERSON_A",), ("PERSON_B",)]))
+        rn = run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
+        last = rn.results[-1]
+        self.assertEqual(sum(v.observed for v in last.tracklets), 2)
+        for v in last.tracklets:
+            self.assertNotIn(P.MERGE_LINEAGE, v.flags)

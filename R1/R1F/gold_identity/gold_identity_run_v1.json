@@ -1,0 +1,6285 @@
+{
+ "by_label_class": {
+  "HIDDEN_OR_NOT_RESOLVABLE": {
+   "frames": 5,
+   "states": {
+    "AMBIGUOUS": 5
+   },
+   "tracking": 0,
+   "tracking_rel": []
+  },
+  "MERGED_WITH_OPPONENT": {
+   "frames": 6,
+   "states": {
+    "AMBIGUOUS": 6
+   },
+   "tracking": 0,
+   "tracking_rel": []
+  },
+  "PARTIAL": {
+   "frames": 4,
+   "states": {
+    "AMBIGUOUS": 4
+   },
+   "tracking": 0,
+   "tracking_rel": []
+  },
+  "VISIBLE": {
+   "frames": 26,
+   "states": {
+    "AMBIGUOUS": 15,
+    "LOST": 7,
+    "REACQUIRING": 1,
+    "TRACKING": 3
+   },
+   "tracking": 3,
+   "tracking_rel": [
+    70,
+    71,
+    72
+   ]
+  }
+ },
+ "candidate_files_sha256": {
+  "raw_s_grid2x2__0000.json": "33037c311a763e04a7b67e23a82fc18b9257538e64a73fee64a4831d8713ca4d",
+  "raw_s_grid2x2__0040.json": "bed2244fbab14f482d064f0584483c9a53e6fe845c7e429d7580b494da48aed6",
+  "raw_s_grid2x2__0080.json": "17ed4df7114aaf29a7e0b3de83603bef54920356e31947e658ea4367064b5c42",
+  "raw_s_grid2x2__0120.json": "23c4ed123c5798e7d2c92fce92533de83f3f431b7f1c45a0b25aeff38b53fa19",
+  "raw_s_grid2x2__0160.json": "e683c8b5ce2186b66617452eb5088f2ffd2d5f630352171ed6e205e35f2f95d8"
+ },
+ "config_hash": "b130b8c4c7ef90d9aa62c65a8a149a9eb4098a26316ca033e1de4ff5d688f264",
+ "config_registry_version": "r1f-1",
+ "embedding_cache_files_sha256": {
+  "emb_0000_0060.npz": "9ff363544d53cbc9b3bb5fa1adf79a0c4aa3c069534a6e9b28225560a4703826",
+  "emb_0060_0180.npz": "a997bfd65a2d6c226e95dbe9a6d6641fa3ab2238b205449d32b62854cf563b41"
+ },
+ "embedding_provenance": {
+  "backend": "dinov2_onnx",
+  "dim": 384,
+  "input_hw": [
+   224,
+   112
+  ],
+  "model_file": "dinov2_vits14_cls_patchmean_224x112.onnx",
+  "model_sha256": "0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea",
+  "model_status": "LICENCE_UNCLEAR",
+  "note": "generic visual embedding (DINOv2 ViT-S/14), not a person/football re-identification model",
+  "onnxruntime_version": "1.23.2",
+  "pooling": "cls"
+ },
+ "events_evaluated": false,
+ "fixture_fields_used": [
+  "video_sha256",
+  "seed_frame",
+  "seed_bbox"
+ ],
+ "fps": 30.0,
+ "frames": 180,
+ "label_window_frames": [
+  {
+   "bbox": [
+    884.09,
+    314.35,
+    948.89,
+    419.57
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": true,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.760165307936345,
+   "decision": {
+    "absence_s": 0.03333333333333366,
+    "bank": {
+     "refusals": [
+      "SAMPLE_NOT_DUE"
+     ],
+     "status": "REFUSED"
+    },
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.760165307936345,
+      "box": [
+       884.09,
+       314.35,
+       948.89,
+       419.57
+      ],
+      "contrast": 0.15138738421632114,
+      "details": [],
+      "detection_index": 4,
+      "distance_h": 0.022361431401680436,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666693,
+       "allowed_scale_ratio": 1.2747326114975186,
+       "displacement_h": 0.03877096724718448,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9977202318418172,
+       "speed_h_per_s": 1.1631290174155229
+      },
+      "passed": true,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9115526921526661,
+       "embedding": 0.8803065855939143,
+       "lab": 0.9695811757617766
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "TRACKING",
+    "gate_h": 0.8166666666666673,
+    "h": 124.04570601656656,
+    "positional_prior": true,
+    "transition": "TRACKING->TRACKING"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.0,
+   "identity_confidence_rb": 0.5387974914219137,
+   "identity_trusted": true,
+   "identity_uncertainty_reasons": [],
+   "last_confirmed_frame": 70,
+   "merged_suspected": false,
+   "observation_source": "DETECTION",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    884.09,
+    314.35,
+    948.89,
+    419.57
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8237,
+   "rb_state": "TRACKING",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 70,
+   "target_episode": 1,
+   "target_height_px": 122.80512412011109,
+   "target_similarity": 0.9115526921526661,
+   "time_s": 2.3333333333333335,
+   "time_since_confirmed_s": 0.0
+  },
+  {
+   "bbox": [
+    884.98,
+    314.84,
+    954.31,
+    420.06
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": true,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.782079337118709,
+   "decision": {
+    "absence_s": 0.033333333333333215,
+    "bank": {
+     "refusals": [
+      "SAMPLE_NOT_DUE"
+     ],
+     "status": "REFUSED"
+    },
+    "candidates": [
+     {
+      "best_competitor": "D4",
+      "best_competitor_similarity": 0.782079337118709,
+      "box": [
+       884.98,
+       314.84,
+       954.31,
+       420.06
+      ],
+      "contrast": 0.16173326015266454,
+      "details": [],
+      "detection_index": 5,
+      "distance_h": 0.018929135866557697,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.03202797753305959,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.013409087658311,
+       "speed_h_per_s": 0.9608393259917911
+      },
+      "passed": true,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9438125972713736,
+       "embedding": 0.9246973582299156,
+       "lab": 0.9793123269197953
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3337633741599298,
+      "box": [
+       788.86,
+       320.57,
+       855.41,
+       418.87
+      ],
+      "contrast": 0.4555873585223061,
+      "details": [
+       "MOTION_VETO",
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 1,
+      "distance_h": 0.7800242639597144,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.9078738350108821,
+       "plausible": false,
+       "reasons": [
+        "SPEED"
+       ],
+       "scale_ratio": 0.9467602482114804,
+       "speed_h_per_s": 27.23621505032656
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7893507326822359,
+       "embedding": 0.7949072536600124,
+       "lab": 0.7790314794377938
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "TRACKING",
+    "gate_h": 0.8166666666666664,
+    "h": 122.80332153970083,
+    "positional_prior": true,
+    "transition": "TRACKING->TRACKING"
+   },
+   "detection_index": 5,
+   "held_age_s": 0.0,
+   "identity_confidence_rb": 0.5444202500829699,
+   "identity_trusted": true,
+   "identity_uncertainty_reasons": [],
+   "last_confirmed_frame": 71,
+   "merged_suspected": false,
+   "observation_source": "DETECTION",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    884.98,
+    314.84,
+    954.31,
+    420.06
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.838,
+   "rb_state": "TRACKING",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 71,
+   "target_episode": 1,
+   "target_height_px": 121.5627578529792,
+   "target_similarity": 0.9438125972713736,
+   "time_s": 2.3666666666666667,
+   "time_since_confirmed_s": 0.0
+  },
+  {
+   "bbox": [
+    884.97,
+    314.84,
+    954.31,
+    420.07
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": true,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7821031189384352,
+   "decision": {
+    "absence_s": 0.033333333333333215,
+    "bank": {
+     "refusals": [],
+     "status": "ACCEPTED"
+    },
+    "candidates": [
+     {
+      "best_competitor": "D4",
+      "best_competitor_similarity": 0.7821031189384352,
+      "box": [
+       884.97,
+       314.84,
+       954.31,
+       420.07
+      ],
+      "contrast": 0.1611254520345371,
+      "details": [],
+      "detection_index": 5,
+      "distance_h": 0.015484520385415097,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.00022430106917001083,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0113929056118698,
+       "speed_h_per_s": 0.006729032075100349
+      },
+      "passed": true,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9432285709729723,
+       "embedding": 0.9237907832002157,
+       "lab": 0.979327319693806
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3337633741599298,
+      "box": [
+       788.86,
+       320.57,
+       855.41,
+       418.89
+      ],
+      "contrast": 0.4555873585223061,
+      "details": [
+       "MOTION_VETO",
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 1,
+      "distance_h": 0.8085696268487439,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.9371777251422152,
+       "plausible": false,
+       "reasons": [
+        "SPEED"
+       ],
+       "scale_ratio": 0.9449790979735723,
+       "speed_h_per_s": 28.115331754266556
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7893507326822359,
+       "embedding": 0.7949072536600124,
+       "lab": 0.7790314794377938
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "TRACKING",
+    "gate_h": 0.8166666666666664,
+    "h": 122.8066350234361,
+    "positional_prior": true,
+    "transition": "TRACKING->TRACKING"
+   },
+   "detection_index": 5,
+   "held_age_s": 0.0,
+   "identity_confidence_rb": 0.5440899195839876,
+   "identity_trusted": true,
+   "identity_uncertainty_reasons": [],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "DETECTION",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    884.97,
+    314.84,
+    954.31,
+    420.07
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8382,
+   "rb_state": "TRACKING",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 72,
+   "target_episode": 1,
+   "target_height_px": 121.56603786377948,
+   "target_similarity": 0.9432285709729723,
+   "time_s": 2.4,
+   "time_since_confirmed_s": 0.0
+  },
+  {
+   "bbox": [
+    886.7586473506503,
+    314.7079607781903,
+    955.4381152040805,
+    418.93554085053603
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7933349272929411,
+   "decision": {
+    "absence_s": 0.033333333333333215,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7933349272929411,
+      "box": [
+       882.6,
+       315.2,
+       956.5,
+       419.3
+      ],
+      "contrast": 0.16440048566658416,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.013082299907940817,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.002074511296459333,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9987759470933013,
+       "speed_h_per_s": 0.06223533889378021
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9577354129595252,
+       "embedding": 0.941547110333153,
+       "lab": 0.9877994035513594
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "D5"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.2790405351880823,
+      "box": [
+       798.17,
+       301.03,
+       857.36,
+       419.27
+      ],
+      "contrast": 0.5105950874605958,
+      "details": [
+       "MOTION_VETO",
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.7619803802330414,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.8838582648541178,
+       "plausible": false,
+       "reasons": [
+        "SPEED"
+       ],
+       "scale_ratio": 1.134440614642766,
+       "speed_h_per_s": 26.515747945623627
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.789635622648678,
+       "embedding": 0.8052732436389846,
+       "lab": 0.7605943265238233
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.6114760582835603,
+      "box": [
+       886.51,
+       386.86,
+       932.87,
+       417.77
+      ],
+      "contrast": 0.011629465642499781,
+      "details": [
+       "MOTION_VETO",
+       "EMBEDDING_BELOW_FLOOR",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.30359543033560005,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.34764811838595633,
+       "plausible": false,
+       "reasons": [
+        "SCALE"
+       ],
+       "scale_ratio": 0.29656257948754955,
+       "speed_h_per_s": 10.429443551578727
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.6231055239260601,
+       "embedding": 0.4927896229732235,
+       "lab": 0.8651207685527569
+      },
+      "tracklet_id": "T042",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.6114760582835603,
+      "box": [
+       886.51,
+       386.86,
+       932.87,
+       417.77
+      ],
+      "contrast": 0.011629465642499781,
+      "details": [
+       "MOTION_VETO",
+       "EMBEDDING_BELOW_FLOOR",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.30359543033560005,
+      "in_gate": true,
+      "margin": 0.12066666666666666,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.5166666666666657,
+       "allowed_scale_ratio": 1.2747326114975182,
+       "displacement_h": 0.34764811838595633,
+       "plausible": false,
+       "reasons": [
+        "SCALE"
+       ],
+       "scale_ratio": 0.29656257948754955,
+       "speed_h_per_s": 10.429443551578727
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.6231055239260601,
+       "embedding": 0.4927896229732235,
+       "lab": 0.8651207685527569
+      },
+      "tracklet_id": "T042",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "TRACKING",
+    "gate_h": 0.8166666666666664,
+    "h": 122.80045296195571,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "TRACKING->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.033333333333333215,
+   "identity_confidence_rb": 0.49,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    882.6,
+    315.2,
+    956.5,
+    419.3
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8491,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 73,
+   "target_episode": 1,
+   "target_height_px": 122.80045296195571,
+   "target_similarity": 0.9577354129595252,
+   "time_s": 2.433333333333333,
+   "time_since_confirmed_s": 0.033333333333333215
+  },
+  {
+   "bbox": [
+    888.6775752499589,
+    314.5845560750979,
+    956.7085640693715,
+    417.8280079566497
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7635535179462366,
+   "decision": {
+    "absence_s": 0.06666666666666687,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7635535179462366,
+      "box": [
+       883.02,
+       313.68,
+       954.5,
+       415.8
+      ],
+      "contrast": 0.17374240740203395,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.033837131434372454,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.783333333333335,
+       "allowed_scale_ratio": 1.2999545846522265,
+       "displacement_h": 0.02807168630476579,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9891184199958688,
+       "speed_h_per_s": 0.42107529457148557
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9372959253482706,
+       "embedding": 0.9142345024113786,
+       "lab": 0.98012428223107
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3731854445650688,
+      "box": [
+       804.97,
+       298.77,
+       859.73,
+       415.31
+      ],
+      "contrast": 0.37747418208057365,
+      "details": [
+       "MOTION_VETO",
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.7320174923835169,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 0.783333333333335,
+       "allowed_scale_ratio": 1.2999545846522265,
+       "displacement_h": 0.8519883305784777,
+       "plausible": false,
+       "reasons": [
+        "SPEED"
+       ],
+       "scale_ratio": 1.128788294813147,
+       "speed_h_per_s": 12.779824958677125
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7506596266456425,
+       "embedding": 0.7449909604265639,
+       "lab": 0.7611871496239314
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 124.05016169449752,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 3,
+   "held_age_s": 0.06666666666666687,
+   "identity_confidence_rb": 0.49,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    883.02,
+    313.68,
+    954.5,
+    415.8
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8587,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 74,
+   "target_episode": 1,
+   "target_height_px": 124.05016169449752,
+   "target_similarity": 0.9372959253482706,
+   "time_s": 2.466666666666667,
+   "time_since_confirmed_s": 0.06666666666666687
+  },
+  {
+   "bbox": [
+    890.7998943820667,
+    314.51632961958353,
+    958.1910194712918,
+    416.7887278477226
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7673229778715506,
+   "decision": {
+    "absence_s": 0.10000000000000009,
+    "candidates": [
+     {
+      "best_competitor": "D3",
+      "best_competitor_similarity": 0.7673229778715506,
+      "box": [
+       884.6,
+       312.96,
+       946.85,
+       414.95
+      ],
+      "contrast": 0.14336167315500936,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.07200787379907819,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.0500000000000007,
+       "allowed_scale_ratio": 1.3256756020175233,
+       "displacement_h": 0.05467351611860493,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9972387639966247,
+       "speed_h_per_s": 0.5467351611860488
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.9106846510265599,
+       "embedding": 0.8799979369650386,
+       "lab": 0.9676742628550996
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3949940036748919,
+      "box": [
+       807.45,
+       298.16,
+       860.4,
+       411.12
+      ],
+      "contrast": 0.38259615158232585,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.7354363961162894,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.0500000000000007,
+       "allowed_scale_ratio": 1.3256756020175233,
+       "displacement_h": 0.8509750327052636,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1045013313173713,
+       "speed_h_per_s": 8.509750327052629
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7775901552572178,
+       "embedding": 0.7910554685847616,
+       "lab": 0.7525831447917795
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 124.05901002510565,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.10000000000000009,
+   "identity_confidence_rb": 0.4736577859775832,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    884.6,
+    312.96,
+    946.85,
+    414.95
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.853,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 75,
+   "target_episode": 1,
+   "target_height_px": 124.05901002510565,
+   "target_similarity": 0.9106846510265599,
+   "time_s": 2.5,
+   "time_since_confirmed_s": 0.10000000000000009
+  },
+  {
+   "bbox": [
+    892.6623718472201,
+    314.3065719015499,
+    959.4119161692249,
+    415.60531071038406
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7114662309439092,
+   "decision": {
+    "absence_s": 0.1333333333333333,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7114662309439092,
+      "box": [
+       885.97,
+       313.69,
+       934.76,
+       410.31
+      ],
+      "contrast": 0.12762342635005253,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.1285561484697526,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.3166666666666664,
+       "allowed_scale_ratio": 1.351905537726674,
+       "displacement_h": 0.10984959310973554,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9538124673233727,
+       "speed_h_per_s": 0.8238719483230167
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8390896572939617,
+       "embedding": 0.8077279316542492,
+       "lab": 0.8973328620534278
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.36105785206818225,
+      "box": [
+       809.5,
+       295.07,
+       864.0,
+       413.6
+      ],
+      "contrast": 0.43118410726171047,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.7247926912227249,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.3166666666666664,
+       "allowed_scale_ratio": 1.351905537726674,
+       "displacement_h": 0.8323588675152049,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1701034128735188,
+       "speed_h_per_s": 6.2426915063640385
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7922419593298927,
+       "embedding": 0.84543970968132,
+       "lab": 0.6934461372486707
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 124.05839722692008,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.1333333333333333,
+   "identity_confidence_rb": 0.4522681600674924,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    885.97,
+    313.69,
+    934.76,
+    410.31
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.819,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 76,
+   "target_episode": 1,
+   "target_height_px": 124.05839722692008,
+   "target_similarity": 0.8390896572939617,
+   "time_s": 2.533333333333333,
+   "time_since_confirmed_s": 0.1333333333333333
+  },
+  {
+   "bbox": [
+    894.6198598710306,
+    314.1334951533317,
+    960.7403865751768,
+    414.4776403087587
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7476935435980718,
+   "decision": {
+    "absence_s": 0.16666666666666696,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7476935435980718,
+      "box": [
+       888.19,
+       311.73,
+       944.45,
+       411.06
+      ],
+      "contrast": 0.10671760607706993,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.09453097299270145,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.5833333333333357,
+       "allowed_scale_ratio": 1.378654461283424,
+       "displacement_h": 0.0719609558764678,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9898933300607011,
+       "speed_h_per_s": 0.431765735258806
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8544111496751418,
+       "embedding": 0.8208536125368815,
+       "lab": 0.9167322900747679
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3468420991205534,
+      "box": [
+       815.47,
+       292.23,
+       867.23,
+       413.15
+      ],
+      "contrast": 0.4236980121195554,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.702171921193292,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.5833333333333357,
+       "allowed_scale_ratio": 1.378654461283424,
+       "displacement_h": 0.7992637316431512,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2050528689312388,
+       "speed_h_per_s": 4.7955823898588985
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7705401112401088,
+       "embedding": 0.8232401101068154,
+       "lab": 0.672668684773368
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 124.0551535355244,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.16666666666666696,
+   "identity_confidence_rb": 0.4318444553564573,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    888.19,
+    311.73,
+    944.45,
+    411.06
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8248,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 77,
+   "target_episode": 1,
+   "target_height_px": 124.0551535355244,
+   "target_similarity": 0.8544111496751418,
+   "time_s": 2.566666666666667,
+   "time_since_confirmed_s": 0.16666666666666696
+  },
+  {
+   "bbox": [
+    896.4333567324243,
+    313.9907953812172,
+    961.9272668025612,
+    413.3839906030301
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7480208234276383,
+   "decision": {
+    "absence_s": 0.20000000000000018,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7480208234276383,
+      "box": [
+       888.21,
+       311.75,
+       944.49,
+       411.08
+      ],
+      "contrast": 0.10595473648053644,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.1050339366878755,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.8500000000000014,
+       "allowed_scale_ratio": 1.4059326414276185,
+       "displacement_h": 0.0724898808648311,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.999364189654313,
+       "speed_h_per_s": 0.3624494043241552
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8539755599081748,
+       "embedding": 0.820185864216123,
+       "lab": 0.9167278519076993
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3461937841955391,
+      "box": [
+       815.49,
+       292.21,
+       867.2,
+       413.15
+      ],
+      "contrast": 0.42274390397649736,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.7135729979000065,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 1.8500000000000014,
+       "allowed_scale_ratio": 1.4059326414276185,
+       "displacement_h": 0.8070024275618283,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2167835004207452,
+       "speed_h_per_s": 4.0350121378091375
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7689376881720364,
+       "embedding": 0.8208393127940727,
+       "lab": 0.6725489567311118
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 124.05505861845288,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.20000000000000018,
+   "identity_confidence_rb": 0.41234305239238,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    888.21,
+    311.75,
+    944.49,
+    411.08
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8249,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 78,
+   "target_episode": 1,
+   "target_height_px": 124.05505861845288,
+   "target_similarity": 0.8539755599081748,
+   "time_s": 2.6,
+   "time_since_confirmed_s": 0.20000000000000018
+  },
+  {
+   "bbox": [
+    898.333190859844,
+    313.84830194839424,
+    963.2092478445178,
+    412.30384674933475
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7706379319602554,
+   "decision": {
+    "absence_s": 0.2333333333333334,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7706379319602554,
+      "box": [
+       884.98,
+       309.33,
+       939.9,
+       410.02
+      ],
+      "contrast": 0.09809354292448769,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.15183340753357494,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.116666666666667,
+       "allowed_scale_ratio": 1.4337505500773058,
+       "displacement_h": 0.11273066238504342,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0226950671348896,
+       "speed_h_per_s": 0.48313141022161454
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8687314748847431,
+       "embedding": 0.8609981649257693,
+       "lab": 0.8830933362371232
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.36955735816875074,
+      "box": [
+       820.08,
+       293.59,
+       868.19,
+       412.64
+      ],
+      "contrast": 0.3743485881386129,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.7101958624963424,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.116666666666667,
+       "allowed_scale_ratio": 1.4337505500773058,
+       "displacement_h": 0.7869624540526002,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2091751687596448,
+       "speed_h_per_s": 3.3726962316540003
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7439059463073636,
+       "embedding": 0.7942286901611324,
+       "lab": 0.6504494220075072
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 122.79285959989912,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 3,
+   "held_age_s": 0.2333333333333334,
+   "identity_confidence_rb": 0.39372230150765714,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    884.98,
+    309.33,
+    939.9,
+    410.02
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8423,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 79,
+   "target_episode": 1,
+   "target_height_px": 122.79285959989912,
+   "target_similarity": 0.8687314748847431,
+   "time_s": 2.6333333333333333,
+   "time_since_confirmed_s": 0.2333333333333334
+  },
+  {
+   "bbox": [
+    900.2226088639787,
+    313.73139238821756,
+    964.4835488238806,
+    411.2534389988387
+   ],
+   "bbox_is_held": false,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": true,
+   "best_competitor_similarity": 0.7698305215379827,
+   "decision": {
+    "absence_s": 0.2666666666666666,
+    "candidates": [
+     {
+      "best_competitor": "D2",
+      "best_competitor_similarity": 0.7698305215379827,
+      "box": [
+       879.11,
+       307.59,
+       943.15,
+       405.98
+      ],
+      "contrast": 0.12221720094139454,
+      "details": [
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.18084485089061342,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.383333333333333,
+       "allowed_scale_ratio": 1.4621188663488378,
+       "displacement_h": 0.14572125547923614,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0089000735684353,
+       "speed_h_per_s": 0.5464547080471357
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8920477224793772,
+       "embedding": 0.8594736489117923,
+       "lab": 0.9525424305334635
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "D5",
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.35630782543440825,
+      "box": [
+       822.69,
+       295.33,
+       872.45,
+       409.6
+      ],
+      "contrast": 0.43246219642848965,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.702523809683191,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.383333333333333,
+       "allowed_scale_ratio": 1.4621188663488378,
+       "displacement_h": 0.7621671487057272,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1717350483450053,
+       "speed_h_per_s": 2.8581268076464776
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7887700218628979,
+       "embedding": 0.8565773210175966,
+       "lab": 0.6628421805756002
+      },
+      "tracklet_id": "T012",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T038",
+      "best_competitor_similarity": 0.3724798299698047,
+      "box": [
+       823.53,
+       320.24,
+       889.98,
+       408.16
+      ],
+      "contrast": 0.3871495684779584,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.6222385996192115,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.383333333333333,
+       "allowed_scale_ratio": 1.4621188663488378,
+       "displacement_h": 0.6529334185960137,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9015397344052932,
+       "speed_h_per_s": 2.448500319735052
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7596293984477631,
+       "embedding": 0.7514794837979357,
+       "lab": 0.7747649542260142
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 121.5247038751607,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 0,
+     "excluded_known_others": [
+      "T002",
+      "T012",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.2666666666666666,
+   "identity_confidence_rb": 0.375942433866872,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "PREDICTED",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    879.11,
+    307.59,
+    943.15,
+    405.98
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8206,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 80,
+   "target_episode": 1,
+   "target_height_px": 121.5247038751607,
+   "target_similarity": 0.8920477224793772,
+   "time_s": 2.6666666666666665,
+   "time_since_confirmed_s": 0.2666666666666666
+  },
+  {
+   "bbox": [
+    902.0090684586982,
+    313.7764479740355,
+    965.6565931782521,
+    410.3675790129548
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7705839618696106,
+   "decision": {
+    "absence_s": 0.30000000000000027,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7705839618696106,
+      "box": [
+       875.59,
+       306.7,
+       940.39,
+       404.1
+      ],
+      "contrast": 0.06791579436620543,
+      "details": [
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.22623056586474163,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.650000000000002,
+       "allowed_scale_ratio": 1.4910484806565163,
+       "displacement_h": 0.18121420305568528,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0083741535312882,
+       "speed_h_per_s": 0.6040473435189504
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8384997562358161,
+       "embedding": 0.8191803028741548,
+       "lab": 0.8743787410503299
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.9165411647078024,
+      "box": [
+       804.55,
+       293.6,
+       879.02,
+       410.57
+      ],
+      "contrast": -0.0872492399787046,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.784791034088572,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 2.650000000000002,
+       "allowed_scale_ratio": 1.4910484806565163,
+       "displacement_h": 0.8292137591096492,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2109807468024099,
+       "speed_h_per_s": 2.7640458636988283
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.8292919247290979,
+       "embedding": 0.8602915074408463,
+       "lab": 0.7717212711215651
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.9165411647078024,
+      "box": [
+       804.55,
+       293.6,
+       879.02,
+       410.57
+      ],
+      "contrast": -0.0872492399787046,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.784791034088572,
+      "in_gate": true,
+      "margin": 0.126,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 2.650000000000002,
+       "allowed_scale_ratio": 1.4910484806565163,
+       "displacement_h": 0.8292137591096492,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2109807468024099,
+       "speed_h_per_s": 2.7640458636988283
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8292919247290979,
+       "embedding": 0.8602915074408463,
+       "lab": 0.7717212711215651
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 117.97794264403451,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.30000000000000027,
+   "identity_confidence_rb": 0.3589654765314296,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    875.59,
+    306.7,
+    940.39,
+    404.1
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8066,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 81,
+   "target_episode": 1,
+   "target_height_px": 117.97794264403451,
+   "target_similarity": 0.8384997562358161,
+   "time_s": 2.7,
+   "time_since_confirmed_s": 0.30000000000000027
+  },
+  {
+   "bbox": [
+    902.0334190065536,
+    313.49171789015264,
+    965.6821927627014,
+    410.0847444600898
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.763023017202205,
+   "decision": {
+    "absence_s": 0.3333333333333335,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.763023017202205,
+      "box": [
+       872.0,
+       302.21,
+       933.94,
+       399.06
+      ],
+      "contrast": 0.032558510347844294,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.2783497857813582,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 2.916666666666668,
+       "allowed_scale_ratio": 1.5205504988933503,
+       "displacement_h": 0.25097321203884937,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.00266037248431,
+       "speed_h_per_s": 0.7529196361165478
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7955815275500493,
+       "embedding": 0.7259322110828776,
+       "lab": 0.9249302581319397
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "D3",
+       "T042"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8746050044089135,
+      "box": [
+       796.19,
+       292.58,
+       887.28,
+       408.15
+      ],
+      "contrast": -0.07391960108718454,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.786812525615331,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 2.916666666666668,
+       "allowed_scale_ratio": 1.5205504988933503,
+       "displacement_h": 0.8330068416948607,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1964631827363106,
+       "speed_h_per_s": 2.499020525084581
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.800685403321729,
+       "embedding": 0.8041685170654509,
+       "lab": 0.7942167635119597
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8746050044089135,
+      "box": [
+       796.19,
+       292.58,
+       887.28,
+       408.15
+      ],
+      "contrast": -0.07391960108718454,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.786812525615331,
+      "in_gate": true,
+      "margin": 0.12666666666666668,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 2.916666666666668,
+       "allowed_scale_ratio": 1.5205504988933503,
+       "displacement_h": 0.8330068416948607,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1964631827363106,
+       "speed_h_per_s": 2.499020525084581
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.800685403321729,
+       "embedding": 0.8041685170654509,
+       "lab": 0.7942167635119597
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 117.9802578757468,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.3333333333333335,
+   "identity_confidence_rb": 0.3427551713597373,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    872.0,
+    302.21,
+    933.94,
+    399.06
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7648,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 82,
+   "target_episode": 1,
+   "target_height_px": 117.9802578757468,
+   "target_similarity": 0.7955815275500493,
+   "time_s": 2.7333333333333334,
+   "time_since_confirmed_s": 0.3333333333333335
+  },
+  {
+   "bbox": [
+    902.073695305547,
+    313.62780376114915,
+    965.7246317809696,
+    410.22411246188074
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.735020775294599,
+   "decision": {
+    "absence_s": 0.3666666666666667,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.735020775294599,
+      "box": [
+       870.6,
+       298.06,
+       926.74,
+       399.17
+      ],
+      "contrast": 0.05267702507384442,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.3233248263357629,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.1833333333333336,
+       "allowed_scale_ratio": 1.5506362466945394,
+       "displacement_h": 0.29913475164964026,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0467273683640692,
+       "speed_h_per_s": 0.8158220499535643
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7876978003684434,
+       "embedding": 0.7362056511009789,
+       "lab": 0.8833260775794488
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "D5",
+       "D3"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8454485917013559,
+      "box": [
+       797.24,
+       292.71,
+       884.94,
+       403.31
+      ],
+      "contrast": -0.06328552465885162,
+      "details": [
+       "MERGED",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_MERGED_SUSPECTED",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.8057077503704522,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 3.1833333333333336,
+       "allowed_scale_ratio": 1.5506362466945394,
+       "displacement_h": 0.8457517336922927,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1449712881126106,
+       "speed_h_per_s": 2.306595637342616
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER",
+       "MERGED_SUSPECTED"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7821630670425043,
+       "embedding": 0.7851809745441636,
+       "lab": 0.7765583816822796
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D5"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8015152559006054,
+      "box": [
+       800.6,
+       320.31,
+       913.89,
+       407.3
+      ],
+      "contrast": -0.005459642800986653,
+      "details": [
+       "MERGED",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_MERGED_SUSPECTED",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.6583016372524628,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 3.1833333333333336,
+       "allowed_scale_ratio": 1.5506362466945394,
+       "displacement_h": 0.6548589931529442,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9005520104241952,
+       "speed_h_per_s": 1.7859790722353022
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER",
+       "MERGED_SUSPECTED"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7960556130996187,
+       "embedding": 0.7796384756346808,
+       "lab": 0.8265445826773605
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D3"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8454485917013559,
+      "box": [
+       797.24,
+       292.71,
+       884.94,
+       403.31
+      ],
+      "contrast": -0.06328552465885162,
+      "details": [
+       "MERGED",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_MERGED_SUSPECTED",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.8057077503704522,
+      "in_gate": true,
+      "margin": 0.12733333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 3.1833333333333336,
+       "allowed_scale_ratio": 1.5506362466945394,
+       "displacement_h": 0.8457517336922927,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1449712881126106,
+       "speed_h_per_s": 2.306595637342616
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER",
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7821630670425043,
+       "embedding": 0.7851809745441636,
+       "lab": 0.7765583816822796
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D5"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8015152559006054,
+      "box": [
+       800.6,
+       320.31,
+       913.89,
+       407.3
+      ],
+      "contrast": -0.005459642800986653,
+      "details": [
+       "MERGED",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_MERGED_SUSPECTED",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.6583016372524628,
+      "in_gate": true,
+      "margin": 0.12733333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 3.1833333333333336,
+       "allowed_scale_ratio": 1.5506362466945394,
+       "displacement_h": 0.6548589931529442,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9005520104241952,
+       "speed_h_per_s": 1.7859790722353022
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER",
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7960556130996187,
+       "embedding": 0.7796384756346808,
+       "lab": 0.8265445826773605
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D3"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 116.47729011687542,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.3666666666666667,
+   "identity_confidence_rb": 0.3272768975697213,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "OCCLUDER_OVERLAP"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    870.6,
+    298.06,
+    926.74,
+    399.17
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7603,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 83,
+   "target_episode": 1,
+   "target_height_px": 116.47729011687542,
+   "target_similarity": 0.7876978003684434,
+   "time_s": 2.7666666666666666,
+   "time_since_confirmed_s": 0.3666666666666667
+  },
+  {
+   "bbox": [
+    902.0909914681591,
+    313.66194928223797,
+    965.7414921709357,
+    410.25759665681494
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.733211055380446,
+   "decision": {
+    "absence_s": 0.3999999999999999,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.733211055380446,
+      "box": [
+       870.6,
+       297.99,
+       926.73,
+       399.17
+      ],
+      "contrast": 0.055470305918244756,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.32795662537234854,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.4499999999999993,
+       "allowed_scale_ratio": 1.5813172737853123,
+       "displacement_h": 0.29977905053551046,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0474592049437375,
+       "speed_h_per_s": 0.7494476263387763
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7886813612986907,
+       "embedding": 0.7376442963730216,
+       "lab": 0.8834644818749335
+      },
+      "tracklet_id": "T007",
+      "unknown_contacts": [
+       "D5",
+       "D3"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.844908474673582,
+      "box": [
+       797.3,
+       292.71,
+       885.08,
+       403.22
+      ],
+      "contrast": -0.06374212885094432,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.8156629302105829,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.4499999999999993,
+       "allowed_scale_ratio": 1.5813172737853123,
+       "displacement_h": 0.8451220475191142,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.144047407969287,
+       "speed_h_per_s": 2.112805118797786
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7811663458226377,
+       "embedding": 0.7832572334006742,
+       "lab": 0.7772832688919982
+      },
+      "tracklet_id": "T043",
+      "unknown_contacts": [
+       "D5"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7973017587106312,
+      "box": [
+       800.79,
+       320.34,
+       910.67,
+       407.19
+      ],
+      "contrast": -0.027787242018893932,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.6802418150844782,
+      "in_gate": true,
+      "margin": 0.08,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.4499999999999993,
+       "allowed_scale_ratio": 1.5813172737853123,
+       "displacement_h": 0.6707420837151972,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.8991088352378297,
+       "speed_h_per_s": 1.6768552092879934
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "CONTINUATION",
+      "target_similarity": {
+       "composite": 0.7695145166917373,
+       "embedding": 0.7440785573862799,
+       "lab": 0.816752726830444
+      },
+      "tracklet_id": "T044",
+      "unknown_contacts": [
+       "D3"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.844908474673582,
+      "box": [
+       797.3,
+       292.71,
+       885.08,
+       403.22
+      ],
+      "contrast": -0.06374212885094432,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.8156629302105829,
+      "in_gate": true,
+      "margin": 0.128,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.4499999999999993,
+       "allowed_scale_ratio": 1.5813172737853123,
+       "displacement_h": 0.8451220475191142,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.144047407969287,
+       "speed_h_per_s": 2.112805118797786
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7811663458226377,
+       "embedding": 0.7832572334006742,
+       "lab": 0.7772832688919982
+      },
+      "tracklet_id": "T043",
+      "unknown_contacts": [
+       "D5"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7973017587106312,
+      "box": [
+       800.79,
+       320.34,
+       910.67,
+       407.19
+      ],
+      "contrast": -0.027787242018893932,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_OCCLUDED_BY_OTHER",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.6802418150844782,
+      "in_gate": true,
+      "margin": 0.128,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.4499999999999993,
+       "allowed_scale_ratio": 1.5813172737853123,
+       "displacement_h": 0.6707420837151972,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.8991088352378297,
+       "speed_h_per_s": 1.6768552092879934
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7695145166917373,
+       "embedding": 0.7440785573862799,
+       "lab": 0.816752726830444
+      },
+      "tracklet_id": "T044",
+      "unknown_contacts": [
+       "D3"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 114.96952639140217,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.3999999999999999,
+   "identity_confidence_rb": 0.31249759779829783,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "OCCLUDER_OVERLAP"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T007",
+   "observed_or_contested_box": [
+    870.6,
+    297.99,
+    926.73,
+    399.17
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7596,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 84,
+   "target_episode": 1,
+   "target_height_px": 114.96952639140217,
+   "target_similarity": 0.7886813612986907,
+   "time_s": 2.8,
+   "time_since_confirmed_s": 0.3999999999999999
+  },
+  {
+   "bbox": [
+    902.243833701229,
+    313.7173727584047,
+    965.896888474713,
+    410.31689617654325
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7989670171023454,
+   "decision": {
+    "absence_s": 0.43333333333333357,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7449521679485047,
+      "box": [
+       862.92,
+       294.47,
+       918.24,
+       406.3
+      ],
+      "contrast": 0.04039288076838532,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.39648292019966797,
+      "in_gate": true,
+      "margin": 0.12866666666666668,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.7166666666666686,
+       "allowed_scale_ratio": 1.6126053584147901,
+       "displacement_h": 0.35871198372047436,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1576661669016224,
+       "speed_h_per_s": 0.8277968855087865
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.78534504871689,
+       "embedding": 0.7626761003845135,
+       "lab": 0.8274445241913035
+      },
+      "tracklet_id": "T045",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8384718016721655,
+      "box": [
+       803.8,
+       293.83,
+       884.18,
+       398.66
+      ],
+      "contrast": -0.016804241868133563,
+      "details": [
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.8054060333077324,
+      "in_gate": true,
+      "margin": 0.12866666666666668,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.7166666666666686,
+       "allowed_scale_ratio": 1.6126053584147901,
+       "displacement_h": 0.8233214878735523,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0852020412795953,
+       "speed_h_per_s": 1.8999726643235813
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8216675598040319,
+       "embedding": 0.8354679164793453,
+       "lab": 0.79603832597845
+      },
+      "tracklet_id": "T046",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7989670171023454,
+      "box": [
+       818.9,
+       293.94,
+       918.51,
+       397.09
+      ],
+      "contrast": 0.029589975046838135,
+      "details": [
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 6,
+      "distance_h": 0.5937346724410082,
+      "in_gate": true,
+      "margin": 0.12866666666666668,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 3.7166666666666686,
+       "allowed_scale_ratio": 1.6126053584147901,
+       "displacement_h": 0.584100909557519,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0678106511303078,
+       "speed_h_per_s": 1.3479251759019664
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8285569921491835,
+       "embedding": 0.8153937419311249,
+       "lab": 0.8530030282684355
+      },
+      "tracklet_id": "T047",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 113.54609041851502,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 3,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 6,
+   "held_age_s": 0.43333333333333357,
+   "identity_confidence_rb": 0.29838570749987886,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T047",
+   "observed_or_contested_box": [
+    818.9,
+    293.94,
+    918.51,
+    397.09
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.3556,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 85,
+   "target_episode": 1,
+   "target_height_px": 113.54609041851502,
+   "target_similarity": 0.8285569921491835,
+   "time_s": 2.8333333333333335,
+   "time_since_confirmed_s": 0.43333333333333357
+  },
+  {
+   "bbox": [
+    902.3161785706542,
+    313.88137828649127,
+    965.9716825548722,
+    410.4846186132765
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8436198901437,
+   "decision": {
+    "absence_s": 0.4666666666666668,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8436198901437,
+      "box": [
+       813.56,
+       291.73,
+       915.83,
+       406.04
+      ],
+      "contrast": 0.00374165105864388,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.6227241428459634,
+      "in_gate": true,
+      "margin": 0.12933333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 3.9833333333333343,
+       "allowed_scale_ratio": 1.6445125118775814,
+       "displacement_h": 0.6116580654185924,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1832936412206994,
+       "speed_h_per_s": 1.310695854468412
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8473615412023439,
+       "embedding": 0.8640582124106299,
+       "lab": 0.8163534375298125
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 113.55045938877831,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.4666666666666668,
+   "identity_confidence_rb": 0.2849110875331287,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    813.56,
+    291.73,
+    915.83,
+    406.04
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8664,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 86,
+   "target_episode": 1,
+   "target_height_px": 113.55045938877831,
+   "target_similarity": 0.8473615412023439,
+   "time_s": 2.8666666666666667,
+   "time_since_confirmed_s": 0.4666666666666668
+  },
+  {
+   "bbox": [
+    903.1153457977554,
+    314.5003761175039,
+    966.7853970224429,
+    411.1256932558637
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8529260965696681,
+   "decision": {
+    "absence_s": 0.5,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8529260965696681,
+      "box": [
+       819.21,
+       291.18,
+       913.27,
+       404.02
+      ],
+      "contrast": -0.01767235772653064,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.624172079764732,
+      "in_gate": true,
+      "margin": 0.13,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 4.25,
+       "allowed_scale_ratio": 1.6770509831248424,
+       "displacement_h": 0.6110057751089599,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.167809879872601,
+       "speed_h_per_s": 1.2220115502179199
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8352537388431375,
+       "embedding": 0.846577194869212,
+       "lab": 0.814224463366142
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 112.74834218999356,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.5,
+   "identity_confidence_rb": 0.2720449597919938,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    819.21,
+    291.18,
+    913.27,
+    404.02
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8642,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 87,
+   "target_episode": 1,
+   "target_height_px": 112.74834218999356,
+   "target_similarity": 0.8352537388431375,
+   "time_s": 2.9,
+   "time_since_confirmed_s": 0.5
+  },
+  {
+   "bbox": [
+    905.8628844979053,
+    316.02656645091827,
+    969.5878979651186,
+    412.73529398415826
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.876474979034361,
+   "decision": {
+    "absence_s": 0.5333333333333332,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.876474979034361,
+      "box": [
+       835.15,
+       290.63,
+       931.44,
+       403.65
+      ],
+      "contrast": -0.026644769291252923,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.5097060355724096,
+      "in_gate": true,
+      "margin": 0.13066666666666665,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 4.516666666666666,
+       "allowed_scale_ratio": 1.7102332634665685,
+       "displacement_h": 0.48517080075734337,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1686639136178645,
+       "speed_h_per_s": 0.9096952514200191
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8498302097431081,
+       "embedding": 0.8596354966151538,
+       "lab": 0.8316203912664517
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 112.01688876307458,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031",
+      "T041"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.5333333333333332,
+   "identity_confidence_rb": 0.25975984574353217,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    835.15,
+    290.63,
+    931.44,
+    403.65
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8529,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 88,
+   "target_episode": 1,
+   "target_height_px": 112.01688876307458,
+   "target_similarity": 0.8498302097431081,
+   "time_s": 2.933333333333333,
+   "time_since_confirmed_s": 0.5333333333333332
+  },
+  {
+   "bbox": [
+    911.400909625567,
+    319.6542867208724,
+    975.1323170400346,
+    416.3727176730565
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8277239118632201,
+   "decision": {
+    "absence_s": 0.5666666666666669,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8277239118632201,
+      "box": [
+       851.16,
+       292.88,
+       949.07,
+       398.87
+      ],
+      "contrast": 0.023935575086222127,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.4330381953405065,
+      "in_gate": true,
+      "margin": 0.13133333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 4.783333333333335,
+       "allowed_scale_ratio": 1.74407209136693,
+       "displacement_h": 0.4206495097141349,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0958614501552406,
+       "speed_h_per_s": 0.7423226642014142
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8516594869494423,
+       "embedding": 0.8452616639066918,
+       "lab": 0.8635411583145503
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 111.99757308071861,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 5,
+   "held_age_s": 0.5666666666666669,
+   "identity_confidence_rb": 0.24802950774127655,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    851.16,
+    292.88,
+    949.07,
+    398.87
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.6025,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 89,
+   "target_episode": 1,
+   "target_height_px": 111.99757308071861,
+   "target_similarity": 0.8516594869494423,
+   "time_s": 2.966666666666667,
+   "time_since_confirmed_s": 0.5666666666666669
+  },
+  {
+   "bbox": [
+    911.4477587882772,
+    319.6903163605699,
+    975.1841891411956,
+    416.4163700963304
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8246136871804856,
+   "decision": {
+    "absence_s": 0.6000000000000001,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8246136871804856,
+      "box": [
+       851.12,
+       292.79,
+       948.85,
+       398.41
+      ],
+      "contrast": 0.03060487580235305,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.435715543548777,
+      "in_gate": true,
+      "margin": 0.132,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 5.050000000000001,
+       "allowed_scale_ratio": 1.778580457334484,
+       "displacement_h": 0.42419292592492847,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0919498513661716,
+       "speed_h_per_s": 0.7069882098748806
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8552185629828386,
+       "embedding": 0.8505632794761023,
+       "lab": 0.8638640894953487
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 112.00640007731344,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 5,
+   "held_age_s": 0.6000000000000001,
+   "identity_confidence_rb": 0.2368288929887916,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    851.12,
+    292.79,
+    948.85,
+    398.41
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.5385,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 90,
+   "target_episode": 1,
+   "target_height_px": 112.00640007731344,
+   "target_similarity": 0.8552185629828386,
+   "time_s": 3.0,
+   "time_since_confirmed_s": 0.6000000000000001
+  },
+  {
+   "bbox": [
+    917.875250121,
+    323.7788073858885,
+    981.6153867212967,
+    420.5104857021453
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7565364964209498,
+   "decision": {
+    "absence_s": 0.6333333333333333,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7565364964209498,
+      "box": [
+       852.27,
+       293.55,
+       888.61,
+       376.56
+      ],
+      "contrast": 0.07037242748723127,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "CROP_OCCLUDED_BY_OTHER",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.7843467382832697,
+      "in_gate": true,
+      "margin": 0.13266666666666665,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 5.316666666666666,
+       "allowed_scale_ratio": 1.8137716089091496,
+       "displacement_h": 0.8114469985464989,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.8581470046307395,
+       "speed_h_per_s": 1.2812321029681564
+      },
+      "passed": false,
+      "quality_flags": [
+       "OCCLUDED_BY_OTHER",
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.826908923908181,
+       "embedding": 0.7887695383391378,
+       "lab": 0.8977392113935472
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D7",
+       "D3",
+       "D8"
+      ]
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.817473968844616,
+      "box": [
+       877.18,
+       297.1,
+       950.85,
+       407.77
+      ],
+      "contrast": -0.007511148106693177,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 8,
+      "distance_h": 0.36557479038860696,
+      "in_gate": true,
+      "margin": 0.13266666666666665,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 5.316666666666666,
+       "allowed_scale_ratio": 1.8137716089091496,
+       "displacement_h": 0.34919857163078993,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.144092627424213,
+       "speed_h_per_s": 0.5513661657328263
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8099628207379228,
+       "embedding": 0.8123455697644565,
+       "lab": 0.8055377154029316
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D4"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 111.62135445803949,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.6333333333333333,
+   "identity_confidence_rb": 0.2261340800337462,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    852.27,
+    293.55,
+    888.61,
+    376.56
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7304,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 91,
+   "target_episode": 1,
+   "target_height_px": 111.62135445803949,
+   "target_similarity": 0.826908923908181,
+   "time_s": 3.033333333333333,
+   "time_since_confirmed_s": 0.6333333333333333
+  },
+  {
+   "bbox": [
+    925.2034607638802,
+    327.3098865187872,
+    988.9445775219849,
+    424.0430523171055
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8355656599214387,
+   "decision": {
+    "absence_s": 0.666666666666667,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8355656599214387,
+      "box": [
+       879.38,
+       298.92,
+       966.27,
+       399.79
+      ],
+      "contrast": 0.0042670070488229905,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.38833495100178184,
+      "in_gate": true,
+      "margin": 0.13333333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 5.583333333333336,
+       "allowed_scale_ratio": 1.849659055747853,
+       "displacement_h": 0.3947116974808369,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0427654172955192,
+       "speed_h_per_s": 0.5920675462212551
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8398326669702617,
+       "embedding": 0.8514569806693403,
+       "lab": 0.8182446558148301
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D6"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 111.23150613783852,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 3,
+   "held_age_s": 0.666666666666667,
+   "identity_confidence_rb": 0.21592222767822866,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    879.38,
+    298.92,
+    966.27,
+    399.79
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8727,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 92,
+   "target_episode": 1,
+   "target_height_px": 111.23150613783852,
+   "target_similarity": 0.8398326669702617,
+   "time_s": 3.066666666666667,
+   "time_since_confirmed_s": 0.666666666666667
+  },
+  {
+   "bbox": [
+    932.9105208151823,
+    329.8380789712319,
+    996.6560321328263,
+    426.5779139287703
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8335312667891575,
+   "decision": {
+    "absence_s": 0.7000000000000002,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8335312667891575,
+      "box": [
+       890.95,
+       298.78,
+       978.29,
+       399.01
+      ],
+      "contrast": -0.014475480866129486,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 1,
+      "distance_h": 0.3815893935525312,
+      "in_gate": true,
+      "margin": 0.134,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 5.850000000000001,
+       "allowed_scale_ratio": 1.8862565748107953,
+       "displacement_h": 0.40116938468884616,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.036077847806889,
+       "speed_h_per_s": 0.5730991209840658
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.819055785923028,
+       "embedding": 0.8260200181037954,
+       "lab": 0.8061222118730311
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D8",
+       "D5"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 110.22416787946653,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 1,
+   "held_age_s": 0.7000000000000002,
+   "identity_confidence_rb": 0.20617152619619,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    890.95,
+    298.78,
+    978.29,
+    399.01
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8912,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 93,
+   "target_episode": 1,
+   "target_height_px": 110.22416787946653,
+   "target_similarity": 0.819055785923028,
+   "time_s": 3.1,
+   "time_since_confirmed_s": 0.7000000000000002
+  },
+  {
+   "bbox": [
+    941.009567268635,
+    332.2281144725268,
+    1004.7637393740267,
+    428.9810929935882
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": null,
+   "decision": {
+    "absence_s": 0.7333333333333334,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8515917481827764,
+      "box": [
+       896.32,
+       298.54,
+       990.99,
+       399.4
+      ],
+      "contrast": -0.05456793371004531,
+      "details": [
+       "MERGED",
+       "COMPOSITE_BELOW_FLOOR",
+       "CROP_MERGED_SUSPECTED",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 7,
+      "distance_h": 0.39434987718683906,
+      "in_gate": true,
+      "margin": 0.13466666666666666,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 6.116666666666667,
+       "allowed_scale_ratio": 1.9235782156503431,
+       "displacement_h": 0.4190820424314655,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.042448527597985,
+       "speed_h_per_s": 0.5714755124065438
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7970238144727311,
+       "embedding": 0.7884038243124181,
+       "lab": 0.8130323676275983
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D9",
+       "D6",
+       "D3"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 109.22399859936559,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": null,
+   "held_age_s": 0.7333333333333334,
+   "identity_confidence_rb": 0.19686115075382857,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": null,
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": null,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 94,
+   "target_episode": 1,
+   "target_height_px": 109.22399859936559,
+   "target_similarity": null,
+   "time_s": 3.1333333333333333,
+   "time_since_confirmed_s": 0.7333333333333334
+  },
+  {
+   "bbox": [
+    950.3997093526632,
+    334.24938604693364,
+    1014.1636265010811,
+    431.0171535913239
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8667317011094151,
+   "decision": {
+    "absence_s": 0.7666666666666666,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8667317011094151,
+      "box": [
+       912.48,
+       300.43,
+       986.43,
+       408.89
+      ],
+      "contrast": -0.03957347329332683,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 6,
+      "distance_h": 0.3988308726947494,
+      "in_gate": true,
+      "margin": 0.13533333333333333,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 6.383333333333333,
+       "allowed_scale_ratio": 1.9616383058045586,
+       "displacement_h": 0.401480589413747,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1208277585844495,
+       "speed_h_per_s": 0.5236703340179308
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8271582278160883,
+       "embedding": 0.8453856749810988,
+       "lab": 0.7933072545096398
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 108.13808425936219,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 6,
+   "held_age_s": 0.7666666666666666,
+   "identity_confidence_rb": 0.187971216933436,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    912.48,
+    300.43,
+    986.43,
+    408.89
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7813,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 95,
+   "target_episode": 1,
+   "target_height_px": 108.13808425936219,
+   "target_similarity": 0.8271582278160883,
+   "time_s": 3.1666666666666665,
+   "time_since_confirmed_s": 0.7666666666666666
+  },
+  {
+   "bbox": [
+    950.4207006557928,
+    334.25607633074463,
+    1014.1868904457482,
+    431.02729282334684
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8717883325817675,
+   "decision": {
+    "absence_s": 0.8000000000000003,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8717883325817675,
+      "box": [
+       912.61,
+       300.47,
+       986.27,
+       408.94
+      ],
+      "contrast": -0.05374849509062396,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 6,
+      "distance_h": 0.40296761877688814,
+      "in_gate": true,
+      "margin": 0.136,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 6.650000000000002,
+       "allowed_scale_ratio": 2.0004514562974505,
+       "displacement_h": 0.4013274731248375,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1208911485399389,
+       "speed_h_per_s": 0.5016593414060467
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8180398374911435,
+       "embedding": 0.8324012347814591,
+       "lab": 0.7913686710948432
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 107.03928956267946,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 6,
+   "held_age_s": 0.8000000000000003,
+   "identity_confidence_rb": 0.1794827382657148,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    912.61,
+    300.47,
+    986.27,
+    408.94
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.7804,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 96,
+   "target_episode": 1,
+   "target_height_px": 107.03928956267946,
+   "target_similarity": 0.8180398374911435,
+   "time_s": 3.2,
+   "time_since_confirmed_s": 0.8000000000000003
+  },
+  {
+   "bbox": [
+    961.014583939083,
+    335.9988058387517,
+    1024.793276047147,
+    432.7889957800783
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8432410949599056,
+   "decision": {
+    "absence_s": 0.8333333333333335,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8432410949599056,
+      "box": [
+       907.46,
+       297.46,
+       1014.83,
+       400.02
+      ],
+      "contrast": -0.0048864898219207475,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST",
+       "UNKNOWN_COMPETITOR_IN_CONTACT"
+      ],
+      "detection_index": 0,
+      "distance_h": 0.44936702650862576,
+      "in_gate": true,
+      "margin": 0.13666666666666666,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 6.916666666666668,
+       "allowed_scale_ratio": 2.04003256724805,
+       "displacement_h": 0.4673455935586605,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.059611517057369,
+       "speed_h_per_s": 0.5608147122703925
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8383546051379849,
+       "embedding": 0.8515402410047808,
+       "lab": 0.8138669956710782
+      },
+      "tracklet_id": null,
+      "unknown_contacts": [
+       "D5"
+      ]
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 106.25516664422457,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 0,
+   "held_age_s": 0.8333333333333335,
+   "identity_confidence_rb": 0.17137758567986866,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    907.46,
+    297.46,
+    1014.83,
+    400.02
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.9091,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 97,
+   "target_episode": 1,
+   "target_height_px": 106.25516664422457,
+   "target_similarity": 0.8383546051379849,
+   "time_s": 3.2333333333333334,
+   "time_since_confirmed_s": 0.8333333333333335
+  },
+  {
+   "bbox": [
+    971.6864317166452,
+    336.9370763969713,
+    1035.4676092402983,
+    433.7310381912321
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8496010559476704,
+   "decision": {
+    "absence_s": 0.8666666666666667,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8496010559476704,
+      "box": [
+       916.7,
+       295.62,
+       1013.61,
+       412.43
+      ],
+      "contrast": -0.018592610145496846,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.4699973536851715,
+      "in_gate": true,
+      "margin": 0.13733333333333334,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 7.183333333333334,
+       "allowed_scale_ratio": 2.080396833590475,
+       "displacement_h": 0.4611182054000455,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.206790153380477,
+       "speed_h_per_s": 0.5320594677692833
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8310084458021736,
+       "embedding": 0.8526057083851826,
+       "lab": 0.7908992438622997
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.45416638980078,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 5,
+   "held_age_s": 0.8666666666666667,
+   "identity_confidence_rb": 0.16363844878486064,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    916.7,
+    295.62,
+    1013.61,
+    412.43
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8331,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 98,
+   "target_episode": 1,
+   "target_height_px": 105.45416638980078,
+   "target_similarity": 0.8310084458021736,
+   "time_s": 3.2666666666666666,
+   "time_since_confirmed_s": 0.8666666666666667
+  },
+  {
+   "bbox": [
+    981.254697419857,
+    336.78632988932634,
+    1045.044753974285,
+    433.5937664515195
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8513799734271652,
+   "decision": {
+    "absence_s": 0.8999999999999999,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8513799734271652,
+      "box": [
+       926.19,
+       297.62,
+       1039.2,
+       401.41
+      ],
+      "contrast": -0.03399849742988481,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.4447557779946952,
+      "in_gate": true,
+      "margin": 0.13799999999999998,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 7.449999999999999,
+       "allowed_scale_ratio": 2.1215597509071626,
+       "displacement_h": 0.4621659075435415,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.072128378622245,
+       "speed_h_per_s": 0.5135176750483794
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8173814759972804,
+       "embedding": 0.8213054248092158,
+       "lab": 0.8100941424894008
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.465258150156,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.8999999999999999,
+   "identity_confidence_rb": 0.15624879889914892,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    926.19,
+    297.62,
+    1039.2,
+    401.41
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.909,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 99,
+   "target_episode": 1,
+   "target_height_px": 105.465258150156,
+   "target_similarity": 0.8173814759972804,
+   "time_s": 3.3,
+   "time_since_confirmed_s": 0.8999999999999999
+  },
+  {
+   "bbox": [
+    990.8740449103766,
+    336.84498047249394,
+    1054.6681175944223,
+    433.65851189075386
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8149156977116357,
+   "decision": {
+    "absence_s": 0.9333333333333336,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8149156977116357,
+      "box": [
+       943.41,
+       299.88,
+       1040.17,
+       410.75
+      ],
+      "contrast": -0.007981142604282065,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 4,
+      "distance_h": 0.408480410039603,
+      "in_gate": true,
+      "margin": 0.13866666666666666,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 7.716666666666669,
+       "allowed_scale_ratio": 2.16353712137753,
+       "displacement_h": 0.41020621866033746,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1451911563995374,
+       "speed_h_per_s": 0.43950666285036144
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8069345551073537,
+       "embedding": 0.8106055573264915,
+       "lab": 0.800116979557526
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.46830926234135,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 4,
+   "held_age_s": 0.9333333333333336,
+   "identity_confidence_rb": 0.14919285374993943,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    943.41,
+    299.88,
+    1040.17,
+    410.75
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8437,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 100,
+   "target_episode": 1,
+   "target_height_px": 105.46830926234135,
+   "target_similarity": 0.8069345551073537,
+   "time_s": 3.3333333333333335,
+   "time_since_confirmed_s": 0.9333333333333336
+  },
+  {
+   "bbox": [
+    1000.6876559176737,
+    336.61480718108265,
+    1064.4976000601976,
+    433.45242503683386
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8320907445620729,
+   "decision": {
+    "absence_s": 0.9666666666666668,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8320907445620729,
+      "box": [
+       956.7,
+       298.03,
+       1050.4,
+       411.23
+      ],
+      "contrast": 0.008536293088780678,
+      "details": [
+       "MERGED",
+       "CROP_MERGED_SUSPECTED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.3985459629634224,
+      "in_gate": true,
+      "margin": 0.13933333333333334,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 7.983333333333334,
+       "allowed_scale_ratio": 2.2063450598443217,
+       "displacement_h": 0.40611691038828757,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.168967210331652,
+       "speed_h_per_s": 0.4201209417809871
+      },
+      "passed": false,
+      "quality_flags": [
+       "MERGED_SUSPECTED"
+      ],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8406270376508536,
+       "embedding": 0.8598078168381427,
+       "lab": 0.8050055905887451
+      },
+      "tracklet_id": null,
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.49813866047054,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 0.9666666666666668,
+   "identity_confidence_rb": 0.14245554376656436,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": null,
+   "observed_or_contested_box": [
+    956.7,
+    298.03,
+    1050.4,
+    411.23
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8635,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 101,
+   "target_episode": 1,
+   "target_height_px": 105.49813866047054,
+   "target_similarity": 0.8406270376508536,
+   "time_s": 3.3666666666666667,
+   "time_since_confirmed_s": 0.9666666666666668
+  },
+  {
+   "bbox": [
+    1000.6539310265396,
+    336.6436510228645,
+    1064.4627622253909,
+    433.47957988146203
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8311879969854313,
+   "decision": {
+    "absence_s": 1.0,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8311879969854313,
+      "box": [
+       956.82,
+       298.01,
+       1050.28,
+       411.15
+      ],
+      "contrast": 0.009150763443631638,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.39885021570821316,
+      "in_gate": true,
+      "margin": 0.13999999999999999,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 8.25,
+       "allowed_scale_ratio": 2.25,
+       "displacement_h": 0.406717970882964,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.168367994540643,
+       "speed_h_per_s": 0.406717970882964
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.840338760429063,
+       "embedding": 0.8592688786440047,
+       "lab": 0.805182826601314
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.49988826855672,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->AMBIGUOUS"
+   },
+   "detection_index": 2,
+   "held_age_s": 1.0,
+   "identity_confidence_rb": 0.1360224798959969,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T053",
+   "observed_or_contested_box": [
+    956.82,
+    298.01,
+    1050.28,
+    411.15
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8636,
+   "rb_state": "AMBIGUOUS",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 102,
+   "target_episode": 1,
+   "target_height_px": 105.49988826855672,
+   "target_similarity": 0.840338760429063,
+   "time_s": 3.4,
+   "time_since_confirmed_s": 1.0
+  },
+  {
+   "bbox": [
+    1010.8811406910621,
+    336.96766202176843,
+    1074.6863303174985,
+    433.79806445023576
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8385420639306858,
+   "decision": {
+    "absence_s": 1.0333333333333332,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8385420639306858,
+      "box": [
+       974.46,
+       297.55,
+       1058.01,
+       412.0
+      ],
+      "contrast": -0.015252414647235257,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 1,
+      "distance_h": 0.38407549294919485,
+      "in_gate": true,
+      "margin": 0.14066666666666666,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 8.516666666666666,
+       "allowed_scale_ratio": 2.2945187006955328,
+       "displacement_h": 0.3986797020569315,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1819634859469783,
+       "speed_h_per_s": 0.38581906650670794
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8232896492834505,
+       "embedding": 0.8447184772001785,
+       "lab": 0.7834932545809556
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "AMBIGUOUS",
+    "gate_h": 0.8166666666666664,
+    "h": 105.49386738593455,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 1,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "AMBIGUOUS->LOST"
+   },
+   "detection_index": 1,
+   "held_age_s": 1.0333333333333332,
+   "identity_confidence_rb": 0.12987992287176608,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T053",
+   "observed_or_contested_box": [
+    974.46,
+    297.55,
+    1058.01,
+    412.0
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.882,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 103,
+   "target_episode": 1,
+   "target_height_px": 105.49386738593455,
+   "target_similarity": 0.8232896492834505,
+   "time_s": 3.433333333333333,
+   "time_since_confirmed_s": 1.0333333333333332
+  },
+  {
+   "bbox": [
+    1021.1494583827417,
+    337.0453929587874,
+    1084.958511730101,
+    433.88165894873043
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7684781841661932,
+   "decision": {
+    "absence_s": 1.0666666666666669,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8409297001777898,
+      "box": [
+       990.49,
+       295.34,
+       1065.27,
+       410.94
+      ],
+      "contrast": -0.01050017331607156,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.3883401704785644,
+      "in_gate": true,
+      "margin": 0.14133333333333334,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 8.783333333333335,
+       "allowed_scale_ratio": 2.339918252374008,
+       "displacement_h": 0.41098523132851983,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1937676325934095,
+       "speed_h_per_s": 0.38529865437048727
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8304295268617182,
+       "embedding": 0.8571937079857822,
+       "lab": 0.7807246190598852
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7684781841661932,
+      "box": [
+       898.38,
+       292.75,
+       952.26,
+       388.21
+      ],
+      "contrast": 0.12666214560289146,
+      "details": [
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 4,
+      "distance_h": 1.2836307085189242,
+      "in_gate": true,
+      "margin": 0.14133333333333334,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 8.783333333333335,
+       "allowed_scale_ratio": 2.339918252374008,
+       "displacement_h": 1.290165842054744,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9857877007557684,
+       "speed_h_per_s": 1.2095304769263222
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8951403297690846,
+       "embedding": 0.8657278622521402,
+       "lab": 0.9497634837291243
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 2.8833333333333337,
+    "h": 105.50025556321374,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 4,
+   "held_age_s": 1.0666666666666669,
+   "identity_confidence_rb": 0.12401475387063828,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T049",
+   "observed_or_contested_box": [
+    898.38,
+    292.75,
+    952.26,
+    388.21
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8686,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 104,
+   "target_episode": 1,
+   "target_height_px": 105.50025556321374,
+   "target_similarity": 0.8951403297690846,
+   "time_s": 3.466666666666667,
+   "time_since_confirmed_s": 1.0666666666666669
+  },
+  {
+   "bbox": [
+    1031.5376862050173,
+    337.1765266511864,
+    1095.3494488982699,
+    434.01690432945276
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7999612637705815,
+   "decision": {
+    "absence_s": 1.1,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7999612637705815,
+      "box": [
+       902.63,
+       291.29,
+       955.75,
+       385.12
+      ],
+      "contrast": 0.07971854076760954,
+      "details": [
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 1.3494440113414639,
+      "in_gate": true,
+      "margin": 0.142,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 9.05,
+       "allowed_scale_ratio": 2.3862160836315423,
+       "displacement_h": 1.3617118059265823,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9689140237735568,
+       "speed_h_per_s": 1.23791982356962
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8796798045381911,
+       "embedding": 0.8425478986553397,
+       "lab": 0.9486390583206291
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8447205661426422,
+      "box": [
+       1010.42,
+       294.29,
+       1074.61,
+       409.81
+      ],
+      "contrast": -0.010372066140887926,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.3747669678726266,
+      "in_gate": true,
+      "margin": 0.142,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 9.05,
+       "allowed_scale_ratio": 2.3862160836315423,
+       "displacement_h": 0.41275463953269653,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.1928908454259968,
+       "speed_h_per_s": 0.37523149048426957
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8343485000017543,
+       "embedding": 0.9061415213710822,
+       "lab": 0.7010186031730026
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 2.95,
+    "h": 105.50473512636572,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 2,
+   "held_age_s": 1.1,
+   "identity_confidence_rb": 0.1184144464943958,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T049",
+   "observed_or_contested_box": [
+    902.63,
+    291.29,
+    955.75,
+    385.12
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8885,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 105,
+   "target_episode": 1,
+   "target_height_px": 105.50473512636572,
+   "target_similarity": 0.8796798045381911,
+   "time_s": 3.5,
+   "time_since_confirmed_s": 1.1
+  },
+  {
+   "bbox": [
+    1041.5106649237332,
+    337.18318597780205,
+    1105.3267720487775,
+    434.03015674169615
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7714056305909845,
+   "decision": {
+    "absence_s": 1.1333333333333333,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7714056305909845,
+      "box": [
+       904.83,
+       291.12,
+       953.97,
+       383.37
+      ],
+      "contrast": 0.11844337575354336,
+      "details": [
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 0,
+      "distance_h": 1.439854691949908,
+      "in_gate": true,
+      "margin": 0.14266666666666666,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 9.316666666666666,
+       "allowed_scale_ratio": 2.4334299679080127,
+       "displacement_h": 1.458245918958113,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9525336649392868,
+       "speed_h_per_s": 1.286687575551276
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8898490063445279,
+       "embedding": 0.8492780890325675,
+       "lab": 0.9651949956381684
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8441103012373101,
+      "box": [
+       1025.35,
+       292.22,
+       1082.83,
+       409.11
+      ],
+      "contrast": -0.020540987317167803,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 0.3784542912990538,
+      "in_gate": true,
+      "margin": 0.14266666666666666,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 9.316666666666666,
+       "allowed_scale_ratio": 2.4334299679080127,
+       "displacement_h": 0.42422912107502814,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2069556649837747,
+       "speed_h_per_s": 0.37431981271326015
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8235693139201423,
+       "embedding": 0.8769450392211817,
+       "lab": 0.7244429669324979
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 3.0,
+    "h": 105.51191809869083,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 0,
+   "held_age_s": 1.1333333333333333,
+   "identity_confidence_rb": 0.1130670400168731,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T049",
+   "observed_or_contested_box": [
+    904.83,
+    291.12,
+    953.97,
+    383.37
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.9053,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 106,
+   "target_episode": 1,
+   "target_height_px": 105.51191809869083,
+   "target_similarity": 0.8898490063445279,
+   "time_s": 3.533333333333333,
+   "time_since_confirmed_s": 1.1333333333333333
+  },
+  {
+   "bbox": [
+    1051.8409007690375,
+    337.4817692831675,
+    1115.6608782064054,
+    434.33461361161085
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8445083088752534,
+   "decision": {
+    "absence_s": 1.166666666666667,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.6841953271239409,
+      "box": [
+       909.13,
+       288.08,
+       947.85,
+       382.05
+      ],
+      "contrast": 0.11433278255595303,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 1,
+      "distance_h": 1.5482972916128996,
+      "in_gate": true,
+      "margin": 0.14333333333333334,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 9.583333333333336,
+       "allowed_scale_ratio": 2.4815780303101636,
+       "displacement_h": 1.5753051132517224,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.970234799520527,
+       "speed_h_per_s": 1.350261525644333
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.798528109679894,
+       "embedding": 0.752329738534512,
+       "lab": 0.8843250846641747
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8445083088752534,
+      "box": [
+       1039.09,
+       287.7,
+       1093.26,
+       409.68
+      ],
+      "contrast": -0.017534967521257272,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.3900698569816505,
+      "in_gate": true,
+      "margin": 0.14333333333333334,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 9.583333333333336,
+       "allowed_scale_ratio": 2.4815780303101636,
+       "displacement_h": 0.44541995829947356,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2594364248751078,
+       "speed_h_per_s": 0.38178853568526294
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8269733413539961,
+       "embedding": 0.8908816117083753,
+       "lab": 0.7082865535530063
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 3.0,
+    "h": 105.51831717402354,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 3,
+   "held_age_s": 1.166666666666667,
+   "identity_confidence_rb": 0.10796111383911433,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T053",
+   "observed_or_contested_box": [
+    1039.09,
+    287.7,
+    1093.26,
+    409.68
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8801,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 107,
+   "target_episode": 1,
+   "target_height_px": 105.51831717402354,
+   "target_similarity": 0.8269733413539961,
+   "time_s": 3.566666666666667,
+   "time_since_confirmed_s": 1.166666666666667
+  },
+  {
+   "bbox": [
+    1051.883779550792,
+    337.50367783116997,
+    1115.7084444186517,
+    434.3636357781685
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8436075951315516,
+   "decision": {
+    "absence_s": 1.2000000000000002,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.6843973305900763,
+      "box": [
+       909.13,
+       288.1,
+       947.85,
+       382.05
+      ],
+      "contrast": 0.11427818212640029,
+      "details": [
+       "COMPOSITE_BELOW_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 1,
+      "distance_h": 1.5486364528367416,
+      "in_gate": true,
+      "margin": 0.144,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 9.850000000000001,
+       "allowed_scale_ratio": 2.5306787545697134,
+       "displacement_h": 1.5756739371778326,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 0.9699570595664428,
+       "speed_h_per_s": 1.3130616143148603
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7986755127164766,
+       "embedding": 0.7525686870419629,
+       "lab": 0.8843024746834307
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8436075951315516,
+      "box": [
+       1039.09,
+       287.52,
+       1093.33,
+       409.75
+      ],
+      "contrast": -0.014480415954927661,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.3907721478135789,
+      "in_gate": true,
+      "margin": 0.144,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 9.850000000000001,
+       "allowed_scale_ratio": 2.5306787545697134,
+       "displacement_h": 0.4462271014586623,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2619249748888381,
+       "speed_h_per_s": 0.3718559178822185
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8291271791766239,
+       "embedding": 0.8942707554063126,
+       "lab": 0.7081462518929162
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 3.0,
+    "h": 105.52606725161985,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 3,
+   "held_age_s": 1.2000000000000002,
+   "identity_confidence_rb": 0.103085763098095,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T053",
+   "observed_or_contested_box": [
+    1039.09,
+    287.52,
+    1093.33,
+    409.75
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8797,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 108,
+   "target_episode": 1,
+   "target_height_px": 105.52606725161985,
+   "target_similarity": 0.8291271791766239,
+   "time_s": 3.6,
+   "time_since_confirmed_s": 1.2000000000000002
+  },
+  {
+   "bbox": [
+    1062.2652257753373,
+    337.5351635830945,
+    1126.082346657737,
+    434.3836728195368
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.8606298390443043,
+   "decision": {
+    "absence_s": 1.2333333333333334,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.6199475773235827,
+      "box": [
+       914.55,
+       283.47,
+       951.28,
+       380.67
+      ],
+      "contrast": 0.09210661928971242,
+      "details": [
+       "EMBEDDING_BELOW_FLOOR",
+       "COMPOSITE_BELOW_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 2,
+      "distance_h": 1.6114027584916137,
+      "in_gate": true,
+      "margin": 0.14466666666666667,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 10.116666666666667,
+       "allowed_scale_ratio": 2.5807509901391508,
+       "displacement_h": 1.644556789223495,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0036292841916605,
+       "speed_h_per_s": 1.3334244236947255
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.7120541966132952,
+       "embedding": 0.6231000829332987,
+       "lab": 0.8772546934475746
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8606298390443043,
+      "box": [
+       1051.79,
+       287.92,
+       1106.08,
+       410.68
+      ],
+      "contrast": -0.037787501809158464,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 3,
+      "distance_h": 0.3762600331849381,
+      "in_gate": true,
+      "margin": 0.14466666666666667,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 10.116666666666667,
+       "allowed_scale_ratio": 2.5807509901391508,
+       "displacement_h": 0.4380611147150956,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2675466144790972,
+       "speed_h_per_s": 0.35518468760683425
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8228423372351459,
+       "embedding": 0.8842423168229914,
+       "lab": 0.7088138037148614
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 3.0,
+    "h": 105.51359421915411,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "passing": [],
+     "rivals": []
+    },
+    "transition": "LOST->LOST"
+   },
+   "detection_index": 3,
+   "held_age_s": 1.2333333333333334,
+   "identity_confidence_rb": 0.09843057537691428,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T053",
+   "observed_or_contested_box": [
+    1051.79,
+    287.92,
+    1106.08,
+    410.68
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8656,
+   "rb_state": "LOST",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 109,
+   "target_episode": 1,
+   "target_height_px": 105.51359421915411,
+   "target_similarity": 0.8228423372351459,
+   "time_s": 3.6333333333333333,
+   "time_since_confirmed_s": 1.2333333333333334
+  },
+  {
+   "bbox": [
+    1072.8345564614028,
+    337.42742445544957,
+    1136.6559896749782,
+    434.28247806180354
+   ],
+   "bbox_is_held": true,
+   "bbox_is_observed": false,
+   "bbox_is_predicted": false,
+   "best_competitor_similarity": 0.7434045666783469,
+   "decision": {
+    "absence_s": 1.2666666666666666,
+    "candidates": [
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.7434045666783469,
+      "box": [
+       916.68,
+       277.84,
+       960.02,
+       380.33
+      ],
+      "contrast": 0.16235674285946644,
+      "details": [],
+      "detection_index": 1,
+      "distance_h": 1.6661467294272663,
+      "in_gate": true,
+      "margin": 0.14533333333333331,
+      "merged": false,
+      "motion": {
+       "allowed_displacement_h": 10.383333333333333,
+       "allowed_scale_ratio": 2.6318139594279084,
+       "displacement_h": 1.7047453378431683,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.0581791675687675,
+       "speed_h_per_s": 1.3458515825077646
+      },
+      "passed": true,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.9057613095378133,
+       "embedding": 0.8837482902065716,
+       "lab": 0.9466426311529764
+      },
+      "tracklet_id": "T049",
+      "unknown_contacts": []
+     },
+     {
+      "best_competitor": "T012",
+      "best_competitor_similarity": 0.8570841969753498,
+      "box": [
+       1063.7,
+       289.01,
+       1116.67,
+       409.03
+      ],
+      "contrast": -0.040118185727397004,
+      "details": [
+       "MERGED",
+       "BELOW_REACQ_FLOOR",
+       "INSUFFICIENT_CONTRAST"
+      ],
+      "detection_index": 5,
+      "distance_h": 0.37536012019033926,
+      "in_gate": true,
+      "margin": 0.14533333333333331,
+      "merged": true,
+      "motion": {
+       "allowed_displacement_h": 10.383333333333333,
+       "allowed_scale_ratio": 2.6318139594279084,
+       "displacement_h": 0.43960004647940676,
+       "plausible": true,
+       "reasons": [],
+       "scale_ratio": 1.2391712722373251,
+       "speed_h_per_s": 0.3470526682732159
+      },
+      "passed": false,
+      "quality_flags": [],
+      "role": "REACQUISITION",
+      "target_similarity": {
+       "composite": 0.8169660112479528,
+       "embedding": 0.8742726480273064,
+       "lab": 0.7105394000862961
+      },
+      "tracklet_id": "T053",
+      "unknown_contacts": []
+     }
+    ],
+    "from": "LOST",
+    "gate_h": 3.0,
+    "h": 105.52072411714346,
+    "positional_prior": true,
+    "reacquisition": {
+     "candidates": 2,
+     "elapsed_s": 0.0,
+     "excluded_known_others": [
+      "T002",
+      "T014",
+      "T031"
+     ],
+     "hit_fraction": 1.0,
+     "passing": [
+      1
+     ],
+     "rivals": [],
+     "verifying": "T049"
+    },
+    "transition": "LOST->REACQUIRING"
+   },
+   "detection_index": 1,
+   "held_age_s": 1.2666666666666666,
+   "identity_confidence_rb": 0.093985608466718,
+   "identity_trusted": false,
+   "identity_uncertainty_reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "REACQUISITION_UNVERIFIED"
+   ],
+   "last_confirmed_frame": 72,
+   "merged_suspected": false,
+   "observation_source": "HELD",
+   "observation_tracklet_id": "T049",
+   "observed_or_contested_box": [
+    916.68,
+    277.84,
+    960.02,
+    380.33
+   ],
+   "occluder_track_ids": [],
+   "position_valid": true,
+   "predicted_inside_image": true,
+   "raw_detection_conf": 0.8928,
+   "rb_state": "REACQUIRING",
+   "record_kind": "TARGET",
+   "reidentified_this_frame": false,
+   "rel_frame": 110,
+   "target_episode": 1,
+   "target_height_px": 105.52072411714346,
+   "target_similarity": 0.9057613095378133,
+   "time_s": 3.6666666666666665,
+   "time_since_confirmed_s": 1.2666666666666666
+  }
+ ],
+ "label_window_rel": [
+  70,
+  110
+ ],
+ "labels_file_sha256": "490a8af14005b09e2302fea81b9831b0e702958620a4508f33cdaae7bcb0d428",
+ "labels_used_by_tracker": false,
+ "reacquisition_events": [
+  {
+   "episode": 2,
+   "evidence": {
+    "absence_s": 1.8000000000000003,
+    "best_competitor": null,
+    "best_competitor_similarity": null,
+    "contrast": null,
+    "frames_in_window": 16,
+    "hit_fraction": 0.625,
+    "margin": 0.156,
+    "positional_prior": true,
+    "target_similarity": 0.8519636317494061,
+    "tracklet_id": "T049",
+    "window_s": 0.5
+   },
+   "lost_from_frame": 103,
+   "reacq_accepted_frame": 126,
+   "reacq_started_frame": 110,
+   "uncertain_duration_s": 1.766666666666667,
+   "uncertain_from_frame": 73
+  }
+ ],
+ "runtime_ms_per_frame_median": 7.429458491969854,
+ "state_counts": {
+  "AMBIGUOUS": 60,
+  "LOST": 14,
+  "REACQUIRING": 16,
+  "TRACKING": 90
+ },
+ "target_bank_samples": 10,
+ "target_tracklets": [
+  "T007",
+  "T049"
+ ],
+ "tool": "tools_rb/target_eval.py",
+ "transitions": [
+  {
+   "episode": 1,
+   "reasons": [],
+   "rel": 0,
+   "state": "TRACKING"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 73,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 81,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 82,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 83,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "rel": 85,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 86,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 89,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 91,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 92,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 94,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 95,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 103,
+   "state": "LOST"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST"
+   ],
+   "rel": 104,
+   "state": "LOST"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 107,
+   "state": "LOST"
+  },
+  {
+   "episode": 1,
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE",
+    "REACQUISITION_UNVERIFIED"
+   ],
+   "rel": 110,
+   "state": "REACQUIRING"
+  },
+  {
+   "episode": 2,
+   "reasons": [],
+   "rel": 126,
+   "state": "TRACKING"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 143,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 145,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR"
+   ],
+   "rel": 149,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 151,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 152,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 153,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 154,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 155,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 161,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 163,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ],
+   "rel": 166,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 167,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 169,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 170,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 171,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 172,
+   "state": "AMBIGUOUS"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 173,
+   "state": "LOST"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 177,
+   "state": "LOST"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ],
+   "rel": 178,
+   "state": "LOST"
+  },
+  {
+   "episode": 2,
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE"
+   ],
+   "rel": 179,
+   "state": "LOST"
+  }
+ ],
+ "video_sha256": "164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9"
+}
