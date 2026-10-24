@@ -1,0 +1,120 @@
+"""Task 3O diagnostic replay of Pass 2 (NO source file edited). Runtime wrappers only:
+
+  * opponent_detection.merge_other_player_candidates (via football_analysis.engine's imported name)
+      -> per-frame other-player records: box, source, person conf, store track id, target relation
+  * TeamClassifier.classify -> per-box team label / similarities
+  * FootballEventDetector.process_frame -> per-frame snapshot state/bbox, ball observation,
+      target-ball distance, and the PossessionFrame the frozen detector produced
+  * event_qualifier.resolve_release -> release inputs/outputs; plus, for diagnosis only, the DUEL
+      candidate that build_duel_candidate() WOULD score from the same inputs (it is never built when
+      arbitration short-circuits). Nothing computed here is fed back into the pipeline.
+
+Outputs must be byte-identical to the scored Task 3N run except processing_time_s.
+
+usage: python3 diag_receiver_arbitration_capture.py CLIP_ID MO_JSON VIDEO OUT_DIR LABEL
+"""
+import json
+import sys
+from dataclasses import asdict
+
+import football_analysis.engine as eng
+import football_analysis.possession_detector as pd
+import football_analysis.event_detector as evd
+import football_analysis.event_qualifier as evq
+import football_analysis.event_arbitration as arb
+from football_analysis.event_candidates import build_duel_candidate, DUEL_CONTACT_WINDOW_FRAMES
+from football_analysis.opponent_detection import classify_vs_target
+
+CAP = {"frames": {}, "releases": []}
+
+
+def r(v, n=1):
+    return None if v is None else round(float(v), n)
+
+
+_orig_merge = eng.merge_other_player_candidates
+
+
+def merge_wrap(frame, frame_idx, tracked_bbox, full_frame_persons, ball_centre, **kw):
+    boxes, records = _orig_merge(frame, frame_idx, tracked_bbox, full_frame_persons, ball_centre, **kw)
+    CAP["frames"].setdefault(frame_idx, {})["merge"] = {
+        "tracked_bbox": [r(v) for v in tracked_bbox],
+        "ball_centre_tierA": [r(v) for v in ball_centre] if ball_centre else None,
+        "records": [{"box": [r(v) for v in rec.box], "person_conf": r(rec.person_confidence, 3),
+                     "temporal_conf": r(rec.temporal_confidence, 3), "classification": rec.classification,
+                     "separate_from_target": r(rec.separate_from_target_confidence, 3),
+                     "source": rec.source, "track_id": rec.track_id} for rec in records],
+        "plain_boxes": [[r(v) for v in b] for b in boxes],
+    }
+    return boxes, records
+
+
+eng.merge_other_player_candidates = merge_wrap
+
+_cur = {"frame": None}
+_orig_classify = pd.TeamClassifier.classify
+
+
+def classify_wrap(self, frame, box, frame_number=None):
+    team, conf = _orig_classify(self, frame, box, frame_number=frame_number)
+    if frame_number is not None:
+        CAP["frames"].setdefault(frame_number, {}).setdefault("team", []).append(
+            {"box": [r(v) for v in box], "team": team, "conf": r(conf, 3)})
+    return team, conf
+
+
+pd.TeamClassifier.classify = classify_wrap
+
+_orig_pf = evd.FootballEventDetector.process_frame
+
+
+def pf_wrap(self, frame, snapshot, ball_candidates, other_boxes, is_cut=False):
+    pframe = _orig_pf(self, frame, snapshot, ball_candidates, other_boxes, is_cut=is_cut)
+    bo = self.ball_tracker.history[-1] if self.ball_tracker.history else None
+    CAP["frames"].setdefault(snapshot.frame_number, {})["detector"] = {
+        "snapshot_state": snapshot.tracking_state, "snapshot_bbox": [r(v) for v in snapshot.bbox],
+        "ball_state": getattr(bo, "state", None),
+        "ball_centre": [r(getattr(bo, "centre_x", None)), r(getattr(bo, "centre_y", None))] if bo is not None else None,
+        "ball_conf": r(getattr(bo, "confidence", None), 3),
+        "possession": {k: (r(v) if isinstance(v, float) else v) for k, v in asdict(pframe).items()},
+    }
+    return pframe
+
+
+evd.FootballEventDetector.process_frame = pf_wrap
+
+_orig_resolve = evq.resolve_release
+
+
+def resolve_wrap(ball_tracker, possession_frames, i_end, fps=25.0, log=None, pitch_context=None,
+                 keeper_candidate=None, seg_start=None, prior_segment_evidence=None):
+    ev = _orig_resolve(ball_tracker, possession_frames, i_end, fps=fps, log=log, pitch_context=pitch_context,
+                       keeper_candidate=keeper_candidate, seg_start=seg_start,
+                       prior_segment_evidence=prior_segment_evidence)
+    incoming_px_frame = (prior_segment_evidence or {}).get("incoming_speed_px_per_frame")
+    incoming_px_s = incoming_px_frame * fps if incoming_px_frame is not None else None
+    segment_frames = (prior_segment_evidence or {}).get("segment_frames")
+    opp_d = arb._nearest_by_team_in_range(possession_frames, i_end - DUEL_CONTACT_WINDOW_FRAMES,
+                                          i_end + DUEL_CONTACT_WINDOW_FRAMES, "OPPONENT")
+    duel = build_duel_candidate(incoming_px_s, segment_frames, opp_d)   # diagnostic only, discarded
+    CAP["releases"].append({
+        "i_end": i_end, "seg_start": seg_start, "returned_type": ev.type, "returned_end": ev.end_frame,
+        "resolution_reason": ev.evidence.get("resolution_reason"),
+        "short_circuited": (ev.evidence.get("arbitration") or {}).get("short_circuited", False),
+        "prior_segment_evidence": {k: v for k, v in (prior_segment_evidence or {}).items()
+                                   if isinstance(v, (int, float, str, type(None)))},
+        "DIAG_duel_candidate_if_built": duel.to_dict(),
+        "DIAG_opponent_distance_at_contact": opp_d,
+        "DIAG_incoming_speed_px_s": incoming_px_s, "DIAG_segment_frames": segment_frames,
+    })
+    return ev
+
+
+evq.resolve_release = resolve_wrap
+
+from event_engine_v1.analyze_target_player import analyze_target_player  # noqa: E402
+
+clip_id, mo_json, video, out_dir, label = sys.argv[1:6]
+analyze_target_player(clip_id, mo_json, video, out_dir, player_id="P1", player_label=label)
+json.dump(CAP, open(f"{out_dir}/capture.json", "w"), default=str)
+print("captured frames", len(CAP["frames"]), "releases", len(CAP["releases"]))

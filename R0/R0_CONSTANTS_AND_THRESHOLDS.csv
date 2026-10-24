@@ -1,0 +1,212 @@
+name,value,units,historical_module,evidence_level,source,semantic_vs_implementation,notes
+GATE_ENABLED,True,bool,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:77 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CREDIBLE,'BALL_CREDIBLE',string,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:79 (EXACT_RECOVERED),SEMANTIC (label/version string),
+REVIEW,'BALL_PLAUSIBLE_REVIEW',string,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:80 (EXACT_RECOVERED),SEMANTIC (label/version string),
+NOT_CREDIBLE,'BALL_NOT_CREDIBLE',string,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:81 (EXACT_RECOVERED),SEMANTIC (label/version string),
+SCALE_BAND,"(0.06, 0.2)",UNKNOWN/dimensionless,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:83 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+ZONE_SIDE_PAD,0.25,s,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:84 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+ZONE_TOP,0.5,UNKNOWN/dimensionless,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:85 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+ZONE_BOTTOM_PAD,0.25,UNKNOWN/dimensionless,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:86 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_CONSISTENT_OBSERVATIONS,3,UNKNOWN/dimensionless,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:87 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+TIER_A_STAGE,'tier_a_full_frame',string,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:88 (EXACT_RECOVERED),SEMANTIC (label/version string),
+REACQUIRE_ANCHOR_TOL,45.0,UNKNOWN/dimensionless,football_analysis/ball_interaction_credibility.py,VERIFIED_CODE,football_analysis/ball_interaction_credibility.py:138 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+BIN_SIZE,20.0,s,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:45 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PATCH_HALF,10,body heights,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:46 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PATCH_RESIZE,16,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:47 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+STATIC_EMA_RATE,0.35,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:49 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+RESIDUAL_STATIC_THRESH,6.0,s,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:50 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+STALE_AFTER_FRAMES,45,frames,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:52 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+DECOY_SCORE_REJECT,0.5,s,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:54 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+NEAR_PLAYER_RADIUS,150.0,px (unless _H),football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:55 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+GRASS_LOCAL_WINDOW,18,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:56 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+GRASS_ON_PITCH_FRACTION,0.3,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:57 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+NEAR_PITCH_BAND,45.0,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:58 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+OFF_PITCH_WEIGHT,"{'ON_PITCH': 0.0, 'NEAR_PITCH': 0.55, 'OFF_PITCH': 1.0, 'UNKNOWN': 0.3}",weight,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:60 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_GRASS_COMPONENT_WINDOWS,8,UNKNOWN/dimensionless,football_analysis/ball_static_decoy.py,VERIFIED_CODE,football_analysis/ball_static_decoy.py:81 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+TASK3Q_CONTROLLED_DUEL,True,bool,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:44 (EXACT_RECOVERED),FEATURE_FLAG (task gate),
+CANDIDATE_TYPE,'DUEL_CONTROLLED_POSSESSION',string,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:46 (EXACT_RECOVERED),SEMANTIC (label/version string),
+DUEL_PATH,'CONTROLLED_POSSESSION_CHALLENGE',string,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:47 (EXACT_RECOVERED),SEMANTIC (label/version string),
+VALID_BALL_STATES,"('CONFIRMED', 'REACQUIRING')",s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:49 (EXACT_RECOVERED),SEMANTIC (vocabulary),
+MIN_CONTROL_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:52 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PRE_WINDOW_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:53 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PRE_MIN_POSSESSION_FRACTION,0.5,UNKNOWN/dimensionless,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:54 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PRE_MIN_TRACKING_FRACTION,0.8,UNKNOWN/dimensionless,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:55 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CHAIN_STEP_H,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:58 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CHAIN_MAX_GAP_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:59 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+ENGAGE_RADIUS_H,1.5,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:60 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MAX_ENGAGEMENT_S,2.0,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:61 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+REACH_H,0.5,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:62 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTACT_CENTRE_H,0.75,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:63 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+RELEASE_LINK_S,0.3,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:64 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTEST_GAP_S,0.2,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:65 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_CONTEST_S,0.15,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:66 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_CLOSING_H,0.5,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:67 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_REACH_FRAMES,1,frames,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:68 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+BALL_LOCAL_H,1.0,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:69 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+ESCAPE_HORIZON_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:71 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+REACH_ENGAGED_H,1.0,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:72 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MAX_UNOBSERVED_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:74 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+POST_GROUNDING_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:75 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+RECOVERY_S,1.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:78 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+REGAIN_MIN_FRAMES,2,frames,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:79 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+OPP_CONTROL_H,0.35,body heights,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:80 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+OPP_CONTROL_MIN_S,0.2,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:81 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTROL_SAT_S,1.0,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:84 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CLOSING_SAT_H,1.0,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:85 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTEST_SAT_S,0.5,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:86 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+BALL_SEPARATION_SAT_H,0.25,s,football_analysis/controlled_duel.py,VERIFIED_CODE,football_analysis/controlled_duel.py:87 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTESTED_INCOMING_SPEED_PX_S,3000.0,px,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:58 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTROLLED_DELIVERY_SPEED_PX_S,1500.0,px,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:63 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+DUEL_MAX_TOUCH_FRAMES,2,frames,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:67 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+DUEL_OPPONENT_RADIUS_PX,100.0,px,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:70 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+DUEL_CONTACT_WINDOW_FRAMES,3,frames,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:78 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PASS_INTENT_RADIUS_PX,150.0,px,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:85 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CROSS_GSCORE_BAND_LOW,0.35,UNKNOWN/dimensionless,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:90 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CROSS_GSCORE_BAND_HIGH,0.85,body heights,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:91 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOW_KEEPER_IDENTITY_CONFIDENCE,0.15,confidence,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:96 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CROSS_MIN_SUPPORTIVE_WIDE_SCORE,0.45,s,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:98 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MIN_CROSS_DISPLACEMENT_PX,150.0,px,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:102 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+UNKNOWN_BASELINE_SCORE,0.35,s,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:107 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+UNKNOWN_BASELINE_CONFIDENCE,0.5,confidence,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:108 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+UNCLASSIFIED_TEAM_PASS_DAMPENER,0.55,UNKNOWN/dimensionless,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:425 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+UNCLASSIFIED_TEAM_PASS_CONFIDENCE_CAP,0.35,confidence,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:429 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+RECEIVER_CANDIDATE_BASE_SCORE,0.45,s,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:430 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+RECEIVER_CANDIDATE_SCORE_GAIN,0.45,s,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:431 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+EXTENDED_WINDOW_PROXIMITY_DAMPENER,0.75,UNKNOWN/dimensionless,football_analysis/event_candidates.py,VERIFIED_CODE,football_analysis/event_candidates.py:434 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+TARGET_DUPLICATE_IOU,0.5,IoU ratio,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:78 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOCAL_PAD_X_SCALE,1.5,s,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:80 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOCAL_PAD_Y_SCALE,1.2,s,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:81 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOCAL_IMGSZ,960,UNKNOWN/dimensionless,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:82 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOCAL_CONF,0.1,confidence,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:83 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+LOCAL_NMS_IOU,0.85,IoU ratio,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:84 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MERGE_DEDUPE_IOU,0.55,IoU ratio,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:87 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+MAX_BRIDGE_FRAMES,3,frames,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:89 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+BRIDGE_MATCH_DIST,70.0,UNKNOWN/dimensionless,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:90 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CHALLENGE_BALL_RADIUS,130.0,px (unless _H),football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:91 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+CHALLENGE_CROWD_RADIUS,160.0,px (unless _H),football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:92 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+TASK3L_FRAGMENT_EXCLUSION,True,bool,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:124 (EXACT_RECOVERED),FEATURE_FLAG (task gate),
+FRAGMENT_MIN_CONTAINMENT,0.85,UNKNOWN/dimensionless,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:125 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+FRAGMENT_MAX_AREA_RATIO,0.5,ratio,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:126 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+FRAGMENT_MAX_HEIGHT_RATIO,0.8,body heights,football_analysis/opponent_detection.py,VERIFIED_CODE,football_analysis/opponent_detection.py:127 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+UNTRUSTED_IDENTITY_STATES,"('REVIEW_REQUIRED_IDENTITY', 'UNRESOLVED_IDENTITY')",s,player_tracker_mo/event_adapter.py,VERIFIED_CODE,player_tracker_mo/event_adapter.py:68 (EXACT_RECOVERED),SEMANTIC (vocabulary),
+SCHEMA_VERSION,'1.0.0',string,player_tracker_mo/pipeline.py,VERIFIED_CODE,player_tracker_mo/pipeline.py:105 (EXACT_RECOVERED),SEMANTIC (label/version string),
+PIPELINE_VERSION,'spana_tracking_pipeline_v1',string,player_tracker_mo/pipeline.py,VERIFIED_CODE,player_tracker_mo/pipeline.py:106 (EXACT_RECOVERED),SEMANTIC (label/version string),
+TRACKING_MODEL_VERSION,'yolo26n-reid.onnx',string,player_tracker_mo/pipeline.py,VERIFIED_CODE,player_tracker_mo/pipeline.py:111 (EXACT_RECOVERED),SEMANTIC (label/version string),
+UNTRUSTED_IDENTITY_STATES,"('REVIEW_REQUIRED_IDENTITY', 'UNRESOLVED_IDENTITY')",s,event_engine_v1/actor_attribution.py,VERIFIED_CODE,event_engine_v1/actor_attribution.py:74 (EXACT_RECOVERED),SEMANTIC (vocabulary),
+CONTROL_TYPES,"{'RECEIVE', 'TOUCH', 'CARRY'}",UNKNOWN/dimensionless,event_engine_v1/actor_attribution.py,VERIFIED_CODE,event_engine_v1/actor_attribution.py:75 (EXACT_RECOVERED),SEMANTIC (vocabulary),
+RELEASE_TYPES,"{'CROSS', 'PASS', 'SHOT', 'UNKNOWN_RELEASE', 'DUEL'}",UNKNOWN/dimensionless,event_engine_v1/actor_attribution.py,VERIFIED_CODE,event_engine_v1/actor_attribution.py:76 (EXACT_RECOVERED),SEMANTIC (vocabulary),
+RESOLVER_FACTOR,"{'RESOLVED': 1.0, 'REVIEW_REQUIRED': 0.5, 'UNRESOLVED': 0.0}",UNKNOWN/dimensionless,event_engine_v1/actor_attribution.py,VERIFIED_CODE,event_engine_v1/actor_attribution.py:77 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+OUTCOME_MAP,"{('PASS', True): 'COMPLETE', ('PASS', False): 'INCOMPLETE', ('CROSS', True): 'COMPLETE', ('CROSS', False): 'INCOMPLETE', ('DUEL', True): 'WON', ('DUEL', False): 'LOST'}",UNKNOWN/dimensionless,event_engine_v1/analyze_target_player.py,VERIFIED_CODE,event_engine_v1/analyze_target_player.py:108 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+DEFAULT_PRE_EVENT_CONTEXT_S,0.5,s,event_engine_v1/benchmark_fixture.py,VERIFIED_CODE,event_engine_v1/benchmark_fixture.py:303 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+PRE_ROLL_S,2.0,s,event_engine_v1/event_clip_exporter.py,VERIFIED_CODE,event_engine_v1/event_clip_exporter.py:37 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+POST_ROLL_S,2.0,s,event_engine_v1/event_clip_exporter.py,VERIFIED_CODE,event_engine_v1/event_clip_exporter.py:38 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+OUTPUT_FOLDER_BY_TYPE,"{'PASS': 'passes', 'CROSS': 'passes', 'CARRY': 'carries', 'SHOT': 'shots', 'GOAL': 'shots', 'DUEL': 'duels', 'TOUCH': 'touches', 'RECEIVE': 'touches', 'POSSESSION_WON': 'possession_won', 'POSSESSION_L",UNKNOWN/dimensionless,event_engine_v1/event_clip_exporter.py,VERIFIED_CODE,event_engine_v1/event_clip_exporter.py:48 (EXACT_RECOVERED),IMPLEMENTATION_SPECIFIC (tuned),
+VIDEO,'/root/.claude/uploads/98d69dca-3149-5a43-9670-3c417f2af6d4/8a710009-dual_lost_01.mov',string,event_engine_v1/test_benchmark_fixture_guard.py,VERIFIED_CODE,event_engine_v1/test_benchmark_fixture_guard.py:8 (EXACT_RECOVERED),SEMANTIC (label/version string),
+VIDEO,'/root/.claude/uploads/98d69dca-3149-5a43-9670-3c417f2af6d4/8a710009-dual_lost_01.mov',string,event_engine_v1/test_temporal_coverage_guard.py,VERIFIED_CODE,event_engine_v1/test_temporal_coverage_guard.py:8 (EXACT_RECOVERED),SEMANTIC (label/version string),
+TASK3P_RECEIVER_INDEPENDENCE,True,bool,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:52 (HASH_VERIFIED),FEATURE_FLAG (task gate),
+RECEIVER_ELIGIBLE,'RECEIVER_ELIGIBLE',string,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:54 (HASH_VERIFIED),SEMANTIC (label/version string),
+RECEIVER_IDENTITY_UNCERTAIN,'RECEIVER_IDENTITY_UNCERTAIN',string,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:55 (HASH_VERIFIED),SEMANTIC (label/version string),
+RECEIVER_INELIGIBLE,'RECEIVER_INELIGIBLE',string,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:56 (HASH_VERIFIED),SEMANTIC (label/version string),
+REEMERGENCE_CORE_BODY_HEIGHTS,1.0,body heights,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:58 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+REEMERGENCE_EXTENDED_BODY_HEIGHTS,1.5,body heights,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:59 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+OCCLUDER_CONTAINMENT_MIN,0.5,UNKNOWN/dimensionless,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:60 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+OCCLUDER_ADJACENCY_BODY_HEIGHTS,1.0,body heights,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:61 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+INDEPENDENT_HISTORY_S,1.0,s,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:62 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+HISTORY_STEP_BODY_HEIGHTS,0.5,s,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:63 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+HISTORY_MIN_FRACTION,0.5,UNKNOWN/dimensionless,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:64 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+INDEPENDENT_SEPARATION_BODY_HEIGHTS,1.0,s,football_analysis/receiver_eligibility.py,VERIFIED_CODE,football_analysis/receiver_eligibility.py:65 (HASH_VERIFIED),IMPLEMENTATION_SPECIFIC (tuned),
+CONTROL_TYPES,"{'RECEIVE', 'TOUCH', 'CARRY'}",UNKNOWN/dimensionless,event_engine_v1/possession_events.py,VERIFIED_CODE,event_engine_v1/possession_events.py:52 (HASH_VERIFIED),SEMANTIC (vocabulary),
+RELEASE_TYPES,"{'GOAL', 'CROSS', 'PASS', 'SHOT', 'UNKNOWN_RELEASE', 'DUEL'}",UNKNOWN/dimensionless,event_engine_v1/possession_events.py,VERIFIED_CODE,event_engine_v1/possession_events.py:53 (HASH_VERIFIED),SEMANTIC (vocabulary),
+HIGH_THRESH,0.75,score,football_analysis/confidence.py,VERIFIED_CODE,football_analysis/confidence.py:11 (3N bytes (3Q via patch)),SEMANTIC (confidence band definition),unchanged by 3P/3Q patch
+MEDIUM_THRESH,0.5,score,football_analysis/confidence.py,VERIFIED_CODE,football_analysis/confidence.py:12 (3N bytes (3Q via patch)),SEMANTIC (confidence band definition),unchanged by 3P/3Q patch
+POSITION_DRIVEN,"{'RECEIVE', 'TOUCH', 'CARRY'}",UNKNOWN/dimensionless,football_analysis/confidence.py,VERIFIED_CODE,football_analysis/confidence.py:14 (3N bytes (3Q via patch)),SEMANTIC (vocabulary),unchanged by 3P/3Q patch
+OUTCOME_DRIVEN,"{'GOAL', 'CROSS', 'PASS', 'SHOT', 'UNKNOWN_RELEASE', 'DUEL'}",UNKNOWN/dimensionless,football_analysis/confidence.py,VERIFIED_CODE,football_analysis/confidence.py:24 (3N bytes (3Q via patch)),SEMANTIC (vocabulary),unchanged by 3P/3Q patch
+ARBITRATION_MARGIN,0.12,ratio,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:40 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+ARBITRATION_MIN_ACCEPT,0.35,ratio,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:41 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+PASS_RECEIVER_SEARCH_FLOOR_S,3.0,s,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:56 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+PASS_SUSTAINED_MIN_CONSECUTIVE_FRAMES,3,s,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:69 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+PASS_SUSTAINED_RADIUS_PX,150.0,px,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:74 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+DUEL_RECOVERY_WINDOW_FRAMES_S,1.5,s,football_analysis/event_arbitration.py,VERIFIED_CODE,football_analysis/event_arbitration.py:311 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+VISUAL_CALIBRATION_INTERVAL,5,ratio,football_analysis/event_detector.py,VERIFIED_CODE,football_analysis/event_detector.py:24 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TOUCH_RADIUS,40.0,px (unless _H),football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:47 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MIN_POSSESSION_FRAMES,2,frames,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:48 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+SAME_TEAM_COLOUR_THRESH,0.5,score,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:49 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MIN_CONFIDENT_SIM,0.55,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:53 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MARGIN_THRESH,0.12,score,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:54 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEAM_B_MIN_TRUSTED,3,UNKNOWN/dimensionless,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:56 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+OPPONENT_BOOTSTRAP_MAX_SIM,0.3,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:59 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEAM_A_MAX_SAMPLES,40,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:64 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEAM_B_MAX_SAMPLES,40,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:65 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CONTAMINATION_IOU_THRESH,0.15,IoU ratio,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:66 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CONTAMINATION_SIM_PENALTY,0.85,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:68 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CONTAMINATION_SEVERE_IOU_THRESH,0.5,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:69 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEMPORAL_HISTORY_LEN,5,body heights,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:92 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEMPORAL_MATCH_DIST,45.0,UNKNOWN/dimensionless,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:93 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEMPORAL_HISTORY_MAX_AGE,6,body heights,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:97 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TASK3L_OTHER_PLAYER_CONTEXT,True,bool,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:119 (3N bytes (3Q via patch)),FEATURE_FLAG (task gate),unchanged by 3P/3Q patch
+FRAME_BORDER_MARGIN_PX,2.0,px,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:120 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+TEAM_B_MIN_SIMULTANEOUS_WEARERS,2,s,football_analysis/possession_detector.py,VERIFIED_CODE,football_analysis/possession_detector.py:126 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RELEASE_FAST_SPEED,16.0,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:76 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_RADIUS,55.0,px (unless _H),football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:77 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+EARLY_SPEED_HORIZON_S,0.6,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:78 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CLEARLY_INCIDENTAL_SPEED,6.0,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:99 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MIN_TIMEOUT_S,0.6,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:102 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MAX_TIMEOUT_S,2.5,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:103 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+BASE_TIMEOUT_S,1.0,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:104 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+SPEED_TIMEOUT_BONUS_CAP_S,0.9,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:105 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+MIN_EVIDENCE_MASS,1.5,UNKNOWN/dimensionless,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:107 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CONFIRM_EVIDENCE_MASS,3.0,confidence,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:108 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+STRAIGHTNESS_MIN,0.45,UNKNOWN/dimensionless,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:109 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+STATE_WEIGHT,"{'CONFIRMED': 1.0, 'REACQUIRING': 0.85, 'PREDICTED': 0.35, 'OCCLUDED': 0.0, 'LOST': 0.0}",weight,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:117 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+BALL_STATE_RECEPTION_WEIGHT,"{'CONFIRMED': 1.0, 'REACQUIRING': 0.55, 'PREDICTED': 0.25, 'OCCLUDED': 0.15, 'LOST': 0.0}",s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:148 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_LOST_CONFIDENCE_FLOOR,0.15,confidence,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:157 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_TREND_WINDOW,4,UNKNOWN/dimensionless,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:158 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_PERSISTENCE_WINDOW,4,UNKNOWN/dimensionless,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:159 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_CONFIRM_SCORE,0.55,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:160 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_ONE_TOUCH_SCORE,0.72,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:161 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_REJECT_SCORE,0.3,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:162 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_MIN_PERSISTENCE_FOR_MULTI_SIGNAL,0.35,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:163 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+RECEPTION_SCORE_WEIGHTS,"{'ball_state': 0.3, 'distance_trend': 0.25, 'trajectory_change': 0.2, 'persistence': 0.25}",s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:164 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+GOAL_LOOKAHEAD_S,1.5,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:167 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+COMPOSITE_SHOT_THRESHOLD,0.55,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:178 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+COMPOSITE_INCIDENTAL_THRESHOLD,0.25,score,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:179 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CROSS_PENALTY_WEIGHT,0.3,weight,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:180 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+WEIGHT_SPEED,1.0,s,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:203 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+WEIGHT_DISPLACEMENT,1.0,weight,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:204 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+WEIGHT_GOAL_DIRECTION,1.0,weight,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:205 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+WEIGHT_KEEPER,1.0,weight,football_analysis/shot_candidate.py,VERIFIED_CODE,football_analysis/shot_candidate.py:206 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+STAT_KEYS_BY_TYPE,"{'TOUCH': ['touches'], 'RECEIVE': ['receives'], 'CARRY': ['carries'], 'PASS': ['passes_attempted'], 'CROSS': ['passes_attempted'], 'SHOT': ['shots'], 'GOAL': ['shots', 'shots_on_target'], 'DUEL': ['du",UNKNOWN/dimensionless,event_engine_v1/player_stats.py,VERIFIED_CODE,event_engine_v1/player_stats.py:84 (3N bytes (3Q via patch)),IMPLEMENTATION_SPECIFIC (tuned),unchanged by 3P/3Q patch
+CONTROL_TYPES,"{'RECEIVE', 'TOUCH', 'CARRY'}",UNKNOWN/dimensionless,event_engine_v1/possession_events.py,VERIFIED_CODE,event_engine_v1/possession_events.py:46 (3N bytes (3Q via patch)),SEMANTIC (vocabulary),unchanged by 3P/3Q patch
+RELEASE_TYPES,"{'GOAL', 'CROSS', 'PASS', 'SHOT', 'UNKNOWN_RELEASE', 'DUEL'}",UNKNOWN/dimensionless,event_engine_v1/possession_events.py,VERIFIED_CODE,event_engine_v1/possession_events.py:47 (3N bytes (3Q via patch)),SEMANTIC (vocabulary),unchanged by 3P/3Q patch
+ASSOC_WEIGHT_APPEARANCE,0.4,weight,player_tracker/association.py (CandidateMatcher),VERIFIED_OUTPUT,"task3m replay association_capture.json: least-squares fit over 116 ACCEPTED candidates, max err 0.0007; also TASK3M_REID_APPEARANCE_AUDIT.md s5",IMPLEMENTATION_SPECIFIC (tuned),Exact name UNKNOWN
+ASSOC_WEIGHT_MOTION,0.2,weight,player_tracker/association.py,VERIFIED_OUTPUT,same fit,IMPLEMENTATION_SPECIFIC (tuned),
+ASSOC_WEIGHT_IOU_LAST_BOX,0.1,weight,player_tracker/association.py,VERIFIED_OUTPUT,same fit,IMPLEMENTATION_SPECIFIC (tuned),
+ASSOC_WEIGHT_COLOUR_HSV,0.15,weight,player_tracker/association.py,VERIFIED_OUTPUT,same fit,IMPLEMENTATION_SPECIFIC (tuned),HSV colour cue shown to invert under contamination (F1)
+ASSOC_WEIGHT_SIZE,0.05,weight,player_tracker/association.py,VERIFIED_OUTPUT,same fit,IMPLEMENTATION_SPECIFIC (tuned),
+ASSOC_WEIGHT_NUMBER,'UNKNOWN (0.10 if weights sum to 1: INFERRED)',weight,player_tracker/association.py,UNKNOWN,number_similarity was 0 in every captured candidate,IMPLEMENTATION_SPECIFIC (tuned),
+MIN_APPEARANCE_FLOOR,0.3,cosine similarity,player_tracker association / track_manager,DOCUMENTED + VERIFIED_OUTPUT,"TASK3M_REID_APPEARANCE_AUDIT.md s2; capture reject text ""appearance below floor (N < N)""",IMPLEMENTATION_SPECIFIC (tuned),
+AMBIGUITY_MARGIN (assignment),0.08,score margin,player_tracker_mo track_manager / association,DOCUMENTED,TASK3M_MOTION_ASSOCIATION_AUDIT.md s2 item 5,IMPLEMENTATION_SPECIFIC (tuned),near-miss margins 0.081 decided the GOLD swap
+REENTRY_AMBIGUITY_MARGIN,0.08,score margin,player_tracker_mo/reentry.py (Fix D),DOCUMENTED,TRACKING_ABLATION_FINAL_REPORT.md s1,IMPLEMENTATION_SPECIFIC (tuned),
+base_gate,90.0,px,TrackManagerConfig (mirrors player_tracker TrackerConfig),DOCUMENTED + VERIFIED_OUTPUT,TASK3C_TRACKING_DIAGNOSIS_REPORT.md finding 4; capture gate_radius 125 = 90+35x1,IMPLEMENTATION_SPECIFIC (tuned),"pixel unit, not scale-normalised"
+gate_growth,35.0,px per frame since confirmed,TrackManagerConfig,DOCUMENTED,TASK3C finding 4; SEG_D s3 formula,IMPLEMENTATION_SPECIFIC (tuned),grows during AMBIGUOUS (defect F6)
+max_gate,350.0,px,TrackManagerConfig,DOCUMENTED,TASK3C finding 4,IMPLEMENTATION_SPECIFIC (tuned),
+FAST_PATH_RADIUS,45,px,track_manager compute_identity_gate_matrix,DOCUMENTED,"TASK3M_MOTION_ASSOCIATION_AUDIT.md s2 (""within 45 px of its last confirmed centre"")",IMPLEMENTATION_SPECIFIC (tuned),fast path itself is a known defect (F1)
+occlusion_to_lost_frames,10,frames,TrackManagerConfig,DOCUMENTED,TASK3C (mirrored from TrackerConfig),IMPLEMENTATION_SPECIFIC (tuned),"frame-count, not seconds"
+terminate_after_dormant_frames,'UNKNOWN',frames,TrackManagerConfig,DOCUMENTED (name only),SEG_D s3,IMPLEMENTATION_SPECIFIC (tuned),
+spot_check_interval,'UNKNOWN',frames,TrackManagerConfig,VERIFIED_CODE (name only),instrumented_pass1_replay.py:90,IMPLEMENTATION_SPECIFIC (tuned),
+PROVISIONAL_PROMOTION_TEAM_VOTE,0.6,fraction,track_manager _try_promote_provisional,DOCUMENTED,TASK3M_MOTION_ASSOCIATION_AUDIT.md; TASK3N Part 6,IMPLEMENTATION_SPECIFIC (tuned),"couples promotion to team classifier (F4, F14)"
+PROVISIONAL_MISS_STREAK_TERMINATE,2,frames,track_manager,DOCUMENTED,TASK3M_MOTION_ASSOCIATION_AUDIT.md s1 category E,IMPLEMENTATION_SPECIFIC (tuned),
+FIX_E_PRUNE_DORMANT_AGE,150,frames,track_manager lifecycle pruning,DOCUMENTED,TRACKING_ABLATION_FINAL_REPORT.md s1,IMPLEMENTATION_SPECIFIC (tuned),
+FIX_E_PRUNE_FAILED_REENTRIES,5,count,track_manager lifecycle pruning,DOCUMENTED,same,IMPLEMENTATION_SPECIFIC (tuned),
+FIX_E_PRUNE_QUALITY_FLOOR,0.35,quality score,track_manager lifecycle pruning,DOCUMENTED,same,IMPLEMENTATION_SPECIFIC (tuned),
+reacquire_frames (old player_tracker),3,frames,player_tracker/tracker.py,DOCUMENTED,CURRENT_ARCHITECTURE.md (90-minute viability),IMPLEMENTATION_SPECIFIC (tuned),legacy tracker
+LOST full-frame rescan interval (old player_tracker),5,frames,player_tracker/tracker.py,DOCUMENTED,CURRENT_ARCHITECTURE.md,IMPLEMENTATION_SPECIFIC (tuned),legacy tracker
+trusted_embeddings maxlen (old PlayerIdentity),60,samples,player_tracker/identity.py,DOCUMENTED,CURRENT_ARCHITECTURE.md,IMPLEMENTATION_SPECIFIC (tuned),
+trajectory maxlen (old PlayerIdentity),200,samples,player_tracker/identity.py,DOCUMENTED,CURRENT_ARCHITECTURE.md,IMPLEMENTATION_SPECIFIC (tuned),
+CANDIDATE_SEARCH_WINDOW_FRAMES,120,frames,player_tracker_mo/selected_player_resolver.py,DOCUMENTED,SHOT_CLOSE_RANGE_OFFLINE_RESOLVER_AUDIT.md,IMPLEMENTATION_SPECIFIC (tuned),
+resolver spatial prefilter radius,25.0,px per frame of gap,player_tracker_mo/selected_player_resolver.py,DOCUMENTED,SHOT_CLOSE_RANGE_OFFLINE_RESOLVER_AUDIT.md,IMPLEMENTATION_SPECIFIC (tuned),
+MARGIN_THRESH (team/kit),0.12,similarity margin,football_analysis/possession_detector.py TeamClassifier,DOCUMENTED,TASK3M_FIX_LAYER_OPTIONS.md (existing constant); see possession_detector rows for VERIFIED_CODE,IMPLEMENTATION_SPECIFIC (tuned),Pass 2
+MIN_CONFIDENT_SIM (team/kit),0.55,similarity,football_analysis/possession_detector.py TeamClassifier,DOCUMENTED,TASK3M_FIX_LAYER_OPTIONS.md; see possession_detector rows,IMPLEMENTATION_SPECIFIC (tuned),Pass 2; also used by Pass 1 via team_track import
+Pass-2 engine YOLO conf,0.15,confidence,football_analysis/engine.py (missing),VERIFIED_CODE,"analyze_target_player.py:105 conf=0.15; inspect_missing_defender.py:10 classes [0,32]",IMPLEMENTATION_SPECIFIC (tuned),
+Pass-1 run max_frames default,450,frames,player_tracker_mo/run_mo.py,VERIFIED_CODE,pipeline.py:217; test_pipeline_integration.py:268,IMPLEMENTATION_SPECIFIC,frame cap
+STALE_POSITION_CONF_FLOOR (milestone1 attribute_actors),0.15,position_confidence,milestone1/attribute_actors.py (not in manifest),DOCUMENTED,SEG_D Stage B s4; SEG_D investigation s4 (also 0.33 s ELIGIBLE / 1.0 s STALE windows),IMPLEMENTATION_SPECIFIC (tuned),downstream freshness gate; tooling outside the manifest

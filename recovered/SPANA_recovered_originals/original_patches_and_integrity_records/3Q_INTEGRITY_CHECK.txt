@@ -1,0 +1,23 @@
+# Task 3Q integrity 2026-10-20T08:13:14Z vs the Task 3N manifest (82 files)
+event_engine_v1/player_stats.py: FAILED
+event_engine_v1/possession_events.py: FAILED
+football_analysis/confidence.py: FAILED
+football_analysis/event_arbitration.py: FAILED
+football_analysis/event_detector.py: FAILED
+football_analysis/event_qualifier.py: FAILED
+football_analysis/possession_detector.py: FAILED
+football_analysis/shot_candidate.py: FAILED
+sha256sum: WARNING: 8 computed checksums did NOT match
+# OK count: 74
+# expected: 8 distinct changed files = 3 from Task 3P (event_detector, possession_detector, shot_candidate) + 5 first changed in Task 3Q (event_qualifier, event_arbitration, confidence, possession_events, player_stats); event_detector was changed again in 3Q
+# player_tracker/ and player_tracker_mo/: 33 manifest entries, non-OK count: 0
+# new files:
+f1ccd2bc94b80253bef968626c944c74d02d055bdc00906ed8e676d347ea7a9d  football_analysis/receiver_eligibility.py
+c5705cefbcf9ca50f43b77e527476fd7383d9101a730c57664ef96e86eac4fd1  football_analysis/controlled_duel.py
+# controlled_duel.py and possession_events.py hashes at the scored runs (CODE_AT_RUN_controlled_duel.sha256) match the files above
+# Task 3P files that Task 3Q must not touch, vs 3P post-state (3P originals + TASK3P_CODE_DIFF.patch): possession_detector.py (TeamClassifier) identical; shot_candidate.py identical; receiver_eligibility.py identical (f1ccd2bc..., as recorded in the Task 3P integrity check)
+# protected modules vs the 3N manifest:
+football_analysis/ball_interaction_credibility.py: OK
+football_analysis/ball_tracker.py: OK
+football_analysis/event_candidates.py: OK
+football_analysis/opponent_detection.py: OK

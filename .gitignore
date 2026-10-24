@@ -1,0 +1,15 @@
+# Large binaries are kept in archive snapshots (with SHA-256 records), not in git history.
+*.mp4
+*.mov
+*.MOV
+*.MP4
+*.pt
+*.onnx
+*.npz
+models/
+runs_rb/
+__pycache__/
+*.pyc
+.DS_Store
+# GOLD label-sheet frame images are regenerated deterministically by tools_rb/make_gold_label_sheet.py
+R1/gold_label_sheet/frames/

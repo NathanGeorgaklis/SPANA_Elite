@@ -1,0 +1,41 @@
+# R0 patch dry run (scratch only, nothing applied to any archive or Mac file). 2026-10-24T01:29:12Z
+# base = engine_current_3Q_state_exact (minus controlled_duel.py) + engine_3N_versions_of_files_changed_in_3P_3Q
+## base files vs 3N manifest:
+OK count: 22
+a1ec1de8e7331d33890aa3890b3c092bca002158332667f467ce8045e5f5db52  /home/claude/r0/orig/SPANA_recovered_originals/original_patches_and_integrity_records/TASK3P_CODE_DIFF.patch
+79a68b191c11c575354388ad645dc1de9f4263c4d5352efc3480cf5bc7affca8  /home/claude/r0/orig/SPANA_recovered_originals/original_patches_and_integrity_records/TASK3Q_CODE_DIFF.patch
+## git apply --check 3P
+Checking patch football_analysis/event_detector.py...
+Checking patch football_analysis/possession_detector.py...
+Checking patch football_analysis/shot_candidate.py...
+Checking patch football_analysis/receiver_eligibility.py...
+3P APPLIED CLEANLY
+## git apply --check 3Q
+Checking patch football_analysis/event_detector.py...
+Checking patch football_analysis/event_qualifier.py...
+Checking patch football_analysis/event_arbitration.py...
+Checking patch football_analysis/confidence.py...
+Checking patch event_engine_v1/possession_events.py...
+Checking patch event_engine_v1/player_stats.py...
+Checking patch football_analysis/controlled_duel.py...
+3Q APPLIED CLEANLY
+## resulting hashes
+f0ac5dc974969c001cbe1378dd9f85e79952f95e0d6fcdf5be381539d3bb4421  event_engine_v1/possession_events.py
+0277dfcb5f28b770e0bca2b993b3b93e8ca059568bc52a8d3c57b77c05890cdb  event_engine_v1/player_stats.py
+99a8a48e1299ca76f1a68e9b0761514ba78ff7428a2d5953568b31a87419666b  football_analysis/confidence.py
+1ad0af64a1f7c380eaefe5095e4400dc83a69a611e52edf99763e5784db67a6a  football_analysis/event_arbitration.py
+5afa8123510188db0bf8eab5cf29bdb118f6879eb46200cb94b68210d5cc8342  football_analysis/event_detector.py
+696135d35829d272ed9e046c70a0dc229a3c97e75a2a431b455ebe146da2a86e  football_analysis/event_qualifier.py
+276383650eefaccb164a7b257ad720f0cf8a0d46dd7143e8faabf678dcf194a0  football_analysis/possession_detector.py
+19cb76163f788f64309e92319de1b0051ba33815de2d9dfc692b58d78875c6de  football_analysis/shot_candidate.py
+f1ccd2bc94b80253bef968626c944c74d02d055bdc00906ed8e676d347ea7a9d  football_analysis/receiver_eligibility.py
+c5705cefbcf9ca50f43b77e527476fd7383d9101a730c57664ef96e86eac4fd1  football_analysis/controlled_duel.py
+## recorded historical hashes to compare
+event_engine_v1/possession_events.py: FAILED
+# expected: 8 distinct changed files = 3 from Task 3P (event_detector, possession_detector, shot_candidate) + 5 first changed in Task 3Q (event_qualifier, event_arbitration, confidence, possession_events, player_stats); event_detector was changed again in 3Q
+f1ccd2bc94b80253bef968626c944c74d02d055bdc00906ed8e676d347ea7a9d  football_analysis/receiver_eligibility.py
+c5705cefbcf9ca50f43b77e527476fd7383d9101a730c57664ef96e86eac4fd1  football_analysis/controlled_duel.py
+# controlled_duel.py and possession_events.py hashes at the scored runs (CODE_AT_RUN_controlled_duel.sha256) match the files above
+# Task 3P files that Task 3Q must not touch, vs 3P post-state (3P originals + TASK3P_CODE_DIFF.patch): possession_detector.py (TeamClassifier) identical; shot_candidate.py identical; receiver_eligibility.py identical (f1ccd2bc..., as recorded in the Task 3P integrity check)
+c5705cefbcf9ca50f43b77e527476fd7383d9101a730c57664ef96e86eac4fd1  ../../football_analysis/controlled_duel.py
+f0ac5dc974969c001cbe1378dd9f85e79952f95e0d6fcdf5be381539d3bb4421  ../possession_events.py

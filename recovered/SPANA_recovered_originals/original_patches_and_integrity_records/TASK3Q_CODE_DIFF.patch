@@ -1,0 +1,820 @@
+--- a/football_analysis/event_detector.py
++++ b/football_analysis/event_detector.py
+@@ -19,6 +19,7 @@
+ from .event_classifier import EventClassifier
+ from .geometry import foot_point, dist
+ from . import receiver_eligibility
++from . import controlled_duel
+ from .visual_pitch_calibration import calibrate_frame
+ from .release_geometry import estimate_release_width, nearby_ball_centre
+ 
+@@ -57,6 +58,8 @@
+         self.fps = fps
+         self._possession_frames = []
+         self._snapshots = []
++        self._classified_boxes = []  # TASK 3Q: per-frame [(box, team), ...] exactly as classified below --
++                                       # kept (not recomputed) for DUEL path B (controlled_duel.py); read-only
+         self._other_positions = []   # per-frame list of (foot_point, team) for every non-tracked person
+                                        # detection -- read-only reuse of the same per-frame person boxes
+                                        # already computed by the caller's one YOLO pass; feeds pitch_context.py
+@@ -169,6 +172,9 @@
+                 elif team == "UNKNOWN" and (nearest_unknown_d is None or d < nearest_unknown_d):
+                     nearest_unknown_d = d
+         self._other_positions.append(frame_positions)
++        if not hasattr(self, "_classified_boxes"):   # test harnesses that build the detector via __new__
++            self._classified_boxes = []
++        self._classified_boxes.append([(tuple(b), team) for b, team in classified])
+ 
+         if self._enable_visual_calibration and snapshot.frame_number % self._visual_calibration_interval == 0:
+             try:
+@@ -240,6 +246,15 @@
+         # untouched). See possession_segmentation.py's module docstring.
+         self._segmentation_frames = segment_possession(self._possession_frames)
+ 
++        # TASK 3Q: read-only view for DUEL path B (controlled-possession challenge). Built from buffers
++        # this detector already holds; consulted only inside release arbitration.
++        duel_ctx = None
++        if controlled_duel.TASK3Q_CONTROLLED_DUEL:
++            duel_ctx = controlled_duel.ControlledDuelContext(
++                snapshots=self._snapshots, ball_history=self.ball_tracker.history,
++                classified_boxes=getattr(self, "_classified_boxes", []), fps=self.fps,
++                ball_labels=(self.ball_credibility or {}).get("labels"))
++
+         events = []
+         n = len(self._possession_frames)
+         i = 0
+@@ -266,7 +281,8 @@
+                 release = self.qualifier.qualify_release(self.ball_tracker, self._possession_frames, seg_end,
+                                                            fps=self.fps, log=self.shot_log,
+                                                            pitch_context=effective_ctx, keeper_candidate=effective_keeper,
+-                                                           seg_start=seg_start, prior_segment_evidence=ev.evidence)
++                                                           seg_start=seg_start, prior_segment_evidence=ev.evidence,
++                                                           controlled_duel_context=duel_ctx)
+                 release.evidence.setdefault("tracking_states", _state_counts(self._snapshots, seg_end, release.end_frame))
+                 release.evidence.setdefault("ball_states", _ball_state_counts(self.ball_tracker, seg_end, release.end_frame))
+                 release.evidence.setdefault("team_sim", None)
+--- a/football_analysis/event_qualifier.py
++++ b/football_analysis/event_qualifier.py
+@@ -22,10 +22,13 @@
+ 
+ class EventQualifier:
+     def qualify_release(self, ball_tracker, possession_frames, i_end, fps=25.0, log=None,
+-                         pitch_context=None, keeper_candidate=None, seg_start=None, prior_segment_evidence=None):
++                         pitch_context=None, keeper_candidate=None, seg_start=None, prior_segment_evidence=None,
++                         controlled_duel_context=None):
++        # TASK 3Q: controlled_duel_context is an optional pass-through (DUEL path B); None = pre-3Q behaviour.
+         return resolve_release(ball_tracker, possession_frames, i_end, fps=fps, log=log,
+                                 pitch_context=pitch_context, keeper_candidate=keeper_candidate,
+-                                seg_start=seg_start, prior_segment_evidence=prior_segment_evidence)
++                                seg_start=seg_start, prior_segment_evidence=prior_segment_evidence,
++                                controlled_duel_context=controlled_duel_context)
+ 
+     def qualify_goal_followup(self, shot_event, ball_tracker, possession_frames, fps=25.0, log=None,
+                                pitch_context=None):
+--- a/football_analysis/event_arbitration.py
++++ b/football_analysis/event_arbitration.py
+@@ -36,6 +36,13 @@
+     build_pass_intent_candidate, build_duel_candidate, build_unknown_candidate,
+     DUEL_CONTACT_WINDOW_FRAMES,
+ )
++from . import controlled_duel
++
++
++def _family(candidate):
++    """TASK 3Q: both DUEL pathways belong to one family, so the arbitration margin is measured against the
++    best NON-duel alternative. With only one DUEL candidate present this is identical to ranked[1]."""
++    return "DUEL" if candidate.event_type in ("DUEL", controlled_duel.CANDIDATE_TYPE) else candidate.event_type
+ 
+ ARBITRATION_MARGIN = 0.12        # winner must beat the runner-up's effective_score by at least this much
+ ARBITRATION_MIN_ACCEPT = 0.35    # winner's own effective_score must clear this floor too -- otherwise even
+@@ -133,7 +140,8 @@
+ 
+ 
+ def resolve_release(ball_tracker, possession_frames, i_end, fps=25.0, log=None,
+-                     pitch_context=None, keeper_candidate=None, seg_start=None, prior_segment_evidence=None):
++                     pitch_context=None, keeper_candidate=None, seg_start=None, prior_segment_evidence=None,
++                     controlled_duel_context=None):
+     """Drop-in replacement call shape for EventQualifier.qualify_release's
+     old direct evaluate_release() call -- same required args, two new
+     optional ones. Returns a single Event (PASS | SHOT | CROSS | DUEL |
+@@ -247,8 +255,19 @@
+     unknown_cand = build_unknown_candidate()
+ 
+     candidates = [shot_cand, cross_cand, pass_cand, duel_cand, unknown_cand]
++
++    # TASK 3Q: DUEL path B (controlled-possession challenge). Evaluated only here -- i.e. AFTER the
++    # confirmed-reception short-circuit above, so a genuine confirmed pass is never turned into a duel --
++    # and only added as a candidate when every gate passed. Path A (duel_cand) is untouched.
++    cd_assessment = None
++    if controlled_duel_context is not None and controlled_duel.TASK3Q_CONTROLLED_DUEL:
++        cd_assessment = controlled_duel.evaluate(controlled_duel_context, possession_frames, i_end, seg_start)
++        if cd_assessment.valid:
++            candidates.append(controlled_duel.build_candidate(cd_assessment))
++
+     ranked = sorted(candidates, key=lambda c: c.effective_score, reverse=True)
+-    winner, runner_up = ranked[0], ranked[1]
++    winner = ranked[0]
++    runner_up = next(c for c in ranked[1:] if _family(c) != _family(winner))
+ 
+     arbitration_evidence = {
+         "candidates": {c.event_type: c.to_dict() for c in candidates},
+@@ -259,6 +278,8 @@
+         "shot_side_frozen_event_type": shot_side_event.type,
+         "shot_side_frozen_resolution_reason": shot_side_event.evidence.get("resolution_reason"),
+     }
++    if cd_assessment is not None:
++        arbitration_evidence["controlled_duel_assessment"] = cd_assessment.evidence
+ 
+     review_required = (winner.effective_score - runner_up.effective_score < ARBITRATION_MARGIN or
+                         winner.effective_score < ARBITRATION_MIN_ACCEPT)
+@@ -297,6 +318,22 @@
+                                   "successful receiver does not erase the pass attempt itself)")
+         return Event("PASS", i_end, shot_side_event.end_frame, success=False, evidence=base_evidence)
+ 
++    if winner.event_type == controlled_duel.CANDIDATE_TYPE:
++        # TASK 3Q: path B. The event spans the contest itself (challenge start -> contest end), not the
++        # parent carry and not the release window; its outcome comes from the frames after the contest.
++        a = cd_assessment
++        start, end = a.challenge_start, a.contest_end
++        base_evidence["duel_path"] = controlled_duel.DUEL_PATH
++        base_evidence["controlled_duel"] = a.evidence
++        base_evidence["resolution_reason"] = f"DUEL_{a.outcome}: controlled_possession_challenge"
++        base_evidence["tracking_states"] = controlled_duel.state_counts(
++            controlled_duel_context.snapshots, start, end, "tracking_state")
++        base_evidence["ball_states"] = controlled_duel.state_counts(
++            controlled_duel_context.ball_history, start, end, "state")
++        success = True if a.outcome == "WON" else False if a.outcome == "LOST" else None
++        return Event("DUEL", start, end, success=success, evidence=base_evidence,
++                     qualifiers=[f"DUEL_{a.outcome}", "CONTROLLED_POSSESSION_DUEL"])
++
+     if winner.event_type == "DUEL":
+         outcome = _resolve_duel_outcome(possession_frames, i_end, hi_cap, opponent_distance_at_contact, fps)
+         base_evidence["resolution_reason"] = f"DUEL_{outcome}: arbitration"
+--- a/football_analysis/confidence.py
++++ b/football_analysis/confidence.py
+@@ -58,8 +58,15 @@
+         tq = _tracking_quality(ev)
+         bq = _ball_quality(ev)
+ 
++        cd = ev.get("controlled_duel") if event.type == "DUEL" else None
+         if event.type in POSITION_DRIVEN:
+             raw = 0.75 * tq + 0.25 * bq
++        elif cd is not None and cd.get("duel_confidence") is not None:
++            # TASK 3Q: a DUEL from path B (controlled-possession challenge) is scored from its own
++            # duel-specific evidence -- mean of pre-challenge control, opponent challenge, ball contest,
++            # post-challenge outcome and identity integrity (controlled_duel.py). Bands and the
++            # review rule below are unchanged; path-A DUELs and every other type are scored as before.
++            raw = cd["duel_confidence"]
+         else:
+             teamq = _team_quality(ev)
+             raw = 0.35 * tq + 0.45 * bq + 0.20 * teamq
+--- a/event_engine_v1/possession_events.py
++++ b/event_engine_v1/possession_events.py
+@@ -40,6 +40,12 @@
+ POSSESSION_WON right after -- so a won duel shows as LOST-then-WON-again,
+ not one continuous possession. This is a known coarseness of edge-
+ detection over discrete events, not a bug to silently paper over.
++
++TASK 3Q exception (narrow): a DUEL from the controlled-possession pathway
++(qualifier CONTROLLED_POSSESSION_DUEL) that the target WON does not end the
++episode -- that pathway's own outcome evidence says he kept the ball through
++the challenge (he re-established control and no opponent did). Path-A
++(contested-arrival) DUELs and path-B LOST/UNKNOWN DUELs still end it as above.
+ """
+ from typing import Dict, List
+ 
+@@ -67,11 +73,22 @@
+             out.append(_possession_event("POSSESSION_WON", e, episode_id))
+             has_ball = True
+         elif etype in RELEASE_TYPES and has_ball:
++            if _retained_through_controlled_duel(e):
++                continue    # TASK 3Q: target kept the ball through the challenge -- episode continues
+             out.append(_possession_event("POSSESSION_LOST", e, episode_id))
+             has_ball = False
+     return out
+ 
+ 
++def _retained_through_controlled_duel(e: Dict) -> bool:
++    """TASK 3Q: a controlled-possession DUEL (path B) the target WON means he kept the ball through the
++    challenge (its own outcome evidence: he re-established control and no opponent did), so it does not
++    end his possession episode. Every other release -- including a path-A (contested-arrival) DUEL,
++    whose LOST-then-WON behaviour is documented above, and a path-B DUEL LOST/UNKNOWN -- is unchanged."""
++    tags = (e.get("qualifiers") or {}).get("tags") or []
++    return e["type"] == "DUEL" and e.get("success") is True and "CONTROLLED_POSSESSION_DUEL" in tags
++
++
+ def _possession_event(etype: str, triggering_event: Dict, episode_id: int) -> Dict:
+     is_won = etype == "POSSESSION_WON"
+     t_frame = triggering_event.get("start_frame") if is_won else triggering_event.get("end_frame")
+--- a/event_engine_v1/player_stats.py
++++ b/event_engine_v1/player_stats.py
+@@ -43,7 +43,8 @@
+     with an invented heuristic.
+   - DUEL: duels += 1 per DUEL event; duels_won += 1 when success is True
+     (per confidence.py, DUEL's success boolean IS its WON/LOST outcome),
+-    else duels_lost += 1.
++    else duels_lost += 1 when success is False (TASK 3Q: an UNKNOWN outcome,
++    success None, counts toward duels but neither won nor lost).
+   - CARRY: carries += 1 per CARRY event. No distance/duration stat is
+     computed (no pitch-calibration coordinates exist yet --
+     CURRENT_SYSTEM_GAP_ANALYSIS.md Section 1), matching the approved
+@@ -94,7 +95,11 @@
+     if e["type"] in ("PASS", "CROSS"):
+         keys.append("passes_completed" if e.get("success") is True else "passes_incomplete")
+     if e["type"] == "DUEL":
+-        keys.append("duels_won" if e.get("success") is True else "duels_lost")
++        # TASK 3Q: an UNKNOWN duel outcome (success None) is neither won nor lost (canonical DUEL schema)
++        if e.get("success") is True:
++            keys.append("duels_won")
++        elif e.get("success") is False:
++            keys.append("duels_lost")
+     return keys
+ 
+ 
+@@ -157,7 +162,7 @@
+             stats["duels"] += 1
+             if e.get("success") is True:
+                 stats["duels_won"] += 1
+-            else:
++            elif e.get("success") is False:     # TASK 3Q: UNKNOWN outcome counts as neither
+                 stats["duels_lost"] += 1
+         elif t == "POSSESSION_WON":
+             stats["possession_won"] += 1
+--- a/football_analysis/controlled_duel.py
++++ b/football_analysis/controlled_duel.py
+@@ -0,0 +1,575 @@
++"""
++controlled_duel.py -- TASK 3Q: DUEL path B, CONTROLLED-POSSESSION CHALLENGE.
++
++The existing DUEL candidate (event_candidates.build_duel_candidate, "path A") models a CONTESTED
++ARRIVAL: a fast, loose ball reaching the selected player with an opponent close at the touch. It is
++left exactly as it is. This module adds a second, independent pathway for a different football
++situation:
++
++    the selected player already CONTROLS the ball
++    -> an OPPONENT actively challenges him (closes in, reaches the ball zone, engages physically)
++    -> his control is interrupted while that challenge is live
++    -> afterwards he regains control (WON), the opponent establishes control (LOST), or neither
++       can be determined (UNKNOWN).
++
++Evaluated only at a possession interruption (a release, i_end = end of the target's possession
++segment) and only after the authoritative confirmed-reception short-circuit, so a genuine confirmed
++pass can never be turned into a duel. It contributes ONE extra arbitration candidate
++("DUEL_CONTROLLED_POSSESSION") that must win on evidence like every other candidate.
++
++Inputs are read-only data the engine already computes:
++  * TrackingSnapshot per frame (target bbox, tracking_state)
++  * BallTracker.history (centre, state) + the ball-credibility gate's per-frame labels
++  * PossessionFrame per frame (in_possession after the credibility gate)
++  * the per-frame (box, team) list event_detector.process_frame already classifies (TASK 3Q keeps it)
++
++No tracker, team classifier, ball tracker, receiver rule, PASS/DUEL-A threshold or global confidence
++threshold is touched. No geometry is in pixels: every distance is in body heights (h) of the player
++concerned, every duration in seconds. No clip, frame, shirt number or colour is referenced.
++
++Known limits (see TASK3Q_CONTROLLED_DUEL_SPEC.md):
++  * no camera-motion compensation in Pass 2 -> "active" is measured as MUTUAL engagement (separation
++    closing + the challenger's foot reaching the ball zone + persistent physical overlap + control
++    interrupted while engaged); who moved cannot be separated;
++  * image overlap is not proof of 3D contact (no depth);
++  * challenges the target absorbs WITHOUT any possession interruption produce no release and are not
++    evaluated here;
++  * a tackle that knocks the ball away from BOTH players (> BALL_LOCAL_H) is left to the existing
++    candidates (it cannot be told apart from a pass/shot under pressure on these signals).
++"""
++import math
++from dataclasses import dataclass, field
++from typing import List, Optional, Tuple
++
++TASK3Q_CONTROLLED_DUEL = True
++
++CANDIDATE_TYPE = "DUEL_CONTROLLED_POSSESSION"
++DUEL_PATH = "CONTROLLED_POSSESSION_CHALLENGE"
++
++VALID_BALL_STATES = ("CONFIRMED", "REACQUIRING")   # PREDICTED/OCCLUDED positions are extrapolations
++
++# --- established control (Part 1.1)
++MIN_CONTROL_S = 0.5                # parent possession segment must last at least this long
++PRE_WINDOW_S = 0.5                 # window immediately before contest entry
++PRE_MIN_POSSESSION_FRACTION = 0.5  # target in possession on at least half of that window
++PRE_MIN_TRACKING_FRACTION = 0.8    # identity grounded before the contest (Part 20)
++
++# --- challenger and active challenge (Parts 1.2-1.5, 5, 6)
++CHAIN_STEP_H = 0.5                 # max challenger centre step per frame (body heights), for chaining
++CHAIN_MAX_GAP_S = 0.5              # chain survives this long with no OPPONENT box (label flicker / overlap)
++ENGAGE_RADIUS_H = 1.5              # engagement: challenger within ~one or two steps of the target
++MAX_ENGAGEMENT_S = 2.0             # the challenge window never starts more than this before contest entry
++REACH_H = 0.5                      # challenger foot within half of HIS OWN height of the ball (leg reach)
++CONTACT_CENTRE_H = 0.75            # bodies engaged: boxes overlap AND centres within 0.75 h
++RELEASE_LINK_S = 0.3               # the contest must be live within this of the possession interruption
++CONTEST_GAP_S = 0.2                # an OBSERVED non-contest run longer than this ends the contest
++MIN_CONTEST_S = 0.15               # observed contest frames must add up to at least this
++MIN_CLOSING_H = 0.5                # separation must shrink by at least this from challenge start to entry
++MIN_REACH_FRAMES = 1               # the challenger's foot must reach the ball zone on >= 1 valid-ball frame
++BALL_LOCAL_H = 1.0                 # ball stays within one body height of the target's or the challenger's
++                                   # feet: a pass/shot leaves BOTH players, a contested ball does not
++ESCAPE_HORIZON_S = 0.5             # ... checked from contest entry to at least this long after the interruption
++REACH_ENGAGED_H = 1.0              # a ball-reach frame counts only while the challenger is within one body
++                                   # height of the target (contesting HIS ball, not carrying it away)
++MAX_UNOBSERVED_S = 0.5             # longest continuous target non-TRACKING run tolerated in the contest
++POST_GROUNDING_S = 0.5             # target must be TRACKING again within this after the contest ends
++
++# --- outcome (Parts 7-9)
++RECOVERY_S = 1.5                   # same horizon as path A's DUEL_RECOVERY_WINDOW_FRAMES_S
++REGAIN_MIN_FRAMES = 2              # = possession_detector.MIN_POSSESSION_FRAMES (consecutive frames)
++OPP_CONTROL_H = 0.35               # opponent foot within 0.35 of his own height of a valid ball
++OPP_CONTROL_MIN_S = 0.2            # ... sustained this long, box NOT overlapping the target
++
++# --- scoring references (saturation points, not decision thresholds)
++CONTROL_SAT_S = 1.0
++CLOSING_SAT_H = 1.0
++CONTEST_SAT_S = 0.5
++BALL_SEPARATION_SAT_H = 0.25
++
++
++def _centre(b):
++    return ((b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0)
++
++
++def _foot(b):
++    return ((b[0] + b[2]) / 2.0, b[3])
++
++
++def _height(b):
++    return max(1e-6, b[3] - b[1])
++
++
++def _overlap(a, b):
++    return min(a[2], b[2]) > max(a[0], b[0]) and min(a[3], b[3]) > max(a[1], b[1])
++
++
++def _frames(seconds, fps):
++    return max(1, int(round(seconds * fps)))
++
++
++@dataclass
++class ControlledDuelContext:
++    """Per-clip, read-only view of the buffers FootballEventDetector already holds."""
++    snapshots: list
++    ball_history: list
++    classified_boxes: list                      # per frame: [(box, team), ...]
++    fps: float = 25.0
++    ball_labels: Optional[list] = None          # ball-credibility labels (None = gate off)
++
++    def n(self):
++        return min(len(self.snapshots), len(self.ball_history), len(self.classified_boxes))
++
++    def target_box(self, i):
++        return tuple(self.snapshots[i].bbox)
++
++    def target_observed(self, i):
++        return self.snapshots[i].tracking_state == "TRACKING"
++
++    def ball(self, i):
++        """Valid ball centre or None (direct observation, not bridged, credible)."""
++        st = self.ball_history[i]
++        if st.centre_x is None or st.state not in VALID_BALL_STATES:
++            return None
++        if getattr(st, "bridge_info", None) is not None:
++            return None
++        if self.ball_labels is not None and i < len(self.ball_labels):
++            from .ball_interaction_credibility import CREDIBLE
++            if self.ball_labels[i] != CREDIBLE:
++                return None
++        return (st.centre_x, st.centre_y)
++
++    def opponents(self, i):
++        return [tuple(b) for b, team in self.classified_boxes[i] if team == "OPPONENT"]
++
++
++@dataclass
++class ControlledDuelAssessment:
++    valid: bool
++    failed_gates: List[str] = field(default_factory=list)
++    challenge_start: Optional[int] = None
++    contest_entry: Optional[int] = None
++    peak_contest: Optional[int] = None
++    contest_end: Optional[int] = None
++    outcome: Optional[str] = None               # WON | LOST | UNKNOWN
++    outcome_frame: Optional[int] = None
++    components: dict = field(default_factory=dict)
++    score: float = 0.0
++    candidate_confidence: float = 0.0
++    duel_confidence: float = 0.0
++    evidence: dict = field(default_factory=dict)
++
++    def window(self):
++        return self.challenge_start, self.contest_end
++
++
++# ------------------------------------------------------------------ per-frame measurements
++def _held_heights(ctx, n):
++    out, last = [], None
++    for i in range(n):
++        if ctx.target_observed(i) or last is None:
++            last = _height(ctx.target_box(i))
++        out.append(last)
++    return out
++
++
++def _chain_challenger(ctx, seed_frame, heights, lo, hi):
++    """OPPONENT box chained by continuity both ways from the OPPONENT box nearest the target at
++    seed_frame. Returns {frame: box}. Store ids are not used (they switch people)."""
++    opps = ctx.opponents(seed_frame)
++    if not opps:
++        return {}
++    tc = _centre(ctx.target_box(seed_frame))
++    seed = min(opps, key=lambda b: math.dist(_centre(b), tc))
++    chain = {seed_frame: seed}
++    max_gap = _frames(CHAIN_MAX_GAP_S, ctx.fps)
++    for step in (-1, 1):
++        last_f, last_b = seed_frame, seed
++        f = seed_frame + step
++        while lo <= f <= hi:
++            reach = CHAIN_STEP_H * heights[f] * abs(f - last_f)
++            cands = [b for b in ctx.opponents(f) if math.dist(_centre(b), _centre(last_b)) <= reach]
++            if cands:
++                b = min(cands, key=lambda b: math.dist(_centre(b), _centre(last_b)))
++                chain[f] = b
++                last_f, last_b = f, b
++            elif abs(f - last_f) > max_gap:
++                break
++            f += step
++    return chain
++
++
++def _frame_measures(ctx, f, chain, heights):
++    """Contest status of one frame: 'YES' | 'NO' | 'UNOBSERVED' and its measurements."""
++    h = heights[f]
++    tb = ctx.target_box(f)
++    obs = ctx.target_observed(f)
++    ball = ctx.ball(f)
++    cb = chain.get(f)
++    m = {"frame": f, "target_observed": obs, "ball_valid": ball is not None, "challenger": cb is not None}
++    reach = centre_d = None
++    ov = False
++    if cb is not None:
++        centre_d = math.dist(_centre(cb), _centre(tb)) / h
++        ov = _overlap(cb, tb)
++        if ball is not None:
++            reach = math.dist(_foot(cb), ball) / _height(cb)
++    m.update(reach=reach, centre_d=centre_d, overlap=ov)
++    # Both criteria need the target's own position, so both need an OBSERVED target. While the target is not
++    # TRACKING its box is the held (stale) one: the frame is UNOBSERVED -- neither evidence nor counter-evidence
++    # -- even if the challenger's foot is near the ball (whose ball it is cannot be told).
++    reach_ok = (obs and reach is not None and reach <= REACH_H and centre_d is not None and
++                centre_d <= REACH_ENGAGED_H)
++    contact_ok = obs and ov and centre_d is not None and centre_d <= CONTACT_CENTRE_H
++    if not obs:
++        m["contest"] = "UNOBSERVED"
++    elif reach_ok or contact_ok:
++        m["contest"] = "YES"
++    else:
++        m["contest"] = "NO"
++    m["reach_ok"], m["contact_ok"] = reach_ok, contact_ok
++    return m
++
++
++def _opponent_control_run(ctx, lo, hi, heights):
++    """First frame of a run of >= OPP_CONTROL_MIN_S in which an OPPONENT has the ball at his feet: his foot
++    within OPP_CONTROL_H of his own height from a valid ball, his box not overlapping the target (during
++    overlap a foot-to-ball distance cannot be attributed), AND the ball moving WITH him over the run
++    (ball and foot displacements differ by <= OPP_CONTROL_H of his height) -- a player merely running
++    past a loose ball is not in control. Returns None when no such run exists."""
++    need = _frames(OPP_CONTROL_MIN_S, ctx.fps)
++    run = []                                  # [(frame, foot, ball, height)]
++    for f in range(lo, hi + 1):
++        ball = ctx.ball(f)
++        best = None
++        if ball is not None:
++            tb = ctx.target_box(f)
++            for ob in ctx.opponents(f):
++                d = math.dist(_foot(ob), ball) / _height(ob)
++                if d <= OPP_CONTROL_H and not _overlap(ob, tb) and (best is None or d < best[0]):
++                    best = (d, ob)
++        if best is None:
++            run = []
++            continue
++        run.append((f, _foot(best[1]), ball, _height(best[1])))
++        if len(run) >= need:
++            f0, foot0, ball0, _h0 = run[-need]
++            _f1, foot1, ball1, h1 = run[-1]
++            d_ball = (ball1[0] - ball0[0], ball1[1] - ball0[1])
++            d_foot = (foot1[0] - foot0[0], foot1[1] - foot0[1])
++            if math.dist(d_ball, d_foot) / h1 <= OPP_CONTROL_H:
++                return f0
++    return None
++
++
++def _target_regain(possession_frames, snapshots, lo, hi):
++    run = 0
++    for f in range(lo, hi + 1):
++        pf = possession_frames[f]
++        if pf.in_possession and snapshots[f].tracking_state == "TRACKING":
++            run += 1
++            if run >= REGAIN_MIN_FRAMES:
++                return f - REGAIN_MIN_FRAMES + 1
++        else:
++            run = 0
++    return None
++
++
++def _clamp(x):
++    return max(0.0, min(1.0, x))
++
++
++# ------------------------------------------------------------------ main entry
++def evaluate(ctx: ControlledDuelContext, possession_frames, i_end: int, seg_start: Optional[int]):
++    """Assess whether the possession interruption at i_end is explained by a controlled-possession
++    challenge. Never raises on missing data: absent evidence fails a gate."""
++    fps = ctx.fps
++    n = min(ctx.n(), len(possession_frames))
++    failed = []
++    ev = {"duel_path": DUEL_PATH, "release_frame": i_end}
++    if n == 0 or i_end >= n:
++        ev["failed_gates"] = ["no_data"]
++        return ControlledDuelAssessment(False, ["no_data"], evidence=ev)
++    heights = _held_heights(ctx, n)
++
++    # Gate 1: established control before the interruption
++    seg_start = i_end if seg_start is None else seg_start
++    control_s = (i_end - seg_start + 1) / fps
++    ev["parent_control_s"] = round(control_s, 3)
++    if control_s < MIN_CONTROL_S:
++        failed.append("no_established_control")
++
++    # Challenger chain seeded at the interruption
++    lo = max(0, i_end - _frames(MAX_ENGAGEMENT_S + PRE_WINDOW_S, fps) - 1)
++    hi = min(n - 1, i_end + _frames(RECOVERY_S + MAX_ENGAGEMENT_S, fps))
++    chain = _chain_challenger(ctx, i_end, heights, lo, hi)
++    if not chain:
++        # the nearest OPPONENT at i_end may be momentarily unlabelled (overlap contamination):
++        # seed from the closest frame within the link window that has one
++        link = _frames(RELEASE_LINK_S, fps)
++        for d in range(1, link + 1):
++            for f in (i_end - d, i_end + d):
++                if 0 <= f < n and ctx.opponents(f):
++                    chain = _chain_challenger(ctx, f, heights, lo, hi)
++                    break
++            if chain:
++                break
++    if not chain:
++        failed.append("no_opponent_challenger")
++        ev["failed_gates"] = failed
++        return ControlledDuelAssessment(False, failed, evidence=ev)
++
++    meas = {f: _frame_measures(ctx, f, chain, heights) for f in range(lo, hi + 1)}
++
++    # Gate 2: contest live at the interruption (contest explains the interruption)
++    link = _frames(RELEASE_LINK_S, fps)
++    linked = [f for f in range(max(lo, i_end - link), min(hi, i_end + link) + 1) if meas[f]["contest"] == "YES"]
++    if not linked:
++        failed.append("no_contest_at_interruption")
++        ev["chain_frames"] = len(chain)
++        ev["failed_gates"] = failed
++        return ControlledDuelAssessment(False, failed, evidence=ev)
++    entry = min(linked)
++    # contest entry = first YES of the contest episode containing the link (walk back over gaps)
++    gap = _frames(CONTEST_GAP_S, fps)
++    f, no_run = entry - 1, 0
++    while f >= lo:
++        c = meas[f]["contest"]
++        if c == "YES":
++            entry, no_run = f, 0
++        elif c == "NO":
++            no_run += 1
++            if no_run > gap:
++                break
++        f -= 1
++    # contest end
++    end, no_run = entry, 0
++    for f in range(entry, hi + 1):
++        c = meas[f]["contest"]
++        if c == "YES":
++            end, no_run = f, 0
++        elif c == "NO":
++            no_run += 1
++            if no_run > gap:
++                break
++    yes_frames = [f for f in range(entry, end + 1) if meas[f]["contest"] == "YES"]
++    reach_frames = [f for f in yes_frames if meas[f]["reach_ok"]]
++    contact_frames = [f for f in yes_frames if meas[f]["contact_ok"]]
++    observed = [f for f in range(entry, end + 1) if meas[f]["contest"] != "UNOBSERVED"]
++    contest_s = len(yes_frames) / fps
++    if contest_s < MIN_CONTEST_S:
++        failed.append("contest_not_persistent")
++    if len(reach_frames) < MIN_REACH_FRAMES:
++        failed.append("challenger_never_reached_ball_zone")
++
++    # Gate 3: engagement start and closing (walk back from entry while chained and within ENGAGE_RADIUS)
++    start = entry
++    f_min = max(lo, entry - _frames(MAX_ENGAGEMENT_S, fps))
++    missing, max_missing = 0, _frames(CHAIN_MAX_GAP_S, fps)
++    for f in range(entry - 1, f_min - 1, -1):
++        m = meas[f]
++        if not m["target_observed"]:
++            continue                      # stale held box: no evidence either way
++        if m["centre_d"] is None:         # no chained challenger this frame
++            missing += 1
++            if missing > max_missing:
++                break
++            continue
++        missing = 0
++        if m["centre_d"] > ENGAGE_RADIUS_H:
++            break
++        start = f
++    d_start = meas[start]["centre_d"]
++    entry_obs = [k for k in range(entry, end + 1) if meas[k]["centre_d"] is not None and meas[k]["target_observed"]]
++    d_entry = meas[entry_obs[0]]["centre_d"] if entry_obs else None
++    closing = (d_start - d_entry) if (d_start is not None and d_entry is not None) else 0.0
++    if closing < MIN_CLOSING_H:
++        failed.append("no_closing_approach")
++
++    # Gate 4: control actually interrupted while engaged: the target is out of possession on at least one
++    # frame inside the contest. (The contest is anchored within RELEASE_LINK_S of the interruption by gate 2,
++    # so the interruption itself always lies at the contest; this gate checks the possession timeline.)
++    lost_frames = [k for k in range(entry, end + 1) if not possession_frames[k].in_possession]
++    if not lost_frames:
++        failed.append("control_not_interrupted_by_contest")
++
++    # Gate 5: the ball stays inside the contest -- within BALL_LOCAL_H of the target's or the challenger's
++    # feet on every valid-ball frame from contest entry until max(contest end, interruption + horizon).
++    # A pass or shot under pressure leaves BOTH players; a contested ball stays with one of them.
++    ball_valid_frames = [k for k in range(entry, end + 1) if ctx.ball(k) is not None]
++    esc_hi = min(n - 1, max(end, i_end + _frames(ESCAPE_HORIZON_S, fps)))
++    max_disp = None
++    for k in range(entry, esc_hi + 1):
++        ball = ctx.ball(k)
++        if ball is None:
++            continue
++        dists = []
++        if ctx.target_observed(k):        # a held (stale) target box is no position evidence
++            dists.append(math.dist(_foot(ctx.target_box(k)), ball) / heights[k])
++        if k in chain:
++            dists.append(math.dist(_foot(chain[k]), ball) / _height(chain[k]))
++        if not dists:
++            continue
++        d = min(dists)
++        max_disp = d if max_disp is None else max(max_disp, d)
++    if not ball_valid_frames:
++        failed.append("no_valid_ball_in_contest")
++    elif max_disp is not None and max_disp > BALL_LOCAL_H:
++        failed.append("ball_escaped_contest")
++
++    # Gate 6: identity grounded before and after (Part 20)
++    pre_lo = max(0, entry - _frames(PRE_WINDOW_S, fps))
++    pre = list(range(pre_lo, entry))
++    pre_track = sum(1 for k in pre if ctx.target_observed(k)) / len(pre) if pre else 0.0
++    pre_poss = sum(1 for k in pre if possession_frames[k].in_possession) / len(pre) if pre else 0.0
++    if pre_track < PRE_MIN_TRACKING_FRACTION:
++        failed.append("identity_not_grounded_before")
++    if pre_poss < PRE_MIN_POSSESSION_FRACTION:
++        failed.append("no_control_before_contest")
++    # Identity gap: every non-TRACKING run that STARTS inside the contest or within POST_GROUNDING_S after it
++    # is measured to its full length (it may run past the contest end); the longest must not exceed
++    # MAX_UNOBSERVED_S. Then the target must be TRACKING again on some frame after the contest end.
++    post_hi = min(n - 1, end + _frames(POST_GROUNDING_S, fps))
++    longest_unobs, k = 0, entry
++    while k <= post_hi:
++        if ctx.target_observed(k):
++            k += 1
++            continue
++        j = k
++        while j < n and not ctx.target_observed(j):
++            j += 1
++        longest_unobs = max(longest_unobs, j - k)
++        k = j
++    if longest_unobs > _frames(MAX_UNOBSERVED_S, fps):
++        failed.append("identity_gap_too_long")
++    post_grounded = any(ctx.target_observed(k) for k in
++                        range(end + 1, min(n - 1, end + _frames(POST_GROUNDING_S + MAX_UNOBSERVED_S, fps)) + 1))
++    if not post_grounded:
++        failed.append("identity_not_grounded_after")
++
++    peak = min(reach_frames, key=lambda k: meas[k]["reach"]) if reach_frames else (yes_frames[0] if yes_frames else entry)
++
++    # ---------------- outcome (Parts 7-9)
++    rec_hi = min(n - 1, end + _frames(RECOVERY_S, fps))
++    regain = _target_regain(possession_frames, ctx.snapshots, i_end + 1, rec_hi)
++    opp_ctrl = _opponent_control_run(ctx, entry, rec_hi, heights)
++    if opp_ctrl is not None and (regain is None or opp_ctrl < regain):
++        outcome, outcome_frame = "LOST", opp_ctrl
++    elif regain is not None and post_grounded:
++        outcome, outcome_frame = "WON", regain
++    else:
++        outcome, outcome_frame = "UNKNOWN", None
++
++    # post-contest comparison: who is nearer the ball (observed frames, valid ball)
++    post_lo = end + 1
++    post_hi2 = (outcome_frame - 1) if outcome_frame is not None and outcome_frame > end else rec_hi
++    nearer_t, nearer_n = 0, 0
++    for k in range(post_lo, post_hi2 + 1):
++        ball = ctx.ball(k)
++        if ball is None or not ctx.target_observed(k) or not ctx.opponents(k):
++            continue
++        dt = math.dist(_foot(ctx.target_box(k)), ball) / heights[k]
++        do = min(math.dist(_foot(ob), ball) / heights[k] for ob in ctx.opponents(k))
++        nearer_n += 1
++        nearer_t += dt < do
++    target_nearer_fraction = (nearer_t / nearer_n) if nearer_n else None
++
++    # ---------------- components (each 0..1)
++    c_control = _clamp(control_s / CONTROL_SAT_S) * pre_poss
++    min_reach = min((meas[k]["reach"] for k in reach_frames), default=None)
++    overlap_frac = (sum(1 for k in observed if meas[k]["overlap"]) / len(observed)) if observed else 0.0
++    c_challenge = (_clamp(closing / CLOSING_SAT_H) +
++                   (_clamp(1.0 - min_reach / REACH_H) if min_reach is not None else 0.0) +
++                   _clamp(((end - entry + 1) / fps) / CONTEST_SAT_S) +
++                   overlap_frac) / 4.0
++    pre_ball = [math.dist(_foot(ctx.target_box(k)), ctx.ball(k)) / heights[k]
++                for k in pre if ctx.ball(k) is not None and ctx.target_observed(k)]
++    in_ball = [math.dist(_foot(ctx.target_box(k)), ctx.ball(k)) / heights[k]
++               for k in range(entry, end + 1) if ctx.ball(k) is not None and ctx.target_observed(k)]
++    separation = (max(in_ball) - (sum(pre_ball) / len(pre_ball))) if (pre_ball and in_ball) else 0.0
++    ball_valid_frac = len(ball_valid_frames) / (end - entry + 1)
++    c_ball = (_clamp(1.0 - (max_disp or 0.0) / BALL_LOCAL_H) * (1.0 if ball_valid_frames else 0.0) +
++              ball_valid_frac + _clamp(separation / BALL_SEPARATION_SAT_H)) / 3.0
++    id_lo, id_hi = pre_lo, post_hi
++    c_identity = sum(1 for k in range(id_lo, id_hi + 1) if ctx.target_observed(k)) / (id_hi - id_lo + 1)
++    chain_span = [k for k in range(start, end + 1)]
++    label_continuity = sum(1 for k in chain_span if k in chain) / len(chain_span) if chain_span else 0.0
++    if outcome == "WON":
++        c_outcome = (1.0 + (target_nearer_fraction if target_nearer_fraction is not None else 0.5) +
++                     (1.0 if opp_ctrl is None else 0.0)) / 3.0
++    elif outcome == "LOST":
++        c_outcome = (1.0 + ((1.0 - target_nearer_fraction) if target_nearer_fraction is not None else 0.5) +
++                     (1.0 if regain is None else 0.0)) / 3.0
++    else:
++        c_outcome = 0.0
++
++    score = 0.30 * c_control + 0.45 * c_challenge + 0.25 * c_ball
++    cand_conf = (c_identity + ball_valid_frac + label_continuity) / 3.0
++    duel_conf = (c_control + c_challenge + c_ball + c_outcome + c_identity) / 5.0
++
++    ev.update({
++        "challenge_start_frame": start, "contest_entry_frame": entry, "peak_contest_frame": peak,
++        "contest_end_frame": end, "outcome": outcome, "outcome_frame": outcome_frame,
++        "measurements": {
++            "closing_body_heights": round(closing, 3), "separation_at_start_h": None if d_start is None else round(d_start, 3),
++            "separation_at_entry_h": None if d_entry is None else round(d_entry, 3),
++            "min_challenger_ball_reach_own_h": None if min_reach is None else round(min_reach, 3),
++            "contest_frames_yes": len(yes_frames), "contest_frames_unobserved":
++                sum(1 for k in range(entry, end + 1) if meas[k]["contest"] == "UNOBSERVED"),
++            "ball_reach_frames": reach_frames, "body_contact_frames": contact_frames,
++            "observed_overlap_fraction": round(overlap_frac, 3),
++            "contest_duration_s": round((end - entry + 1) / fps, 3),
++            "ball_max_distance_from_contestants_h": None if max_disp is None else round(max_disp, 3),
++            "ball_target_separation_rise_h": round(separation, 3),
++            "ball_valid_fraction_in_contest": round(ball_valid_frac, 3),
++            "pre_window_possession_fraction": round(pre_poss, 3),
++            "pre_window_tracking_fraction": round(pre_track, 3),
++            "longest_unobserved_run_frames": longest_unobs,
++            "target_regain_frame": regain, "opponent_control_start_frame": opp_ctrl,
++            "target_nearer_ball_fraction_post_contest": None if target_nearer_fraction is None
++            else round(target_nearer_fraction, 3),
++            "challenger_chain_continuity": round(label_continuity, 3),
++        },
++        "components": {"pre_challenge_control": round(c_control, 4), "opponent_challenge": round(c_challenge, 4),
++                       "ball_contest": round(c_ball, 4), "post_challenge_outcome": round(c_outcome, 4),
++                       "identity_integrity": round(c_identity, 4)},
++        "candidate_score": round(score, 4), "candidate_confidence": round(cand_conf, 4),
++        "duel_confidence": round(duel_conf, 4),
++        "failed_gates": failed,
++    })
++    return ControlledDuelAssessment(
++        valid=not failed, failed_gates=failed, challenge_start=start, contest_entry=entry, peak_contest=peak,
++        contest_end=end, outcome=outcome, outcome_frame=outcome_frame,
++        components=ev["components"], score=score, candidate_confidence=cand_conf, duel_confidence=duel_conf,
++        evidence=ev)
++
++
++# ------------------------------------------------------------------ arbitration integration
++def build_candidate(assessment: ControlledDuelAssessment):
++    """One arbitration candidate (path B). Built only for a VALID assessment (all gates passed);
++    it still has to beat every other candidate by the normal arbitration margin."""
++    from .event_candidates import Candidate
++    m = assessment.evidence.get("measurements", {})
++    supporting = [
++        f"target controlled the ball for {assessment.evidence.get('parent_control_s')}s before the challenge",
++        f"an OPPONENT closed {m.get('closing_body_heights')} body heights from engagement to contest",
++        f"challenger's foot reached {m.get('min_challenger_ball_reach_own_h')} of his height from the ball "
++        f"({len(m.get('ball_reach_frames') or [])} frame(s)); physical engagement over "
++        f"{m.get('contest_duration_s')}s",
++        "possession was interrupted while the challenge was live and the ball stayed inside the contest "
++        f"(never more than {m.get('ball_max_distance_from_contestants_h')} h from the target or challenger)",
++    ]
++    contradictory = []
++    if assessment.outcome == "UNKNOWN":
++        contradictory.append("contest outcome could not be determined from the frames after the contest")
++    return Candidate(CANDIDATE_TYPE, min(1.0, assessment.score), min(1.0, assessment.candidate_confidence),
++                     supporting, contradictory,
++                     {"duel_path": DUEL_PATH, "window": [assessment.challenge_start, assessment.contest_end],
++                      "outcome": assessment.outcome, "components": assessment.components})
++
++
++def state_counts(items, lo, hi, attr):
++    counts = {}
++    for o in items[lo:hi + 1]:
++        s = getattr(o, attr)
++        counts[s] = counts.get(s, 0) + 1
++    return counts

@@ -1,0 +1,202 @@
+diff --git a/event_engine_v1/task3l/pre_task3l_originals/possession_detector.py b/football_analysis/possession_detector.py
+index 17a24eb..e90dee3 100644
+--- a/event_engine_v1/task3l/pre_task3l_originals/possession_detector.py
++++ b/football_analysis/possession_detector.py
+@@ -98,6 +98,64 @@ TEMPORAL_HISTORY_MAX_AGE = 6      # frames -- a position bucket not refreshed wi
+                                     # so a genuinely new/different player reusing a nearby position never inherits
+                                     # a stale verdict
+ 
++# --- TASK 3L (other-player context) -------------------------------------------
++# Diagnosis (event_engine_v1/task3l/TASK3L_TEAM_EVIDENCE_COMPARISON.md): on
++# GOLD_DUEL_01 the trusted OPPONENT reference was bootstrapped in frames 0-7 from
++# people cut off by the bottom edge of the frame (bench/stand, dark clothing),
++# and the reference was the plain MEAN of every trusted sample. From then on a
++# genuine light-kit opponent was dissimilar to BOTH references and stayed
++# UNKNOWN (183/185 frames). Two general repairs, both about evidence quality, no
++# threshold on the decision itself is changed:
++#  1. A box truncated by the frame border is a partial person: its proportional
++#     torso ROI no longer lands on a torso. It is classified UNKNOWN and can never
++#     enter the trusted pool (task rule: partial crop -> UNKNOWN; spectators/staff
++#     must not become trusted participants merely from colour).
++#  2. The OPPONENT reference is the dominant kit WORN BY SEVERAL PEOPLE AT ONCE,
++#     not the mean of every non-target-coloured sample. A team kit is worn by many
++#     players simultaneously; a goalkeeper, referee, spectator or on-screen
++#     graphic is a singleton. Until some non-target colour cluster has been seen on
++#     >= 2 different boxes in the same frame, there is no two-sided reference and
++#     the existing one-sided path continues (UNKNOWN stays possible).
++TASK3L_OTHER_PLAYER_CONTEXT = True     # False reproduces pre-Task-3L behaviour exactly (diagnostic replays)
++FRAME_BORDER_MARGIN_PX = 2.0           # box edge within this many px of the image edge = truncated by the frame
++# Same-kit radius for clustering trusted OPPONENT samples. Not a new tuned value:
++# it is the LAB distance at which color_similarity() equals MIN_CONFIDENT_SIM,
++# i.e. exactly what this classifier already treats as "confidently the same kit"
++# (SCALE=35 in colour.py: sim = 1/(1+d/35)  ->  d = 35*(1/0.55 - 1) ~= 28.6).
++TEAM_B_CLUSTER_RADIUS = 35.0 * (1.0 / MIN_CONFIDENT_SIM - 1.0)
++TEAM_B_MIN_SIMULTANEOUS_WEARERS = 2
++
++
++def box_truncated_by_frame(box, frame_shape, margin=FRAME_BORDER_MARGIN_PX):
++    h, w = frame_shape[:2]
++    x1, y1, x2, y2 = [float(v) for v in box]
++    return x1 <= margin or y1 <= margin or x2 >= (w - margin) or y2 >= (h - margin)
++
++
++def dominant_multi_wearer_cluster(samples, radius=TEAM_B_CLUSTER_RADIUS,
++                                  min_simultaneous=TEAM_B_MIN_SIMULTANEOUS_WEARERS):
++    """samples: [(lab_tuple, frame_no), ...]. Returns the centroid (L,a,b) of
++    the colour cluster seen on the most different boxes within a single frame
++    (ties: most samples overall), or None if no cluster has ever been seen on
++    `min_simultaneous` boxes in the same frame."""
++    if not samples:
++        return None
++    labs = np.array([s[0] for s in samples], dtype=np.float64)
++    frames = [s[1] for s in samples]
++    best_key, best_members = None, None
++    for i in range(len(samples)):
++        d = np.linalg.norm(labs - labs[i], axis=1)
++        members = np.where(d <= radius)[0]
++        per_frame = {}
++        for j in members:
++            per_frame[frames[j]] = per_frame.get(frames[j], 0) + 1
++        key = (max(per_frame.values()), len(members))
++        if best_key is None or key > best_key:
++            best_key, best_members = key, members
++    if best_key[0] < min_simultaneous:
++        return None
++    return tuple(float(v) for v in labs[best_members].mean(axis=0))
++
+ 
+ class TeamClassifier:
+     """rules #2-16: torso/kit-evidence-based TEAMMATE/OPPONENT/UNKNOWN
+@@ -138,6 +196,8 @@ class TeamClassifier:
+         self._team_a_samples = [tracked_color_hist.dominant_lab] if isinstance(tracked_color_hist, KitDescriptor) else []
+         self._team_b_trusted = []          # rule #7/#8: only ever appended to from HIGH-CONFIDENCE, low-contamination
+                                               # OPPONENT calls -- a bad/ambiguous sample never gets in
++        self._team_b_frames = []           # TASK 3L: frame number of each trusted sample (parallel list), so the
++                                              # reference can require a kit seen on several boxes in one frame
+         self._last_tracked_bbox = None
+         self._temporal_history = {}         # {(round(cx/BUCKET), round(cy/BUCKET)): deque of (frame_no, team, sim)}
+         self._call_counter = 0              # fallback recency clock when frame_number isn't supplied
+@@ -164,6 +224,8 @@ class TeamClassifier:
+     def _team_b_centroid(self):
+         if len(self._team_b_trusted) < TEAM_B_MIN_TRUSTED:
+             return None
++        if TASK3L_OTHER_PLAYER_CONTEXT:
++            return dominant_multi_wearer_cluster(list(zip(self._team_b_trusted, self._team_b_frames)))
+         return tuple(float(v) for v in np.mean(np.array(self._team_b_trusted), axis=0))
+ 
+     # -------------------------------------------------------- rule #13
+@@ -196,6 +258,11 @@ class TeamClassifier:
+         "ambiguous margin between two real candidates" (rule #12) --
+         never a guessed label either way."""
+         self._call_counter += 1
++        if TASK3L_OTHER_PLAYER_CONTEXT and box_truncated_by_frame(box, frame.shape):
++            # TASK 3L: partial person (cut by the image edge) -- no trustworthy torso
++            # evidence, never a team label, never a trusted reference sample
++            self._temporal_update(box, frame_number, "UNKNOWN", 0.0)
++            return "UNKNOWN", 0.0
+         desc = shirt_color_hist(frame, box)
+         if desc is None:
+             return "UNKNOWN", 0.0
+@@ -272,8 +339,10 @@ class TeamClassifier:
+         # a wrong/ambiguous sample can never poison the trusted pool.
+         if team == "OPPONENT" and confidence >= MIN_CONFIDENT_SIM and contamination < CONTAMINATION_IOU_THRESH:
+             self._team_b_trusted.append(desc.dominant_lab)
++            self._team_b_frames.append(frame_number if frame_number is not None else self._call_counter)
+             if len(self._team_b_trusted) > TEAM_B_MAX_SAMPLES:
+                 self._team_b_trusted.pop(0)
++                self._team_b_frames.pop(0)
+ 
+         return team, confidence
+ 
+diff --git a/event_engine_v1/task3l/pre_task3l_originals/opponent_detection.py b/football_analysis/opponent_detection.py
+index 6f4fba7..72ebf55 100644
+--- a/event_engine_v1/task3l/pre_task3l_originals/opponent_detection.py
++++ b/football_analysis/opponent_detection.py
+@@ -107,12 +107,53 @@ class OpponentCandidate:
+     track_id: Optional[str] = None
+ 
+ 
++# TASK 3L: target-body FRAGMENT exclusion. On GOLD_DUEL_01 a person box of
++# 12-14% of the target's area, lying entirely inside the target's box (his own
++# leg), passed the IoU<0.5 duplicate test, was read as a same-kit TEAMMATE and
++# became the confirmed receiver of a pass that never happened. IoU cannot see
++# this case (a small box inside a big one always has small IoU). A box is a
++# SUBORDINATE detection of the target when all three hold:
++#   - it lies (almost) wholly inside the target box,
++#   - it is much smaller than the target box, and
++#   - it does not span the target's height (a limb / torso / leg crop).
++# An independent person overlapping the target during a challenge -- even one
++# largely hidden behind him -- still spans most of the target's height at the
++# same depth, or sticks out of his box, and is therefore retained. Naive
++# "anything overlapping the target" suppression is deliberately NOT used: it
++# would delete the real defender in a duel.
++TASK3L_FRAGMENT_EXCLUSION = True       # False reproduces pre-Task-3L behaviour exactly (diagnostic replays)
++FRAGMENT_MIN_CONTAINMENT = 0.85        # fraction of the candidate's own area inside the target box
++FRAGMENT_MAX_AREA_RATIO = 0.5          # candidate area / target area
++FRAGMENT_MAX_HEIGHT_RATIO = 0.8        # candidate height / target height
++
++
++def _area(b):
++    return max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
++
++
++def is_target_fragment(box, tracked_bbox):
++    ta, ba = _area(tracked_bbox), _area(box)
++    if ta <= 0 or ba <= 0:
++        return False
++    ix = max(0.0, min(box[2], tracked_bbox[2]) - max(box[0], tracked_bbox[0]))
++    iy = max(0.0, min(box[3], tracked_bbox[3]) - max(box[1], tracked_bbox[1]))
++    containment = ix * iy / ba
++    height_ratio = (box[3] - box[1]) / max(1e-9, tracked_bbox[3] - tracked_bbox[1])
++    return (containment >= FRAGMENT_MIN_CONTAINMENT and ba / ta <= FRAGMENT_MAX_AREA_RATIO
++            and height_ratio <= FRAGMENT_MAX_HEIGHT_RATIO)
++
++
+ def classify_vs_target(box, tracked_bbox):
+     """rule #7. Returns (classification, separate_from_target_confidence).
+     Never mutates or reads anything beyond the plain box tuples -- the
+     tracked-player box itself is never touched."""
+     i = iou(box, tracked_bbox)
+-    classification = "TARGET_PLAYER_DUPLICATE" if i >= TARGET_DUPLICATE_IOU else "PERSON_DETECTED"
++    if i >= TARGET_DUPLICATE_IOU:
++        classification = "TARGET_PLAYER_DUPLICATE"
++    elif TASK3L_FRAGMENT_EXCLUSION and is_target_fragment(box, tracked_bbox):
++        classification = "TARGET_PLAYER_FRAGMENT"
++    else:
++        classification = "PERSON_DETECTED"
+     return classification, max(0.0, 1.0 - i)
+ 
+ 
+@@ -283,7 +324,7 @@ def merge_other_player_candidates(frame, frame_idx, tracked_bbox, full_frame_per
+     duplicates = []
+     for box, conf in full_frame_persons:
+         classification, sep_conf = classify_vs_target(box, tracked_bbox)
+-        if classification == "TARGET_PLAYER_DUPLICATE":
++        if classification in ("TARGET_PLAYER_DUPLICATE", "TARGET_PLAYER_FRAGMENT"):
+             duplicates.append(OpponentCandidate(box, conf, 1.0, sep_conf, classification, "FULL_FRAME"))
+         else:
+             full_frame_other.append((box, conf))
+@@ -299,7 +340,7 @@ def merge_other_player_candidates(frame, frame_idx, tracked_bbox, full_frame_per
+     fresh_sources = {id(b): "FULL_FRAME" for b, _ in full_frame_other}
+     for lb, lc in local_boxes:
+         classification, sep_conf = classify_vs_target(lb, tracked_bbox)
+-        if classification == "TARGET_PLAYER_DUPLICATE":
++        if classification in ("TARGET_PLAYER_DUPLICATE", "TARGET_PLAYER_FRAGMENT"):
+             duplicates.append(OpponentCandidate(lb, lc, 1.0, sep_conf, classification, "LOCAL_ROI"))
+             continue
+         # dedupe against anything the full-frame pass already found -- the
+@@ -320,7 +361,13 @@ def merge_other_player_candidates(frame, frame_idx, tracked_bbox, full_frame_per
+     records = list(duplicates)
+     plain_boxes = []
+     for box, conf, temporal_confidence, source, track_id in bridged:
+-        _, sep_conf = classify_vs_target(box, tracked_bbox)
++        classification, sep_conf = classify_vs_target(box, tracked_bbox)
++        if classification == "TARGET_PLAYER_FRAGMENT":
++            # TASK 3L: a bridged (remembered) box that now lies inside the target as a
++            # limb-sized crop is no longer evidence of a separate person this frame
++            records.append(OpponentCandidate(box, conf, temporal_confidence, sep_conf, classification,
++                                              source, track_id=track_id))
++            continue
+         team, team_conf = (None, None)
+         if team_classifier is not None:
+             team, team_conf = team_classifier(frame, box)

@@ -1,0 +1,33 @@
+# R0 test collection attempt, 2026-10-24T01:28:58Z. Scratch copy of surviving tree (3N bytes + original 3P/3Q patches applied in scratch only). No models, no video. pytest pytest 9.1.1
+=== event_engine_v1/test_benchmark_fixture_guard.py
+    raise FileNotFoundError(f"video_path does not exist: {video_path}")
+E   FileNotFoundError: video_path does not exist: /root/.claude/uploads/98d69dca-3149-5a43-9670-3c417f2af6d4/8a710009-dual_lost_01.mov
+ERROR event_engine_v1/test_benchmark_fixture_guard.py - FileNotFoundError: vi...
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.08s
+=== event_engine_v1/test_temporal_coverage_guard.py
+    raise FileNotFoundError(f"video_path does not exist: {video_path}")
+E   FileNotFoundError: video_path does not exist: /root/.claude/uploads/98d69dca-3149-5a43-9670-3c417f2af6d4/8a710009-dual_lost_01.mov
+ERROR event_engine_v1/test_temporal_coverage_guard.py - FileNotFoundError: vi...
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.08s
+=== test_actor_attribution.py
+ImportError while importing test module '/home/claude/r0/testrun/test_actor_attribution.py'.
+E   ModuleNotFoundError: No module named 'player_tracker'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.09s
+=== test_pipeline_integration.py
+ImportError while importing test module '/home/claude/r0/testrun/test_pipeline_integration.py'.
+E   ModuleNotFoundError: No module named 'player_tracker_mo.run_mo'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.08s
+=== test_controlled_duel.py
+ImportError while importing test module '/home/claude/r0/testrun/test_controlled_duel.py'.
+E   ModuleNotFoundError: No module named 'football_analysis.ball_track_state'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.09s
+=== test_receiver_eligibility.py
+ImportError while importing test module '/home/claude/r0/testrun/test_receiver_eligibility.py'.
+E   ModuleNotFoundError: No module named 'football_analysis.geometry'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.08s

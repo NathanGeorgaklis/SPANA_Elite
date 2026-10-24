@@ -1,0 +1,10 @@
+# Task 3P integrity 2026-10-20T06:41:48Z vs the Task 3N manifest
+football_analysis/event_detector.py: FAILED
+football_analysis/possession_detector.py: FAILED
+football_analysis/shot_candidate.py: FAILED
+sha256sum: WARNING: 3 computed checksums did NOT match
+# files not listed above are unchanged (79 OK)
+# new file:
+f1ccd2bc94b80253bef968626c944c74d02d055bdc00906ed8e676d347ea7a9d  football_analysis/receiver_eligibility.py
+# player_tracker/ and player_tracker_mo/ entries:
+non-OK count: 0
