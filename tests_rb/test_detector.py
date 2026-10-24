@@ -25,6 +25,7 @@ from player_tracker_rb.config import TrackerConfig
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL = os.path.join(ROOT, "models", "yolox_s.onnx")
 HAVE_MODEL = os.path.isfile(MODEL)
+REQUIRE_MODELS = os.environ.get("SPANA_REQUIRE_MODELS") == "1"   # missing model -> failure, not skip
 
 
 def cfg(**over):
@@ -189,7 +190,7 @@ class TestNoBackendLeakage(unittest.TestCase):
             mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
             mods |= {(n.module or "").split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
             with self.subTest(f):
-                if f != "detector_yolox.py":
+                if f not in ("detector_yolox.py", "embedding_dinov2.py"):     # the two model backends only
                     self.assertNotIn("onnxruntime", mods)
 
     def test_generic_interface_names_no_backend(self):
@@ -197,10 +198,12 @@ class TestNoBackendLeakage(unittest.TestCase):
         self.assertNotIn("yolox", src)
 
 
-@unittest.skipUnless(HAVE_MODEL, "models/yolox_s.onnx not present")
+@unittest.skipUnless(HAVE_MODEL or REQUIRE_MODELS, "models/yolox_s.onnx not present")
 class TestYoloxBackend(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if not HAVE_MODEL:
+            raise AssertionError("SPANA_REQUIRE_MODELS=1 but the pinned detector model is missing")
         from player_tracker_rb import detector_yolox as Y
         cls.Y = Y
         cls.tmp = tempfile.mkdtemp(prefix="rb_det_")

@@ -1,0 +1,60 @@
+{
+  "environment": {
+    "numpy": "2.5.4",
+    "onnx": "1.23.2",
+    "onnxruntime": "1.23.2",
+    "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+    "python": "3.13.17",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.20.2"
+  },
+  "exporter": "torch.onnx.export (TorchScript, dynamo=False)",
+  "hf_commit": "ed25f3a31f01632728cabb09d1542f84ab7b0056",
+  "hf_repo": "facebook/dinov2-small",
+  "input": {
+    "convention": "RGB, x/255, (x - mean)/std with ImageNet mean [0.485, 0.456, 0.406] and std [0.229, 0.224, 0.225] (preprocessor_config.json)",
+    "dtype": "float32",
+    "name": "pixel_values",
+    "shape": [
+      1,
+      3,
+      224,
+      112
+    ]
+  },
+  "inputs_sha256": {
+    "config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
+    "dinov2_vits14_pretrain.pth": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+    "model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1"
+  },
+  "official_checkpoint_crosscheck_max_abs_diff": {
+    "blocks.0.attn.qkv.weight": 0.0,
+    "blocks.11.attn.qkv.weight": 0.0,
+    "blocks.11.mlp.fc2.weight": 0.0,
+    "cls_token": 0.0,
+    "norm.bias": 0.0,
+    "norm.weight": 0.0,
+    "patch_embed.proj.weight": 0.0,
+    "pos_embed": 0.0,
+    "raw_safetensors.cls_token": 0.0
+  },
+  "onnx_vs_torch_max_abs_diff": {
+    "cls": 1.576542854309082e-05,
+    "patch_mean": 1.6689300537109375e-05
+  },
+  "opset": 17,
+  "output_bytes": 88392522,
+  "output_file": "dinov2_vits14_cls_patchmean_224x112.onnx",
+  "output_sha256": "0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea",
+  "outputs": {
+    "cls": [
+      1,
+      384
+    ],
+    "patch_mean": [
+      1,
+      384
+    ]
+  },
+  "tool": "tools_rb/export_models.py"
+}

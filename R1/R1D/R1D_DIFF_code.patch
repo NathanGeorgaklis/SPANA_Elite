@@ -1,0 +1,1788 @@
+diff --git a/player_tracker_rb/appearance.py b/player_tracker_rb/appearance.py
+new file mode 100644
+index 0000000..6611f6d
+--- /dev/null
++++ b/player_tracker_rb/appearance.py
+@@ -0,0 +1,478 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1/R1_DESIGN_DECISIONS.md D04, D08, D12; R1 approval §4 and §20; R1/R1_GENERIC_TRACKER_REQUIREMENT.md;
++#                 R1-D instruction (Nathan, 2026-10-24: separate cues, neither alone establishes identity);
++#                 R1/R1D/R1D_STAGE_RECORD.md (review findings applied)
++"""
++player_tracker_rb.appearance: generic appearance cues for any selected person.
++
++Two cues, kept separate end to end:
++  * LAB part colour (tracker-owned, no model): two L1-normalised, SOFT-BINNED 3-D LAB histograms, one for an
++    upper-body band and one for a lower-body band of the box, using only the central part of the box width.
++    Soft (trilinear) binning: each pixel spreads its weight over the two nearest bin centres in every channel, so a
++    tiny colour shift (white balance, compression) moves the histogram smoothly instead of flipping whole bins. This
++    matters most for neutral kits, whose a/b values sit at the middle of the range.
++  * Generic embedding (behind EmbeddingBackend; the default is DINOv2 ViT-S/14, a GENERIC visual embedding, not a
++    football or person re-identification model).
++
++Similarities (all bounded to [0, 1]; non-finite inputs raise AppearanceError):
++  * lab_similarity       = mean over the two bands of the Bhattacharyya coefficient sum_i sqrt(p_i * q_i).
++                           1 = identical colour distributions, 0 = no overlap.
++  * embedding_similarity = max(0, cosine(u, v)) of unit-length embeddings (unit length is checked).
++  * composite            = w_lab * lab + w_emb * emb   (config weights, sum 1). Reported, never used alone.
++
++identity_support() is the only appearance-level verdict. It needs ALL of: lab >= lab_floor (colour not incompatible),
++emb >= embedding_floor (the embedding agrees), composite >= appearance_floor, all values finite, and no crop flag
++saying the pixels may belong to someone else (MERGED_SUSPECTED, OCCLUDED_BY_OTHER). A missing cue gives no support.
++So colour alone, or the embedding alone, never establishes identity. Contrast against competing people is a later
++layer (target state, R1-F): support here is necessary, not sufficient.
++
++Crop quality (documented formula, range [0, 1]):
++  quality = inside_fraction * min(1, h_px / crop_good_height_px) * (1 - covered_fraction)
++  inside_fraction  = share of the box area inside the image (detector boxes are already clipped, so for them this is
++                     1 and border truncation is reported by the TOUCHES_IMAGE_EDGE flag instead);
++  covered_fraction = share of the box area covered by other people's boxes (union). The caller MUST pass the other
++                     boxes explicitly (possibly an empty list); there is no silent default.
++  valid (usable for comparison) needs h_px >= crop_min_height_px and inside_fraction >= crop_min_inside_fraction.
++  Flags: LOW_RESOLUTION, MOSTLY_OUTSIDE, TOUCHES_IMAGE_EDGE, OCCLUDED_BY_OTHER, MERGED_SUSPECTED (caller's flag).
++
++Appearance bank: a bounded memory of trusted observations of ONE physical person (the selected target, or later a
++competitor). The target bank accepts a sample only from a trusted, uncontested, complete, good-quality observation
++that is itself appearance-consistent with what the bank already holds (see AppearanceBank.update_refusals). Nothing
++in this module knows who the person is.
++"""
++from __future__ import annotations
++
++import abc
++import math
++from dataclasses import dataclass, field
++from typing import Any, Dict, List, Optional, Sequence, Tuple
++
++import cv2
++import numpy as np
++
++from .config import TrackerConfig
++
++# Crop-quality flags
++LOW_RESOLUTION = "LOW_RESOLUTION"
++MOSTLY_OUTSIDE = "MOSTLY_OUTSIDE"
++TOUCHES_IMAGE_EDGE = "TOUCHES_IMAGE_EDGE"
++OCCLUDED_BY_OTHER = "OCCLUDED_BY_OTHER"
++MERGED_SUSPECTED = "MERGED_SUSPECTED"
++EMBEDDING_UNAVAILABLE = "EMBEDDING_UNAVAILABLE"
++# Flags meaning "these pixels may belong to someone else": appearance must not support identity.
++CONTAMINATION_FLAGS = (MERGED_SUSPECTED, OCCLUDED_BY_OTHER)
++
++
++class AppearanceError(RuntimeError):
++    pass
++
++
++class EmbeddingModelError(AppearanceError):
++    pass
++
++
++def _finite(*xs: Any) -> bool:
++    return all(isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(float(x)) for x in xs)
++
++
++# ---------------------------------------------------------------------------------------------
++# Crop geometry and quality
++# ---------------------------------------------------------------------------------------------
++def _box_area(b: Sequence[float]) -> float:
++    return max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
++
++
++def covered_fraction(box: Sequence[float], others: Sequence[Sequence[float]]) -> float:
++    """Share of the box area covered by the union of the other boxes (rasterised on the integer pixel grid that
++    contains the box)."""
++    x1, y1, x2, y2 = (int(np.floor(box[0])), int(np.floor(box[1])), int(np.ceil(box[2])), int(np.ceil(box[3])))
++    w, h = x2 - x1, y2 - y1
++    if w <= 0 or h <= 0 or not len(others):
++        return 0.0
++    mask = np.zeros((h, w), dtype=bool)
++    for o in others:
++        ox1 = max(int(np.floor(o[0])), x1) - x1
++        oy1 = max(int(np.floor(o[1])), y1) - y1
++        ox2 = min(int(np.ceil(o[2])), x2) - x1
++        oy2 = min(int(np.ceil(o[3])), y2) - y1
++        if ox2 > ox1 and oy2 > oy1:
++            mask[oy1:oy2, ox1:ox2] = True
++    return float(mask.mean())
++
++
++@dataclass(frozen=True)
++class CropQuality:
++    height_px: float
++    inside_fraction: float
++    covered_fraction: float
++    quality: float
++    valid: bool
++    flags: Tuple[str, ...]
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"height_px": self.height_px, "inside_fraction": self.inside_fraction,
++                "covered_fraction": self.covered_fraction, "quality": self.quality, "valid": self.valid,
++                "flags": list(self.flags)}
++
++
++def assess_crop(box: Sequence[float], width: int, height: int, cfg: TrackerConfig, *,
++                others: Sequence[Sequence[float]], merged_suspected: bool = False) -> CropQuality:
++    """Quality of a person box as an appearance sample (formula in the module docstring). `others` is required."""
++    if len(box) != 4 or not _finite(*box):
++        raise AppearanceError(f"box must be 4 finite numbers, got {box!r}")
++    area = _box_area(box)
++    cx1, cy1 = max(0.0, box[0]), max(0.0, box[1])
++    cx2, cy2 = min(float(width), box[2]), min(float(height), box[3])
++    inside = _box_area((cx1, cy1, cx2, cy2)) / area if area > 0 else 0.0
++    h_px = max(0.0, cy2 - cy1)
++    cov = covered_fraction((cx1, cy1, cx2, cy2), others) if inside > 0 else 0.0
++    q = inside * min(1.0, h_px / cfg.get("crop_good_height_px")) * (1.0 - cov)
++    flags: List[str] = []
++    if h_px < cfg.get("crop_min_height_px"):
++        flags.append(LOW_RESOLUTION)
++    if inside < cfg.get("crop_min_inside_fraction"):
++        flags.append(MOSTLY_OUTSIDE)
++    m = cfg.get("detector_edge_touch_margin_px")
++    if box[0] <= m or box[1] <= m or box[2] >= width - m or box[3] >= height - m:
++        flags.append(TOUCHES_IMAGE_EDGE)
++    if cov > cfg.get("crop_max_covered_fraction"):
++        flags.append(OCCLUDED_BY_OTHER)
++    if merged_suspected:
++        flags.append(MERGED_SUSPECTED)
++    valid = LOW_RESOLUTION not in flags and MOSTLY_OUTSIDE not in flags
++    return CropQuality(height_px=h_px, inside_fraction=inside, covered_fraction=cov, quality=float(q),
++                       valid=valid, flags=tuple(flags))
++
++
++def crop_image(image: np.ndarray, box: Sequence[float]) -> Optional[np.ndarray]:
++    """The image pixels inside the box, clipped to the image; None if empty."""
++    if len(box) != 4 or not _finite(*box):
++        raise AppearanceError(f"box must be 4 finite numbers, got {box!r}")
++    h, w = image.shape[:2]
++    x1, y1 = max(0, int(round(box[0]))), max(0, int(round(box[1])))
++    x2, y2 = min(w, int(round(box[2]))), min(h, int(round(box[3])))
++    if x2 <= x1 or y2 <= y1:
++        return None
++    return image[y1:y2, x1:x2]
++
++
++# ---------------------------------------------------------------------------------------------
++# LAB part-colour cue (tracker-owned)
++# ---------------------------------------------------------------------------------------------
++def _soft_hist3(values: np.ndarray, bins: int) -> np.ndarray:
++    """Trilinear soft histogram of N x 3 uint8 values over bins^3 cells, bin centres at (i + 0.5) * 256 / bins.
++    Each value splits its unit weight between the two nearest centres per channel (clamped at the ends)."""
++    levels = float(np.iinfo(np.uint8).max) + 1.0
++    half = 1.0 / 2                                                    # bin centres sit half a bin in
++    pos = values.astype(np.float64) * (bins / levels) - half         # continuous bin coordinate per channel
++    lo = np.floor(pos)
++    frac = pos - lo
++    lo = lo.astype(np.int64)
++    hist = np.zeros(bins ** 3, dtype=np.float64)
++    for dl in (0, 1):
++        for da in (0, 1):
++            for db in (0, 1):
++                idx = np.clip(lo + np.array([dl, da, db]), 0, bins - 1)
++                wgt = (np.where(dl, frac[:, 0], 1 - frac[:, 0]) * np.where(da, frac[:, 1], 1 - frac[:, 1])
++                       * np.where(db, frac[:, 2], 1 - frac[:, 2]))
++                np.add.at(hist, (idx[:, 0] * bins + idx[:, 1]) * bins + idx[:, 2], wgt)
++    return hist
++
++
++def lab_descriptor(crop: np.ndarray, cfg: TrackerConfig) -> Optional[np.ndarray]:
++    """Two L1-normalised soft LAB histograms (upper band, lower band), stacked as shape (2, bins**3). None if a band
++    has fewer than lab_min_band_pixels pixels. Bands are fractions of the crop height; only the central
++    lab_center_width_fraction of the width is used."""
++    if crop is None or crop.ndim != 3 or crop.size == 0 or crop.dtype != np.uint8:
++        return None
++    h, w = crop.shape[:2]
++    keep = cfg.get("lab_center_width_fraction")
++    cx1 = int(round(w * (1.0 - keep) / 2))
++    cx2 = max(cx1 + 1, int(round(w * (1.0 + keep) / 2)))
++    lab = cv2.cvtColor(np.ascontiguousarray(crop), cv2.COLOR_BGR2LAB)
++    bins = cfg.get("lab_bins_per_channel")
++    hists = []
++    for band in (cfg.get("lab_upper_band"), cfg.get("lab_lower_band")):
++        y1, y2 = int(round(h * band[0])), int(round(h * band[1]))
++        region = lab[y1:max(y2, y1 + 1), cx1:cx2].reshape(-1, lab.shape[2])
++        if region.shape[0] < cfg.get("lab_min_band_pixels"):
++            return None
++        hist = _soft_hist3(region, bins)
++        hists.append(hist / hist.sum())
++    return np.stack(hists, 0)
++
++
++def lab_similarity(a: Optional[np.ndarray], b: Optional[np.ndarray]) -> Optional[float]:
++    """Mean Bhattacharyya coefficient over the bands, in [0, 1]; None if either descriptor is missing."""
++    if a is None or b is None:
++        return None
++    if a.shape != b.shape or not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
++        raise AppearanceError("LAB descriptors must have the same shape and be finite")
++    bc = np.sqrt(np.clip(a, 0.0, None) * np.clip(b, 0.0, None)).sum(axis=1)
++    return float(np.clip(bc.mean(), 0.0, 1.0))
++
++
++# ---------------------------------------------------------------------------------------------
++# Embedding cue (generic interface)
++# ---------------------------------------------------------------------------------------------
++class EmbeddingBackend(abc.ABC):
++    """Generic visual embedding of a person crop. Not an identity model."""
++
++    @abc.abstractmethod
++    def embed(self, crop: np.ndarray) -> np.ndarray:
++        """Unit-length float64 vector for one BGR uint8 crop."""
++
++    @abc.abstractmethod
++    def provenance(self) -> Dict[str, Any]:
++        """Backend, model file, sha256, licence status, input size, pooling (JSON-safe)."""
++
++    def model_record(self) -> Optional[Dict[str, Any]]:
++        return None
++
++
++def l2_normalise(v: Any) -> np.ndarray:
++    v = np.asarray(v, dtype=np.float64).ravel()
++    n = float(np.linalg.norm(v))
++    if not np.all(np.isfinite(v)) or not math.isfinite(n) or n <= 0:
++        raise AppearanceError("cannot normalise a zero or non-finite vector")
++    return v / n
++
++
++def _check_unit(v: np.ndarray, tol: float) -> None:
++    if v.ndim != 1 or not np.all(np.isfinite(v)) or abs(float(np.linalg.norm(v)) - 1.0) > tol:
++        raise AppearanceError("embedding must be a finite unit-length vector")
++
++
++def embedding_similarity(a: Optional[np.ndarray], b: Optional[np.ndarray], tol: float) -> Optional[float]:
++    """max(0, cosine) of unit-length vectors, in [0, 1]; None if either is missing. Non-unit or non-finite vectors
++    raise (a broken backend must not be hidden by clipping)."""
++    if a is None or b is None:
++        return None
++    if a.shape != b.shape:
++        raise AppearanceError(f"embedding shapes differ: {a.shape} vs {b.shape}")
++    _check_unit(a, tol)
++    _check_unit(b, tol)
++    return float(np.clip(np.dot(a, b), 0.0, 1.0))
++
++
++class ScriptedEmbedding(EmbeddingBackend):
++    """Test backend: returns pre-written vectors in call order (normalised)."""
++
++    def __init__(self, vectors: Sequence[Sequence[float]]):
++        self._v = [l2_normalise(np.asarray(v, dtype=np.float64)) for v in vectors]
++        self._i = 0
++
++    def embed(self, crop: np.ndarray) -> np.ndarray:
++        if self._i >= len(self._v):
++            raise AppearanceError("scripted embedding ran out of vectors")
++        v = self._v[self._i]
++        self._i += 1
++        return v
++
++    def provenance(self) -> Dict[str, Any]:
++        return {"backend": "scripted"}
++
++
++# ---------------------------------------------------------------------------------------------
++# Feature, similarity, identity support
++# ---------------------------------------------------------------------------------------------
++@dataclass(frozen=True)
++class AppearanceFeature:
++    lab: Optional[np.ndarray] = field(repr=False)
++    embedding: Optional[np.ndarray] = field(repr=False)
++    quality: CropQuality
++
++    @property
++    def usable(self) -> bool:
++        return self.quality.valid and self.lab is not None and self.embedding is not None
++
++
++@dataclass(frozen=True)
++class AppearanceSimilarity:
++    lab: Optional[float]
++    embedding: Optional[float]
++    composite: Optional[float]
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"lab": self.lab, "embedding": self.embedding, "composite": self.composite}
++
++
++def compare(a: AppearanceFeature, b: AppearanceFeature, cfg: TrackerConfig) -> AppearanceSimilarity:
++    tol = cfg.get("embedding_norm_tolerance")
++    lab = lab_similarity(a.lab, b.lab)
++    emb = embedding_similarity(a.embedding, b.embedding, tol)
++    comp = None
++    if lab is not None and emb is not None:
++        comp = cfg.get("composite_weight_lab") * lab + cfg.get("composite_weight_embedding") * emb
++    return AppearanceSimilarity(lab=lab, embedding=emb, composite=comp)
++
++
++def identity_support(sim: AppearanceSimilarity, cfg: TrackerConfig,
++                     flags: Sequence[str] = ()) -> Tuple[bool, Tuple[str, ...]]:
++    """Whether appearance alone is CONSISTENT with the same person (necessary, not sufficient: contrast against
++    competitors is decided later). `flags` are the crop-quality flags of the observation being judged. Returns
++    (supported, reasons-if-not). Non-finite values never support."""
++    reasons = []
++    if sim.lab is None:
++        reasons.append("LAB_MISSING")
++    elif not _finite(sim.lab):
++        reasons.append("LAB_NON_FINITE")
++    elif sim.lab < cfg.get("lab_floor"):
++        reasons.append("LAB_INCOMPATIBLE")
++    if sim.embedding is None:
++        reasons.append("EMBEDDING_MISSING")
++    elif not _finite(sim.embedding):
++        reasons.append("EMBEDDING_NON_FINITE")
++    elif sim.embedding < cfg.get("embedding_floor"):
++        reasons.append("EMBEDDING_BELOW_FLOOR")
++    if sim.composite is None or not _finite(sim.composite) or sim.composite < cfg.get("appearance_floor"):
++        reasons.append("COMPOSITE_BELOW_FLOOR")
++    for f in CONTAMINATION_FLAGS:
++        if f in flags:
++            reasons.append(f"CROP_{f}")
++    return (not reasons), tuple(reasons)
++
++
++class AppearanceExtractor:
++    """Builds AppearanceFeature records from an image and a person box."""
++
++    def __init__(self, cfg: TrackerConfig, embedder: Optional[EmbeddingBackend]):
++        self._cfg = cfg
++        self._embedder = embedder
++
++    def extract(self, image: np.ndarray, box: Sequence[float], *, others: Sequence[Sequence[float]],
++                merged_suspected: bool = False) -> AppearanceFeature:
++        h, w = image.shape[:2]
++        q = assess_crop(box, w, h, self._cfg, others=others, merged_suspected=merged_suspected)
++        crop = crop_image(image, box)
++        if crop is None or not q.valid:
++            return AppearanceFeature(lab=None, embedding=None, quality=q)
++        lab = lab_descriptor(crop, self._cfg)
++        emb = None
++        if self._embedder is not None:
++            emb = self._embedder.embed(crop)
++            _check_unit(emb, self._cfg.get("embedding_norm_tolerance"))
++        else:
++            q = CropQuality(q.height_px, q.inside_fraction, q.covered_fraction, q.quality, q.valid,
++                            q.flags + (EMBEDDING_UNAVAILABLE,))
++        return AppearanceFeature(lab=lab, embedding=emb, quality=q)
++
++
++# ---------------------------------------------------------------------------------------------
++# Appearance bank (trusted memory of one physical person)
++# ---------------------------------------------------------------------------------------------
++@dataclass(frozen=True)
++class BankUpdateContext:
++    """Facts supplied by the caller (the target-state layer) about the observation offered to the bank."""
++    identity_trusted: bool                         # the target layer is confident this box is the person
++    merged_suspected: bool = False                 # the box may contain two people
++    max_competitor_iou: float = 0.0                # largest IoU between this box and any other person's box
++    seconds_since_reacquisition: Optional[float] = None   # None = never reacquired
++
++
++# Bank decision codes
++ACCEPTED = "ACCEPTED"
++REDUNDANT = "REDUNDANT"
++REFUSED = "REFUSED"
++NOT_STORED_CAPACITY = "NOT_STORED_CAPACITY"
++
++
++class AppearanceBank:
++    """Bounded multi-view memory of one person's appearance.
++
++    add() stores a sample only if update_refusals() is empty. The first stored sample is the anchor and is never
++    evicted. A sample almost identical to a stored one (embedding similarity >= 1 - bank_min_novelty) is not stored
++    (REDUNDANT). When over capacity, the most redundant non-anchor sample (highest embedding similarity to another
++    sample) is evicted, which keeps different views (front/back, poses); if that is the new sample itself, the result
++    is NOT_STORED_CAPACITY. Outliers cannot enter in the first place because of the self-consistency check.
++    """
++
++    def __init__(self, cfg: TrackerConfig, require_trust: bool = True, capacity: Optional[int] = None):
++        self._cfg = cfg
++        self.require_trust = require_trust
++        cap = capacity if capacity is not None else cfg.get("bank_max_samples")
++        if isinstance(cap, bool) or not isinstance(cap, int) or cap < 1:
++            raise AppearanceError(f"bank capacity must be an int >= 1, got {cap!r}")
++        self.capacity = cap
++        self.samples: List[AppearanceFeature] = []
++        self.rejections: Dict[str, int] = {}
++
++    def __len__(self) -> int:
++        return len(self.samples)
++
++    def update_refusals(self, feat: AppearanceFeature, ctx: BankUpdateContext) -> Tuple[str, ...]:
++        c = self._cfg
++        q = feat.quality
++        r: List[str] = []
++        if not _finite(q.quality, q.covered_fraction, q.inside_fraction, q.height_px):
++            r.append("NON_FINITE_INPUT")
++        if not feat.usable:
++            r.append("FEATURE_NOT_USABLE")
++        if not (_finite(q.quality) and q.quality >= c.get("bank_min_crop_quality")):
++            r.append("LOW_QUALITY")
++        for flag in (OCCLUDED_BY_OTHER, MERGED_SUSPECTED, EMBEDDING_UNAVAILABLE, TOUCHES_IMAGE_EDGE):
++            if flag in q.flags:
++                r.append(flag)
++        if not (_finite(q.covered_fraction) and q.covered_fraction <= c.get("bank_max_covered_fraction")):
++            if OCCLUDED_BY_OTHER not in r:
++                r.append("PARTLY_COVERED_BY_OTHER")
++        if ctx.merged_suspected and MERGED_SUSPECTED not in r:
++            r.append(MERGED_SUSPECTED)
++        if self.require_trust:
++            if ctx.identity_trusted is not True:
++                r.append("IDENTITY_NOT_TRUSTED")
++            if not (_finite(ctx.max_competitor_iou) and ctx.max_competitor_iou <= c.get("bank_contact_iou")):
++                r.append("CONTESTED_BY_OTHER_PERSON")
++            s = ctx.seconds_since_reacquisition
++            if s is not None and not (_finite(s) and s >= c.get("post_reacq_quarantine_s")):
++                r.append("POST_REACQUISITION_QUARANTINE")
++        if not r and self.samples:
++            best, _ = self.best_match(feat)
++            if best is None or not identity_support(best, c)[0]:
++                r.append("BANK_SELF_INCONSISTENT")
++        return tuple(r)
++
++    def add(self, feat: AppearanceFeature, ctx: BankUpdateContext) -> Tuple[str, Tuple[str, ...]]:
++        refusals = self.update_refusals(feat, ctx)
++        if refusals:
++            for x in refusals:
++                self.rejections[x] = self.rejections.get(x, 0) + 1
++            return REFUSED, refusals
++        tol = self._cfg.get("embedding_norm_tolerance")
++        if self.samples:
++            nearest = max(embedding_similarity(feat.embedding, s.embedding, tol) for s in self.samples)
++            if nearest >= 1.0 - self._cfg.get("bank_min_novelty"):
++                return REDUNDANT, ()
++        self.samples.append(feat)
++        if len(self.samples) > self.capacity:
++            evicted = self._evict()
++            if evicted == len(self.samples):          # the new sample itself was the one removed
++                return NOT_STORED_CAPACITY, ()
++        return ACCEPTED, ()
++
++    def _evict(self) -> int:
++        """Remove the most redundant non-anchor sample; return its index (before removal)."""
++        if len(self.samples) == 1:
++            return 0
++        embs = np.stack([s.embedding for s in self.samples], 0)
++        sims = embs @ embs.T
++        np.fill_diagonal(sims, -np.inf)
++        redundancy = sims.max(axis=1)
++        redundancy[0] = -np.inf                        # the anchor is never evicted
++        i = int(np.argmax(redundancy))
++        del self.samples[i]
++        return i if i < len(self.samples) else len(self.samples)
++
++    def best_match(self, feat: AppearanceFeature) -> Tuple[Optional[AppearanceSimilarity], Optional[int]]:
++        """Similarity of a feature to the bank: the sample with the highest composite similarity (cue values come
++        from that same sample, never mixed across samples). (None, None) if the bank is empty or the feature is not
++        usable."""
++        if not self.samples or not feat.usable:
++            return None, None
++        best, best_i = None, None
++        for i, s in enumerate(self.samples):
++            sim = compare(feat, s, self._cfg)
++            if sim.composite is not None and (best is None or sim.composite > best.composite):
++                best, best_i = sim, i
++        return best, best_i
+diff --git a/player_tracker_rb/config.py b/player_tracker_rb/config.py
+index 00b7a77..41c515b 100644
+--- a/player_tracker_rb/config.py
++++ b/player_tracker_rb/config.py
+@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
+ from types import MappingProxyType
+ from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+ 
+-CONFIG_REGISTRY_VERSION = "r1c-1"
++CONFIG_REGISTRY_VERSION = "r1d-1"
+ 
+ # Unit constants (definitions, not tunable behaviour).
+ MS_PER_SECOND = 1000.0
+@@ -293,7 +293,7 @@ PARAMS: Tuple[Param, ...] = (
+     # ---- appearance (D04, D12) ---------------------------------------------------------------
+     _p("appearance_backend", "str", "name", "Appearance backend.", "composite_lab_dinov2", N, "DESIGN_CHOICE",
+        "NOT_APPLICABLE", "RUNTIME", "appearance", "D04; R1 approval §4",
+-       allowed=("composite_lab_dinov2", "lab_only", "scripted")),
++       allowed=("composite_lab_dinov2", "scripted")),
+     _p("composite_weight_lab", "float", "weight",
+        "Weight of the LAB part-colour similarity in the composite similarity.", 0.35, N, "DESIGN_CHOICE", UNV,
+        "BEHAVIOURAL", "appearance", "D04: colour is supporting evidence only", 0.0, 1.0),
+@@ -314,12 +314,77 @@ PARAMS: Tuple[Param, ...] = (
+     _p("crop_min_inside_fraction", "float", "fraction of box area",
+        "Minimum fraction of the box inside the image for a valid appearance feature.", 0.6, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "D12 crop quality", 0.0, 1.0),
++    _p("crop_good_height_px", "int", "px (image resolution)",
++       "Crop height at which resolution stops limiting quality: quality's height term is min(1, h / this).", 64, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "R1-D crop quality formula (R1/R1D/R1D_STAGE_RECORD.md)",
++       4, 1024),
++    _p("crop_max_covered_fraction", "float", "fraction of box area",
++       "A crop more than this much covered by other people's boxes is flagged OCCLUDED_BY_OTHER and is never "
++       "bank-eligible (its pixels may belong to someone else).", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
++       "appearance", "D12; R1 approval §20 (no bank update from heavily overlapped observations)", 0.0, 1.0),
++    _p("bank_max_covered_fraction", "float", "fraction of box area",
++       "Bank updates are refused if more than this share of the box is covered by other people's boxes. Stricter "
++       "than the IoU contact test, which shrinks as an occluder gets larger.", 0.05, N, "DESIGN_CHOICE", UNV,
++       "BEHAVIOURAL", "bank", "R1-D review finding 2 (a large close occluder passed the IoU test at 30% coverage)",
++       0.0, 1.0),
++    _p("lab_min_band_pixels", "int", "pixels",
++       "A LAB colour band with fewer pixels than this gives no LAB descriptor (histogram too sparse to compare).",
++       150, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
++       "R1-D review finding 9 (a 24 px crop gives ~70 pixels over 512 bins)", 1, 100000),
++    _p("embedding_norm_tolerance", "float", "absolute difference from 1",
++       "Embeddings must be unit length within this tolerance; otherwise the backend is broken (fail closed).",
++       1e-6, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "appearance", "R1-D review finding 10", 0.0, 0.1),
++    _p("lab_center_width_fraction", "float", "fraction of box width",
++       "Central share of the box width used for the LAB colour bands (box sides are mostly background).", 0.6, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "R1-D LAB descriptor", 0.05, 1.0),
++    _p("lab_floor", "float", "LAB similarity (Bhattacharyya coefficient, 0-1)",
++       "Per-cue veto: below this LAB similarity the colours are incompatible and appearance cannot support "
++       "identity. Above it, colour still proves nothing on its own.", 0.3, N, "DESIGN_CHOICE", UNV,
++       "BEHAVIOURAL", "appearance", "R1-D; R1/R1_GENERIC_TRACKER_REQUIREMENT.md (colour may only reject)", 0.0, 1.0),
++    _p("embedding_floor", "float", "embedding similarity (max(0, cosine), 0-1)",
++       "Per-cue requirement: the generic embedding must reach this similarity for appearance to support "
++       "identity, so colour can never establish identity alone.", 0.70, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
++       "appearance", "R1-D; neither cue alone establishes identity. Calibrated by the pre-declared rule in "
++       "tools_rb/appearance_eval.py (P5 of same-person CLS similarity 0.741 on the development clip, floored to "
++       "0.05; R1/R1D/appearance_eval/calibration_run.json); was 0.5 before calibration, which is below most "
++       "different-person similarities (median ~0.61). In-sample, weak labels, one clip: UNVALIDATED until R2",
++       0.0, 1.0),
++    _p("embedding_model_file", "str", "path (relative to the project root, or absolute)",
++       "ONNX generic appearance-embedding model (DINOv2 ViT-S/14 backbone; NOT a football ReID model).",
++       "models/dinov2_vits14_cls_patchmean_224x112.onnx", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME",
++       "appearance", "R1/R1D/R1D_MODEL_RECORD.md; exported by tools_rb/export_models.py"),
++    _p("embedding_model_sha256", "str", "sha256 hex",
++       "Pinned SHA-256 of the embedding model. A mismatch refuses to load.",
++       "0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea", N, "VERIFIED_CODE", "NOT_APPLICABLE",
++       "RUNTIME", "appearance", "tools_rb/export_models.py output, byte-reproducible (two exports, same hash)"),
++    _p("embedding_model_status", "str", "licence status",
++       "Licence status of the embedding model, copied into provenance.", "LICENCE_UNCLEAR", N, "DOCUMENTED",
++       "NOT_APPLICABLE", "RUNTIME", "appearance",
++       "R1 approval §4: DEVELOPMENT/EVALUATION; Apache-2.0 confirmed by repo and model card, pending Nathan's sign-off",
++       allowed=("PRODUCTION_APPROVED", "DEVELOPMENT_ONLY", "LICENCE_UNCLEAR", "NOT_APPROVED")),
++    _p("embedding_input_hw", "pair", "px (height, width)", "Embedding network input size (16 x 8 patches of 14 px).",
++       (224, 112), H, "VERIFIED_CODE", "CONTRACT_VERIFIED", "CONTRACT", "appearance",
++       "exported model input pixel_values [1, 3, 224, 112] (dinov2 EXPORT_RECORD.json)", 14, 1024),
++    _p("embedding_mean_rgb", "tuple", "fraction (0-1) per RGB channel",
++       "Normalisation mean of the embedding model input.", (0.485, 0.456, 0.406), H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "appearance", "facebook/dinov2-small preprocessor_config.json image_mean",
++       0.0, 1.0),
++    _p("embedding_std_rgb", "tuple", "fraction (0-1) per RGB channel",
++       "Normalisation std of the embedding model input.", (0.229, 0.224, 0.225), H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "appearance", "facebook/dinov2-small preprocessor_config.json image_std",
++       0.001, 1.0),
++    _p("embedding_pooling", "str", "mode",
++       "cls: the final-layernorm CLS token. cls_patchmean: CLS and the mean patch token, each L2-normalised, "
++       "concatenated and L2-normalised again.", "cls", N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
++       "R1-D; chosen by the pre-declared rule in tools_rb/appearance_eval.py", allowed=("cls", "cls_patchmean")),
+ 
+     # ---- identity decision (D08, D09) --------------------------------------------------------
+     _p("appearance_floor", "float", "composite similarity (0-1)",
+        "A box may become the target's observed box only if its similarity to the target bank is >= this.",
+-       0.55, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+-       "D08 test 1. Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable",
++       0.80, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
++       "D08 test 1. R1-D calibration (tools_rb/appearance_eval.py: P5 of same-person composite 0.806 with soft LAB "
++       "binning, floored to 0.05; was 0.55; R1/R1D/appearance_eval/calibration_run.json). UNVALIDATED until R2. "
++       "Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable",
+        0.0, 1.0, historical_value=0.30),
+     _p("contrastive_margin", "float", "similarity difference",
+        "Target similarity minus the best competitor similarity on the same box must be >= this.", 0.08, N,
+@@ -410,8 +475,10 @@ PARAMS: Tuple[Param, ...] = (
+ 
+     # ---- reacquisition (D15) -----------------------------------------------------------------
+     _p("reacq_appearance_floor", "float", "composite similarity (0-1)",
+-       "Appearance floor during reacquisition (stricter than ordinary association).", 0.62, N,
+-       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition", "D15", 0.0, 1.0),
++       "Appearance floor during reacquisition (stricter than ordinary association).", 0.85, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition",
++       "D15. Raised from 0.62 to appearance_floor + 0.05 when R1-D calibrated appearance_floor to 0.80 (the "
++       "cross-check requires reacquisition to stay stricter). To be revisited in R1-F", 0.0, 1.0),
+     _p("reacq_contrastive_margin", "float", "similarity difference",
+        "Contrastive margin during reacquisition, before any absence growth.", 0.12, N, "DESIGN_CHOICE", UNV,
+        "BEHAVIOURAL", "reacquisition", "D15. Historical re-entry margin 0.08", 0.0, 1.0, historical_value=0.08),
+diff --git a/player_tracker_rb/embedding_dinov2.py b/player_tracker_rb/embedding_dinov2.py
+new file mode 100644
+index 0000000..9be606d
+--- /dev/null
++++ b/player_tracker_rb/embedding_dinov2.py
+@@ -0,0 +1,154 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1/R1D/R1D_MODEL_RECORD.md (DINOv2 ViT-S/14, facebook/dinov2-small @ ed25f3a3, Apache-2.0, ONNX export
++#                 0ab62713...); facebook/dinov2-small preprocessor_config.json; R1 approval §4 (generic embedding,
++#                 not player ReID truth)
++"""
++player_tracker_rb.embedding_dinov2: DINOv2 ViT-S/14 ONNX backend for the generic appearance embedding.
++
++DINOv2 is a GENERIC self-supervised visual embedding. It is not a football player re-identification model and it
++does not reproduce the historical yolo26n-reid.onnx. Its usefulness for telling people apart must be measured.
++
++Preprocessing, preprocess_crop() (one person crop -> [1, 3, H, W], H x W = embedding_input_hw = 224 x 112):
++  1. BGR uint8 -> RGB.
++  2. Resize preserving aspect ratio, scale = min(H / h, W / w); INTER_AREA when shrinking (anti-aliased),
++     INTER_LINEAR when enlarging; centre it on an H x W canvas filled with the normalisation-mean colour rounded to
++     uint8 (so the padding is approximately 0 after normalisation: within 0.01 per channel).
++  3. x / 255, then (x - mean) / std per channel (ImageNet mean/std from the model's preprocessor_config).
++  (The model's own HF preprocessing uses a bicubic resize and a square centre crop; a square crop would cut a standing
++  person's head and feet, so this backend letterboxes into a 2:1 input instead. Documented, deliberate difference.)
++Outputs are read BY NAME: "cls" [1, D] and "patch_mean" [1, D]. embedding_pooling picks cls, or cls + patch_mean
++(each L2-normalised, concatenated, L2-normalised). The returned vector is always unit length.
++
++The model is loaded only if its SHA-256 equals embedding_model_sha256, its input is float32 [1, 3, H, W] and its two
++outputs are [1, D] with a fixed positive D; otherwise EmbeddingModelError. ONNX Runtime runs with fixed threads and
++sequential execution (deterministic within one environment).
++"""
++from __future__ import annotations
++
++import hashlib
++import os
++from typing import Any, Dict, Optional, Tuple
++
++import cv2
++import numpy as np
++import onnxruntime as ort
++
++from .appearance import AppearanceError, EmbeddingBackend, EmbeddingModelError, l2_normalise
++from .config import TrackerConfig
++
++BACKEND_NAME = "dinov2_onnx"
++PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++OUTPUT_NAMES = ("cls", "patch_mean")
++
++
++def _sha256(path: str, chunk: int) -> str:
++    h = hashlib.sha256()
++    with open(path, "rb") as f:
++        for block in iter(lambda: f.read(chunk), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++def preprocess_crop(crop: np.ndarray, cfg: TrackerConfig) -> np.ndarray:
++    """BGR uint8 crop -> float32 [1, 3, H, W] network input (see the module docstring). No model needed."""
++    mean = np.asarray(cfg.get("embedding_mean_rgb"), dtype=np.float64)
++    std = np.asarray(cfg.get("embedding_std_rgb"), dtype=np.float64)
++    if (crop is None or not isinstance(crop, np.ndarray) or crop.ndim != 3 or crop.dtype != np.uint8
++            or crop.shape[2] != len(mean) or crop.shape[0] < 1 or crop.shape[1] < 1):
++        raise AppearanceError("embedding needs a non-empty BGR uint8 crop of shape (h, w, 3)")
++    hh, ww = (int(v) for v in cfg.get("embedding_input_hw"))
++    h, w = crop.shape[:2]
++    s = min(hh / h, ww / w)
++    nh, nw = max(1, min(hh, int(round(h * s)))), max(1, min(ww, int(round(w * s))))
++    rgb = cv2.cvtColor(np.ascontiguousarray(crop), cv2.COLOR_BGR2RGB)
++    interp = cv2.INTER_AREA if s < 1.0 else cv2.INTER_LINEAR
++    resized = cv2.resize(rgb, (nw, nh), interpolation=interp)
++    levels = float(np.iinfo(np.uint8).max)
++    canvas = np.empty((hh, ww, len(mean)), dtype=np.uint8)
++    canvas[:] = np.round(mean * levels).astype(np.uint8)
++    y0, x0 = (hh - nh) // 2, (ww - nw) // 2
++    canvas[y0:y0 + nh, x0:x0 + nw] = resized
++    x = (canvas.astype(np.float64) / levels - mean) / std
++    return np.ascontiguousarray(x.transpose(2, 0, 1)[None], dtype=np.float32)
++
++
++def pool(cls: np.ndarray, patch_mean: np.ndarray, pooling: str) -> np.ndarray:
++    if pooling == "cls":
++        return l2_normalise(cls)
++    if pooling == "cls_patchmean":
++        return l2_normalise(np.concatenate([l2_normalise(cls), l2_normalise(patch_mean)]))
++    raise AppearanceError(f"unknown pooling {pooling!r}")
++
++
++class Dinov2OnnxEmbedding(EmbeddingBackend):
++    def __init__(self, cfg: TrackerConfig, model_path: Optional[str] = None):
++        self._cfg = cfg
++        path = model_path or cfg.get("embedding_model_file")
++        path = path if os.path.isabs(path) else os.path.join(PACKAGE_ROOT, path)
++        self._path = path
++        if not os.path.isfile(path):
++            raise EmbeddingModelError(f"embedding model not found: {path}")
++        digest = _sha256(path, cfg.get("hash_chunk_bytes"))
++        if digest != cfg.get("embedding_model_sha256"):
++            raise EmbeddingModelError(f"embedding model sha256 {digest} != pinned {cfg.get('embedding_model_sha256')}")
++        self._sha = digest
++        so = ort.SessionOptions()
++        so.intra_op_num_threads = cfg.get("onnx_intra_op_threads")
++        so.inter_op_num_threads = cfg.get("onnx_inter_op_threads")
++        if cfg.get("onnx_sequential_execution"):
++            so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
++        try:
++            self._sess = ort.InferenceSession(path, sess_options=so, providers=["CPUExecutionProvider"])
++        except Exception as e:  # noqa: BLE001
++            raise EmbeddingModelError(f"cannot load embedding model {path}: {e}") from e
++        self._dim = self._check_signature()
++        self._hw = tuple(int(v) for v in cfg.get("embedding_input_hw"))
++
++    def _check_signature(self) -> int:
++        c = self._cfg
++        hh, ww = (int(v) for v in c.get("embedding_input_hw"))
++        ins = self._sess.get_inputs()
++        if len(ins) != 1 or list(ins[0].shape) != [1, len(c.get("embedding_mean_rgb")), hh, ww] \
++                or ins[0].type != "tensor(float)":
++            raise EmbeddingModelError(f"model input {[(i.name, i.shape, i.type) for i in ins]} != float32 "
++                                      f"[1, 3, {hh}, {ww}]")
++        self._in = ins[0].name
++        outs = {o.name: o.shape for o in self._sess.get_outputs()}
++        if set(outs) != set(OUTPUT_NAMES):
++            raise EmbeddingModelError(f"model outputs {sorted(outs)} != {list(OUTPUT_NAMES)}")
++        dims = set()
++        for name in OUTPUT_NAMES:
++            shp = outs[name]
++            if len(shp) != 2 or shp[0] != 1 or not isinstance(shp[1], int) or shp[1] < 1:
++                raise EmbeddingModelError(f"output {name} shape {shp} is not [1, D] with a fixed D")
++            dims.add(shp[1])
++        if len(dims) != 1:
++            raise EmbeddingModelError(f"cls and patch_mean dimensions differ: {outs}")
++        return dims.pop()
++
++    @property
++    def dim(self) -> int:
++        return self._dim * (2 if self._cfg.get("embedding_pooling") == "cls_patchmean" else 1)
++
++    def preprocess(self, crop: np.ndarray) -> np.ndarray:
++        return preprocess_crop(crop, self._cfg)
++
++    def raw_outputs(self, crop: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
++        cls, pm = self._sess.run(list(OUTPUT_NAMES), {self._in: self.preprocess(crop)})
++        return np.asarray(cls[0], dtype=np.float64), np.asarray(pm[0], dtype=np.float64)
++
++    def embed(self, crop: np.ndarray) -> np.ndarray:
++        cls, pm = self.raw_outputs(crop)
++        return pool(cls, pm, self._cfg.get("embedding_pooling"))
++
++    def provenance(self) -> Dict[str, Any]:
++        c = self._cfg
++        return {"backend": BACKEND_NAME, "model_file": os.path.basename(self._path), "model_sha256": self._sha,
++                "model_status": c.get("embedding_model_status"), "input_hw": list(self._hw),
++                "pooling": c.get("embedding_pooling"), "dim": self.dim, "onnxruntime_version": ort.__version__,
++                "note": "generic visual embedding (DINOv2 ViT-S/14), not a person/football re-identification model"}
++
++    def model_record(self) -> Dict[str, Any]:
++        return {"role": "appearance_embedding", "filename": os.path.basename(self._path), "sha256": self._sha,
++                "status": self._cfg.get("embedding_model_status")}
+diff --git a/tests_rb/test_appearance.py b/tests_rb/test_appearance.py
+new file mode 100644
+index 0000000..94d1c96
+--- /dev/null
++++ b/tests_rb/test_appearance.py
+@@ -0,0 +1,526 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-D instruction and acceptance criteria (Nathan, 2026-10-24); R1/R1_GENERIC_TRACKER_REQUIREMENT.md
++#                 (neutral identities TARGET, PERSON_A, PERSON_B, PERSON_C); R1/R1_DESIGN_DECISIONS.md D04, D12;
++#                 R1-D independent code review and test audit findings (R1/R1D/R1D_STAGE_RECORD.md)
++"""Tests for the generic appearance layer: crop quality, LAB cue, embedding cue, similarity bounds, identity support
++(neither cue alone), fail-closed behaviour on non-finite inputs, and the trusted appearance bank.
++
++DINOv2 backend tests need the pinned model file in models/. Set SPANA_REQUIRE_MODELS=1 to turn a missing model into a
++test failure instead of a skip (so the model-pinning criteria cannot pass silently)."""
++import hashlib
++import math
++import os
++import shutil
++import tempfile
++import unittest
++
++import numpy as np
++
++from player_tracker_rb import appearance as A
++from player_tracker_rb import embedding_dinov2 as E
++from player_tracker_rb.config import TrackerConfig
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++EMB_MODEL = os.path.join(ROOT, "models", "dinov2_vits14_cls_patchmean_224x112.onnx")
++HAVE_EMB = os.path.isfile(EMB_MODEL)
++REQUIRE_MODELS = os.environ.get("SPANA_REQUIRE_MODELS") == "1"
++TOL = 1e-6
++
++
++def cfg(**over):
++    return TrackerConfig.with_overrides(over)
++
++
++def person(shirt, shorts, h=96, w=48, bg=(40, 140, 40), seed=0, noise=6):
++    """A synthetic BGR person crop: background sides, a shirt band and a shorts band (plus mild noise)."""
++    rng = np.random.default_rng(seed)
++    img = np.empty((h, w, 3), np.uint8)
++    img[:] = bg
++    x1, x2 = int(w * 0.2), int(w * 0.8)            # body spans the central 60% (the LAB sampling width)
++    img[int(h * 0.12):int(h * 0.5), x1:x2] = shirt
++    img[int(h * 0.5):int(h * 0.8), x1:x2] = shorts
++    if noise:
++        img = np.clip(img.astype(int) + rng.integers(-noise, noise + 1, img.shape), 0, 255).astype(np.uint8)
++    return img
++
++
++RED, WHITE, BLUE, BLACK = (40, 40, 200), (230, 230, 230), (200, 60, 30), (20, 20, 20)
++TARGET = person(RED, WHITE, seed=1)
++PERSON_A = person(RED, WHITE, seed=2)          # same kit as TARGET, a different physical person
++PERSON_B = person(BLUE, BLACK, seed=3)         # different kit
++GOOD_Q = A.CropQuality(96.0, 1.0, 0.0, 1.0, True, ())
++
++
++def feat(crop, vec, quality=None):
++    return A.AppearanceFeature(lab=A.lab_descriptor(crop, cfg()), embedding=A.l2_normalise(np.asarray(vec, float)),
++                               quality=quality or GOOD_Q)
++
++
++def sim(lab, emb, c=None):
++    c = c or cfg()
++    return A.AppearanceSimilarity(lab=lab, embedding=emb,
++                                  composite=c.get("composite_weight_lab") * lab + c.get("composite_weight_embedding") * emb)
++
++
++class TestCropQuality(unittest.TestCase):
++    def test_formula(self):
++        c = cfg()
++        good = c.get("crop_good_height_px")
++        q = A.assess_crop((100, 100, 140, 100 + 1.5 * good), 1280, 720, c, others=[])
++        self.assertEqual((q.quality, q.valid, q.flags), (1.0, True, ()))
++        q = A.assess_crop((100, 100, 120, 100 + good / 2), 1280, 720, c, others=[])
++        self.assertAlmostEqual(q.quality, 0.5)
++
++    def test_others_must_be_explicit(self):
++        with self.assertRaises(TypeError):
++            A.assess_crop((100, 100, 140, 196), 1280, 720, cfg())
++
++    def test_low_resolution_invalid(self):
++        q = A.assess_crop((100, 100, 110, 100 + cfg().get("crop_min_height_px") - 1), 1280, 720, cfg(), others=[])
++        self.assertFalse(q.valid)
++        self.assertIn(A.LOW_RESOLUTION, q.flags)
++
++    def test_mostly_outside_invalid_and_edge_flag(self):
++        q = A.assess_crop((1260, 600, 1340, 700), 1280, 720, cfg(), others=[])     # 25% inside
++        self.assertFalse(q.valid)
++        self.assertIn(A.MOSTLY_OUTSIDE, q.flags)
++        self.assertIn(A.TOUCHES_IMAGE_EDGE, q.flags)
++
++    def test_occluded_by_other_person(self):
++        q = A.assess_crop((100, 100, 140, 196), 1280, 720, cfg(), others=[(120, 100, 180, 196)])
++        self.assertAlmostEqual(q.covered_fraction, 0.5)
++        self.assertAlmostEqual(q.quality, 0.5)
++        self.assertIn(A.OCCLUDED_BY_OTHER, q.flags)
++        self.assertTrue(q.valid)                                           # usable for comparison, flagged
++
++    def test_covered_fraction_is_union(self):
++        self.assertAlmostEqual(A.covered_fraction((0, 0, 100, 100), [(0, 0, 50, 100), (25, 0, 75, 100)]), 0.75)
++
++    def test_covered_at_limit_not_flagged(self):
++        c = cfg()
++        lim = c.get("crop_max_covered_fraction")
++        q = A.assess_crop((100, 100, 200, 200), 1280, 720, c, others=[(100, 100, 100 + 100 * lim, 200)])
++        self.assertAlmostEqual(q.covered_fraction, lim)
++        self.assertNotIn(A.OCCLUDED_BY_OTHER, q.flags)
++
++    def test_non_finite_box_refused(self):
++        for box in ((float("nan"), 0, 10, 10), (0, 0, float("inf"), 10)):
++            with self.assertRaises(A.AppearanceError):
++                A.assess_crop(box, 1280, 720, cfg(), others=[])
++            with self.assertRaises(A.AppearanceError):
++                A.crop_image(np.zeros((720, 1280, 3), np.uint8), box)
++
++
++class TestLab(unittest.TestCase):
++    def test_shape_and_normalisation(self):
++        d = A.lab_descriptor(TARGET, cfg())
++        b = cfg().get("lab_bins_per_channel")
++        self.assertEqual(d.shape, (2, b ** 3))
++        np.testing.assert_allclose(d.sum(axis=1), [1.0, 1.0])
++
++    def test_bounds_and_identity(self):
++        c = cfg()
++        self.assertAlmostEqual(A.lab_similarity(A.lab_descriptor(TARGET, c), A.lab_descriptor(TARGET, c)), 1.0)
++        for x in (PERSON_A, PERSON_B):
++            s = A.lab_similarity(A.lab_descriptor(TARGET, c), A.lab_descriptor(x, c))
++            self.assertTrue(0.0 <= s <= 1.0)
++
++    def test_same_kit_high_different_kit_low(self):
++        c = cfg()
++        t = A.lab_descriptor(TARGET, c)
++        self.assertGreater(A.lab_similarity(t, A.lab_descriptor(PERSON_A, c)), 0.8)    # colour cannot separate
++        self.assertLess(A.lab_similarity(t, A.lab_descriptor(PERSON_B, c)), c.get("lab_floor"))   # colour rejects
++
++    def test_background_sides_ignored(self):
++        c = cfg()
++        a = person(RED, WHITE, bg=(40, 140, 40))
++        b = person(RED, WHITE, bg=(200, 200, 30))                          # only the side background differs
++        self.assertGreater(A.lab_similarity(A.lab_descriptor(a, c), A.lab_descriptor(b, c)), 0.9)
++
++    def test_neutral_kits_robust_to_small_tint(self):
++        # Neutral colours sit mid-range in a/b; a 2-level white-balance shift must not flip them to "incompatible".
++        c = cfg()
++        for base in ((230, 230, 230), (128, 128, 128), (20, 20, 20)):
++            for tint in ((2, 0, -2), (-2, 0, 2), (0, 2, 0), (2, 2, 2)):
++                with self.subTest(base=base, tint=tint):
++                    a = person(base, base, noise=0)
++                    b = person(tuple(int(np.clip(v + t, 0, 255)) for v, t in zip(base, tint)),
++                               tuple(int(np.clip(v + t, 0, 255)) for v, t in zip(base, tint)), noise=0)
++                    s = A.lab_similarity(A.lab_descriptor(a, c), A.lab_descriptor(b, c))
++                    self.assertGreaterEqual(s, 0.8)
++
++    def test_too_few_pixels_gives_no_descriptor(self):
++        c = cfg()
++        tiny = person(RED, WHITE, h=24, w=10)
++        self.assertIsNone(A.lab_descriptor(tiny, c))
++
++    def test_missing_and_bad_descriptor(self):
++        self.assertIsNone(A.lab_similarity(None, A.lab_descriptor(TARGET, cfg())))
++        self.assertIsNone(A.lab_descriptor(np.zeros((0, 0, 3), np.uint8), cfg()))
++        d = A.lab_descriptor(TARGET, cfg())
++        with self.assertRaises(A.AppearanceError):
++            A.lab_similarity(d, np.full_like(d, np.nan))
++
++
++class TestEmbeddingSimilarity(unittest.TestCase):
++    def test_bounds(self):
++        u = A.l2_normalise([1, 0, 0])
++        self.assertEqual(A.embedding_similarity(u, u, TOL), 1.0)
++        self.assertEqual(A.embedding_similarity(u, A.l2_normalise([-1, 0, 0]), TOL), 0.0)   # negative cosine -> 0
++        self.assertAlmostEqual(A.embedding_similarity(u, A.l2_normalise([1, 1, 0]), TOL), math.sqrt(0.5))
++        self.assertIsNone(A.embedding_similarity(None, u, TOL))
++
++    def test_bad_vectors_raise(self):
++        u = A.l2_normalise([1, 0])
++        for a, b in ((u, A.l2_normalise([1, 0, 0])), (np.array([2.0, 0.0]), np.array([2.0, 0.0])),
++                     (np.array([np.nan, 1.0]), u)):
++            with self.subTest(a=a, b=b):
++                with self.assertRaises(A.AppearanceError):
++                    A.embedding_similarity(a, b, TOL)
++        for bad in ([0, 0, 0], [np.nan, 1], [np.inf, 0]):
++            with self.assertRaises(A.AppearanceError):
++                A.l2_normalise(bad)
++
++
++class TestIdentitySupport(unittest.TestCase):
++    def test_composite_formula(self):
++        c = cfg()
++        s = A.compare(feat(TARGET, [1, 0]), feat(TARGET, [1, 0]), c)
++        self.assertAlmostEqual(s.composite, c.get("composite_weight_lab") * s.lab
++                               + c.get("composite_weight_embedding") * s.embedding)
++        self.assertTrue(0.0 <= s.composite <= 1.0)
++
++    def test_colour_alone_cannot_establish_identity(self):
++        # Identical colour and a composite above its floor: only the embedding floor stands in the way.
++        c = cfg()
++        s = sim(1.0, math.nextafter(c.get("embedding_floor"), 0.0), c)
++        self.assertGreaterEqual(s.composite, c.get("appearance_floor"))     # precondition: composite would pass
++        ok, why = A.identity_support(s, c)
++        self.assertFalse(ok)
++        self.assertEqual(why, ("EMBEDDING_BELOW_FLOOR",))
++
++    def test_embedding_alone_cannot_establish_identity(self):
++        c = cfg()
++        s = sim(math.nextafter(c.get("lab_floor"), 0.0), 1.0, c)
++        ok, why = A.identity_support(s, c)
++        self.assertFalse(ok)
++        self.assertIn("LAB_INCOMPATIBLE", why)
++
++    def test_exact_floors_supported(self):
++        c = cfg()
++        lab, emb = 1.0, c.get("embedding_floor")
++        s = sim(lab, emb, c)
++        if s.composite < c.get("appearance_floor"):
++            self.skipTest("floors chosen so that the composite floor binds first")
++        self.assertTrue(A.identity_support(s, c)[0])
++        s2 = A.AppearanceSimilarity(lab=c.get("lab_floor"), embedding=1.0, composite=c.get("appearance_floor"))
++        self.assertTrue(A.identity_support(s2, c)[0])
++        s3 = A.AppearanceSimilarity(lab=1.0, embedding=1.0, composite=math.nextafter(c.get("appearance_floor"), 0.0))
++        self.assertEqual(A.identity_support(s3, c)[1], ("COMPOSITE_BELOW_FLOOR",))
++
++    def test_same_kit_different_person_not_supported(self):
++        c = cfg()
++        s = A.compare(feat(TARGET, [1, 0, 0]), feat(PERSON_A, [0.2, 1, 0]), c)
++        self.assertGreater(s.lab, 0.8)
++        ok, why = A.identity_support(s, c)
++        self.assertFalse(ok)
++        self.assertIn("EMBEDDING_BELOW_FLOOR", why)
++
++    def test_missing_or_non_finite_never_supports(self):
++        c = cfg()
++        nan = float("nan")
++        for s in (A.AppearanceSimilarity(nan, nan, nan), A.AppearanceSimilarity(1.0, nan, 1.0),
++                  A.AppearanceSimilarity(nan, 1.0, 1.0), A.AppearanceSimilarity(1.0, 1.0, nan),
++                  A.AppearanceSimilarity(1.0, None, None), A.AppearanceSimilarity(None, 1.0, None)):
++            with self.subTest(s=s):
++                self.assertFalse(A.identity_support(s, c)[0])
++
++    def test_contaminated_crop_never_supports(self):
++        c = cfg()
++        for flag in A.CONTAMINATION_FLAGS:
++            ok, why = A.identity_support(sim(1.0, 1.0, c), c, flags=(flag,))
++            self.assertFalse(ok)
++            self.assertIn(f"CROP_{flag}", why)
++
++    def test_both_cues_agree_supported(self):
++        c = cfg()
++        ok, _ = A.identity_support(A.compare(feat(TARGET, [1, 0.05]), feat(PERSON_A, [1, 0.0]), c), c)
++        self.assertTrue(ok)        # appearance is CONSISTENT; contrast against competitors is decided later
++
++
++class TestExtractor(unittest.TestCase):
++    def setUp(self):
++        self.img = np.zeros((720, 1280, 3), np.uint8)
++        self.img[100:196, 100:148] = TARGET
++
++    def test_invalid_crop_gives_no_features(self):
++        f = A.AppearanceExtractor(cfg(), A.ScriptedEmbedding([[1, 0]])).extract(self.img, (10, 10, 18, 25), others=[])
++        self.assertFalse(f.usable)
++        self.assertIsNone(f.lab)
++        self.assertIsNone(f.embedding)
++
++    def test_no_embedder_flagged_not_usable(self):
++        f = A.AppearanceExtractor(cfg(), None).extract(self.img, (100, 100, 148, 196), others=[])
++        self.assertIn(A.EMBEDDING_UNAVAILABLE, f.quality.flags)
++        self.assertFalse(f.usable)
++
++    def test_valid_crop(self):
++        f = A.AppearanceExtractor(cfg(), A.ScriptedEmbedding([[1, 0]])).extract(self.img, (100, 100, 148, 196),
++                                                                                 others=[])
++        self.assertTrue(f.usable)
++
++    def test_lab_missing_not_usable(self):
++        f = A.AppearanceFeature(lab=None, embedding=A.l2_normalise([1, 0]), quality=GOOD_Q)
++        self.assertFalse(f.usable)
++
++    def test_broken_backend_fails_closed(self):
++        class Broken(A.EmbeddingBackend):
++            def embed(self, crop):
++                return np.array([2.0, 0.0])           # not unit length
++            def provenance(self):
++                return {}
++        with self.assertRaises(A.AppearanceError):
++            A.AppearanceExtractor(cfg(), Broken()).extract(self.img, (100, 100, 148, 196), others=[])
++
++
++# Embedding vectors for bank tests: similar enough to pass the bank's self-consistency check, distinct enough to be
++# novel. ANCHOR-B and ANCHOR-C cosines are ~0.89; D is close to B (cos ~0.94) but not redundant (< 0.98).
++V_ANCHOR, V_B, V_C, V_D = [1, 0, 0, 0], [1, 0.5, 0, 0], [1, 0, 0.5, 0], [1, 0.45, 0.25, 0]
++
++
++class TestBank(unittest.TestCase):
++    CTX = A.BankUpdateContext(identity_trusted=True)
++
++    def test_trusted_observation_accepted(self):
++        bank = A.AppearanceBank(cfg())
++        self.assertEqual(bank.add(feat(TARGET, V_ANCHOR), self.CTX)[0], A.ACCEPTED)
++        self.assertEqual(len(bank), 1)
++
++    def test_context_refusals(self):
++        c = cfg()
++        cases = [
++            (A.BankUpdateContext(identity_trusted=False), "IDENTITY_NOT_TRUSTED"),
++            (A.BankUpdateContext(identity_trusted=True, merged_suspected=True), A.MERGED_SUSPECTED),
++            (A.BankUpdateContext(identity_trusted=True, max_competitor_iou=math.nextafter(c.get("bank_contact_iou"), 1)),
++             "CONTESTED_BY_OTHER_PERSON"),
++            (A.BankUpdateContext(identity_trusted=True, max_competitor_iou=float("nan")), "CONTESTED_BY_OTHER_PERSON"),
++            (A.BankUpdateContext(identity_trusted=True,
++                                 seconds_since_reacquisition=math.nextafter(c.get("post_reacq_quarantine_s"), 0)),
++             "POST_REACQUISITION_QUARANTINE"),
++            (A.BankUpdateContext(identity_trusted=True, seconds_since_reacquisition=float("nan")),
++             "POST_REACQUISITION_QUARANTINE"),
++            (A.BankUpdateContext(identity_trusted=True, seconds_since_reacquisition=-1.0),
++             "POST_REACQUISITION_QUARANTINE"),
++        ]
++        for ctx, reason in cases:
++            with self.subTest(reason=reason, ctx=ctx):
++                bank = A.AppearanceBank(c)
++                status, why = bank.add(feat(TARGET, V_ANCHOR), ctx)
++                self.assertEqual(status, A.REFUSED)
++                self.assertIn(reason, why)
++                self.assertEqual(len(bank), 0)
++
++    def test_context_boundaries_accepted(self):
++        c = cfg()
++        for ctx in (A.BankUpdateContext(identity_trusted=True, max_competitor_iou=c.get("bank_contact_iou")),
++                    A.BankUpdateContext(identity_trusted=True,
++                                        seconds_since_reacquisition=c.get("post_reacq_quarantine_s"))):
++            with self.subTest(ctx=ctx):
++                self.assertEqual(A.AppearanceBank(c).add(feat(TARGET, V_ANCHOR), ctx)[0], A.ACCEPTED)
++
++    def test_poor_or_partial_crops_refused(self):
++        c = cfg()
++        cases = [
++            (A.CropQuality(30.0, 1.0, 0.0, 0.47, True, ()), "LOW_QUALITY"),
++            (A.CropQuality(96.0, 1.0, 0.4, 0.6, True, (A.OCCLUDED_BY_OTHER,)), A.OCCLUDED_BY_OTHER),
++            (A.CropQuality(96.0, 1.0, 0.2, 0.8, True, ()), "PARTLY_COVERED_BY_OTHER"),
++            (A.CropQuality(96.0, 1.0, 0.0, 1.0, True, (A.MERGED_SUSPECTED,)), A.MERGED_SUSPECTED),
++            (A.CropQuality(96.0, 1.0, 0.0, 1.0, True, (A.TOUCHES_IMAGE_EDGE,)), A.TOUCHES_IMAGE_EDGE),
++            (A.CropQuality(10.0, 1.0, 0.0, 0.15, False, (A.LOW_RESOLUTION,)), "FEATURE_NOT_USABLE"),
++            (A.CropQuality(96.0, 1.0, 0.0, float("nan"), True, ()), "NON_FINITE_INPUT"),
++        ]
++        for q, reason in cases:
++            with self.subTest(reason):
++                bank = A.AppearanceBank(c)
++                st, why = bank.add(feat(TARGET, V_ANCHOR, quality=q), self.CTX)
++                self.assertEqual(st, A.REFUSED)
++                self.assertIn(reason, why)
++                self.assertEqual(len(bank), 0)
++
++    def test_partial_body_at_image_edge_refused_end_to_end(self):
++        img = np.zeros((720, 1280, 3), np.uint8)
++        img[624:720, 100:148] = TARGET
++        f = A.AppearanceExtractor(cfg(), A.ScriptedEmbedding([V_ANCHOR])).extract(img, (100, 640, 148, 720), others=[])
++        st, why = A.AppearanceBank(cfg()).add(f, self.CTX)
++        self.assertEqual(st, A.REFUSED)
++        self.assertIn(A.TOUCHES_IMAGE_EDGE, why)
++
++    def test_inconsistent_sample_refused(self):
++        # A "trusted" offer that does not look like the bank (other kit) is refused: no silent contamination.
++        bank = A.AppearanceBank(cfg())
++        bank.add(feat(TARGET, V_ANCHOR), self.CTX)
++        st, why = bank.add(feat(PERSON_B, V_B), self.CTX)
++        self.assertEqual(st, A.REFUSED)
++        self.assertIn("BANK_SELF_INCONSISTENT", why)
++        self.assertEqual(len(bank), 1)
++
++    def test_redundant_sample_not_stored(self):
++        bank = A.AppearanceBank(cfg())
++        bank.add(feat(TARGET, V_ANCHOR), self.CTX)
++        self.assertEqual(bank.add(feat(TARGET, [1, 0.001, 0, 0]), self.CTX)[0], A.REDUNDANT)
++        self.assertEqual(len(bank), 1)
++
++    def test_capacity_eviction_choice(self):
++        bank = A.AppearanceBank(cfg(), capacity=3)
++        for v in (V_ANCHOR, V_B, V_C):
++            self.assertEqual(bank.add(feat(TARGET, v), self.CTX)[0], A.ACCEPTED)
++        st, _ = bank.add(feat(TARGET, V_D), self.CTX)
++        self.assertIn(st, (A.ACCEPTED, A.NOT_STORED_CAPACITY))
++        stored = [tuple(np.round(s.embedding, 6)) for s in bank.samples]
++        norm = lambda v: tuple(np.round(A.l2_normalise(v), 6))          # noqa: E731
++        self.assertEqual(len(bank), 3)
++        self.assertEqual(stored[0], norm(V_ANCHOR))                      # anchor kept
++        self.assertIn(norm(V_C), stored)                                 # the distinct view kept
++        self.assertEqual(sum(norm(v) in stored for v in (V_B, V_D)), 1)  # exactly one of the near-duplicates kept
++
++    def test_capacity_one_reports_not_stored(self):
++        bank = A.AppearanceBank(cfg(), capacity=1)
++        bank.add(feat(TARGET, V_ANCHOR), self.CTX)
++        self.assertEqual(bank.add(feat(TARGET, V_B), self.CTX)[0], A.NOT_STORED_CAPACITY)
++        self.assertEqual(len(bank), 1)
++
++    def test_invalid_capacity(self):
++        for cap in (0, -1, 1.5, True):
++            with self.assertRaises(A.AppearanceError):
++                A.AppearanceBank(cfg(), capacity=cap)
++
++    def test_best_match_ranks_by_composite_from_one_sample(self):
++        c = cfg()
++        bank = A.AppearanceBank(c)
++        x = feat(TARGET, [0.8, 0.6, 0])                 # same colour, embedding cos 0.8 with the query
++        y = feat(PERSON_B, [0.9, math.sqrt(1 - 0.81), 0])   # other colour, embedding cos 0.9
++        bank.samples += [y, x]                          # direct placement: tests ranking only
++        q = feat(TARGET, [1, 0, 0])
++        s, idx = bank.best_match(q)
++        self.assertEqual(idx, 1)                        # x wins on composite although y wins on embedding
++        self.assertEqual(s, A.compare(q, x, c))         # cue values from that ONE sample
++        self.assertEqual(bank.best_match(A.AppearanceFeature(None, None, GOOD_Q)), (None, None))
++
++    def test_competitor_bank_needs_no_trust_but_still_quality(self):
++        bank = A.AppearanceBank(cfg(), require_trust=False)
++        self.assertEqual(bank.add(feat(TARGET, V_ANCHOR), A.BankUpdateContext(identity_trusted=False))[0], A.ACCEPTED)
++        merged = A.CropQuality(96.0, 1.0, 0.0, 1.0, True, (A.MERGED_SUSPECTED,))
++        self.assertEqual(bank.add(feat(TARGET, V_B, quality=merged),
++                                  A.BankUpdateContext(identity_trusted=False))[0], A.REFUSED)
++
++
++class TestEmbeddingPreprocessNoModel(unittest.TestCase):
++    """Preprocessing and pooling are pure functions: tested without the model file."""
++
++    def test_geometry_and_padding(self):
++        c = cfg()
++        x = E.preprocess_crop(np.full((96, 96, 3), 128, np.uint8), c)   # square crop into a 224 x 112 input
++        hh, ww = c.get("embedding_input_hw")
++        self.assertEqual(x.shape, (1, 3, hh, ww))
++        self.assertEqual(x.dtype, np.float32)
++        pad = (hh - ww) // 2
++        self.assertTrue(np.allclose(x[0, :, :pad, :], 0.0, atol=0.01))  # padding = mean colour -> ~0 after norm
++        self.assertTrue(np.allclose(x[0, :, -pad:, :], 0.0, atol=0.01))
++        self.assertFalse(np.allclose(x[0, :, pad:hh - pad, :], 0.0, atol=0.01))
++
++    def test_channel_order_and_normalisation(self):
++        c = cfg()
++        blue_bgr = np.zeros((224, 112, 3), np.uint8)
++        blue_bgr[..., 0] = 255                                           # pure blue in BGR
++        x = E.preprocess_crop(blue_bgr, c)
++        mean, std = np.array(c.get("embedding_mean_rgb")), np.array(c.get("embedding_std_rgb"))
++        want = (np.array([0.0, 0.0, 1.0]) - mean) / std                  # RGB order: blue is the last channel
++        np.testing.assert_allclose(x[0, :, 112, 56], want, atol=1e-5)
++
++    def test_extreme_shapes_and_bad_crops(self):
++        c = cfg()
++        for shape in ((20, 400, 3), (2000, 5, 3), (1, 1, 3)):
++            with self.subTest(shape=shape):
++                self.assertTrue(np.all(np.isfinite(E.preprocess_crop(np.full(shape, 90, np.uint8), c))))
++        for bad in (np.zeros((0, 10, 3), np.uint8), np.zeros((10, 0, 3), np.uint8), np.zeros((10, 10), np.uint8),
++                    np.zeros((10, 10, 3), np.float32), np.zeros((10, 10, 4), np.uint8), None):
++            with self.subTest(bad=None if bad is None else bad.shape):
++                with self.assertRaises(A.AppearanceError):
++                    E.preprocess_crop(bad, c)
++
++    def test_pooling(self):
++        rng = np.random.default_rng(0)
++        cls, pm = rng.normal(size=384), rng.normal(size=384)
++        np.testing.assert_allclose(E.pool(cls, pm, "cls"), A.l2_normalise(cls))
++        v = E.pool(cls, pm, "cls_patchmean")
++        self.assertEqual(v.shape, (768,))
++        np.testing.assert_allclose(v[:384], A.l2_normalise(cls) / math.sqrt(2))
++        np.testing.assert_allclose(v[384:], A.l2_normalise(pm) / math.sqrt(2))
++        with self.assertRaises(A.AppearanceError):
++            E.pool(cls, pm, "mean")
++
++
++@unittest.skipUnless(HAVE_EMB or REQUIRE_MODELS, "models/dinov2_vits14_cls_patchmean_224x112.onnx not present")
++class TestDinov2Backend(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        if not HAVE_EMB:
++            raise AssertionError("SPANA_REQUIRE_MODELS=1 but the pinned embedding model is missing")
++        cls.tmp = tempfile.mkdtemp(prefix="rb_emb_")
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def test_pinned_hash(self):
++        self.assertEqual(hashlib.sha256(open(EMB_MODEL, "rb").read()).hexdigest(),
++                         cfg().get("embedding_model_sha256"))
++
++    def test_refusals(self):
++        with self.assertRaises(A.EmbeddingModelError):
++            E.Dinov2OnnxEmbedding(cfg(embedding_model_sha256="0" * 64))
++        with self.assertRaises(A.EmbeddingModelError):
++            E.Dinov2OnnxEmbedding(cfg(embedding_model_file=os.path.join(self.tmp, "absent.onnx")))
++        bad = os.path.join(self.tmp, "bad.onnx")
++        with open(bad, "wb") as f:
++            f.write(b"garbage" * 1000)
++        h = hashlib.sha256(open(bad, "rb").read()).hexdigest()
++        with self.assertRaises(A.EmbeddingModelError):
++            E.Dinov2OnnxEmbedding(cfg(embedding_model_file=bad, embedding_model_sha256=h))
++
++    def test_input_size_mismatch_refused(self):
++        with self.assertRaises(A.EmbeddingModelError):
++            E.Dinov2OnnxEmbedding(cfg(embedding_input_hw=(224, 224)))
++
++    def test_deterministic_and_normalised(self):
++        e = E.Dinov2OnnxEmbedding(cfg())
++        a, b = e.embed(TARGET), e.embed(TARGET.copy())
++        np.testing.assert_array_equal(a, b)
++        self.assertEqual(a.shape, (e.dim,))
++        self.assertAlmostEqual(float(np.linalg.norm(a)), 1.0, places=9)
++        self.assertEqual(e.dim, 384)
++        np.testing.assert_array_equal(a, E.Dinov2OnnxEmbedding(cfg()).embed(TARGET))   # fresh session, same vector
++
++    def test_outputs_read_by_name_and_pooling(self):
++        e = E.Dinov2OnnxEmbedding(cfg(embedding_pooling="cls_patchmean"))
++        cls, pm = e.raw_outputs(TARGET)
++        self.assertEqual(e.dim, 768)
++        np.testing.assert_allclose(e.embed(TARGET), E.pool(cls, pm, "cls_patchmean"))
++        self.assertFalse(np.allclose(A.l2_normalise(cls), A.l2_normalise(pm)))   # two genuinely different outputs
++
++    def test_people_differ(self):
++        e = E.Dinov2OnnxEmbedding(cfg())
++        s_same = A.embedding_similarity(e.embed(TARGET), e.embed(TARGET), TOL)
++        s_diff = A.embedding_similarity(e.embed(TARGET), e.embed(PERSON_B), TOL)
++        self.assertAlmostEqual(s_same, 1.0, places=12)
++        self.assertLess(s_diff, 1.0)
++
++    def test_provenance_says_generic(self):
++        p = E.Dinov2OnnxEmbedding(cfg()).provenance()
++        self.assertIn("not a person/football re-identification model", p["note"])
++        self.assertEqual(p["model_sha256"], cfg().get("embedding_model_sha256"))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_detector.py b/tests_rb/test_detector.py
+index c774c3a..ddb19f9 100644
+--- a/tests_rb/test_detector.py
++++ b/tests_rb/test_detector.py
+@@ -25,6 +25,7 @@ from player_tracker_rb.config import TrackerConfig
+ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ MODEL = os.path.join(ROOT, "models", "yolox_s.onnx")
+ HAVE_MODEL = os.path.isfile(MODEL)
++REQUIRE_MODELS = os.environ.get("SPANA_REQUIRE_MODELS") == "1"   # missing model -> failure, not skip
+ 
+ 
+ def cfg(**over):
+@@ -189,7 +190,7 @@ class TestNoBackendLeakage(unittest.TestCase):
+             mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+             mods |= {(n.module or "").split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
+             with self.subTest(f):
+-                if f != "detector_yolox.py":
++                if f not in ("detector_yolox.py", "embedding_dinov2.py"):     # the two model backends only
+                     self.assertNotIn("onnxruntime", mods)
+ 
+     def test_generic_interface_names_no_backend(self):
+@@ -197,10 +198,12 @@ class TestNoBackendLeakage(unittest.TestCase):
+         self.assertNotIn("yolox", src)
+ 
+ 
+-@unittest.skipUnless(HAVE_MODEL, "models/yolox_s.onnx not present")
++@unittest.skipUnless(HAVE_MODEL or REQUIRE_MODELS, "models/yolox_s.onnx not present")
+ class TestYoloxBackend(unittest.TestCase):
+     @classmethod
+     def setUpClass(cls):
++        if not HAVE_MODEL:
++            raise AssertionError("SPANA_REQUIRE_MODELS=1 but the pinned detector model is missing")
+         from player_tracker_rb import detector_yolox as Y
+         cls.Y = Y
+         cls.tmp = tempfile.mkdtemp(prefix="rb_det_")
+diff --git a/tools_rb/appearance_eval.py b/tools_rb/appearance_eval.py
+new file mode 100644
+index 0000000..c1d0e7f
+--- /dev/null
++++ b/tools_rb/appearance_eval.py
+@@ -0,0 +1,308 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-D instruction (GOLD only for appearance analysis, not tracker or event success); R1 approval §4
++#                 (DINOv2 usefulness must be measured); R1/R1C/detector_eval (person candidates from R1-C)
++"""Appearance-cue analysis on a development clip: do the cues tell the same person from different people?
++
++No tracker, identity label, event or fixture semantics are used. From the fixture only video_sha256 and seed_frame
++are read (to open the same frames the R1-C detector evaluation used). Person boxes come from that evaluation's saved
++candidates (default setting s_grid2x2), so no detection is re-run here.
++
++How pairs are built (physics, not model output; documented weak labels, NOT human-verified):
++  * A candidate is ISOLATED if score >= 0.5, height >= 40 px, and no other candidate intersects its box expanded by
++    ISOLATION_PAD x its height on every side.
++  * Chains: an isolated candidate in frame f links to an isolated candidate in frame f+1 when their IoU >= 0.6 and the
++    match is unique both ways (no other candidate with IoU >= 0.3 on either side). One step is 1/fps s, and with no
++    other person nearby a different person cannot take that place. A chain stops at the first frame without such a link.
++  * SAME-person pairs: two samples of one chain at least SAME_GAP_S seconds apart (appearance changes with pose/time).
++  * DIFFERENT-person pairs: two isolated candidates of different chains in the same frame (two bodies at once).
++  * LAB-CONFUSABLE different pairs (a same-kit proxy): different-person pairs whose LAB similarity is >= LAB_CONFUSABLE
++    (0.6, declared constant): their colour distributions overlap at least 60%, so colour cannot separate them.
++    A contact sheet of these pairs is written next to the report so a human can check they are similar-kit people.
++Samples are taken every SAMPLE_STEP frames (deterministic).
++
++Reported per cue (LAB, embedding with each pooling, composite): same/different distributions, AUC (probability that a
++same pair scores higher than a different pair), and how often identity_support() holds for same, different and
++LAB-confusable pairs. Crop-quality flags and bank refusals are counted over all candidates.
++
++Pooling selection rule (declared before running): the pooling with the higher embedding AUC on same vs LAB-confusable
++different pairs; if the two are within 0.01, "cls" (the simpler one).
++
++Floor calibration rule (declared before the authoritative run): embedding_floor and appearance_floor (composite) =
++the 5th percentile of same-person similarity for the selected pooling, rounded DOWN to a multiple of 0.05. lab_floor is
++not calibrated: colour only vetoes obviously incompatible kits (0.3). Support rates are reported under the configured
++floors and under the calibrated floors. The calibration is in-sample on weak labels from one clip: it gives the floors a
++meaning on DINOv2's scale, but it is UNVALIDATED until R2.
++
++Usage: python3 tools_rb/appearance_eval.py VIDEO FIXTURE_JSON DETECTOR_EVAL_DIR SETTING OUT_JSON
++"""
++import json
++import os
++import sys
++
++import cv2
++import numpy as np
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from player_tracker_rb import appearance as A  # noqa: E402
++from player_tracker_rb import detector as D  # noqa: E402
++from player_tracker_rb import output_schema as S  # noqa: E402
++from player_tracker_rb.config import TrackerConfig  # noqa: E402
++from player_tracker_rb.embedding_dinov2 import Dinov2OnnxEmbedding, pool  # noqa: E402
++from player_tracker_rb.video_io import SequentialVideoReader  # noqa: E402
++
++MIN_SCORE = 0.5
++MIN_HEIGHT = 40.0
++ISOLATION_PAD = 0.25
++LINK_IOU = 0.6
++AMBIG_IOU = 0.3
++SAME_GAP_S = 0.5
++SAMPLE_STEP = 5
++POOLINGS = ("cls", "cls_patchmean")
++CALIBRATION_PERCENTILE = 5
++CALIBRATION_STEP = 0.05
++LAB_CONFUSABLE = 0.6
++SHEET_PAIRS = 16
++
++
++def load_candidates(det_dir, setting):
++    files = sorted(f for f in os.listdir(det_dir) if f.startswith(f"raw_{setting}__") and f.endswith(".json"))
++    frames = [fr for f in files for fr in json.load(open(os.path.join(det_dir, f)))["frames"]]
++    if [f["rel"] for f in frames] != list(range(len(frames))):
++        raise SystemExit("detector candidates do not cover frames 0..N-1 exactly once")
++    return {f["rel"]: np.array(f["cands"], float).reshape(-1, 6) for f in frames}
++
++
++def isolated_mask(c):
++    n = c.shape[0]
++    ok = (c[:, 4] >= MIN_SCORE) & ((c[:, 3] - c[:, 1]) >= MIN_HEIGHT)
++    for i in range(n):
++        if not ok[i]:
++            continue
++        pad = ISOLATION_PAD * (c[i, 3] - c[i, 1])
++        e = c[i, :4] + np.array([-pad, -pad, pad, pad])
++        for j in range(n):
++            if j != i and not (c[j, 2] <= e[0] or c[j, 0] >= e[2] or c[j, 3] <= e[1] or c[j, 1] >= e[3]):
++                ok[i] = False
++                break
++    return ok
++
++
++def build_chains(cands):
++    rels = sorted(cands)
++    iso = {r: isolated_mask(cands[r]) for r in rels}
++    chain_of = {}
++    chains = []
++    for r in rels:
++        c = cands[r]
++        for i in np.nonzero(iso[r])[0]:
++            key = (r, int(i))
++            if key in chain_of:
++                continue
++            chain_of[key] = len(chains)
++            chains.append([key])
++        if r + 1 not in cands:
++            continue
++        n = cands[r + 1]
++        if n.shape[0] == 0 or c.shape[0] == 0:
++            continue
++        iou = D.box_iou_matrix(c[:, :4], n[:, :4])
++        for i in np.nonzero(iso[r])[0]:
++            j = int(np.argmax(iou[i]))
++            if iou[i, j] < LINK_IOU or not iso[r + 1][j]:
++                continue
++            if (iou[i] >= AMBIG_IOU).sum() != 1 or (iou[:, j] >= AMBIG_IOU).sum() != 1:
++                continue
++            if (r + 1, j) in chain_of:
++                continue
++            k = chain_of[(r, int(i))]
++            chain_of[(r + 1, j)] = k
++            chains[k].append((r + 1, j))
++    return chains, chain_of, iso
++
++
++def auc(same, diff):
++    same, diff = np.asarray(same, float), np.asarray(diff, float)
++    if same.size == 0 or diff.size == 0:
++        return None
++    gt = (same[:, None] > diff[None, :]).sum() + 0.5 * (same[:, None] == diff[None, :]).sum()
++    return float(gt / (same.size * diff.size))
++
++
++def stats(x):
++    x = np.asarray(x, float)
++    if x.size == 0:
++        return None
++    return {"n": int(x.size), "mean": round(float(x.mean()), 4), "p10": round(float(np.percentile(x, 10)), 4),
++            "median": round(float(np.median(x)), 4), "p90": round(float(np.percentile(x, 90)), 4)}
++
++
++def main(video, fx_json, det_dir, setting, out_json):
++    fxall = json.load(open(fx_json))
++    fx = {k: fxall[k] for k in ("video_sha256", "seed_frame")}
++    base = TrackerConfig.default()
++    emb = Dinov2OnnxEmbedding(TrackerConfig.with_overrides({"embedding_pooling": "cls"}))
++    cands = load_candidates(det_dir, setting)
++    chains, chain_of, iso = build_chains(cands)
++    sampled = {(r, i) for ch in chains for (r, i) in ch if r % SAMPLE_STEP == 0}
++    feats = {}                                          # (rel, idx) -> dict of features per pooling
++    crops = {}                                          # (rel, idx) -> small crop for the contact sheet
++    quality_flags, bank_refusals, n_cands = {}, {}, 0
++    probe_bank = A.AppearanceBank(base, require_trust=True)
++    fps = None
++    with SequentialVideoReader(video, fx["seed_frame"], base, expected_sha256=fx["video_sha256"]) as reader:
++        fps = reader.info.fps
++        for fr in [reader.seed] + list(reader):
++            r = fr.rel_frame
++            c = cands.get(r)
++            if c is None or c.shape[0] == 0:
++                continue
++            h, w = fr.image.shape[:2]
++            for i in range(c.shape[0]):
++                n_cands += 1
++                others = [c[j, :4] for j in range(c.shape[0]) if j != i]
++                q = A.assess_crop(c[i, :4], w, h, base, others=others)
++                for f in q.flags:
++                    quality_flags[f] = quality_flags.get(f, 0) + 1
++                if (r, i) not in sampled and r % SAMPLE_STEP != 0:
++                    continue
++                crop = A.crop_image(fr.image, c[i, :4])
++                lab = A.lab_descriptor(crop, base) if (crop is not None and q.valid) else None
++                vec = {}
++                if crop is not None and q.valid:
++                    cls, pm = emb.raw_outputs(crop)
++                    vec["cls"] = pool(cls, pm, "cls")
++                    vec["cls_patchmean"] = pool(cls, pm, "cls_patchmean")
++                # Bank-refusal behaviour on real crops, offered as if trusted (to isolate the quality rules).
++                fq = A.AppearanceFeature(lab=lab, embedding=vec.get("cls"), quality=q)
++                for x in probe_bank.update_refusals(fq, A.BankUpdateContext(identity_trusted=True)):
++                    bank_refusals[x] = bank_refusals.get(x, 0) + 1
++                if (r, i) in sampled and lab is not None and vec:
++                    feats[(r, i)] = {"lab": lab, "q": q, **vec}
++                    crops[(r, i)] = cv2.resize(crop, (48, 96), interpolation=cv2.INTER_AREA)
++    gap = int(np.ceil(SAME_GAP_S * fps))
++    same_pairs, diff_pairs = [], []
++    for k, ch in enumerate(chains):
++        pts = [p for p in ch if p in feats]
++        for a in range(len(pts)):
++            for b in range(a + 1, len(pts)):
++                if pts[b][0] - pts[a][0] >= gap:
++                    same_pairs.append((pts[a], pts[b]))
++    by_frame = {}
++    for p in feats:
++        by_frame.setdefault(p[0], []).append(p)
++    for r, ps in by_frame.items():
++        for a in range(len(ps)):
++            for b in range(a + 1, len(ps)):
++                if chain_of.get(ps[a]) != chain_of.get(ps[b]):
++                    diff_pairs.append((ps[a], ps[b]))
++
++    def scores(pairs, pooling, extra=None):
++        lab, embs, comp, support = [], [], [], []
++        cfg = TrackerConfig.with_overrides(dict({"embedding_pooling": pooling}, **(extra or {})))
++        for a, b in pairs:
++            fa = A.AppearanceFeature(lab=feats[a]["lab"], embedding=feats[a][pooling], quality=feats[a]["q"])
++            fb = A.AppearanceFeature(lab=feats[b]["lab"], embedding=feats[b][pooling], quality=feats[b]["q"])
++            s = A.compare(fa, fb, cfg)
++            lab.append(s.lab)
++            embs.append(s.embedding)
++            comp.append(s.composite)
++            support.append(A.identity_support(s, cfg)[0])
++        return np.array(lab), np.array(embs), np.array(comp), np.array(support, bool)
++
++    res = {}
++    same_lab_median = None
++    for pooling in POOLINGS:
++        sl, se, sc, ss = scores(same_pairs, pooling)
++        dl, de, dc, ds = scores(diff_pairs, pooling)
++        same_lab_median = float(np.median(sl)) if sl.size else None
++        conf = dl >= LAB_CONFUSABLE
++        res[pooling] = {
++            "lab": {"same": stats(sl), "different": stats(dl), "auc_same_vs_different": auc(sl, dl)},
++            "embedding": {"same": stats(se), "different": stats(de), "lab_confusable_different": stats(de[conf]),
++                          "auc_same_vs_different": auc(se, de), "auc_same_vs_lab_confusable": auc(se, de[conf])},
++            "composite": {"same": stats(sc), "different": stats(dc), "auc_same_vs_different": auc(sc, dc),
++                          "auc_same_vs_lab_confusable": auc(sc, dc[conf])},
++            "lab_auc_same_vs_lab_confusable": auc(sl, dl[conf]),
++            "identity_support_rate": {
++                "same": round(float(ss.mean()), 4) if ss.size else None,
++                "different": round(float(ds.mean()), 4) if ds.size else None,
++                "lab_confusable_different": round(float(ds[conf].mean()), 4) if conf.sum() else None},
++            "n_lab_confusable_different": int(conf.sum()),
++        }
++    a_cls = res["cls"]["embedding"]["auc_same_vs_lab_confusable"] or 0.0
++    a_cpm = res["cls_patchmean"]["embedding"]["auc_same_vs_lab_confusable"] or 0.0
++    selected = "cls_patchmean" if a_cpm > a_cls + 0.01 else "cls"
++    # Floor calibration (selected pooling; rule in the module docstring).
++    sl, se, sc, _ = scores(same_pairs, selected)
++
++    def floor_step(x):
++        return float(np.floor(np.percentile(x, CALIBRATION_PERCENTILE) / CALIBRATION_STEP) * CALIBRATION_STEP)
++
++    calibrated = {"embedding_floor": round(floor_step(se), 2), "appearance_floor": round(floor_step(sc), 2)}
++    cal_over = dict(calibrated, reacq_appearance_floor=max(base.get("reacq_appearance_floor"),
++                                                            calibrated["appearance_floor"]))
++    _, _, _, ss2 = scores(same_pairs, selected, cal_over)
++    dl2, _, _, ds2 = scores(diff_pairs, selected, cal_over)
++    conf2 = dl2 >= LAB_CONFUSABLE
++    calibration = {"rule": f"P{CALIBRATION_PERCENTILE} of same-person similarity, floored to {CALIBRATION_STEP}",
++                   "pooling": selected, "same_p5": {"embedding": round(float(np.percentile(se, 5)), 4),
++                                                    "composite": round(float(np.percentile(sc, 5)), 4)},
++                   "calibrated_floors": calibrated,
++                   "identity_support_rate_with_calibrated_floors": {
++                       "same": round(float(ss2.mean()), 4), "different": round(float(ds2.mean()), 4),
++                       "lab_confusable_different": round(float(ds2[conf2].mean()), 4) if conf2.sum() else None}}
++    lengths = [len(ch) for ch in chains]
++    report = {
++        "tool": "tools_rb/appearance_eval.py", "fixture_fields_used": list(fx), "detector_setting": setting,
++        "tracker_identity_or_event_results_used": False, "fps": fps,
++        "pair_construction": {"min_score": MIN_SCORE, "min_height_px": MIN_HEIGHT, "isolation_pad_h": ISOLATION_PAD,
++                              "link_iou": LINK_IOU, "ambiguity_iou": AMBIG_IOU, "same_gap_s": SAME_GAP_S,
++                              "same_gap_frames": gap, "sample_step_frames": SAMPLE_STEP,
++                              "labels": "weak, physics-based (isolated frame-to-frame continuity); NOT human-verified"},
++        "chains": {"n": len(chains), "n_len_ge_gap": int(sum(1 for x in lengths if x > gap)),
++                   "max_len": int(max(lengths)) if lengths else 0},
++        "pairs": {"same": len(same_pairs), "different": len(diff_pairs)},
++        "same_lab_median": same_lab_median, "lab_confusable_min": LAB_CONFUSABLE,
++        "results": res,
++        "pooling_rule": "higher embedding AUC (same vs LAB-confusable different); within 0.01 -> cls",
++        "pooling_selected": selected, "floor_calibration": calibration,
++        "config_floors": {k: base.get(k) for k in ("lab_floor", "embedding_floor", "appearance_floor",
++                                                     "composite_weight_lab", "composite_weight_embedding")},
++        "crop_quality_flags_all_candidates": quality_flags, "candidates_seen": n_cands,
++        "bank_refusals_if_offered_as_trusted": bank_refusals,
++        "embedding_provenance": emb.provenance(),
++    }
++    # Contact sheet: the LAB-confusable different-person pairs (highest LAB first), for human checking.
++    cfg_c = TrackerConfig.with_overrides({"embedding_pooling": "cls"})
++    rows = []
++    for a, b in diff_pairs:
++        fa = A.AppearanceFeature(lab=feats[a]["lab"], embedding=feats[a]["cls"], quality=feats[a]["q"])
++        fb = A.AppearanceFeature(lab=feats[b]["lab"], embedding=feats[b]["cls"], quality=feats[b]["q"])
++        sm = A.compare(fa, fb, cfg_c)
++        if sm.lab >= LAB_CONFUSABLE:
++            rows.append((sm.lab, sm.embedding, A.identity_support(sm, cfg_c)[0], a, b))
++    rows.sort(key=lambda t: (-t[0], t[3], t[4]))
++    tiles = []
++    for lab_s, emb_s, sup, a, b in rows[:SHEET_PAIRS]:
++        t = np.full((120, 110, 3), 255, np.uint8)
++        t[0:96, 4:52] = crops[a]
++        t[0:96, 58:106] = crops[b]
++        cv2.putText(t, f"L{lab_s:.2f} E{emb_s:.2f}", (2, 108), cv2.FONT_HERSHEY_SIMPLEX, 0.33, (0, 0, 0), 1)
++        cv2.putText(t, "SUPPORT" if sup else "no support", (2, 118), cv2.FONT_HERSHEY_SIMPLEX, 0.33,
++                    (0, 0, 200) if sup else (0, 120, 0), 1)
++        tiles.append(t)
++    if tiles:
++        while len(tiles) % 4:
++            tiles.append(np.full_like(tiles[0], 255))
++        sheet = np.vstack([np.hstack(tiles[i:i + 4]) for i in range(0, len(tiles), 4)])
++        cv2.imwrite(os.path.splitext(out_json)[0] + "_lab_confusable_pairs.png", sheet)
++    report["lab_confusable_pairs_listed"] = [{"lab": round(l_, 4), "embedding": round(e_, 4), "support": bool(s_),
++                                             "a": list(a), "b": list(b)} for l_, e_, s_, a, b in rows]
++    with open(out_json, "w") as f:
++        f.write(S.dumps_canonical(report))
++    print(json.dumps(report, indent=1, sort_keys=True))
++
++
++if __name__ == "__main__":
++    main(*sys.argv[1:6])
+diff --git a/tools_rb/export_models.py b/tools_rb/export_models.py
+new file mode 100644
+index 0000000..3a5e6fb
+--- /dev/null
++++ b/tools_rb/export_models.py
+@@ -0,0 +1,142 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1 approval §5 and §7 (export_models.py: pinned inputs, hashed outputs, recorded settings);
++#                 R1/R1D/R1D_MODEL_RECORD.md; facebook/dinov2-small (HF, Apache-2.0) config/preprocessor files
++"""One-off export of the DINOv2 ViT-S/14 backbone to ONNX for player_tracker_rb's generic appearance embedding.
++
++This is BUILD tooling, not tracker code. It needs PyTorch + transformers + onnx (cloud export environment only);
++the tracker itself only ever loads the resulting .onnx file with ONNX Runtime, and only if its SHA-256 matches the
++pinned value in player_tracker_rb/config.py.
++
++Inputs (all pinned by SHA-256; the export refuses to run on any mismatch):
++  * HF facebook/dinov2-small at commit ed25f3a31f01632728cabb09d1542f84ab7b0056: model.safetensors, config.json
++  * official Meta checkpoint dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth (cross-check only:
++    the HF weights must equal the official ones)
++
++Output: dinov2_vits14_cls_patchmean_224x112.onnx
++  input  "pixel_values" float32 [1, 3, 224, 112]  (RGB, ImageNet mean/std normalised; 16 x 8 patches of 14 px)
++  output "cls"        float32 [1, 384]  final-layernorm CLS token
++  output "patch_mean" float32 [1, 384]  mean of the final-layernorm patch tokens
++The 224 x 112 (2:1) input matches the shape of a standing person crop; DINOv2's position embeddings are interpolated
++to the 16 x 8 patch grid inside the exported graph (transformers' own interpolation, bicubic).
++
++Usage: PYTHON_WITH_TORCH tools_rb/export_models.py SRC_DIR OUT_DIR
++  SRC_DIR holds model.safetensors, config.json, dinov2_vits14_pretrain.pth.
++"""
++import hashlib
++import json
++import os
++import platform
++import sys
++
++PINNED = {
++    "model.safetensors": "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1",
++    "config.json": "1809f83e3bdb1609a501a610ad4a742f4fd8ae44d72ca4aa0df52d1f2ac8628d",
++    "dinov2_vits14_pretrain.pth": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
++}
++HF_COMMIT = "ed25f3a31f01632728cabb09d1542f84ab7b0056"
++INPUT_HW = (224, 112)
++OPSET = 17
++OUT_NAME = "dinov2_vits14_cls_patchmean_224x112.onnx"
++
++
++def sha256(path):
++    h = hashlib.sha256()
++    with open(path, "rb") as f:
++        for b in iter(lambda: f.read(1 << 20), b""):
++            h.update(b)
++    return h.hexdigest()
++
++
++def main(src, out_dir):
++    import numpy as np
++    import onnx
++    import onnxruntime as ort
++    import torch
++    import transformers
++    from safetensors.torch import load_file
++    from transformers import Dinov2Config, Dinov2Model
++
++    for name, want in PINNED.items():
++        got = sha256(os.path.join(src, name))
++        if got != want:
++            raise SystemExit(f"{name}: sha256 {got} != pinned {want}")
++    torch.manual_seed(0)
++    cfg = Dinov2Config.from_json_file(os.path.join(src, "config.json"))
++    # transformers' own loader (it maps checkpoint key names across transformers versions).
++    model, info = Dinov2Model.from_pretrained(src, local_files_only=True, output_loading_info=True)
++    bad = {k: v for k, v in info.items() if v and k in ("missing_keys", "unexpected_keys", "mismatched_keys",
++                                                         "error_msgs")}
++    if bad:
++        raise SystemExit(f"loading problems: {bad}")
++    model.eval()
++    raw = load_file(os.path.join(src, "model.safetensors"))
++
++    # Cross-check against the official Meta checkpoint (same weights, different key names).
++    off = torch.load(os.path.join(src, "dinov2_vits14_pretrain.pth"), map_location="cpu", weights_only=True)
++    sd = model.state_dict()
++
++    def qkv(layer):
++        for names in (("q_proj", "k_proj", "v_proj"), ("attention.query", "attention.key", "attention.value")):
++            keys = [f"encoder.layer.{layer}.attention.{n}.weight" for n in names]
++            if all(k in sd for k in keys):
++                return torch.cat([sd[k] for k in keys], 0)
++        raise SystemExit("cannot locate q/k/v weights in the loaded model")
++    pairs = [("cls_token", "embeddings.cls_token"), ("pos_embed", "embeddings.position_embeddings"),
++             ("patch_embed.proj.weight", "embeddings.patch_embeddings.projection.weight"),
++             ("norm.weight", "layernorm.weight"), ("norm.bias", "layernorm.bias"),
++             ("blocks.11.mlp.fc2.weight", "encoder.layer.11.mlp.fc2.weight")]
++    cross = {a: float((off[a] - sd[b]).abs().max()) for a, b in pairs}
++    cross["blocks.0.attn.qkv.weight"] = float((off["blocks.0.attn.qkv.weight"] - qkv(0)).abs().max())
++    cross["blocks.11.attn.qkv.weight"] = float((off["blocks.11.attn.qkv.weight"] - qkv(11)).abs().max())
++    # and the raw safetensors file itself (independent of transformers' renaming)
++    cross["raw_safetensors.cls_token"] = float((off["cls_token"] - raw["embeddings.cls_token"]).abs().max())
++    if max(cross.values()) != 0.0:
++        raise SystemExit(f"HF weights differ from the official checkpoint: {cross}")
++
++    class Wrapper(torch.nn.Module):
++        def __init__(self, m):
++            super().__init__()
++            self.m = m
++
++        def forward(self, pixel_values):
++            h = self.m(pixel_values=pixel_values).last_hidden_state      # final layernorm applied
++            return h[:, 0], h[:, 1:].mean(dim=1)
++
++    w = Wrapper(model).eval()
++    x = torch.randn(1, 3, *INPUT_HW, generator=torch.Generator().manual_seed(1))
++    with torch.no_grad():
++        ref_cls, ref_pm = w(x)
++    os.makedirs(out_dir, exist_ok=True)
++    out = os.path.join(out_dir, OUT_NAME)
++    torch.onnx.export(w, (x,), out, input_names=["pixel_values"], output_names=["cls", "patch_mean"],
++                      opset_version=OPSET, dynamo=False, do_constant_folding=True)
++    onnx.checker.check_model(onnx.load(out))
++    so = ort.SessionOptions()
++    so.intra_op_num_threads = 1
++    so.inter_op_num_threads = 1
++    so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
++    sess = ort.InferenceSession(out, sess_options=so, providers=["CPUExecutionProvider"])
++    o_cls, o_pm = sess.run(None, {"pixel_values": x.numpy()})
++    diff = {"cls": float(np.abs(o_cls - ref_cls.numpy()).max()), "patch_mean": float(np.abs(o_pm - ref_pm.numpy()).max())}
++    if max(diff.values()) > 1e-3:
++        raise SystemExit(f"ONNX output differs from PyTorch: {diff}")
++    rec = {"tool": "tools_rb/export_models.py", "hf_repo": "facebook/dinov2-small", "hf_commit": HF_COMMIT,
++           "inputs_sha256": PINNED, "official_checkpoint_crosscheck_max_abs_diff": cross,
++           "output_file": OUT_NAME, "output_sha256": sha256(out), "output_bytes": os.path.getsize(out),
++           "input": {"name": "pixel_values", "shape": [1, 3, *INPUT_HW], "dtype": "float32",
++                     "convention": "RGB, x/255, (x - mean)/std with ImageNet mean [0.485, 0.456, 0.406] and std "
++                                   "[0.229, 0.224, 0.225] (preprocessor_config.json)"},
++           "outputs": {"cls": [1, cfg.hidden_size], "patch_mean": [1, cfg.hidden_size]},
++           "opset": OPSET, "exporter": "torch.onnx.export (TorchScript, dynamo=False)",
++           "onnx_vs_torch_max_abs_diff": diff,
++           "environment": {"python": platform.python_version(), "torch": torch.__version__,
++                           "transformers": transformers.__version__, "onnx": onnx.__version__,
++                           "onnxruntime": ort.__version__, "numpy": np.__version__, "platform": platform.platform()}}
++    with open(os.path.join(out_dir, "EXPORT_RECORD.json"), "w") as f:
++        json.dump(rec, f, indent=2, sort_keys=True)
++    print(json.dumps(rec, indent=2, sort_keys=True))
++
++
++if __name__ == "__main__":
++    main(sys.argv[1], sys.argv[2])

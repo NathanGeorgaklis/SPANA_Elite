@@ -52,7 +52,7 @@ SPANA engine v2-rebuild, R1. Pre-coding gate, 2026-10-24.
 | Name | DINOv2 ViT-S/14 (`dinov2_vits14`) |
 | Version | Checkpoint from facebookresearch/dinov2. The exact file and commit will be recorded at download. |
 | Source | https://github.com/facebookresearch/dinov2 |
-| SHA-256 | NOT YET DOWNLOADED (source `.pth` and our exported `.onnx` will both be recorded) |
+| SHA-256 | Source and export are both recorded in A5 and in `R1/R1D/R1D_MODEL_RECORD.md` (R1-D, 2026-10-24) |
 | Code licence | Apache-2.0. The README states "DINOv2 code and model weights are released under the Apache License 2.0" **[verified 2026-10-24]**. |
 | Weight licence | Apache-2.0 **[verified 2026-10-24]**. The same README puts Cell-DINO and XRay-DINO under **non-commercial** licences; those models are **not** proposed. An older GitHub issue (#128) records the weights as CC-BY-NC at the original release, so the licence **changed**. The LICENSE file shipped with the exact checkpoint must be re-checked at download time. |
 | Training data | LVD-142M, curated web images (from the DINOv2 paper) **[general knowledge]** |
@@ -80,9 +80,9 @@ SPANA engine v2-rebuild, R1. Pre-coding gate, 2026-10-24.
 | README licence statement | "DINOv2 code and model weights are released under the Apache License 2.0." Exceptions named in the same README: Cell-DINO is CC BY NC; Cell-DINO and XRay-DINO weights are under the FAIR Noncommercial Research License. **Neither is proposed.** **[verified 2026-10-24]** |
 | `LICENSE` file (main branch) | "Apache License, Version 2.0, January 2004" (http://www.apache.org/licenses/). The full Apache-2.0 text is present, with only the template copyright placeholder **[verified 2026-10-24]**. The page showed no latest-commit hash for the file, so the commit pin will be taken at download. |
 | Model | `dinov2_vits14` (ViT-S/14) |
-| Model-card licence (Hugging Face `facebook/dinov2-small`) | **NOT YET RECORDED.** The fetch permission was not answered in time, so it will be recorded at download time. If the card's licence differs from the repository's, **stop and report**. |
-| Downloaded file SHA-256 | NOT YET DOWNLOADED |
-| Exported ONNX SHA-256 | NOT YET EXPORTED |
+| Model-card licence (Hugging Face `facebook/dinov2-small`) | **Recorded 2026-10-24 (R1-D), before download:** `license: apache-2.0` in the card metadata and the API `cardData`, at commit `ed25f3a31f01632728cabb09d1542f84ab7b0056`. This **agrees** with the repository basis. The card notes it was written by Hugging Face, not by the DINOv2 authors. Copy: `R1/R1D/dinov2_reference/hf_model_card_README.md`. |
+| Downloaded file SHA-256 | `model.safetensors` `ae1e99fc…4be1` (HF at commit ed25f3a3); the official checkpoint `dinov2_vits14_pretrain.pth` `b938bf1b…0cd9` is bit-identical in weights. See `R1/R1D/R1D_MODEL_RECORD.md`. |
+| Exported ONNX SHA-256 | `0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea` (`tools_rb/export_models.py`; byte-reproducible) |
 | Basis for licence status | Current official repository files. The old issue #128 (CC-BY-NC at the original release) is kept as history only and is **not** relied on. |
 
 ## B. Considered and not proposed for production

@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1c-1"
+CONFIG_REGISTRY_VERSION = "r1d-1"
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -293,7 +293,7 @@ PARAMS: Tuple[Param, ...] = (
     # ---- appearance (D04, D12) ---------------------------------------------------------------
     _p("appearance_backend", "str", "name", "Appearance backend.", "composite_lab_dinov2", N, "DESIGN_CHOICE",
        "NOT_APPLICABLE", "RUNTIME", "appearance", "D04; R1 approval §4",
-       allowed=("composite_lab_dinov2", "lab_only", "scripted")),
+       allowed=("composite_lab_dinov2", "scripted")),
     _p("composite_weight_lab", "float", "weight",
        "Weight of the LAB part-colour similarity in the composite similarity.", 0.35, N, "DESIGN_CHOICE", UNV,
        "BEHAVIOURAL", "appearance", "D04: colour is supporting evidence only", 0.0, 1.0),
@@ -314,12 +314,77 @@ PARAMS: Tuple[Param, ...] = (
     _p("crop_min_inside_fraction", "float", "fraction of box area",
        "Minimum fraction of the box inside the image for a valid appearance feature.", 0.6, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "D12 crop quality", 0.0, 1.0),
+    _p("crop_good_height_px", "int", "px (image resolution)",
+       "Crop height at which resolution stops limiting quality: quality's height term is min(1, h / this).", 64, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "R1-D crop quality formula (R1/R1D/R1D_STAGE_RECORD.md)",
+       4, 1024),
+    _p("crop_max_covered_fraction", "float", "fraction of box area",
+       "A crop more than this much covered by other people's boxes is flagged OCCLUDED_BY_OTHER and is never "
+       "bank-eligible (its pixels may belong to someone else).", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
+       "appearance", "D12; R1 approval §20 (no bank update from heavily overlapped observations)", 0.0, 1.0),
+    _p("bank_max_covered_fraction", "float", "fraction of box area",
+       "Bank updates are refused if more than this share of the box is covered by other people's boxes. Stricter "
+       "than the IoU contact test, which shrinks as an occluder gets larger.", 0.05, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "bank", "R1-D review finding 2 (a large close occluder passed the IoU test at 30% coverage)",
+       0.0, 1.0),
+    _p("lab_min_band_pixels", "int", "pixels",
+       "A LAB colour band with fewer pixels than this gives no LAB descriptor (histogram too sparse to compare).",
+       150, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
+       "R1-D review finding 9 (a 24 px crop gives ~70 pixels over 512 bins)", 1, 100000),
+    _p("embedding_norm_tolerance", "float", "absolute difference from 1",
+       "Embeddings must be unit length within this tolerance; otherwise the backend is broken (fail closed).",
+       1e-6, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "appearance", "R1-D review finding 10", 0.0, 0.1),
+    _p("lab_center_width_fraction", "float", "fraction of box width",
+       "Central share of the box width used for the LAB colour bands (box sides are mostly background).", 0.6, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance", "R1-D LAB descriptor", 0.05, 1.0),
+    _p("lab_floor", "float", "LAB similarity (Bhattacharyya coefficient, 0-1)",
+       "Per-cue veto: below this LAB similarity the colours are incompatible and appearance cannot support "
+       "identity. Above it, colour still proves nothing on its own.", 0.3, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "appearance", "R1-D; R1/R1_GENERIC_TRACKER_REQUIREMENT.md (colour may only reject)", 0.0, 1.0),
+    _p("embedding_floor", "float", "embedding similarity (max(0, cosine), 0-1)",
+       "Per-cue requirement: the generic embedding must reach this similarity for appearance to support "
+       "identity, so colour can never establish identity alone.", 0.70, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
+       "appearance", "R1-D; neither cue alone establishes identity. Calibrated by the pre-declared rule in "
+       "tools_rb/appearance_eval.py (P5 of same-person CLS similarity 0.741 on the development clip, floored to "
+       "0.05; R1/R1D/appearance_eval/calibration_run.json); was 0.5 before calibration, which is below most "
+       "different-person similarities (median ~0.61). In-sample, weak labels, one clip: UNVALIDATED until R2",
+       0.0, 1.0),
+    _p("embedding_model_file", "str", "path (relative to the project root, or absolute)",
+       "ONNX generic appearance-embedding model (DINOv2 ViT-S/14 backbone; NOT a football ReID model).",
+       "models/dinov2_vits14_cls_patchmean_224x112.onnx", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME",
+       "appearance", "R1/R1D/R1D_MODEL_RECORD.md; exported by tools_rb/export_models.py"),
+    _p("embedding_model_sha256", "str", "sha256 hex",
+       "Pinned SHA-256 of the embedding model. A mismatch refuses to load.",
+       "0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea", N, "VERIFIED_CODE", "NOT_APPLICABLE",
+       "RUNTIME", "appearance", "tools_rb/export_models.py output, byte-reproducible (two exports, same hash)"),
+    _p("embedding_model_status", "str", "licence status",
+       "Licence status of the embedding model, copied into provenance.", "LICENCE_UNCLEAR", N, "DOCUMENTED",
+       "NOT_APPLICABLE", "RUNTIME", "appearance",
+       "R1 approval §4: DEVELOPMENT/EVALUATION; Apache-2.0 confirmed by repo and model card, pending Nathan's sign-off",
+       allowed=("PRODUCTION_APPROVED", "DEVELOPMENT_ONLY", "LICENCE_UNCLEAR", "NOT_APPROVED")),
+    _p("embedding_input_hw", "pair", "px (height, width)", "Embedding network input size (16 x 8 patches of 14 px).",
+       (224, 112), H, "VERIFIED_CODE", "CONTRACT_VERIFIED", "CONTRACT", "appearance",
+       "exported model input pixel_values [1, 3, 224, 112] (dinov2 EXPORT_RECORD.json)", 14, 1024),
+    _p("embedding_mean_rgb", "tuple", "fraction (0-1) per RGB channel",
+       "Normalisation mean of the embedding model input.", (0.485, 0.456, 0.406), H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "appearance", "facebook/dinov2-small preprocessor_config.json image_mean",
+       0.0, 1.0),
+    _p("embedding_std_rgb", "tuple", "fraction (0-1) per RGB channel",
+       "Normalisation std of the embedding model input.", (0.229, 0.224, 0.225), H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "appearance", "facebook/dinov2-small preprocessor_config.json image_std",
+       0.001, 1.0),
+    _p("embedding_pooling", "str", "mode",
+       "cls: the final-layernorm CLS token. cls_patchmean: CLS and the mean patch token, each L2-normalised, "
+       "concatenated and L2-normalised again.", "cls", N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
+       "R1-D; chosen by the pre-declared rule in tools_rb/appearance_eval.py", allowed=("cls", "cls_patchmean")),
 
     # ---- identity decision (D08, D09) --------------------------------------------------------
     _p("appearance_floor", "float", "composite similarity (0-1)",
        "A box may become the target's observed box only if its similarity to the target bank is >= this.",
-       0.55, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
-       "D08 test 1. Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable",
+       0.80, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+       "D08 test 1. R1-D calibration (tools_rb/appearance_eval.py: P5 of same-person composite 0.806 with soft LAB "
+       "binning, floored to 0.05; was 0.55; R1/R1D/appearance_eval/calibration_run.json). UNVALIDATED until R2. "
+       "Historical floor 0.30 was a cosine on yolo26n-reid: different scale, not comparable",
        0.0, 1.0, historical_value=0.30),
     _p("contrastive_margin", "float", "similarity difference",
        "Target similarity minus the best competitor similarity on the same box must be >= this.", 0.08, N,
@@ -410,8 +475,10 @@ PARAMS: Tuple[Param, ...] = (
 
     # ---- reacquisition (D15) -----------------------------------------------------------------
     _p("reacq_appearance_floor", "float", "composite similarity (0-1)",
-       "Appearance floor during reacquisition (stricter than ordinary association).", 0.62, N,
-       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition", "D15", 0.0, 1.0),
+       "Appearance floor during reacquisition (stricter than ordinary association).", 0.85, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition",
+       "D15. Raised from 0.62 to appearance_floor + 0.05 when R1-D calibrated appearance_floor to 0.80 (the "
+       "cross-check requires reacquisition to stay stricter). To be revisited in R1-F", 0.0, 1.0),
     _p("reacq_contrastive_margin", "float", "similarity difference",
        "Contrastive margin during reacquisition, before any absence growth.", 0.12, N, "DESIGN_CHOICE", UNV,
        "BEHAVIOURAL", "reacquisition", "D15. Historical re-entry margin 0.08", 0.0, 1.0, historical_value=0.08),
