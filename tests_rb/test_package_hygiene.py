@@ -20,8 +20,9 @@ HEADER = ("# SPANA engine v2-rebuild", "# REBUILT 2026-10 — NOT ORIGINAL SOURC
 FORBIDDEN_TOP = {"football_analysis", "player_tracker", "player_tracker_mo", "event_engine_v1", "recovered",
                  "ultralytics", "torch", "torchvision", "scipy", "sklearn", "easyocr", "new_tracker_snapshots"}
 ALLOWED_THIRD_PARTY = {"numpy", "cv2", "onnxruntime"}
-# Structural numbers only: identity values, box/pair lengths, percent scale.
-ALLOWED_LITERALS = {0, 1, -1, 2, 4, 0.0, 1.0, -1.0, 100.0}
+# Structural numbers only: identity values, box/pair lengths, percent scale, and 3 (the last index of an
+# [x1, y1, x2, y2] box, and the ndim of an H x W x C image).
+ALLOWED_LITERALS = {0, 1, -1, 2, 3, 4, 0.0, 1.0, -1.0, 100.0}
 
 
 def _py_files(*dirs):

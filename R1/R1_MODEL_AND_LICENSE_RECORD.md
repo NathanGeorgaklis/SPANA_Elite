@@ -22,9 +22,9 @@ SPANA engine v2-rebuild, R1. Pre-coding gate, 2026-10-24.
 |---|---|
 | Name | YOLOX-s (and YOLOX-m) |
 | Version | Megvii-BaseDetection/YOLOX release tag `0.1.1rc0` (current models) **[verified 2026-10-24, repo README]** |
-| Source | https://github.com/Megvii-BaseDetection/YOLOX (official `.pth` in GitHub releases). The README links ONNX export via `demo/ONNXRuntime`; whether official `.onnx` files are attached to the release is **not confirmed**. A third-party ONNX conversion exists at https://huggingface.co/skillsafe-ai/yolox-s (yolox_s.onnx, 34.20 MB, sha256 c5c2d13e…8063). That copy is a conversion and will **not** be used unless it is verified against our own export. |
-| SHA-256 | NOT YET DOWNLOADED |
-| Code licence | Apache-2.0 **[verified 2026-10-24]** |
+| Source | https://github.com/Megvii-BaseDetection/YOLOX (official `.pth` in GitHub releases). The README links ONNX export via `demo/ONNXRuntime`; whether official `.onnx` files are attached to the release was not confirmed at the gate. **R1-C confirmed that they are:** `demo/ONNXRuntime/README.md` links `releases/download/0.1.1rc0/yolox_s.onnx` and `yolox_m.onnx`. A third-party ONNX conversion exists at https://huggingface.co/skillsafe-ai/yolox-s (yolox_s.onnx, 34.20 MB, sha256 c5c2d13e…8063). That copy is a conversion and will **not** be used unless it is verified against our own export. |
+| SHA-256 | **Downloaded 2026-10-24 (R1-C):** `yolox_s.onnx` `c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063`; `yolox_m.onnx` `21ff6cfdeb53b013bac2249599e55f00bff3cfdfdab37ed7a4620818c1d15b3f`. Both are **official ONNX files from the release `0.1.1rc0`** (tag commit `e1052df71842031413f6030723c3607b839c80ce`). The `yolox_s.onnx` hash equals the third-party HF copy noted above. See `R1/R1C/R1C_MODEL_RECORD.md`. |
+| Code licence | Apache-2.0 **[verified 2026-10-24]**. The repository `LICENSE` file at main, re-read in R1-C, is sha256 `0ec3668d…9088` and is copied in `R1/R1C/yolox_reference/`. |
 | Weight licence | Apache-2.0 (weights distributed in the same repository's releases; the HF model card also states the weights remain under the upstream Apache-2.0 licence) **[verified 2026-10-24]** |
 | Training data | COCO. INFERRED from the repo's "Reproduce our results on COCO" instructions and its COCO mAP tables. COCO annotations are CC BY 4.0 and images are Flickr with mixed licences **[general knowledge]**. |
 | Known restrictions | No field-of-use restriction in Apache-2.0. The only open question is any legal view on COCO-trained weights in a commercial product. |

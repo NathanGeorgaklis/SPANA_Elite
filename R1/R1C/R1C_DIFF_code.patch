@@ -1,0 +1,1254 @@
+diff --git a/player_tracker_rb/config.py b/player_tracker_rb/config.py
+index 93f7923..00b7a77 100644
+--- a/player_tracker_rb/config.py
++++ b/player_tracker_rb/config.py
+@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
+ from types import MappingProxyType
+ from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+ 
+-CONFIG_REGISTRY_VERSION = "r1b-1"
++CONFIG_REGISTRY_VERSION = "r1c-1"
+ 
+ # Unit constants (definitions, not tunable behaviour).
+ MS_PER_SECOND = 1000.0
+@@ -64,7 +64,7 @@ ROLES = ("BEHAVIOURAL", "CONTRACT", "RUNTIME", "REFERENCE_ONLY")
+ class Param:
+     """One configuration parameter and everything known about it."""
+     name: str
+-    type: str                 # "float" | "int" | "bool" | "str" | "pair" | "mapping" | "optional_int"
++    type: str                 # "float" | "int" | "bool" | "str" | "pair" | "tuple" | "mapping" | "optional_int"
+     units: str
+     meaning: str
+     default: Any
+@@ -198,6 +198,79 @@ PARAMS: Tuple[Param, ...] = (
+        "Detector network input size. To be chosen on development footage by person-detection quality only (D17).", 640, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; R1 approval §3", 320, 1920,
+        allowed=(640, 960, 1280)),
++    _p("detector_model_file", "str", "path (relative to the project root, or absolute)",
++       "ONNX person-detector model file. Loaded only if its SHA-256 equals detector_model_sha256.",
++       "models/yolox_s.onnx", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "detector",
++       "R1/R1C/R1C_MODEL_RECORD.md; official Megvii YOLOX release 0.1.1rc0 asset yolox_s.onnx"),
++    _p("detector_model_sha256", "str", "sha256 hex",
++       "Pinned SHA-256 of the detector model. A mismatch refuses the run (D22).",
++       "c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063", N, "VERIFIED_CODE", "NOT_APPLICABLE",
++       "RUNTIME", "detector",
++       "sha256 of https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx, "
++       "downloaded 2026-10-24 (R1/R1C/R1C_MODEL_RECORD.md)"),
++    _p("detector_model_status", "str", "licence status",
++       "Licence status of the detector model, copied into provenance (R1_MODEL_AND_LICENSE_RECORD.md).",
++       "LICENCE_UNCLEAR", N, "DOCUMENTED", "NOT_APPLICABLE", "RUNTIME", "detector",
++       "R1 approval §2: YOLOX-s DEVELOPMENT/EVALUATION; not PRODUCTION_APPROVED until the COCO question is resolved",
++       allowed=("PRODUCTION_APPROVED", "DEVELOPMENT_ONLY", "LICENCE_UNCLEAR", "NOT_APPROVED")),
++    _p("detector_person_class_index", "int", "class index",
++       "Index of the 'person' class in the detector's class outputs (COCO class 0).", 0, H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "detector",
++       "YOLOX yolox/data/datasets/coco_classes.py: COCO_CLASSES[0] == 'person'", 0, 1000),
++    _p("detector_letterbox_pad_value", "int", "uint8 grey level",
++       "Padding value of the detector's letterbox (model preprocessing convention).", 114, H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "detector",
++       "YOLOX yolox/data/data_augment.py preproc(): np.ones(...) * 114, image placed top-left, BGR 0-255 float, "
++       "no mean/std normalisation (verified on real footage 2026-10-24: the normalised variant scores ~0.001)", 0, 255),
++    _p("detector_strides", "tuple", "px per output cell",
++       "Output strides of the detector heads, used to decode grid offsets.", (8, 16, 32), H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "detector",
++       "YOLOX yolox/utils/demo_utils.py demo_postprocess(): strides [8, 16, 32] (p6=False); 8400 = 80^2+40^2+20^2",
++       1, 1024),
++    _p("detector_input_channels", "int", "channels", "Colour channels of the detector input tensor (BGR).", 3, H,
++       "VERIFIED_CODE", "CONTRACT_VERIFIED", "CONTRACT", "detector",
++       "official yolox_s.onnx input 'images' shape [1, 3, 640, 640] (checked at load)", 1, 4),
++    _p("detector_box_fields", "int", "values per prediction before class scores",
++       "Leading values of each detector prediction: cx, cy, w, h, objectness.", 5, H, "VERIFIED_CODE",
++       "CONTRACT_VERIFIED", "CONTRACT", "detector",
++       "YOLOX demo/ONNXRuntime/onnx_inference.py: boxes = p[:, :4]; scores = p[:, 4:5] * p[:, 5:]", 1, 64),
++    _p("detector_tiling", "str", "mode",
++       "none: one full-frame pass. grid: overlapping tiles (plus an optional full-frame pass) so small people get "
++       "more network pixels at the model's fixed input size; results are merged by global NMS.", "grid", N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
++       "D17; the official YOLOX ONNX models have a fixed 640x640 input. Selected by the pre-declared rule in "
++       "tools_rb/detector_eval.py on one development clip, detection quality only (R1/R1C/R1C_STAGE_RECORD.md): "
++       "full-frame 640 small-person pool recall 0.82, 2x2 tiles + full frame 0.99. Proxy, not ground truth",
++       allowed=("none", "grid")),
++    _p("detector_tile_grid", "pair", "tiles (columns, rows)", "Tile grid used when detector_tiling is grid.",
++       (2, 2), N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17", 1, 8),
++    _p("detector_tile_overlap_fraction", "float", "fraction of tile size",
++       "Overlap between neighbouring tiles, so a person cut by one tile edge is whole in the neighbour.", 0.2, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17", 0.0, 0.9),
++    _p("detector_tile_include_full_frame", "bool", "flag",
++       "With tiling, also run one full-frame pass (keeps people larger than a tile whole).", True, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17"),
++    _p("detector_tile_edge_margin_fraction", "float", "fraction of tile size",
++       "A tile-pass box within this fraction of the tile size from an internal tile edge counts as touching it "
++       "(possible cut fragment). Network box edges are coarse, so exact equality is not enough.", 0.02, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "R1-C development check: a cut box ended 1 px inside the edge",
++       0.0, 0.5),
++    _p("detector_edge_touch_margin_px", "float", "px (image resolution)",
++       "A box within this many pixels of the image border is flagged touches_image_edge (person may be partly "
++       "outside the frame).", 2.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
++       "R1-C: boxes cut by the bottom border ended at 719 of 720 px", 0.0, 64.0),
++    _p("detector_tile_cut_min_span_ratio", "float", "ratio",
++       "A cut box is treated as a fragment of a larger box only if it spans at least this fraction of that box "
++       "across the cut (its width for a top/bottom cut, its height for a left/right cut). A narrower box inside "
++       "another person's box is a partly hidden second person and is kept.", 0.7, N, "DESIGN_CHOICE", UNV,
++       "BEHAVIOURAL", "detector",
++       "R1-C development check: containment alone removed a partly occluded second person (F2/F5: occluded "
++       "competitors must stay visible)", 0.0, 1.0),
++    _p("detector_tile_cut_containment", "float", "fraction of box area",
++       "A tile-pass box that touches an internal tile edge and lies at least this much inside another kept box is "
++       "dropped as a cut fragment. Boxes touching the real image edge are never dropped by this rule.", 0.8, N,
++       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; F5 (fragments of one body acting as extra people)",
++       0.0, 1.0),
+     _p("detector_min_score", "float", "detector score (0-1)",
+        "Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.",
+        0.10, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
+@@ -472,6 +545,16 @@ def _check_value(p: Param, value: Any) -> Optional[str]:
+                 return f"{p.name}: element {e} below minimum {p.min_value}"
+             if p.max_value is not None and e > p.max_value:
+                 return f"{p.name}: element {e} above maximum {p.max_value}"
++    elif t == "tuple":
++        if (not isinstance(value, (tuple, list)) or len(value) == 0 or
++                any(isinstance(e, bool) or not isinstance(e, (int, float)) for e in value)):
++            return f"{p.name}: expected a non-empty sequence of numbers, got {value!r}"
++        x = None
++        for e in value:
++            if p.min_value is not None and e < p.min_value:
++                return f"{p.name}: element {e} below minimum {p.min_value}"
++            if p.max_value is not None and e > p.max_value:
++                return f"{p.name}: element {e} above maximum {p.max_value}"
+     elif t == "mapping":
+         if not isinstance(value, Mapping):
+             return f"{p.name}: expected a mapping, got {value!r}"
+@@ -489,7 +572,7 @@ def _check_value(p: Param, value: Any) -> Optional[str]:
+ 
+ 
+ def _freeze(t: str, value: Any) -> Any:
+-    if t == "pair":
++    if t in ("pair", "tuple"):
+         return tuple(float(e) if isinstance(e, float) else e for e in value)
+     if t == "mapping":
+         return MappingProxyType(dict(value))
+diff --git a/player_tracker_rb/detector.py b/player_tracker_rb/detector.py
+new file mode 100644
+index 0000000..4bc7a15
+--- /dev/null
++++ b/player_tracker_rb/detector.py
+@@ -0,0 +1,344 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1/R1_DESIGN_DECISIONS.md D03, D17, D21, D22; R1/R1_GENERIC_TRACKER_REQUIREMENT.md (generic
++#                 PERSON_CANDIDATE output, no role/team/colour); R1-C instruction (Nathan, 2026-10-24)
++"""
++player_tracker_rb.detector: the generic person-detector interface.
++
++Every detector backend returns the same plain record for every person it sees: a `PersonCandidate`. A candidate
++says only "a person-shaped object is here, with this detector score". It carries no identity, no team, no role,
++no colour and no number. Which candidate (if any) is the selected target is decided later, by other layers.
++
++Library-specific objects (ONNX sessions, raw tensors, model-specific result layouts) never leave a backend:
++`detect()` returns a tuple of PersonCandidate made only of Python floats, ints, bools and strings.
++
++This module also holds the backend-independent geometry used by every backend:
++  * letterbox transform (image -> network input) and its exact inverse;
++  * clipping to the image;
++  * greedy non-maximum suppression in continuous pixel coordinates;
++  * tile layout for the optional tiled mode (more network pixels per small person at a fixed model input).
++"""
++from __future__ import annotations
++
++import abc
++import math
++from dataclasses import dataclass
++from typing import Any, Dict, List, Optional, Sequence, Tuple
++
++import numpy as np
++
++from .config import TrackerConfig
++
++CANDIDATE_KIND = "PERSON_CANDIDATE"
++
++
++class DetectorError(RuntimeError):
++    """Base class for detector failures (fail closed)."""
++
++
++class DetectorModelError(DetectorError):
++    """Missing, unreadable, mismatched or incompatible model file."""
++
++
++@dataclass(frozen=True)
++class PersonCandidate:
++    """One detected person. Generic: no identity, team, role, colour or number."""
++    bbox: Tuple[float, float, float, float]    # [x1, y1, x2, y2] in source-image pixels, clipped to the image
++    score: float                               # raw detector person score (0-1); NOT an identity confidence
++    touches_image_edge: bool                   # box reaches the image border (person may be partly outside)
++    detector_pass: str                         # "full_frame" or "tile_c{col}_r{row}" (diagnostics)
++    kind: str = CANDIDATE_KIND
++
++    @property
++    def width(self) -> float:
++        return self.bbox[2] - self.bbox[0]
++
++    @property
++    def height(self) -> float:
++        return self.bbox[3] - self.bbox[1]
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"kind": self.kind, "bbox": list(self.bbox), "score": self.score,
++                "touches_image_edge": self.touches_image_edge, "detector_pass": self.detector_pass}
++
++
++class DetectorBackend(abc.ABC):
++    """Interface every person detector implements."""
++
++    @abc.abstractmethod
++    def detect(self, image: np.ndarray) -> Tuple[PersonCandidate, ...]:
++        """All people found in one BGR uint8 image, highest score first."""
++
++    @abc.abstractmethod
++    def provenance(self) -> Dict[str, Any]:
++        """Backend name, model file, model sha256, licence status and settings (JSON-safe)."""
++
++    def model_record(self) -> Optional[Dict[str, Any]]:
++        """Model entry for the run provenance `models` list, or None if the backend uses no model file."""
++        return None
++
++
++# ---------------------------------------------------------------------------------------------
++# Geometry shared by all backends
++# ---------------------------------------------------------------------------------------------
++@dataclass(frozen=True)
++class Letterbox:
++    """Image region -> square network input: scale by `scale`, place at the top-left, pad the rest.
++
++    network = (image - origin) * scale   <=>   image = network / scale + origin
++    """
++    scale: float
++    origin_x: float          # where the region starts in the source image (0 for a full-frame pass)
++    origin_y: float
++    region_w: int
++    region_h: int
++    input_size: int
++
++    def to_image(self, boxes_net: np.ndarray) -> np.ndarray:
++        out = np.asarray(boxes_net, dtype=np.float64).copy()
++        out[:, 0::2] = out[:, 0::2] / self.scale + self.origin_x
++        out[:, 1::2] = out[:, 1::2] / self.scale + self.origin_y
++        return out
++
++    def to_network(self, boxes_img: np.ndarray) -> np.ndarray:
++        out = np.asarray(boxes_img, dtype=np.float64).copy()
++        out[:, 0::2] = (out[:, 0::2] - self.origin_x) * self.scale
++        out[:, 1::2] = (out[:, 1::2] - self.origin_y) * self.scale
++        return out
++
++
++def letterbox_for(region_w: int, region_h: int, input_size: int, origin_x: float = 0.0,
++                  origin_y: float = 0.0) -> Letterbox:
++    if region_w <= 0 or region_h <= 0:
++        raise ValueError(f"empty region {region_w}x{region_h}")
++    scale = min(input_size / region_h, input_size / region_w)
++    return Letterbox(scale=scale, origin_x=float(origin_x), origin_y=float(origin_y), region_w=int(region_w),
++                     region_h=int(region_h), input_size=int(input_size))
++
++
++def resized_extent(lb: Letterbox) -> Tuple[int, int]:
++    """(width, height) of the resized region inside the network input (the model's own int() truncation)."""
++    return int(lb.region_w * lb.scale), int(lb.region_h * lb.scale)
++
++
++def clip_boxes(boxes: np.ndarray, width: int, height: int) -> np.ndarray:
++    out = np.asarray(boxes, dtype=np.float64).copy()
++    out[:, 0::2] = np.clip(out[:, 0::2], 0.0, float(width))
++    out[:, 1::2] = np.clip(out[:, 1::2], 0.0, float(height))
++    return out
++
++
++def box_iou_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
++    a = np.asarray(a, dtype=np.float64).reshape(-1, 4)
++    b = np.asarray(b, dtype=np.float64).reshape(-1, 4)
++    ix1 = np.maximum(a[:, None, 0], b[None, :, 0])
++    iy1 = np.maximum(a[:, None, 1], b[None, :, 1])
++    ix2 = np.minimum(a[:, None, 2], b[None, :, 2])
++    iy2 = np.minimum(a[:, None, 3], b[None, :, 3])
++    inter = np.clip(ix2 - ix1, 0.0, None) * np.clip(iy2 - iy1, 0.0, None)
++    area_a = (a[:, 2] - a[:, 0]) * (a[:, 3] - a[:, 1])
++    area_b = (b[:, 2] - b[:, 0]) * (b[:, 3] - b[:, 1])
++    union = area_a[:, None] + area_b[None, :] - inter
++    with np.errstate(divide="ignore", invalid="ignore"):
++        iou = np.where(union > 0, inter / union, 0.0)
++    return iou
++
++
++def containment(inner: np.ndarray, outer: np.ndarray) -> np.ndarray:
++    """Fraction of each inner box's area that lies inside each outer box (rows: inner, cols: outer)."""
++    a = np.asarray(inner, dtype=np.float64).reshape(-1, 4)
++    b = np.asarray(outer, dtype=np.float64).reshape(-1, 4)
++    ix1 = np.maximum(a[:, None, 0], b[None, :, 0])
++    iy1 = np.maximum(a[:, None, 1], b[None, :, 1])
++    ix2 = np.minimum(a[:, None, 2], b[None, :, 2])
++    iy2 = np.minimum(a[:, None, 3], b[None, :, 3])
++    inter = np.clip(ix2 - ix1, 0.0, None) * np.clip(iy2 - iy1, 0.0, None)
++    area_a = (a[:, 2] - a[:, 0]) * (a[:, 3] - a[:, 1])
++    with np.errstate(divide="ignore", invalid="ignore"):
++        return np.where(area_a[:, None] > 0, inter / area_a[:, None], 0.0)
++
++
++def nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> List[int]:
++    """Greedy NMS: keep the highest score, drop boxes with IoU > threshold, repeat. Ties broken by index
++    (stable sort), so the result is deterministic."""
++    boxes = np.asarray(boxes, dtype=np.float64).reshape(-1, 4)
++    scores = np.asarray(scores, dtype=np.float64).reshape(-1)
++    if boxes.shape[0] == 0:
++        return []
++    order = np.argsort(-scores, kind="stable")
++    keep: List[int] = []
++    suppressed = np.zeros(boxes.shape[0], dtype=bool)
++    iou = box_iou_matrix(boxes, boxes)
++    for i in order:
++        if suppressed[i]:
++            continue
++        keep.append(int(i))
++        suppressed |= iou[i] > iou_threshold
++    return keep
++
++
++@dataclass(frozen=True)
++class Tile:
++    name: str
++    x0: int
++    y0: int
++    x1: int
++    y1: int
++
++
++def tile_layout(width: int, height: int, cols: int, rows: int, overlap: float) -> List[Tile]:
++    """Equal-size overlapping tiles covering the whole image (deterministic, row-major)."""
++    if cols < 1 or rows < 1:
++        raise ValueError("tile grid must be at least 1x1")
++    tw = math.ceil(width / (cols - (cols - 1) * overlap)) if cols > 1 else width
++    th = math.ceil(height / (rows - (rows - 1) * overlap)) if rows > 1 else height
++    tw, th = min(tw, width), min(th, height)
++    xs = [0] if cols == 1 else [round(c * (width - tw) / (cols - 1)) for c in range(cols)]
++    ys = [0] if rows == 1 else [round(r * (height - th) / (rows - 1)) for r in range(rows)]
++    return [Tile(f"tile_c{c}_r{r}", xs[c], ys[r], xs[c] + tw, ys[r] + th)
++            for r in range(rows) for c in range(cols)]
++
++
++
++
++# Cut-side flags for tile-pass boxes (bit mask).
++CUT_LEFT = 1
++CUT_TOP = CUT_LEFT << 1
++CUT_RIGHT = CUT_TOP << 1
++CUT_BOTTOM = CUT_RIGHT << 1
++
++
++def _is_fragment_of(frag: np.ndarray, sides: int, whole: np.ndarray, cont: float, cont_thr: float,
++                    span_thr: float) -> bool:
++    """A cut box is a fragment of `whole` if it lies mostly inside it AND spans most of it across the cut."""
++    if cont < cont_thr:
++        return False
++    fw, fh = frag[2] - frag[0], frag[3] - frag[1]
++    ww, wh = whole[2] - whole[0], whole[3] - whole[1]
++    if ww <= 0 or wh <= 0:
++        return False
++    if sides & (CUT_TOP | CUT_BOTTOM) and fw / ww >= span_thr:
++        return True
++    if sides & (CUT_LEFT | CUT_RIGHT) and fh / wh >= span_thr:
++        return True
++    return False
++
++
++def seen_uncut_elsewhere(box: Sequence[float], sides: int, own: "Tile", tiles: Sequence["Tile"]) -> bool:
++    """True if a box cut by an internal edge of tile `own` lies entirely inside another tile that extends past
++    every cut side. That tile saw the same region without the cut, so the cut box adds nothing: whatever is there
++    was seen whole by that tile (or by the full-frame pass). Tiles overlap, so this holds for every person shorter
++    than the overlap who straddles a tile edge."""
++    x1, y1, x2, y2 = box
++    for t in tiles:
++        if t == own or not (t.x0 <= x1 and t.y0 <= y1 and x2 <= t.x1 and y2 <= t.y1):
++            continue
++        if sides & CUT_LEFT and not t.x0 < own.x0:
++            continue
++        if sides & CUT_TOP and not t.y0 < own.y0:
++            continue
++        if sides & CUT_RIGHT and not t.x1 > own.x1:
++            continue
++        if sides & CUT_BOTTOM and not t.y1 > own.y1:
++            continue
++        return True
++    return False
++
++
++def merge_passes(boxes: np.ndarray, scores: np.ndarray, passes: Sequence[str], cut_sides: np.ndarray,
++                 cfg: TrackerConfig) -> List[int]:
++    """Merge the boxes of all passes. Returns kept indices.
++
++    `cut_sides` is a bit mask per box (CUT_LEFT/TOP/RIGHT/BOTTOM): which internal tile edges the box touches.
++    A box touching an internal tile edge may be a cut fragment of a person who continues into the next tile; it
++    must never beat a whole box of the same person, whatever its score. But a partly hidden SECOND person behind
++    someone also lies inside that someone's box, and must be kept. So:
++      1. NMS over the whole (uncut) boxes;
++      2. a cut box is dropped if it overlaps a kept whole box by IoU > detector_nms_iou, or if it is a fragment of
++         one: at least detector_tile_cut_containment inside it AND spanning at least
++         detector_tile_cut_min_span_ratio of it across the cut;
++      3. the remaining cut boxes are NMS-ed among themselves and the same fragment rule is applied.
++    Without tiling there are no cut boxes and this is plain NMS."""
++    iou_thr = cfg.get("detector_nms_iou")
++    cont_thr = cfg.get("detector_tile_cut_containment")
++    span_thr = cfg.get("detector_tile_cut_min_span_ratio")
++    is_cut = np.asarray(cut_sides) != 0
++    whole = np.nonzero(~is_cut)[0]
++    cut = np.nonzero(is_cut)[0]
++    keep = [int(whole[k]) for k in nms(boxes[whole], scores[whole], iou_thr)] if whole.size else []
++    if cut.size:
++        survivors = []
++        kb = boxes[keep] if keep else np.zeros((0, 4))
++        iou = box_iou_matrix(boxes[cut], kb) if keep else np.zeros((cut.size, 0))
++        cont = containment(boxes[cut], kb) if keep else np.zeros((cut.size, 0))
++        for r, idx in enumerate(cut):
++            if keep and np.any(iou[r] > iou_thr):
++                continue
++            if any(_is_fragment_of(boxes[idx], int(cut_sides[idx]), kb[c], cont[r, c], cont_thr, span_thr)
++                   for c in range(len(keep))):
++                continue
++            survivors.append(int(idx))
++        if survivors:
++            sv = np.asarray(survivors)
++            ck = [int(sv[k]) for k in nms(boxes[sv], scores[sv], iou_thr)]
++            cb = boxes[ck]
++            c2 = containment(cb, cb)
++            for a, idx in enumerate(ck):
++                if any(b != a and _is_fragment_of(boxes[idx], int(cut_sides[idx]), cb[b], c2[a, b], cont_thr,
++                                                  span_thr) for b in range(len(ck))):
++                    continue
++                keep.append(idx)
++    return keep
++
++
++def finalize(boxes_img: np.ndarray, scores: np.ndarray, passes: Sequence[str], width: int, height: int,
++             keep: Sequence[int], edge_margin_px: float) -> Tuple[PersonCandidate, ...]:
++    """Clip kept boxes to the image, drop empty ones, and build PersonCandidate records (plain Python types)."""
++    out: List[PersonCandidate] = []
++    if len(keep) == 0:
++        return tuple(out)
++    clipped = clip_boxes(boxes_img[list(keep)], width, height)
++    for row, idx in zip(clipped, keep):
++        x1, y1, x2, y2 = (float(v) for v in row)
++        if not (x2 > x1 and y2 > y1):
++            continue
++        m = float(edge_margin_px)
++        edge = x1 <= m or y1 <= m or x2 >= float(width) - m or y2 >= float(height) - m
++        out.append(PersonCandidate(bbox=(x1, y1, x2, y2), score=float(scores[idx]), touches_image_edge=bool(edge),
++                                   detector_pass=str(passes[idx])))
++    out.sort(key=lambda c: (-c.score, c.bbox))
++    return tuple(out)
++
++
++# ---------------------------------------------------------------------------------------------
++# Scripted backend (tests and synthetic scenarios)
++# ---------------------------------------------------------------------------------------------
++class ScriptedDetector(DetectorBackend):
++    """Returns pre-written boxes, one list per call, through the same NMS/clip path as a real backend.
++    `script` is a list (one entry per detect() call) of lists of (x1, y1, x2, y2, score)."""
++
++    def __init__(self, script: Sequence[Sequence[Sequence[float]]], cfg: TrackerConfig):
++        self._script = [list(map(tuple, frame)) for frame in script]
++        self._cfg = cfg
++        self._calls = 0
++
++    def detect(self, image: np.ndarray) -> Tuple[PersonCandidate, ...]:
++        if self._calls >= len(self._script):
++            raise DetectorError("scripted detector ran out of frames")
++        rows = self._script[self._calls]
++        self._calls += 1
++        height, width = int(image.shape[0]), int(image.shape[1])
++        if not rows:
++            return ()
++        arr = np.asarray(rows, dtype=np.float64)
++        boxes, scores = arr[:, :4], arr[:, 4]
++        mask = scores >= self._cfg.get("detector_min_score")
++        idx = np.nonzero(mask)[0]
++        boxes, scores = boxes[idx], scores[idx]
++        passes = ["full_frame"] * len(idx)
++        keep = nms(boxes, scores, self._cfg.get("detector_nms_iou"))
++        return finalize(boxes, scores, passes, width, height, keep, self._cfg.get("detector_edge_touch_margin_px"))
++
++    def provenance(self) -> Dict[str, Any]:
++        return {"backend": "scripted", "model_file": None, "model_sha256": None, "model_status": None,
++                "min_score": self._cfg.get("detector_min_score"), "nms_iou": self._cfg.get("detector_nms_iou")}
+diff --git a/player_tracker_rb/detector_yolox.py b/player_tracker_rb/detector_yolox.py
+new file mode 100644
+index 0000000..d31f27e
+--- /dev/null
++++ b/player_tracker_rb/detector_yolox.py
+@@ -0,0 +1,196 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: Megvii YOLOX release 0.1.1rc0 (Apache-2.0): yolox/data/data_augment.py preproc(),
++#                 yolox/utils/demo_utils.py demo_postprocess(), demo/ONNXRuntime/onnx_inference.py (read 2026-10-24,
++#                 copies and hashes in R1/R1C/yolox_reference/); R1/R1_DESIGN_DECISIONS.md D03, D17, D20, D22
++"""
++player_tracker_rb.detector_yolox: YOLOX ONNX Runtime person-detector backend.
++
++Everything YOLOX-specific lives here, and nothing YOLOX-specific leaves this module (detect() returns generic
++PersonCandidate records). This is an independent re-implementation of the YOLOX inference conventions, written
++from the Apache-2.0 reference code (see the evidence line); no YOLOX source file is imported or copied.
++
++Pipeline per pass (full frame, or one tile):
++  1. letterbox: scale = min(S/h, S/w); resize with INTER_LINEAR to (int(w*scale), int(h*scale)); place at the
++     top-left of an S x S canvas filled with the pad value (114); BGR, 0-255, float32, CHW; no normalisation.
++  2. inference: ONNX Runtime CPU, fixed thread counts, sequential execution (deterministic).
++  3. decode: for strides (8, 16, 32): xy = (raw_xy + grid) * stride, wh = exp(raw_wh) * stride (cx, cy, w, h).
++  4. person score = objectness * class_score[person]; keep score >= detector_min_score.
++  5. restore: network coordinates -> source image via the exact letterbox inverse.
++Then all passes are merged (global NMS at detector_nms_iou; tile-cut fragment removal) and clipped to the image.
++
++The model file is loaded only if its SHA-256 equals the pinned config value; its input must be [1, 3, S, S] with
++S == detector_input_size, and its output [1, N, 5 + C] with N matching the strides. Otherwise: DetectorModelError.
++"""
++from __future__ import annotations
++
++import hashlib
++import os
++from typing import Any, Dict, List, Optional, Tuple
++
++import cv2
++import numpy as np
++import onnxruntime as ort
++
++from .config import TrackerConfig
++from .detector import (CUT_BOTTOM, CUT_LEFT, CUT_RIGHT, CUT_TOP, DetectorBackend, DetectorError,
++                       DetectorModelError, PersonCandidate, Tile, finalize, letterbox_for, merge_passes,
++                       resized_extent, seen_uncut_elsewhere, tile_layout)
++
++BACKEND_NAME = "yolox_onnx"
++PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++
++
++def _resolve(path: str) -> str:
++    return path if os.path.isabs(path) else os.path.join(PACKAGE_ROOT, path)
++
++
++def _sha256(path: str, chunk: int) -> str:
++    h = hashlib.sha256()
++    with open(path, "rb") as f:
++        for block in iter(lambda: f.read(chunk), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++class YoloxOnnxDetector(DetectorBackend):
++    def __init__(self, cfg: TrackerConfig, model_path: Optional[str] = None):
++        self._cfg = cfg
++        path = _resolve(model_path or cfg.get("detector_model_file"))
++        self._path = path
++        if not os.path.isfile(path):
++            raise DetectorModelError(f"detector model not found: {path}")
++        digest = _sha256(path, cfg.get("hash_chunk_bytes"))
++        pinned = cfg.get("detector_model_sha256")
++        if digest != pinned:
++            raise DetectorModelError(f"detector model sha256 {digest} != pinned {pinned} ({path})")
++        self._sha = digest
++        so = ort.SessionOptions()
++        so.intra_op_num_threads = cfg.get("onnx_intra_op_threads")
++        so.inter_op_num_threads = cfg.get("onnx_inter_op_threads")
++        if cfg.get("onnx_sequential_execution"):
++            so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
++        try:
++            self._sess = ort.InferenceSession(path, sess_options=so, providers=["CPUExecutionProvider"])
++        except Exception as e:  # noqa: BLE001 - any loader failure is a model failure
++            raise DetectorModelError(f"cannot load detector model {path}: {e}") from e
++        inp, out = self._sess.get_inputs()[0], self._sess.get_outputs()[0]
++        size = cfg.get("detector_input_size")
++        self._head = cfg.get("detector_box_fields")
++        if list(inp.shape) != [1, cfg.get("detector_input_channels"), size, size]:
++            raise DetectorModelError(f"model input {inp.shape} does not match detector_input_size {size}")
++        strides = cfg.get("detector_strides")
++        n_cells = sum((size // s) * (size // s) for s in strides)
++        if len(out.shape) != 3 or out.shape[1] != n_cells or not isinstance(out.shape[2], int) or out.shape[2] <= self._head:
++            raise DetectorModelError(f"model output {out.shape} does not match strides {strides} at {size}")
++        self._n_classes = int(out.shape[2]) - self._head
++        self._person = cfg.get("detector_person_class_index")
++        if self._person >= self._n_classes:
++            raise DetectorModelError(f"person class index {self._person} >= model classes {self._n_classes}")
++        self._in_name = inp.name
++        self._size = size
++        self._grid, self._stride = self._make_grid(size, strides)
++        self.last_pass_count = 0
++        self.last_dropped_seen_uncut = 0
++
++    @staticmethod
++    def _make_grid(size: int, strides) -> Tuple[np.ndarray, np.ndarray]:
++        grids, sts = [], []
++        for s in strides:
++            n = size // s
++            xv, yv = np.meshgrid(np.arange(n), np.arange(n))
++            g = np.stack((xv, yv), 2).reshape(-1, 2)
++            grids.append(g)
++            sts.append(np.full((g.shape[0], 1), s))
++        return np.concatenate(grids, 0).astype(np.float64), np.concatenate(sts, 0).astype(np.float64)
++
++    # ---- one pass -------------------------------------------------------------------------------
++    def _preprocess(self, region: np.ndarray, origin_x: int, origin_y: int):
++        h, w = int(region.shape[0]), int(region.shape[1])
++        lb = letterbox_for(w, h, self._size, origin_x, origin_y)
++        rw, rh = resized_extent(lb)
++        canvas = np.full((self._size, self._size, region.shape[2]), self._cfg.get("detector_letterbox_pad_value"),
++                         dtype=np.uint8)
++        canvas[:rh, :rw] = cv2.resize(region, (rw, rh), interpolation=cv2.INTER_LINEAR)
++        tensor = np.ascontiguousarray(canvas.transpose(2, 0, 1)[None], dtype=np.float32)
++        return tensor, lb
++
++    def _run_pass(self, region: np.ndarray, origin_x: int, origin_y: int):
++        tensor, lb = self._preprocess(region, origin_x, origin_y)
++        raw = self._sess.run(None, {self._in_name: tensor})[0][0].astype(np.float64)
++        score = raw[:, self._head - 1] * raw[:, self._head + self._person]
++        sel = np.nonzero(score >= self._cfg.get("detector_min_score"))[0]
++        if sel.size == 0:
++            return np.zeros((0, 4)), np.zeros(0), lb
++        r = raw[sel]
++        cxy = (r[:, 0:2] + self._grid[sel]) * self._stride[sel]
++        wh = np.exp(r[:, 2:self._head - 1]) * self._stride[sel]
++        half = wh / 2
++        boxes_net = np.concatenate([cxy - half, cxy + half], 1)
++        return lb.to_image(boxes_net), score[sel], lb
++
++    # ---- public API -----------------------------------------------------------------------------
++    def detect(self, image: np.ndarray) -> Tuple[PersonCandidate, ...]:
++        if (image is None or image.ndim != 3 or image.dtype != np.uint8
++                or image.shape[2] != self._cfg.get("detector_input_channels")):
++            raise DetectorError("detect() needs a BGR uint8 image of shape (H, W, 3)")
++        height, width = int(image.shape[0]), int(image.shape[1])
++        jobs: List[Tile] = []
++        tiles: List[Tile] = []
++        tiled = self._cfg.get("detector_tiling") == "grid"
++        if not tiled or self._cfg.get("detector_tile_include_full_frame"):
++            jobs.append(Tile("full_frame", 0, 0, width, height))
++        if tiled:
++            cols, rows = (int(v) for v in self._cfg.get("detector_tile_grid"))
++            tiles = tile_layout(width, height, cols, rows, self._cfg.get("detector_tile_overlap_fraction"))
++            jobs += tiles
++        all_boxes, all_scores, passes, internal = [], [], [], []
++        self.last_dropped_seen_uncut = 0
++        for job in jobs:
++            name, x0, y0, x1, y1 = job.name, job.x0, job.y0, job.x1, job.y1
++            boxes, scores, _ = self._run_pass(image[y0:y1, x0:x1], x0, y0)
++            if boxes.shape[0] == 0:
++                continue
++            # Touching an internal tile edge (an edge that is not the image border) marks a possible cut fragment.
++            cut = np.zeros(boxes.shape[0], dtype=np.int64)
++            if name != "full_frame":
++                frac = self._cfg.get("detector_tile_edge_margin_fraction")
++                mx, my = frac * (x1 - x0), frac * (y1 - y0)
++                cut |= np.where((boxes[:, 0] <= x0 + mx) & (x0 > 0), CUT_LEFT, 0)
++                cut |= np.where((boxes[:, 1] <= y0 + my) & (y0 > 0), CUT_TOP, 0)
++                cut |= np.where((boxes[:, 2] >= x1 - mx) & (x1 < width), CUT_RIGHT, 0)
++                cut |= np.where((boxes[:, 3] >= y1 - my) & (y1 < height), CUT_BOTTOM, 0)
++                # A cut box lying wholly inside a neighbouring tile that extends past the cut was seen uncut there.
++                redundant = np.array([bool(c) and seen_uncut_elsewhere(b, int(c), job, tiles)
++                                      for b, c in zip(boxes, cut)], dtype=bool)
++                self.last_dropped_seen_uncut += int(redundant.sum())
++                boxes, scores, cut = boxes[~redundant], scores[~redundant], cut[~redundant]
++                if boxes.shape[0] == 0:
++                    continue
++            all_boxes.append(boxes)
++            all_scores.append(scores)
++            passes += [name] * boxes.shape[0]
++            internal.append(cut)
++        self.last_pass_count = len(jobs)
++        if not all_boxes:
++            return ()
++        boxes = np.concatenate(all_boxes, 0)
++        scores = np.concatenate(all_scores, 0)
++        cut_sides = np.concatenate(internal, 0)
++        keep = merge_passes(boxes, scores, passes, cut_sides, self._cfg)
++        return finalize(boxes, scores, passes, width, height, keep, self._cfg.get("detector_edge_touch_margin_px"))
++
++    def provenance(self) -> Dict[str, Any]:
++        c = self._cfg
++        return {"backend": BACKEND_NAME, "model_file": os.path.basename(self._path), "model_sha256": self._sha,
++                "model_status": c.get("detector_model_status"), "input_size": self._size,
++                "n_classes": self._n_classes, "person_class_index": self._person,
++                "min_score": c.get("detector_min_score"), "nms_iou": c.get("detector_nms_iou"),
++                "tiling": c.get("detector_tiling"), "tile_grid": list(c.get("detector_tile_grid")),
++                "tile_overlap_fraction": c.get("detector_tile_overlap_fraction"),
++                "tile_include_full_frame": c.get("detector_tile_include_full_frame"),
++                "onnxruntime_version": ort.__version__, "providers": list(self._sess.get_providers())}
++
++    def model_record(self) -> Dict[str, Any]:
++        return {"role": "person_detector", "filename": os.path.basename(self._path), "sha256": self._sha,
++                "status": self._cfg.get("detector_model_status")}
+diff --git a/tests_rb/test_detector.py b/tests_rb/test_detector.py
+new file mode 100644
+index 0000000..c774c3a
+--- /dev/null
++++ b/tests_rb/test_detector.py
+@@ -0,0 +1,319 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-C instruction (Nathan, 2026-10-24, required detector tests); R1/R1_GENERIC_TRACKER_REQUIREMENT.md
++#                 (neutral identities: TARGET, PERSON_A, PERSON_B, PERSON_C)
++"""Tests for the generic person-detector interface and the YOLOX ONNX backend.
++
++Geometry, filtering, NMS, clipping and tile merging are tested with neutral synthetic boxes (TARGET, PERSON_A..C).
++The YOLOX backend tests need models/yolox_s.onnx (git-ignored, pinned by sha256); they are skipped if it is absent.
++Real-footage checks (partial people at the image border) run only when SPANA_GOLD_VIDEO points to a clip; they use
++it purely as generic footage with people in it.
++"""
++import ast
++import dataclasses
++import hashlib
++import os
++import shutil
++import tempfile
++import unittest
++
++import numpy as np
++
++from player_tracker_rb import detector as D
++from player_tracker_rb.config import TrackerConfig
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++MODEL = os.path.join(ROOT, "models", "yolox_s.onnx")
++HAVE_MODEL = os.path.isfile(MODEL)
++
++
++def cfg(**over):
++    return TrackerConfig.with_overrides(over)
++
++
++IMG = np.zeros((720, 1280, 3), np.uint8)
++TARGET = (400.0, 200.0, 460.0, 330.0)
++PERSON_A = (470.0, 205.0, 528.0, 332.0)       # beside the target, no overlap
++PERSON_B = (420.0, 210.0, 470.0, 320.0)       # overlapping the target (IoU ~0.4): must survive NMS
++PERSON_C = (1250.0, 600.0, 1300.0, 740.0)     # partly outside the image (right and bottom)
++
++
++class TestGeometry(unittest.TestCase):
++    def test_letterbox_full_frame(self):
++        lb = D.letterbox_for(1280, 720, 640)
++        self.assertAlmostEqual(lb.scale, 0.5)
++        self.assertEqual(D.resized_extent(lb), (640, 360))
++
++    def test_letterbox_round_trip(self):
++        for (w, h, x0, y0) in ((1280, 720, 0, 0), (704, 400, 576, 320), (333, 777, 10, 20)):
++            with self.subTest(region=(w, h, x0, y0)):
++                lb = D.letterbox_for(w, h, 640, x0, y0)
++                boxes = np.array([[x0 + 1.5, y0 + 2.25, x0 + w - 3.0, y0 + h - 4.5], [x0, y0, x0 + 10, y0 + 20]])
++                back = lb.to_image(lb.to_network(boxes))
++                np.testing.assert_allclose(back, boxes, atol=1e-9)
++
++    def test_letterbox_reversal_known_values(self):
++        lb = D.letterbox_for(704, 400, 640, origin_x=576, origin_y=320)   # a tile at (576, 320)
++        scale = min(640 / 400, 640 / 704)
++        net = np.array([[0.0, 0.0, 64.0, 128.0]])
++        np.testing.assert_allclose(lb.to_image(net), [[576, 320, 576 + 64 / scale, 320 + 128 / scale]])
++
++    def test_clip(self):
++        out = D.clip_boxes(np.array([[-5, -5, 50, 50], [1270, 700, 1300, 740]]), 1280, 720)
++        np.testing.assert_allclose(out, [[0, 0, 50, 50], [1270, 700, 1280, 720]])
++
++    def test_tile_layout_covers_image(self):
++        for cols, rows in ((1, 1), (2, 2), (3, 2), (4, 3)):
++            with self.subTest(grid=(cols, rows)):
++                tiles = D.tile_layout(1280, 720, cols, rows, 0.2)
++                self.assertEqual(len(tiles), cols * rows)
++                cover = np.zeros((720, 1280), bool)
++                for t in tiles:
++                    self.assertTrue(0 <= t.x0 < t.x1 <= 1280 and 0 <= t.y0 < t.y1 <= 720)
++                    cover[t.y0:t.y1, t.x0:t.x1] = True
++                self.assertTrue(cover.all())
++                self.assertEqual(len({(t.x1 - t.x0, t.y1 - t.y0) for t in tiles}), 1)   # equal-size tiles
++
++
++class TestScriptedPipeline(unittest.TestCase):
++    def run_script(self, rows, **over):
++        return D.ScriptedDetector([rows], cfg(**over)).detect(IMG)
++
++    def test_empty(self):
++        self.assertEqual(self.run_script([]), ())
++
++    def test_multiple_people_generic_output(self):
++        out = self.run_script([TARGET + (0.9,), PERSON_A + (0.8,), PERSON_B + (0.7,)])
++        self.assertEqual(len(out), 3)
++        self.assertEqual([c.score for c in out], [0.9, 0.8, 0.7])          # highest first
++        for c in out:
++            self.assertIsInstance(c, D.PersonCandidate)
++            self.assertEqual(c.kind, "PERSON_CANDIDATE")
++            for f in dataclasses.fields(c):
++                v = getattr(c, f.name)
++                self.assertIn(type(v), (tuple, float, bool, str), f.name)
++            self.assertTrue(all(type(v) is float for v in c.bbox))
++            self.assertEqual(set(c.as_record()), {"kind", "bbox", "score", "touches_image_edge", "detector_pass"})
++
++    def test_no_identity_or_role_fields(self):
++        names = {f.name for f in dataclasses.fields(D.PersonCandidate)}
++        for banned in ("team", "role", "colour", "color", "number", "jersey", "identity", "track_id", "name"):
++            self.assertFalse(any(banned in n for n in names), banned)
++
++    def test_confidence_filter(self):
++        out = self.run_script([TARGET + (0.09,), PERSON_A + (0.10,), PERSON_B + (0.5,)])
++        self.assertEqual(sorted(c.score for c in out), [0.10, 0.5])         # >= detector_min_score (0.10)
++        out = self.run_script([TARGET + (0.3,)], detector_min_score=0.4)
++        self.assertEqual(out, ())
++
++    def test_nms_suppresses_duplicates_keeps_overlapping_people(self):
++        dup = (402.0, 201.0, 461.0, 331.0)                                  # same person, IoU ~0.95
++        out = self.run_script([TARGET + (0.9,), dup + (0.8,), PERSON_B + (0.7,)])
++        boxes = [c.bbox for c in out]
++        self.assertIn(TARGET, boxes)
++        self.assertNotIn(dup, boxes)
++        self.assertIn(PERSON_B, boxes)                                      # a different, overlapping person
++
++    def test_nms_threshold_from_config(self):
++        out = self.run_script([TARGET + (0.9,), PERSON_B + (0.7,)], detector_nms_iou=0.3)
++        self.assertEqual(len(out), 1)
++
++    def test_clipping_and_edge_flag(self):
++        out = self.run_script([PERSON_C + (0.8,), TARGET + (0.9,)])
++        c = {x.bbox: x for x in out}
++        self.assertIn((1250.0, 600.0, 1280.0, 720.0), c)
++        self.assertTrue(c[(1250.0, 600.0, 1280.0, 720.0)].touches_image_edge)
++        self.assertFalse(c[TARGET].touches_image_edge)
++
++    def test_fully_outside_box_dropped(self):
++        self.assertEqual(self.run_script([(1300.0, 10.0, 1400.0, 100.0, 0.9)]), ())
++
++    def test_deterministic_tie_order(self):
++        rows = [PERSON_A + (0.8,), TARGET + (0.8,)]
++        self.assertEqual(self.run_script(rows), self.run_script(list(rows)))
++
++
++class TestTileMerging(unittest.TestCase):
++    """Tile passes: a cut piece of a person must not beat or duplicate the whole person, but a partly hidden
++    second person inside someone's box must survive."""
++
++    def merge(self, rows, sides, **over):
++        arr = np.asarray(rows, dtype=float)
++        keep = D.merge_passes(arr[:, :4], arr[:, 4], ["p"] * len(rows), np.asarray(sides), cfg(**over))
++        return [tuple(arr[k, :4]) for k in keep]
++
++    def test_cut_fragment_of_whole_box_dropped_even_with_higher_score(self):
++        whole = TARGET + (0.75,)
++        frag = (401.0, 260.0, 459.0, 330.0, 0.90)          # lower part of TARGET, cut at its top tile edge
++        kept = self.merge([whole, frag], [0, D.CUT_TOP])
++        self.assertEqual(kept, [TARGET])
++
++    def test_partly_hidden_second_person_kept(self):
++        whole = TARGET + (0.75,)
++        hidden = (425.0, 200.0, 450.0, 270.0, 0.88)          # PERSON_B mostly hidden behind TARGET, cut at bottom
++        kept = self.merge([whole, hidden], [0, D.CUT_BOTTOM])
++        self.assertEqual(len(kept), 2)
++
++    def test_two_cut_pieces_of_one_person(self):
++        top = (400.0, 200.0, 460.0, 300.0, 0.8)
++        bottom_piece = (401.0, 290.0, 459.0, 299.0, 0.7)    # sliver fully inside the other, spanning its width
++        kept = self.merge([top, bottom_piece], [D.CUT_BOTTOM, D.CUT_TOP])
++        self.assertEqual(len(kept), 1)
++
++    def test_cut_box_seen_uncut_by_neighbour_tile(self):
++        # 2x2 tiles on 1280x720 with 0.2 overlap: rows span y 0-400 and 320-720. A box cut at the top edge of a
++        # lower tile (y=320) that ends above y=400 lies wholly inside the upper tile, which saw it without the cut.
++        tiles = D.tile_layout(1280, 720, 2, 2, 0.2)
++        lower_left = [t for t in tiles if t.name == "tile_c0_r1"][0]
++        sliver = (100.0, 320.0, 130.0, 345.0)                         # e.g. the legs of PERSON_A
++        self.assertTrue(D.seen_uncut_elsewhere(sliver, D.CUT_TOP, lower_left, tiles))
++        tall = (100.0, 320.0, 130.0, 460.0)                           # extends past the upper tile: keep
++        self.assertFalse(D.seen_uncut_elsewhere(tall, D.CUT_TOP, lower_left, tiles))
++        uncut_side = (100.0, 320.0, 130.0, 345.0)                     # the upper tile does not extend left of x=0
++        self.assertFalse(D.seen_uncut_elsewhere(uncut_side, D.CUT_LEFT, lower_left, tiles))
++
++    def test_no_tiling_is_plain_nms(self):
++        rows = [TARGET + (0.9,), PERSON_A + (0.8,), PERSON_B + (0.7,)]
++        arr = np.asarray(rows)
++        self.assertEqual(D.merge_passes(arr[:, :4], arr[:, 4], ["f"] * 3, np.zeros(3, int), cfg()),
++                         D.nms(arr[:, :4], arr[:, 4], cfg().get("detector_nms_iou")))
++
++
++class TestNoBackendLeakage(unittest.TestCase):
++    def test_only_backend_module_imports_onnxruntime(self):
++        pkg = os.path.join(ROOT, "player_tracker_rb")
++        for f in sorted(os.listdir(pkg)):
++            if not f.endswith(".py"):
++                continue
++            tree = ast.parse(open(os.path.join(pkg, f), encoding="utf-8").read())
++            mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
++            mods |= {(n.module or "").split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
++            with self.subTest(f):
++                if f != "detector_yolox.py":
++                    self.assertNotIn("onnxruntime", mods)
++
++    def test_generic_interface_names_no_backend(self):
++        src = open(os.path.join(ROOT, "player_tracker_rb", "detector.py"), encoding="utf-8").read().lower()
++        self.assertNotIn("yolox", src)
++
++
++@unittest.skipUnless(HAVE_MODEL, "models/yolox_s.onnx not present")
++class TestYoloxBackend(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        from player_tracker_rb import detector_yolox as Y
++        cls.Y = Y
++        cls.tmp = tempfile.mkdtemp(prefix="rb_det_")
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def test_model_hash_pinned(self):
++        h = hashlib.sha256(open(MODEL, "rb").read()).hexdigest()
++        self.assertEqual(h, cfg().get("detector_model_sha256"))
++
++    def test_hash_mismatch_refused(self):
++        with self.assertRaises(D.DetectorModelError):
++            self.Y.YoloxOnnxDetector(cfg(detector_model_sha256="0" * 64))
++
++    def test_missing_model_refused(self):
++        with self.assertRaises(D.DetectorModelError):
++            self.Y.YoloxOnnxDetector(cfg(detector_model_file=os.path.join(self.tmp, "absent.onnx")))
++
++    def test_invalid_model_refused(self):
++        bad = os.path.join(self.tmp, "bad.onnx")
++        with open(bad, "wb") as f:
++            f.write(b"not an onnx model" * 100)
++        h = hashlib.sha256(open(bad, "rb").read()).hexdigest()
++        with self.assertRaises(D.DetectorModelError):
++            self.Y.YoloxOnnxDetector(cfg(detector_model_file=bad, detector_model_sha256=h))
++
++    def test_input_size_mismatch_refused(self):
++        with self.assertRaises(D.DetectorModelError):
++            self.Y.YoloxOnnxDetector(cfg(detector_input_size=960))
++
++    def test_preprocessing_geometry(self):
++        det = self.Y.YoloxOnnxDetector(cfg())
++        img = np.full((720, 1280, 3), 200, np.uint8)
++        tensor, lb = det._preprocess(img, 0, 0)
++        self.assertEqual(tensor.shape, (1, 3, 640, 640))
++        self.assertEqual(tensor.dtype, np.float32)
++        self.assertTrue(np.all(tensor[0, :, :360, :] == 200))          # resized image at the top-left
++        self.assertTrue(np.all(tensor[0, :, 360:, :] == 114))          # pad value below, no normalisation
++        self.assertAlmostEqual(lb.scale, 0.5)
++
++    def test_blank_image_gives_no_people(self):
++        det = self.Y.YoloxOnnxDetector(cfg())
++        self.assertEqual(det.detect(np.full((720, 1280, 3), 90, np.uint8)), ())
++
++    def test_bad_image_refused(self):
++        det = self.Y.YoloxOnnxDetector(cfg())
++        for bad in (np.zeros((10, 10), np.uint8), np.zeros((10, 10, 3), np.float32), np.zeros((10, 10, 4), np.uint8)):
++            with self.assertRaises(D.DetectorError):
++                det.detect(bad)
++
++    def test_provenance_and_model_record(self):
++        det = self.Y.YoloxOnnxDetector(cfg())
++        p = det.provenance()
++        self.assertEqual(p["model_sha256"], cfg().get("detector_model_sha256"))
++        self.assertEqual(p["model_status"], "LICENCE_UNCLEAR")
++        self.assertEqual(p["input_size"], 640)
++        m = det.model_record()
++        self.assertEqual(set(m), {"role", "filename", "sha256", "status"})
++
++
++GOLD_VIDEO = os.environ.get("SPANA_GOLD_VIDEO", "")
++
++
++@unittest.skipUnless(HAVE_MODEL and os.path.isfile(GOLD_VIDEO), "needs models/yolox_s.onnx and SPANA_GOLD_VIDEO")
++class TestYoloxOnRealFootage(unittest.TestCase):
++    """Real footage used only as generic people-in-a-frame input. No identities, no events."""
++
++    @classmethod
++    def setUpClass(cls):
++        import cv2
++        from player_tracker_rb import detector_yolox as Y
++        cap = cv2.VideoCapture(GOLD_VIDEO)
++        frames = []
++        for _ in range(3):
++            ok, img = cap.read()
++            frames.append(img)
++        cap.release()
++        cls.frames = frames
++        cls.Y = Y
++
++    def test_people_found_and_output_is_generic(self):
++        det = self.Y.YoloxOnnxDetector(cfg())
++        out = det.detect(self.frames[0])
++        self.assertGreater(len(out), 0)
++        for c in out:
++            self.assertEqual(type(c), D.PersonCandidate)
++            self.assertTrue(all(type(v) is float for v in c.bbox) and type(c.score) is float)
++
++    def test_deterministic_repeated_inference(self):
++        for mode in ("none", "grid"):
++            with self.subTest(tiling=mode):
++                a = self.Y.YoloxOnnxDetector(cfg(detector_tiling=mode)).detect(self.frames[1])
++                b = self.Y.YoloxOnnxDetector(cfg(detector_tiling=mode)).detect(self.frames[1])
++                self.assertEqual(a, b)
++
++    def test_partial_people_at_image_border(self):
++        # Crop so that the people found in the full frame are cut by the crop border: the cut ones must be found
++        # (as partial people) and flagged touches_image_edge.
++        det = self.Y.YoloxOnnxDetector(cfg())
++        img = self.frames[2]
++        full = [c for c in det.detect(img) if c.score >= 0.5 and c.height >= 60]
++        self.assertTrue(full)
++        c0 = full[0]
++        cut_x = int((c0.bbox[0] + c0.bbox[2]) / 2)                        # vertical cut through that person
++        crop = np.ascontiguousarray(img[:, cut_x:])
++        part = det.detect(crop)
++        near = [p for p in part if p.bbox[0] <= cfg().get("detector_edge_touch_margin_px")
++                and p.bbox[1] < c0.bbox[3] and p.bbox[3] > c0.bbox[1]]
++        self.assertTrue(near, "the half-visible person should still be detected")
++        self.assertTrue(all(p.touches_image_edge for p in near))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_package_hygiene.py b/tests_rb/test_package_hygiene.py
+index 8592a88..ae32aa9 100644
+--- a/tests_rb/test_package_hygiene.py
++++ b/tests_rb/test_package_hygiene.py
+@@ -20,8 +20,9 @@ HEADER = ("# SPANA engine v2-rebuild", "# REBUILT 2026-10 — NOT ORIGINAL SOURC
+ FORBIDDEN_TOP = {"football_analysis", "player_tracker", "player_tracker_mo", "event_engine_v1", "recovered",
+                  "ultralytics", "torch", "torchvision", "scipy", "sklearn", "easyocr", "new_tracker_snapshots"}
+ ALLOWED_THIRD_PARTY = {"numpy", "cv2", "onnxruntime"}
+-# Structural numbers only: identity values, box/pair lengths, percent scale.
+-ALLOWED_LITERALS = {0, 1, -1, 2, 4, 0.0, 1.0, -1.0, 100.0}
++# Structural numbers only: identity values, box/pair lengths, percent scale, and 3 (the last index of an
++# [x1, y1, x2, y2] box, and the ndim of an H x W x C image).
++ALLOWED_LITERALS = {0, 1, -1, 2, 3, 4, 0.0, 1.0, -1.0, 100.0}
+ 
+ 
+ def _py_files(*dirs):
+diff --git a/tools_rb/detector_eval.py b/tools_rb/detector_eval.py
+new file mode 100644
+index 0000000..22104f0
+--- /dev/null
++++ b/tools_rb/detector_eval.py
+@@ -0,0 +1,227 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1 approval §3 (detector input size chosen on person-detection quality only); R1/R1_DESIGN_DECISIONS.md
++#                 D17, D18; R1-C instruction (GOLD only as a generic real-footage detection fixture)
++"""Evaluate person-detector settings on a real clip, using detection quality only.
++
++No identity, tracking or event result is read or produced. From the fixture, only video_sha256, seed_frame and
++seed_bbox are read: the seed box is the one human-confirmed person box available, so it is used to check that the
++detector can see the person a user would select (the D18 seed check). Everything else is generic statistics over
++all person candidates in every frame from the seed frame to the end of the clip.
++
++Settings compared (each in its own subprocess, so runtime and peak memory are its own):
++  s_full     YOLOX-s, one full-frame 640 pass                (fixed 640x640 model input)
++  s_grid2x2  YOLOX-s, 2x2 overlapping tiles + full-frame pass (more network pixels per small person)
++  s_grid3x2  YOLOX-s, 3x2 overlapping tiles + full-frame pass
++  m_full     YOLOX-m, one full-frame 640 pass                 (approved fallback model)
++
++Metrics per setting:
++  seed_iou / seed_score     best IoU with the seed box at the seed frame, and that candidate's score
++  per-frame counts          all candidates; candidates with score >= 0.5
++  height bins               candidates by box height (px): <40, 40-80, 80-120, >=120 ("small" = <80)
++  pool_recall               PROXY, NOT GROUND TRUTH: the "pool" is every candidate with score >= 0.5 from ANY
++                            setting, clustered across settings at IoU >= 0.5. A setting's pool_recall is the share of
++                            pool people it also finds (IoU >= 0.5, any kept score). pool_recall_small: the same for
++                            pool people shorter than 80 px.
++  edge_touch / wide_boxes   partial-at-border candidates; boxes wider than tall*0.9 (merged-pair proxy)
++  runtime_ms (mean, p95), peak_rss_mb
++
++Selection rule (declared before running; R1 approval §3: "the smallest setting that preserves required
++player-detection quality"). Cost order: s_full < s_grid2x2 < s_grid3x2; m_full only if no YOLOX-s setting passes.
++A setting PASSES if: seed_iou >= seed_min_iou (config, 0.5) AND pool_recall >= 0.95 AND pool_recall_small >= 0.90.
++The first passing setting in cost order is selected. If none passes, nothing is selected and the report says so.
++
++Usage:
++  all settings in one process tree:   python3 tools_rb/detector_eval.py VIDEO FIXTURE_JSON OUT_DIR [M_MODEL M_SHA]
++  one setting, one chunk of frames:    python3 tools_rb/detector_eval.py --chunk NAME REL_START REL_COUNT VIDEO
++                                           FIXTURE_JSON OUT_DIR [M_MODEL M_SHA]
++  summarise existing chunk files:      python3 tools_rb/detector_eval.py --summarise FIXTURE_JSON OUT_DIR
++Chunks exist only because a remote shell limits each call to a few minutes. Every chunk still decodes the video
++sequentially from frame 0 (no seek, no resume); --summarise refuses to report unless every setting covers every
++frame from the seed to the end exactly once.
++"""
++import json
++import os
++import resource
++import subprocess
++import sys
++import time
++
++import numpy as np
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from player_tracker_rb import detector as D  # noqa: E402
++from player_tracker_rb import output_schema as S  # noqa: E402
++from player_tracker_rb.config import TrackerConfig  # noqa: E402
++from player_tracker_rb.video_io import SequentialVideoReader  # noqa: E402
++
++SETTINGS = {
++    "s_full": {},
++    "s_grid2x2": {"detector_tiling": "grid", "detector_tile_grid": [2, 2]},
++    "s_grid3x2": {"detector_tiling": "grid", "detector_tile_grid": [3, 2]},
++    "m_full": {"_model": "m"},
++}
++COST_ORDER = ["s_full", "s_grid2x2", "s_grid3x2"]
++FALLBACK = ["m_full"]
++POOL_SCORE = 0.5
++MATCH_IOU = 0.5
++SMALL_PX = 80
++PASS_RECALL = 0.95
++PASS_RECALL_SMALL = 0.90
++
++
++def run_setting(name, video, fx, out_dir, m_model=None, m_sha=None, rel_start=0, rel_count=None):
++    from player_tracker_rb.detector_yolox import YoloxOnnxDetector
++    over = {k: v for k, v in SETTINGS[name].items() if not k.startswith("_")}
++    if SETTINGS[name].get("_model") == "m":
++        over.update(detector_model_file=m_model, detector_model_sha256=m_sha)
++    cfg = TrackerConfig.with_overrides(over)
++    det = YoloxOnnxDetector(cfg)
++    frames, times = [], []
++    rel_end = None if rel_count is None else rel_start + rel_count
++    with SequentialVideoReader(video, fx["seed_frame"], cfg, expected_sha256=fx["video_sha256"]) as r:
++        for fr in [r.seed] + list(r):          # seed frame (rel 0) and every frame after it, decoded in order
++            if fr.rel_frame < rel_start or (rel_end is not None and fr.rel_frame >= rel_end):
++                continue
++            t = time.perf_counter()
++            cands = det.detect(fr.image)
++            times.append(time.perf_counter() - t)
++            frames.append({"rel": fr.rel_frame, "video_frame_index": fr.video_frame_index,
++                           "cands": [[round(v, 2) for v in c.bbox] + [round(c.score, 4), int(c.touches_image_edge)]
++                                     for c in cands]})
++    rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
++    rss_mb = rss_mb / 1024.0 if sys.platform != "darwin" else rss_mb / (1024.0 * 1024.0)
++    out = {"setting": name, "overrides": over if "detector_model_sha256" not in over else
++           dict(over, detector_model_file=os.path.basename(m_model)), "provenance": det.provenance(),
++           "config_hash": cfg.config_hash(), "frames": frames, "frame_times_s": times,
++           "peak_rss_mb": rss_mb}
++    path = os.path.join(out_dir, f"raw_{name}__{rel_start:04d}.json")
++    if os.path.exists(path):
++        raise SystemExit(f"refusing to overwrite {path}")
++    with open(path, "w") as f:
++        f.write(S.dumps_canonical(out))
++
++
++def load_setting(out_dir, name):
++    """Join a setting's chunk files; None if absent. Fails unless frames are contiguous from 0 with no overlap."""
++    files = sorted(f for f in os.listdir(out_dir) if f.startswith(f"raw_{name}__") and f.endswith(".json"))
++    if not files:
++        return None
++    parts = [json.load(open(os.path.join(out_dir, f))) for f in files]
++    frames = [fr for p in parts for fr in p["frames"]]
++    rels = [fr["rel"] for fr in frames]
++    if rels != list(range(len(rels))):
++        raise SystemExit(f"{name}: chunks do not cover frames 0..N-1 exactly once: {rels[:5]}...{rels[-5:]}")
++    if len({p["config_hash"] for p in parts}) != 1:
++        raise SystemExit(f"{name}: chunks were run with different configs")
++    times = [t for p in parts for t in p["frame_times_s"]]
++    return {"setting": name, "overrides": parts[0]["overrides"], "provenance": parts[0]["provenance"],
++            "config_hash": parts[0]["config_hash"], "frames": frames, "chunks": files,
++            "runtime_ms_mean": 1000 * float(np.mean(times)), "runtime_ms_p95": 1000 * float(np.percentile(times, 95)),
++            "peak_rss_mb": max(p["peak_rss_mb"] for p in parts)}
++
++
++def summarise(out_dir, fx):
++    raw = {n: load_setting(out_dir, n) for n in SETTINGS}
++    raw = {n: v for n, v in raw.items() if v is not None}
++    names = list(raw)
++    n_frames = len(raw[names[0]]["frames"])
++    if any(len(raw[n]["frames"]) != n_frames for n in names):
++        raise SystemExit("settings cover different numbers of frames")
++    seed_box = np.array([fx["seed_bbox"]], float)
++    rep = {}
++    # Build the agreement pool frame by frame.
++    pool_hits = {n: 0 for n in names}
++    pool_hits_small = {n: 0 for n in names}
++    pool_total = pool_small_total = 0
++    for i in range(n_frames):
++        per = {n: np.array(raw[n]["frames"][i]["cands"], float).reshape(-1, 6) for n in names}
++        strong = np.concatenate([per[n][per[n][:, 4] >= POOL_SCORE, :5] for n in names], 0)
++        if strong.shape[0]:
++            keep = D.nms(strong[:, :4], strong[:, 4], MATCH_IOU)      # cluster across settings
++            pool = strong[keep, :4]
++            for p in pool:
++                small = (p[3] - p[1]) < SMALL_PX
++                pool_total += 1
++                pool_small_total += int(small)
++                for n in names:
++                    if per[n].shape[0] and D.box_iou_matrix(p[None], per[n][:, :4]).max() >= MATCH_IOU:
++                        pool_hits[n] += 1
++                        pool_hits_small[n] += int(small)
++    for n in names:
++        fr = raw[n]["frames"]
++        allc = [np.array(f["cands"], float).reshape(-1, 6) for f in fr]
++        cat = np.concatenate(allc, 0) if allc else np.zeros((0, 6))
++        h = cat[:, 3] - cat[:, 1] if cat.shape[0] else np.zeros(0)
++        w = cat[:, 2] - cat[:, 0] if cat.shape[0] else np.zeros(0)
++        seed_c = allc[0]
++        seed_iou = float(D.box_iou_matrix(seed_box, seed_c[:, :4]).max()) if seed_c.shape[0] else 0.0
++        seed_score = float(seed_c[int(D.box_iou_matrix(seed_box, seed_c[:, :4]).argmax()), 4]) if seed_c.shape[0] else 0.0
++        rep[n] = {
++            "provenance": raw[n]["provenance"], "config_hash": raw[n]["config_hash"],
++            "seed_iou": round(seed_iou, 4), "seed_score": round(seed_score, 4),
++            "frames": n_frames,
++            "candidates_per_frame_mean": round(float(np.mean([a.shape[0] for a in allc])), 2),
++            "strong_per_frame_mean": round(float(np.mean([(a[:, 4] >= POOL_SCORE).sum() for a in allc])), 2),
++            "height_bins": {"lt40": int((h < 40).sum()), "40_80": int(((h >= 40) & (h < 80)).sum()),
++                            "80_120": int(((h >= 80) & (h < 120)).sum()), "ge120": int((h >= 120).sum())},
++            "small_lt80_per_frame_mean": round(float((h < SMALL_PX).sum()) / n_frames, 2),
++            "edge_touch_total": int(cat[:, 5].sum()) if cat.shape[0] else 0,
++            "wide_boxes_total": int((w > 0.9 * h).sum()) if cat.shape[0] else 0,
++            "pool_recall": round(pool_hits[n] / pool_total, 4) if pool_total else None,
++            "pool_recall_small": round(pool_hits_small[n] / pool_small_total, 4) if pool_small_total else None,
++            "runtime_ms_mean": round(raw[n]["runtime_ms_mean"], 1), "runtime_ms_p95": round(raw[n]["runtime_ms_p95"], 1),
++            "peak_rss_mb": round(raw[n]["peak_rss_mb"], 1),
++        }
++    seed_min = TrackerConfig.default().get("seed_min_iou")
++    for n in names:
++        r = rep[n]
++        r["passes"] = bool(r["seed_iou"] >= seed_min and (r["pool_recall"] or 0) >= PASS_RECALL
++                           and (r["pool_recall_small"] or 0) >= PASS_RECALL_SMALL)
++    selected = next((n for n in COST_ORDER + FALLBACK if n in rep and rep[n]["passes"]), None)
++    return {"tool": "tools_rb/detector_eval.py", "fixture_fields_used": ["video_sha256", "seed_frame", "seed_bbox"],
++            "identity_or_event_results_used": False, "frames_evaluated": n_frames,
++            "pool": {"definition": f"score>={POOL_SCORE} in any setting, clustered at IoU>={MATCH_IOU}; PROXY, not ground truth",
++                     "people_frames": pool_total, "small_lt80_people_frames": pool_small_total},
++            "selection_rule": {"cost_order": COST_ORDER, "fallback": FALLBACK, "seed_min_iou": seed_min,
++                               "min_pool_recall": PASS_RECALL, "min_pool_recall_small": PASS_RECALL_SMALL},
++            "settings": rep, "selected": selected,
++            "chunks": {n: raw[n]["chunks"] for n in names}}
++
++
++def _fx(fx_json):
++    return {k: json.load(open(fx_json))[k] for k in ("video_sha256", "seed_frame", "seed_bbox")}
++
++
++def _write_summary(fx_json, out_dir):
++    rep = summarise(out_dir, _fx(fx_json))
++    with open(os.path.join(out_dir, "DETECTOR_EVAL_SUMMARY.json"), "w") as f:
++        f.write(S.dumps_canonical(rep))
++    print(json.dumps({k: v for k, v in rep.items() if k not in ("settings", "chunks")}, indent=1))
++    for n, r in rep["settings"].items():
++        print(n, {k: v for k, v in r.items() if k not in ("provenance", "config_hash")})
++
++
++def main(argv):
++    if argv[0] == "--chunk":
++        _, name, start, count, video, fx_json, out_dir, *m = argv
++        os.makedirs(out_dir, exist_ok=True)
++        run_setting(name, video, _fx(fx_json), out_dir, *(m or [None, None]), rel_start=int(start),
++                    rel_count=int(count))
++        return 0
++    if argv[0] == "--summarise":
++        _write_summary(argv[1], argv[2])
++        return 0
++    video, fx_json, out_dir, *m = argv
++    os.makedirs(out_dir, exist_ok=True)
++    for name in SETTINGS:
++        if SETTINGS[name].get("_model") == "m" and not m:
++            continue
++        subprocess.run([sys.executable, os.path.abspath(__file__), "--chunk", name, "0", "1000000", video, fx_json,
++                        out_dir, *m], check=True)
++    _write_summary(fx_json, out_dir)
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main(sys.argv[1:]))

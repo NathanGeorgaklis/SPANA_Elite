@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r1b-1"
+CONFIG_REGISTRY_VERSION = "r1c-1"
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -64,7 +64,7 @@ ROLES = ("BEHAVIOURAL", "CONTRACT", "RUNTIME", "REFERENCE_ONLY")
 class Param:
     """One configuration parameter and everything known about it."""
     name: str
-    type: str                 # "float" | "int" | "bool" | "str" | "pair" | "mapping" | "optional_int"
+    type: str                 # "float" | "int" | "bool" | "str" | "pair" | "tuple" | "mapping" | "optional_int"
     units: str
     meaning: str
     default: Any
@@ -198,6 +198,79 @@ PARAMS: Tuple[Param, ...] = (
        "Detector network input size. To be chosen on development footage by person-detection quality only (D17).", 640, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; R1 approval §3", 320, 1920,
        allowed=(640, 960, 1280)),
+    _p("detector_model_file", "str", "path (relative to the project root, or absolute)",
+       "ONNX person-detector model file. Loaded only if its SHA-256 equals detector_model_sha256.",
+       "models/yolox_s.onnx", N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "detector",
+       "R1/R1C/R1C_MODEL_RECORD.md; official Megvii YOLOX release 0.1.1rc0 asset yolox_s.onnx"),
+    _p("detector_model_sha256", "str", "sha256 hex",
+       "Pinned SHA-256 of the detector model. A mismatch refuses the run (D22).",
+       "c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063", N, "VERIFIED_CODE", "NOT_APPLICABLE",
+       "RUNTIME", "detector",
+       "sha256 of https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx, "
+       "downloaded 2026-10-24 (R1/R1C/R1C_MODEL_RECORD.md)"),
+    _p("detector_model_status", "str", "licence status",
+       "Licence status of the detector model, copied into provenance (R1_MODEL_AND_LICENSE_RECORD.md).",
+       "LICENCE_UNCLEAR", N, "DOCUMENTED", "NOT_APPLICABLE", "RUNTIME", "detector",
+       "R1 approval §2: YOLOX-s DEVELOPMENT/EVALUATION; not PRODUCTION_APPROVED until the COCO question is resolved",
+       allowed=("PRODUCTION_APPROVED", "DEVELOPMENT_ONLY", "LICENCE_UNCLEAR", "NOT_APPROVED")),
+    _p("detector_person_class_index", "int", "class index",
+       "Index of the 'person' class in the detector's class outputs (COCO class 0).", 0, H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "detector",
+       "YOLOX yolox/data/datasets/coco_classes.py: COCO_CLASSES[0] == 'person'", 0, 1000),
+    _p("detector_letterbox_pad_value", "int", "uint8 grey level",
+       "Padding value of the detector's letterbox (model preprocessing convention).", 114, H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "detector",
+       "YOLOX yolox/data/data_augment.py preproc(): np.ones(...) * 114, image placed top-left, BGR 0-255 float, "
+       "no mean/std normalisation (verified on real footage 2026-10-24: the normalised variant scores ~0.001)", 0, 255),
+    _p("detector_strides", "tuple", "px per output cell",
+       "Output strides of the detector heads, used to decode grid offsets.", (8, 16, 32), H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "detector",
+       "YOLOX yolox/utils/demo_utils.py demo_postprocess(): strides [8, 16, 32] (p6=False); 8400 = 80^2+40^2+20^2",
+       1, 1024),
+    _p("detector_input_channels", "int", "channels", "Colour channels of the detector input tensor (BGR).", 3, H,
+       "VERIFIED_CODE", "CONTRACT_VERIFIED", "CONTRACT", "detector",
+       "official yolox_s.onnx input 'images' shape [1, 3, 640, 640] (checked at load)", 1, 4),
+    _p("detector_box_fields", "int", "values per prediction before class scores",
+       "Leading values of each detector prediction: cx, cy, w, h, objectness.", 5, H, "VERIFIED_CODE",
+       "CONTRACT_VERIFIED", "CONTRACT", "detector",
+       "YOLOX demo/ONNXRuntime/onnx_inference.py: boxes = p[:, :4]; scores = p[:, 4:5] * p[:, 5:]", 1, 64),
+    _p("detector_tiling", "str", "mode",
+       "none: one full-frame pass. grid: overlapping tiles (plus an optional full-frame pass) so small people get "
+       "more network pixels at the model's fixed input size; results are merged by global NMS.", "grid", N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
+       "D17; the official YOLOX ONNX models have a fixed 640x640 input. Selected by the pre-declared rule in "
+       "tools_rb/detector_eval.py on one development clip, detection quality only (R1/R1C/R1C_STAGE_RECORD.md): "
+       "full-frame 640 small-person pool recall 0.82, 2x2 tiles + full frame 0.99. Proxy, not ground truth",
+       allowed=("none", "grid")),
+    _p("detector_tile_grid", "pair", "tiles (columns, rows)", "Tile grid used when detector_tiling is grid.",
+       (2, 2), N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17", 1, 8),
+    _p("detector_tile_overlap_fraction", "float", "fraction of tile size",
+       "Overlap between neighbouring tiles, so a person cut by one tile edge is whole in the neighbour.", 0.2, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17", 0.0, 0.9),
+    _p("detector_tile_include_full_frame", "bool", "flag",
+       "With tiling, also run one full-frame pass (keeps people larger than a tile whole).", True, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17"),
+    _p("detector_tile_edge_margin_fraction", "float", "fraction of tile size",
+       "A tile-pass box within this fraction of the tile size from an internal tile edge counts as touching it "
+       "(possible cut fragment). Network box edges are coarse, so exact equality is not enough.", 0.02, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "R1-C development check: a cut box ended 1 px inside the edge",
+       0.0, 0.5),
+    _p("detector_edge_touch_margin_px", "float", "px (image resolution)",
+       "A box within this many pixels of the image border is flagged touches_image_edge (person may be partly "
+       "outside the frame).", 2.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
+       "R1-C: boxes cut by the bottom border ended at 719 of 720 px", 0.0, 64.0),
+    _p("detector_tile_cut_min_span_ratio", "float", "ratio",
+       "A cut box is treated as a fragment of a larger box only if it spans at least this fraction of that box "
+       "across the cut (its width for a top/bottom cut, its height for a left/right cut). A narrower box inside "
+       "another person's box is a partly hidden second person and is kept.", 0.7, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "detector",
+       "R1-C development check: containment alone removed a partly occluded second person (F2/F5: occluded "
+       "competitors must stay visible)", 0.0, 1.0),
+    _p("detector_tile_cut_containment", "float", "fraction of box area",
+       "A tile-pass box that touches an internal tile edge and lies at least this much inside another kept box is "
+       "dropped as a cut fragment. Boxes touching the real image edge are never dropped by this rule.", 0.8, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector", "D17; F5 (fragments of one body acting as extra people)",
+       0.0, 1.0),
     _p("detector_min_score", "float", "detector score (0-1)",
        "Minimum raw person score kept. Low on purpose: partial bodies must still appear as competitors.",
        0.10, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "detector",
@@ -472,6 +545,16 @@ def _check_value(p: Param, value: Any) -> Optional[str]:
                 return f"{p.name}: element {e} below minimum {p.min_value}"
             if p.max_value is not None and e > p.max_value:
                 return f"{p.name}: element {e} above maximum {p.max_value}"
+    elif t == "tuple":
+        if (not isinstance(value, (tuple, list)) or len(value) == 0 or
+                any(isinstance(e, bool) or not isinstance(e, (int, float)) for e in value)):
+            return f"{p.name}: expected a non-empty sequence of numbers, got {value!r}"
+        x = None
+        for e in value:
+            if p.min_value is not None and e < p.min_value:
+                return f"{p.name}: element {e} below minimum {p.min_value}"
+            if p.max_value is not None and e > p.max_value:
+                return f"{p.name}: element {e} above maximum {p.max_value}"
     elif t == "mapping":
         if not isinstance(value, Mapping):
             return f"{p.name}: expected a mapping, got {value!r}"
@@ -489,7 +572,7 @@ def _check_value(p: Param, value: Any) -> Optional[str]:
 
 
 def _freeze(t: str, value: Any) -> Any:
-    if t == "pair":
+    if t in ("pair", "tuple"):
         return tuple(float(e) if isinstance(e, float) else e for e in value)
     if t == "mapping":
         return MappingProxyType(dict(value))
