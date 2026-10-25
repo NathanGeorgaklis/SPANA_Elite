@@ -19,7 +19,7 @@
      50
     ],
     "missed_reacquisition": true,
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -47,7 +47,7 @@
      25
     ],
     "missed_reacquisition": true,
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -94,7 +94,7 @@
      67
     ],
     "missed_reacquisition": true,
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -142,7 +142,7 @@
      59
     ],
     "missed_reacquisition": "UNKNOWN",
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -172,7 +172,7 @@
      60
     ],
     "missed_reacquisition": "UNKNOWN",
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -233,7 +233,7 @@
      80
     ],
     "missed_reacquisition": true,
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,
@@ -368,7 +368,7 @@
      47
     ],
     "missed_reacquisition": "UNKNOWN",
-    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+    "outcome": "NOT_REACQUIRED"
    }
   ],
   "swaps": 0,

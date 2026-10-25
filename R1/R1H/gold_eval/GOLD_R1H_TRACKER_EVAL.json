@@ -1,4 +1,39 @@
 {
+ "b5_contact_integrity": {
+  "confident_frames_in_window": [
+   70,
+   71,
+   72,
+   73,
+   74,
+   75,
+   76,
+   77,
+   78,
+   79
+  ],
+  "confident_on_partner": [],
+  "contact_frames": [
+   81,
+   82,
+   83,
+   84,
+   85,
+   86,
+   87,
+   88,
+   89,
+   90,
+   91,
+   92
+  ],
+  "status": "UNKNOWN",
+  "window_clipped_to_truth": true,
+  "window_frames": [
+   70,
+   107
+  ]
+ },
  "box_quality": {
   "mean_iou_confident": "UNKNOWN",
   "reason": "no human target boxes on confident frames"
@@ -46,8 +81,19 @@
   "98": "REACQUIRING",
   "99": "REACQUIRING"
  },
+ "command": [
+  "python3",
+  "tools_rb/tracker_eval.py",
+  "R1/R1G/gold_pipeline/run_a_mo_tracking_results.json",
+  "fixtures/GOLD_DUEL_01/GOLD_DUEL_01_BENCHMARK_FIXTURE.json",
+  "R1/gold_label_sheet/GOLD_HUMAN_LABELS_v1.csv",
+  "R1/gold_label_sheet/GOLD_HUMAN_LABELS_v1.FROZEN.json",
+  "gold_v1",
+  "/home/claude/r1h/GOLD_R1H_TRACKER_EVAL.json"
+ ],
  "confident_not_grounded_violations": [],
  "constants": {
+  "B5_WINDOW_S": 0.5,
   "FCI_IOU_MAX": 0.3,
   "MATCH_IOU_MIN": 0.5,
   "MISSED_REACQ_S": 2.0
@@ -83,10 +129,16 @@
   },
   "trusted_coverage_of_available": 0.333,
   "unavailable_frames": 11,
-  "uncertainty_when_unavailable": 1.0
+  "uncertainty_when_unavailable": 1.0,
+  "uncertainty_when_unresolvable_r0_b1": 1.0,
+  "unresolvable_frames": 3
  },
+ "evaluator_git_commit": "0daba3af755d2d88c8e362530f29a304eb702b46",
+ "evaluator_git_dirty": false,
  "events_evaluated": false,
+ "fixture_sha256": "7929bb2803eecd7a856b64700095fcc447eecfce6020c7dd8d38915b90bd0a79",
  "fps": 30.0,
+ "freeze_record_sha256": "419a3cae25d6cd66b77cd2b8614336d6a4635c090e35438e4f4c67651e28030a",
  "label_format": "gold_v1",
  "labels_sha256": "490a8af14005b09e2302fea81b9831b0e702958620a4508f33cdaae7bcb0d428",
  "priority_1_false_confident_identity": {
@@ -102,19 +154,24 @@
    78,
    79
   ],
-  "count": 0,
+  "count": "UNKNOWN",
   "frames": [],
   "on_unavailable_target": [],
   "on_wrong_box": [],
-  "status": "PARTIAL_NO_BOX_TRUTH"
+  "status": "PARTIAL_NO_BOX_TRUTH",
+  "verified_count": 0
  },
  "priority_2_identity_swaps": {
   "count": "UNKNOWN",
   "reason": "other people's boxes not annotated"
  },
  "priority_3_wrong_reacquisitions": {
+  "correct": 0,
   "count": 0,
-  "items": []
+  "items": [],
+  "not_reacquired": 1,
+  "unverified": 0,
+  "verified_wrong": 0
  },
  "priority_4_trusted_on_hidden_merged_unresolvable": {
   "count": 0,
@@ -122,15 +179,20 @@
  },
  "reacquisition": [
   {
+   "censored_by": "window_end",
    "delay_s_at_least": 0.6,
    "gap": [
     82,
     92
    ],
+   "gap_starts_at_window_start": false,
    "human_clean_reappearance": 93,
    "missed_reacquisition": "UNKNOWN",
-   "outcome": "NOT_REACQUIRED_IN_WINDOW",
-   "target_available_from": 93
+   "outcome": "NOT_REACQUIRED",
+   "post_gap_outcome": "NOT_REACQUIRED",
+   "target_available_from": 93,
+   "target_available_until": 110,
+   "trusted_inside_gap": []
   }
  ],
  "results_config_hash": "8e3b9d6781c0f5b6bd4ddf5dd3afa051061972f567fc2c70a70f187a73c9c62c",
@@ -138,6 +200,7 @@
  "results_git_dirty": false,
  "results_sha256": "9dde1440288d178cc2198b58028b5e408ee61b89e96d1cd8cbafc325bf1491e7",
  "tool": "tools_rb/tracker_eval.py",
+ "tool_sha256": "3bbf0baf7987bb81a2b20bee8910bd448f66712685454ccb4aa5ff21281ecfa9",
  "truth_frames": 41,
  "window": [
   70,
