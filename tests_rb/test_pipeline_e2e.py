@@ -18,7 +18,7 @@ from collections import Counter
 
 from player_tracker_rb import output_schema as S
 from player_tracker_rb.config import TrackerConfig
-from tests_rb._synth_pipeline import PH, PW, ClipFrame, box, clip, iou, run_clip, walk
+from tests_rb._synth_pipeline import PH, PW, ClipFrame, box, clip, gait_walk, iou, run_clip, walk
 from tests_rb._synth_scene import SceneFrame, covered, make_people
 
 KIT_A = (200, 60, 40)
@@ -134,6 +134,15 @@ def _uncontrasted_return():
     return clip({"TARGET": [box(320, 180)] * 100}, drop=lambda k: ["TARGET"] if 10 <= k < 50 else []), ppl, {}
 
 
+def _posed_crossing():
+    """Same-kit crossing with stride-varying boxes and a pose-aware embedding: clean non-seed samples are novel, so
+    the bank really accepts samples and bank_violations() is exercised beyond the seed (test audit A1)."""
+    ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
+    n = 160
+    fr = clip({"TARGET": gait_walk(n, (120, 200), (2.5, 0)), "PERSON_A": gait_walk(n, (120 + 2.5 * n, 205), (-2.5, 0))})
+    return fr, ppl, {"pose_gain": 0.5}
+
+
 SCENARIOS = {
     "same_kit_crossing": lambda: _crossing(KIT_A, SAME_KIT_COS),
     "same_kit_crossing_hidden": lambda: _crossing(KIT_A, SAME_KIT_COS, mode="hide"),
@@ -149,13 +158,15 @@ SCENARIOS = {
     "newcomer_in_contact": _newcomer_in_contact,
     "twin_appears": _twin_appears,
     "uncontrasted_return": _uncontrasted_return,
+    "posed_crossing": _posed_crossing,
 }
 
 
 def result(name):
     if name not in _CACHE:
         frames, ppl, kw = SCENARIOS[name]()
-        _CACHE[name] = run_clip(frames, ppl, os.path.join(_TMP, name), name=name, start_frame=kw.get("start", 2))
+        _CACHE[name] = run_clip(frames, ppl, os.path.join(_TMP, name), name=name, start_frame=kw.get("start", 2),
+                                pose_gain=kw.get("pose_gain", 0.0))
     return _CACHE[name]
 
 
@@ -170,6 +181,7 @@ class UniversalChecks(unittest.TestCase):
                 self.assertEqual(S.validate_document(S.strip_v2(e.doc)), [], "historical contract after strip_v2")
                 self.assertEqual(e.swaps(), [], "silent identity swap")
                 self.assertEqual(e.target_duplicated(), [], "target written twice (rule 28)")
+                self.assertEqual(e.body_written_twice(), [], "target body also written as another person (rule 28)")
                 self.assertEqual(e.bank_violations(), [], "target bank contaminated")
                 for f in range(1, e.n + 1):
                     t = e.target(f)
@@ -190,6 +202,18 @@ class UniversalChecks(unittest.TestCase):
                         self.assertNotEqual(p["track_id"], CFG.get("target_track_id"))
                     for pair in e.doc["frame_log"][f - 1]["overlap_contests"]:
                         self.assertNotEqual(pair[0], pair[1])
+                    ids = {x["track_id"] for x in e.doc["frame_log"][f - 1]["tracks"]}
+                    self.assertTrue(set(t["v2"]["occluder_track_ids"]) <= ids, f"frame {f}: occluder not written")
+                # D06: historical bbox = last confirmed (observed) box; last_seen_frame = last confirmation
+                last_box = e.target(1)["bbox"] if e.target(1)["v2"]["rb_state"] != "TRACKING" else None
+                for f in range(1, e.n + 1):
+                    t = e.target(f)
+                    self.assertEqual(t["last_seen_frame"], t["v2"]["last_confirmed_frame"], f)
+                    if t["v2"]["rb_state"] == "TRACKING":
+                        self.assertEqual(t["bbox"], t["observed_position_box"], f)
+                        last_box = t["bbox"]
+                    elif last_box is not None:
+                        self.assertEqual(t["bbox"], last_box, f"frame {f}: bbox must be the last confirmed box")
 
 
 class Scenarios(unittest.TestCase):
@@ -235,6 +259,26 @@ class Scenarios(unittest.TestCase):
         self.assertEqual([f for f in gone if e.target(f)["v2"]["identity_trusted"]], [])
         self.assertEqual(e.summary["v2"]["reacquisition_events"], [])
 
+    def test_rejected_lookalike_is_still_written_as_a_person(self):
+        """R1-G review M1: a person the tracker has rejected (not the target, not under verification) is a real
+        body and must appear as a population record; only what may physically be the target is withheld."""
+        e = result("wrong_reacquisition")
+        checked = 0
+        for f in range(1, e.n + 1):
+            other = e.target_det_box(f, "PERSON_A")
+            if other is None:
+                continue
+            t = e.target(f)
+            v2 = t["v2"]
+            if v2["rb_state"] == "REACQUIRING":
+                continue                                  # the verifying candidate may be withheld
+            if iou(other, t["observed_position_box"]) >= 0.3:
+                continue                                  # standing where the target would re-emerge (rule 28)
+            written = [p for p in e.population(f) if iou(other, p["observed_position_box"]) > 0.9]
+            self.assertEqual(len(written), 1, f"frame {f}: rejected look-alike missing from the output")
+            checked += 1
+        self.assertGreater(checked, 20)
+
     def test_hard_cut_resets_continuity(self):
         e = result("hard_cut_impostor")
         cut = [fr["frame"] for fr in e.doc["frame_log"] if fr["is_cut"]]
@@ -253,6 +297,12 @@ class Scenarios(unittest.TestCase):
         # the true target is reacquired by appearance, as a new episode
         self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
         self.assertGreaterEqual(e.target(e.n)["v2"]["target_episode"], 2)
+
+    def test_bank_check_sees_real_non_seed_samples(self):
+        e = result("posed_crossing")
+        accepted = [f for f in e.accepted_bank_frames() if f > 0]
+        self.assertGreaterEqual(len(accepted), 2, f"only {accepted}: bank_violations() would be vacuous")
+        self.assertEqual(e.bank_violations(), [])
 
     def test_pan_is_measured(self):
         e = result("pan_crossing")
@@ -278,16 +328,23 @@ class Scenarios(unittest.TestCase):
                 self.assertGreater(e.summary["identity_conflicts_logged"], 0)
 
     def test_uncontrasted_reacquisition_stays_capped_and_flagged(self):
+        """Nobody else is ever banked: the returning target cannot be contrast-verified. Its box is reported as
+        observed (rb TRACKING) but untrusted, flagged INSUFFICIENT_CONTRAST, below the consumers' threshold."""
         e = result("uncontrasted_return")
         ev = e.summary["v2"]["reacquisition_events"]
         self.assertEqual(len(ev), 1)
         self.assertFalse(ev[0]["evidence"]["contrast_available"])
+        self.assertFalse(ev[0]["evidence"]["contrast_verified"])
         acc = ev[0]["reacq_accepted_frame"]
-        for f in range(acc, e.n + 1):
+        observed = [f for f in range(acc, e.n + 1) if e.target(f)["v2"]["rb_state"] == "TRACKING"]
+        self.assertTrue(observed)
+        for f in observed:
             t = e.target(f)
-            if t["v2"]["identity_trusted"]:
-                self.assertLessEqual(t["v2"]["identity_confidence_rb"], 0.5)
-                self.assertLessEqual(t["identity_confidence"], 0.5)
+            self.assertFalse(t["v2"]["identity_trusted"], f)
+            self.assertEqual(t["v2"]["identity_uncertainty_reasons"], ["INSUFFICIENT_CONTRAST"])
+            self.assertLess(t["identity_confidence"], 0.5)
+            self.assertLess(t["overall_track_confidence"], 0.5)
+            self.assertEqual(t["position_source"], "CONFIRMED_DETECTION")       # the box itself is observed
 
 
 if __name__ == "__main__":

@@ -231,8 +231,8 @@ class FailClosed(PipelineBase):
         det, emb = self.scripted()
         orig = R._RecordBuilder.target_record
 
-        def broken(self_, f, tf):
-            rec = orig(self_, f, tf)
+        def broken(self_, f, tf, excluded):
+            rec = orig(self_, f, tf, excluded)
             if f == 10:
                 rec["state"] = "ACTIVE" if rec["state"] != "ACTIVE" else "OCCLUDED"   # state/v2 disagree
             return rec
@@ -244,6 +244,66 @@ class FailClosed(PipelineBase):
         finally:
             R._RecordBuilder.target_record = orig
         self.assertNothingWritten(d)
+
+
+class FileSafety(PipelineBase):
+    """R1-G review M3 / L2 / L3."""
+
+    def test_a_file_appearing_mid_run_is_never_deleted_or_replaced(self):
+        for which in ("results", "decision_log", "provenance"):
+            with self.subTest(which=which):
+                d = self.out_dir("race_" + which)
+                planted = R.output_paths(d, self.video)[which]
+
+                def hook(f, sizes, planted=planted):
+                    if f == 5 and not os.path.exists(planted):
+                        with open(planted, "w") as fh:
+                            fh.write("SOMEONE ELSE'S FILE\n")
+                det, emb = self.scripted()
+                with self.assertRaises(R.RunRefusedError):
+                    R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
+                          debug=True, config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
+                with open(planted) as fh:
+                    self.assertEqual(fh.read(), "SOMEONE ELSE'S FILE\n")
+                self.assertEqual(os.listdir(d), [os.path.basename(planted)], "only the foreign file may remain")
+
+    def test_outputs_appear_under_final_names_only_when_complete(self):
+        d = self.out_dir("publish")
+        paths = R.output_paths(d, self.video)
+        seen = []
+
+        def hook(f, sizes):
+            seen.append(sorted(os.listdir(d)))
+        det, emb = self.scripted()
+        R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d, debug=True,
+              config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
+        finals = {os.path.basename(p) for p in paths.values()}
+        for listing in seen:
+            self.assertFalse(set(listing) & finals, f"a final name existed mid-run: {listing}")
+            self.assertTrue(all(name.endswith(R.PARTIAL_SUFFIX) for name in listing))
+        self.assertEqual(set(os.listdir(d)), finals)
+
+    def test_backend_built_with_other_settings_is_refused(self):
+        d = self.out_dir("refuse_settings")
+        other = TrackerConfig.with_overrides(dict(SCRIPTED, detector_min_score=0.9))
+        script, _ = detector_script(self.frames, self.start, 0.35)
+        det = ScriptedDetector(script, other)
+        with self.assertRaises(R.RunRefusedError):
+            R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
+                  config_overrides=SCRIPTED, detector=det, embedder=SignatureEmbedding(self.people))
+        self.assertNothingWritten(d)
+
+    def test_production_named_backend_without_a_model_record_is_refused(self):
+        class FakeYolox(ScriptedDetector):
+            def provenance(self):
+                return dict(super().provenance(), backend="yolox_onnx")
+        cfg = TrackerConfig.with_overrides({"appearance_backend": "scripted"})
+        script, _ = detector_script(self.frames, self.start, 0.35)
+        with self.assertRaises(R.RunRefusedError):
+            R.build_backends(cfg, FakeYolox(script, cfg), SignatureEmbedding(self.people))
+
+    def assertNothingWritten(self, d):
+        self.assertEqual(os.listdir(d), [])
 
 
 if __name__ == "__main__":

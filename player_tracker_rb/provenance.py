@@ -35,7 +35,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 from . import __version__ as TRACKER_VERSION
 from . import output_schema as S
 from .config import TrackerConfig
-from .video_io import SequentialVideoReader, fingerprint_method
+from .video_io import SequentialVideoReader, ThumbsDigest, fingerprint_method
 
 SIDECAR_KIND = "spana_rb_video_provenance"
 SIDECAR_SUFFIX = "_rb_video_provenance.json"
@@ -120,15 +120,23 @@ def contract_provenance(reader: SequentialVideoReader, seed_bbox: Sequence[float
 
 
 def video_provenance_sidecar(reader: SequentialVideoReader, contract: Dict[str, Any], cfg: TrackerConfig,
-                             frame_thumbs: Optional[List[str]] = None) -> Dict[str, Any]:
-    """The fuller R1-B provenance record. Call after the frames have been read and the reader closed (verified)."""
+                             frame_thumbs: Optional[List[str]] = None,
+                             thumbs: Optional["ThumbsDigest"] = None) -> Dict[str, Any]:
+    """The fuller R1-B provenance record. Call after the frames have been read and the reader closed (verified).
+    The per-frame fingerprints are given either as a list (frame_thumbs) or as an incremental ThumbsDigest."""
     from .video_io import thumbs_digest
     info = reader.info
     if reader.source_verified_at_close is not True:
         raise ProvenanceError("source was not re-verified at close; refusing to write provenance")
     align = reader.alignment_summary()
+    if frame_thumbs is not None and thumbs is not None:
+        raise ProvenanceError("give frame_thumbs or thumbs, not both")
     if frame_thumbs is not None and len(frame_thumbs) != align["processed_frames"]:
         raise ProvenanceError("frame_thumbs length does not match processed_frames")
+    if thumbs is not None and thumbs.count != align["processed_frames"]:
+        raise ProvenanceError("thumbs digest count does not match processed_frames")
+    digest = thumbs_digest(frame_thumbs) if frame_thumbs is not None else \
+        (thumbs.hexdigest() if thumbs is not None else None)
     return {
         "kind": SIDECAR_KIND,
         "tracker": S.TRACKER_NAME,
@@ -140,7 +148,7 @@ def video_provenance_sidecar(reader: SequentialVideoReader, contract: Dict[str, 
         "video": info.as_record(),
         "frame_alignment": dict(align, **{
             "fingerprint_method": fingerprint_method(cfg),
-            "frame_thumbs_sha256": thumbs_digest(frame_thumbs) if frame_thumbs is not None else None,
+            "frame_thumbs_sha256": digest,
         }),
         "source_reverified_at_close": True,
         "resume_supported": False,

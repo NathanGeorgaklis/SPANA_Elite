@@ -17,6 +17,8 @@ Their other missing imports are TEST-ONLY STUBS defined here (NEW, never written
 Safety properties checked on full-pipeline R1 output (synthetic scenarios with crossings, merges, cuts and rivals):
   * a snapshot is TRACKING only on an R1 TRACKING frame, and every non-TRACKING R1 frame is non-TRACKING downstream;
   * the snapshot tracking_confidence of every untrusted frame is below the consumers' 0.5 threshold;
+  * an episode opened by an uncontrasted reacquisition (possibly a look-alike) never yields actor TARGET_PLAYER
+    (R1-G review H1);
   * actor_attribution.frame_identity trusts a frame only if R1 trusted it;
   * logged identity conflicts reach actor_attribution (conflicts_involve) when R1 recorded a competing hypothesis.
 """
@@ -142,8 +144,13 @@ class SurvivingConsumers(unittest.TestCase):
             t = [x for x in fr["tracks"] if x["selected_player"]][0]
             self.assertEqual(snap.frame_number, fr["frame"])
             trusted = t["v2"]["identity_trusted"]
-            self.assertEqual(snap.tracking_state == "TRACKING", trusted, f"frame {fr['frame']}")
-            if not trusted:
+            # the adapter sees TRACKING exactly when R1 observed the target's box (rb TRACKING); every frame that is
+            # not R1-trusted (including an observed box of an unverified episode) carries confidence < 0.5
+            self.assertEqual(snap.tracking_state == "TRACKING", t["v2"]["rb_state"] == "TRACKING",
+                             f"frame {fr['frame']}")
+            if trusted:
+                self.assertEqual(snap.tracking_state, "TRACKING")
+            else:
                 self.assertLess(snap.tracking_confidence, 0.5)
             self.assertEqual(snap.bbox, t["bbox"])
 
@@ -162,6 +169,34 @@ class SurvivingConsumers(unittest.TestCase):
         ids = self.aa.selected_ids(self.e.doc["frame_log"])
         self.assertEqual(ids, ["T001"])
         self.assertTrue(self.aa.conflicts_involve(ids, s["identity_conflict_counts"]))
+
+
+class UncontrastedEpisodeDownstream(unittest.TestCase):
+    """R1-G review H1: the target leaves for good; a near-identical person enters later with nobody else around, so
+    the reacquisition has nothing to contrast. Whatever happens next must never be attributed to the target."""
+
+    def test_lookalike_after_uncontrasted_reacquisition_is_never_the_actor(self):
+        aa = _MODS["actor_attribution"]
+        people = make_people([("TARGET", KIT_A, 1.0), ("TWIN", KIT_A, 0.97)])
+        tgt = walk(40, (560, 200), (4, 0)) + [None] * 140
+        twin = [None] * 70 + walk(110, (650, 200), (-3, 0))
+        e = run_clip(clip({"TARGET": tgt, "TWIN": twin}), people, os.path.join(_MODS["tmp"], "unc"), name="unc",
+                     start_frame=2)
+        ev = e.summary["v2"]["reacquisition_events"]
+        self.assertTrue(ev, "the scene must produce an uncontrasted reacquisition of the look-alike")
+        self.assertFalse(ev[-1]["evidence"]["contrast_verified"])
+        acc = ev[-1]["reacq_accepted_frame"]
+        idx = aa.build_frame_index(e.doc["frame_log"])
+        for start in range(acc, e.n - 5, 5):
+            raw = {"type": "CARRY", "start_frame": start, "end_frame": min(start + 15, e.n)}
+            sel = aa.selected_ids(e.doc["frame_log"])
+            a = aa.assess_actor(raw, [raw], idx, "RESOLVED",
+                                aa.conflicts_involve(sel, e.summary["identity_conflict_counts"]))
+            self.assertNotEqual(a["actor"], "TARGET_PLAYER", f"window from {start}: {a['actor_evidence']}")
+        for f in range(acc, e.n + 1):
+            t = e.target(f)
+            self.assertFalse(t["v2"]["identity_trusted"], f)
+            self.assertLess(t["identity_confidence"], 0.5)
 
 
 if __name__ == "__main__":

@@ -33,9 +33,9 @@ summary v2 notes and in R1/R1G/R1G_OUTPUT_MAPPING.md):
     held box (D06; frame 86 of the frozen historical exemplar HE1). identity_confidence = identity_confidence_rb
     when trusted, else at most untrusted_identity_confidence_ceiling (D19). overall_track_confidence (which
     event_adapter turns into the snapshot tracking_confidence) = identity_confidence.
-  * PHYSICAL-ENTITY EXCLUSION (project rule 28): a population tracklet that is, or may be, the target this frame
-    (every tracklet the target was confirmed on, and the tracklet the target's decision is about this frame) is
-    NOT written as a separate person. In overlap_contests it is written as the target id.
+  * PHYSICAL-ENTITY EXCLUSION (project rule 28): a population tracklet that is, or may physically be, the target
+    this frame (possibly_target) is NOT written as a separate person; in overlap_contests it is written as the
+    target id. A rejected look-alike is another person and is written.
   * Population: every other live tracklet, with the historical non-selected triple (detected -> ACTIVE/NONE/
     CONFIRMED_DETECTION, coasting -> TEMPORARILY_LOST/FULL/PREDICTED). No identity claim: identity_confidence 0.
   * overlap_contests: every overlapping pair of bodies (population overlap context), as written track ids.
@@ -62,6 +62,7 @@ import json
 import os
 import statistics
 import time
+from collections import Counter
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -73,9 +74,9 @@ from . import provenance as PV
 from . import target as T
 from .appearance import AppearanceExtractor, EmbeddingBackend
 from .camera import CUT, CameraMotionEstimator
-from .config import TrackerConfig
-from .detector import DetectorBackend
-from .video_io import SequentialVideoReader
+from .config import ConfigError, TrackerConfig
+from .detector import DetectorBackend, box_iou_matrix
+from .video_io import SequentialVideoReader, ThumbsDigest
 
 RESULTS_SUFFIX = "_mo_tracking_results.json"
 DECISION_LOG_SUFFIX = "_rb_decision_log.jsonl"
@@ -84,6 +85,15 @@ PARTIAL_SUFFIX = ".rb_partial"
 WALL_CLOCK_FIELDS: Tuple[Tuple[str, ...], ...] = (("summary", "processing_time_s"),
                                                   ("summary", "v2", "provenance", "run_started_utc"))
 APPEARANCE_EMBEDDER_FOR = {"composite_lab_dinov2": "dinov2_onnx"}
+# backend provenance key -> config parameter it must equal (a backend built with other settings is refused)
+DETECTOR_SETTINGS = {"min_score": "detector_min_score", "nms_iou": "detector_nms_iou",
+                     "tiling": "detector_tiling", "tile_grid": "detector_tile_grid",
+                     "tile_overlap_fraction": "detector_tile_overlap_fraction",
+                     "tile_include_full_frame": "detector_tile_include_full_frame",
+                     "input_size": "detector_input_size", "model_sha256": "detector_model_sha256"}
+EMBEDDING_SETTINGS = {"model_sha256": "embedding_model_sha256", "input_hw": "embedding_input_hw",
+                      "pooling": "embedding_pooling"}
+PRODUCTION_DETECTORS = ("yolox_onnx",)
 
 
 class RunRefusedError(RuntimeError):
@@ -125,7 +135,31 @@ def build_backends(cfg: TrackerConfig, detector: Optional[DetectorBackend] = Non
         raise RunRefusedError(f"config appearance_backend {ab} needs embedding backend {want}, got {ename!r}")
     if want is None and ename in APPEARANCE_EMBEDDER_FOR.values():
         raise RunRefusedError(f"config appearance_backend {ab!r} but a production embedder ({ename}) was passed in")
+    _check_settings("detector", detector.provenance(), DETECTOR_SETTINGS, cfg)
+    _check_settings("embedding", embedder.provenance(), EMBEDDING_SETTINGS, cfg)
+    if name in PRODUCTION_DETECTORS and not detector.model_record():
+        raise RunRefusedError("the production detector reports no model record")
+    if want is not None and not embedder.model_record():
+        raise RunRefusedError("the production embedding backend reports no model record")
     return detector, embedder
+
+
+def _same(a: Any, b: Any) -> bool:
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        return len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
+    return a == b
+
+
+def _check_settings(role: str, prov: Mapping[str, Any], keys: Mapping[str, str], cfg: TrackerConfig) -> None:
+    """Every setting a backend reports must equal the run config: otherwise the document's config_hash would
+    describe settings that were not used (R1-G review L3). Settings a backend does not report are not checked;
+    a model hash reported as None (no model file) is only allowed for non-production backends."""
+    for pkey, ckey in keys.items():
+        if pkey not in prov or (pkey == "model_sha256" and prov[pkey] is None):
+            continue
+        if not _same(prov[pkey], cfg.get(ckey)):
+            raise RunRefusedError(f"{role} backend setting {pkey}={prov[pkey]!r} differs from the run config "
+                                  f"{ckey}={cfg.get(ckey)!r}")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -158,7 +192,7 @@ class _RecordBuilder:
         self.provisional_ids: Set[str] = set()
 
     # -- target ------------------------------------------------------------------------------------
-    def target_record(self, f: int, tf: T.TargetFrame) -> Dict[str, Any]:
+    def target_record(self, f: int, tf: T.TargetFrame, excluded: Set[str]) -> Dict[str, Any]:
         c = self._cfg
         hist, occ, pos = S.TARGET_TRIPLE_BY_RB_STATE[(tf.rb_state, tf.predicted_inside_image
                                                       if tf.rb_state == T.LOST else True)]
@@ -182,7 +216,7 @@ class _RecordBuilder:
             c, track_id=self._tid, state=hist, age=f, last_seen_frame=lc, bbox=self._last_confirmed_box,
             observed_position_box=tf.bbox, occlusion_status=occ, position_source=pos, selected_player=True,
             confidences=conf, frames_since_observed_position=fso, frames_since_confirmed_identity=fso,
-            v2=tf.v2_fields())
+            v2=dict(tf.v2_fields(), occluder_track_ids=[o for o in tf.occluder_track_ids if o not in excluded]))
         self.final_records[self._tid] = rec
         return rec
 
@@ -238,45 +272,47 @@ class _RecordBuilder:
                 "writer_population_ids_seen": len(self.population_ids_seen)}
 
     # -- frame context -----------------------------------------------------------------------------
-    def written_id(self, ref: str, res: P.FrameResult, excluded: Set[str]) -> Optional[str]:
-        """A population ref ('D<i>' detection ref or a tracklet id) as the track id written this frame."""
-        tid = ref
+    def written_ids(self, ref: str, res: P.FrameResult, excluded: Set[str]) -> Set[str]:
+        """A population ref ('D<i>' detection ref or a tracklet id) as the track ids written for it this frame. A
+        detection without a tracklet (a merged or alternative box) stands for the tracked bodies it claims, if any."""
+        tids: List[Optional[str]] = [ref]
         if ref.startswith("D") and ref[1:].isdigit():
             i = int(ref[1:])
-            tid = res.observations[i].tracklet_id if 0 <= i < len(res.observations) else None
-        if tid is None:
-            return None
-        return self._tid if tid in excluded else tid
+            if not 0 <= i < len(res.observations):
+                return set()
+            o = res.observations[i]
+            tids = [o.tracklet_id] if o.tracklet_id is not None else list(o.claimants)
+        return {self._tid if t in excluded else t for t in tids if t is not None}
 
     def overlap_contests(self, res: P.FrameResult, excluded: Set[str], written: Set[str]) -> List[List[str]]:
         pairs = set()
         for op in res.overlap_pairs:
-            a, b = self.written_id(op.a, res, excluded), self.written_id(op.b, res, excluded)
-            if a is None or b is None or a == b or a not in written or b not in written:
-                continue
-            pairs.add(tuple(sorted((a, b))))
+            for a in self.written_ids(op.a, res, excluded) & written:
+                for b in self.written_ids(op.b, res, excluded) & written:
+                    if a != b:
+                        pairs.add(tuple(sorted((a, b))))
         return [list(p) for p in sorted(pairs)]
 
     def record_conflicts(self, tf: T.TargetFrame, res: P.FrameResult, excluded: Set[str],
                          written: Set[str]) -> None:
-        """Count the competing hypotheses that kept the target from TRACKING this frame (F9)."""
-        if tf.rb_state == T.TRACKING:
+        """Count the competing hypotheses that kept the target from being confirmed this frame (F9): the
+        competitor that beat (or could not be contrasted with) the target's own continuing box, unverifiable
+        contacts touching it, and rival boxes that blocked it (continuation or reacquisition rivals). Competitors
+        of OTHER boxes are not about the target and are not counted."""
+        if tf.identity_trusted:
             return
         names: Set[str] = set()
+        refs: List[str] = []
         for cand in tf.decision.get("candidates", []):
-            if cand.get("passed") and tf.rb_state != T.REACQUIRING:
-                continue
-            refs = [cand.get("best_competitor")] if cand.get("best_competitor") else []
-            refs += list(cand.get("unknown_contacts") or [])
-            for r in refs:
-                w = self.written_id(str(r), res, excluded)
-                if w is not None and w != self._tid and w in written:
-                    names.add(w)
-        rivals = tf.decision.get("reacquisition", {}).get("rivals") or []
-        for i in rivals:
-            w = self.written_id(P.det_ref(int(i)), res, excluded)
-            if w is not None and w != self._tid and w in written:
-                names.add(w)
+            if cand.get("role") == T.CONTINUATION and not cand.get("passed"):
+                if cand.get("best_competitor"):
+                    refs.append(str(cand["best_competitor"]))
+                refs += [str(r) for r in cand.get("unknown_contacts") or []]
+        rivals = list(tf.decision.get("continuation_rivals") or [])
+        rivals += list(tf.decision.get("reacquisition", {}).get("rivals") or [])
+        refs += [P.det_ref(int(i)) for i in rivals]
+        for r in refs:
+            names |= (self.written_ids(r, res, excluded) & written) - {self._tid}
         if names:
             self.conflict_frames += 1
             for n in sorted(names):
@@ -287,18 +323,50 @@ class _RecordBuilder:
 # ---------------------------------------------------------------------------------------------
 # Streaming document writer and incremental document checks
 # ---------------------------------------------------------------------------------------------
+class _CreatedFiles:
+    """Every path this run created. Files are written under a temporary name and PUBLISHED with an exclusive hard
+    link (never a rename, which could silently replace a file created meanwhile); cleanup after a failure removes
+    only paths this run created (R1-G review M3, L2)."""
+
+    def __init__(self) -> None:
+        self.paths: List[str] = []
+
+    def open_new(self, path: str):
+        fh = open(path, "x", encoding="ascii")
+        self.paths.append(path)
+        return fh
+
+    def publish(self, tmp: str, final: str) -> None:
+        try:
+            os.link(tmp, final)
+        except FileExistsError as e:
+            raise RunRefusedError(f"refusing to overwrite existing output {final}") from e
+        except OSError as e:                                   # fail closed: no non-exclusive fallback
+            raise RunRefusedError(f"cannot publish {final} exclusively (hard link failed: {e})") from e
+        self.paths.append(final)
+        os.remove(tmp)
+        self.paths.remove(tmp)
+
+    def cleanup(self) -> None:
+        for p in reversed(self.paths):
+            if os.path.exists(p):
+                os.remove(p)
+        self.paths = []
+
+
 class _StreamingDocument:
     """Writes frame records as they are produced; assembles the canonical document at the end."""
 
-    def __init__(self, out_path: str, chunk_bytes: int):
+    def __init__(self, out_path: str, chunk_bytes: int, files: _CreatedFiles):
         self._chunk = chunk_bytes
-        if os.path.exists(out_path):
-            raise RunRefusedError(f"refusing to overwrite existing output {out_path}")
+        self._files = files
         self.out_path = out_path
         self._partial = out_path + PARTIAL_SUFFIX
-        if os.path.exists(self._partial):
-            raise RunRefusedError(f"a partial output from an earlier run exists: {self._partial}")
-        self._fh = open(self._partial, "x", encoding="ascii")
+        self._doc_tmp = out_path + PARTIAL_SUFFIX + ".doc"
+        for p in (out_path, self._partial, self._doc_tmp):
+            if os.path.exists(p):
+                raise RunRefusedError(f"refusing to overwrite existing file {p}")
+        self._fh = files.open_new(self._partial)
         self.n = 0
 
     def add_frame(self, rec: Dict[str, Any]) -> None:
@@ -308,11 +376,10 @@ class _StreamingDocument:
         self.n += 1
 
     def finish(self, summary: Dict[str, Any], final_tracks: List[Dict[str, Any]]) -> str:
-        """Assemble, write atomically, and return the SHA-256 of the written document."""
+        """Assemble, publish exclusively, and return the SHA-256 of the written document."""
         self._fh.close()
-        tmp = self.out_path + PARTIAL_SUFFIX + ".doc"
         h = hashlib.sha256()
-        with open(tmp, "x", encoding="ascii") as out, open(self._partial, "r", encoding="ascii") as frames:
+        with self._files.open_new(self._doc_tmp) as out, open(self._partial, "r", encoding="ascii") as frames:
             def w(text: str) -> None:
                 out.write(text)
                 h.update(text.encode("ascii"))
@@ -321,20 +388,14 @@ class _StreamingDocument:
             for block in iter(lambda: frames.read(self._chunk), ""):
                 w(block)
             w('],"summary":' + _dumps(summary) + "}\n")
-        if os.path.exists(self.out_path):
-            os.remove(tmp)
-            raise RunRefusedError(f"refusing to overwrite existing output {self.out_path}")
-        os.rename(tmp, self.out_path)
+        self._files.publish(self._doc_tmp, self.out_path)
         os.remove(self._partial)
+        self._files.paths.remove(self._partial)
         return h.hexdigest()
 
-    def abort(self) -> None:
-        try:
+    def close(self) -> None:
+        if not self._fh.closed:
             self._fh.close()
-        finally:
-            for p in (self._partial, self.out_path + PARTIAL_SUFFIX + ".doc"):
-                if os.path.exists(p):
-                    os.remove(p)
 
 
 class _DocumentChecks:
@@ -394,6 +455,43 @@ class _DocumentChecks:
 # ---------------------------------------------------------------------------------------------
 # The run
 # ---------------------------------------------------------------------------------------------
+def possibly_target(tracker: T.TargetTracker, tf: T.TargetFrame, res: P.FrameResult,
+                    cfg: TrackerConfig) -> Set[str]:
+    """Population tracklets that are, or may physically be, the target this frame (project rule 28):
+      * the tracklet of an observed (TRACKING) target box, and the target's own tracklets that are not observed;
+      * while the target is not TRACKING: every tracklet the target was confirmed on, observed or not (each is one
+        physical body chain of the target: a tracklet never survives contact with another body);
+      * the target's continuing tracklet (contested or hidden) and the candidate under reacquisition verification;
+      * while the target is not TRACKING and its position is valid: a tracklet BORN AFTER the target's last
+        confirmation whose box lies on the target's reported (predicted / held) box (IoU >=
+        population_match_iou_min). It cannot be a body that was seen as a separate person beside the confirmed
+        target, and it is where the target would re-emerge (test audit C1). An occluder that existed before is
+        another person and stays written.
+    A tracklet the tracker has rejected elsewhere, and (while the target is TRACKING on another box) a former target
+    tracklet observed elsewhere as a separate box, are other people and are written as such (review M1)."""
+    observed = {v.tracklet_id for v in res.tracklets if v.observed}
+    if tf.rb_state == T.TRACKING:
+        # the target is THIS observed box; another observed tracklet the target was once confirmed on is a separate
+        # body in this frame (two boxes at once) and is written; unobserved ones are the target's coasting history
+        out = {tid for tid in tracker.target_tracklets if tid not in observed}
+        if tf.observation_tracklet_id is not None:
+            out.add(tf.observation_tracklet_id)
+    else:
+        # not TRACKING: every tracklet the target was confirmed on is still one physical body chain of the target
+        # (a tracklet never survives contact with another body), whether observed or not
+        out = set(tracker.target_tracklets)
+    for tid in (tracker.current_tracklet, tracker.verifying_tracklet):
+        if tid is not None:
+            out.add(tid)
+    if tf.rb_state != T.TRACKING and tf.position_valid:
+        born_after = -1 if tf.last_confirmed_frame is None else tf.last_confirmed_frame
+        fresh = [v for v in res.tracklets if v.first_frame > born_after and v.tracklet_id not in out]
+        if fresh:
+            ious = box_iou_matrix(np.asarray([tf.bbox]), np.asarray([v.box for v in fresh]))[0]
+            out |= {v.tracklet_id for v, o in zip(fresh, ious) if o >= cfg.get("population_match_iou_min")}
+    return out
+
+
 def output_paths(out_dir: str, video_path: str) -> Dict[str, str]:
     base = os.path.splitext(os.path.basename(video_path))[0]
     return {"results": os.path.join(out_dir, base + RESULTS_SUFFIX),
@@ -422,17 +520,24 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
     overrides = dict(config_overrides or {})
     if max_frames is not None:
         overrides["max_frames"] = max_frames
-    cfg = TrackerConfig.with_overrides(overrides) if overrides else TrackerConfig.default()
+    try:
+        cfg = TrackerConfig.with_overrides(overrides) if overrides else TrackerConfig.default()
+    except ConfigError as e:
+        raise RunRefusedError(f"config: {e}") from e
     paths = output_paths(out_dir, video_path)
-    for p in paths.values():
-        if os.path.exists(p):
-            raise RunRefusedError(f"refusing to overwrite existing output {p}")
+    mine = [paths["results"], paths["provenance"]] + ([paths["decision_log"]] if debug else [])
+    for p in mine:
+        for q in (p, p + PARTIAL_SUFFIX, p + PARTIAL_SUFFIX + ".doc"):
+            if os.path.exists(q):
+                raise RunRefusedError(f"refusing to overwrite existing file {q}")
     det, emb = build_backends(cfg, detector, embedder)
     models = [m for m in (det.model_record(), emb.model_record()) if m]
 
     t0 = timer()
-    doc = None
+    files = _CreatedFiles()
+    doc: Optional[_StreamingDocument] = None
     log_fh = None
+    log_tmp = paths["decision_log"] + PARTIAL_SUFFIX
     ok = False
     try:
         with SequentialVideoReader(video_path, start_frame, cfg, expected_sha256=expected_sha256) as reader:
@@ -455,25 +560,25 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
                 raise RunRefusedError(f"seed refused: {e}") from e
             builder = _RecordBuilder(cfg, seed_frame.bbox)
             checks = _DocumentChecks(cfg, start_frame)
-            doc = _StreamingDocument(paths["results"], cfg.get("hash_chunk_bytes"))
+            doc = _StreamingDocument(paths["results"], cfg.get("hash_chunk_bytes"), files)
             if debug:
-                log_fh = open(paths["decision_log"], "x", encoding="ascii")
+                if os.path.exists(log_tmp):
+                    raise RunRefusedError(f"refusing to overwrite existing file {log_tmp}")
+                log_fh = files.open_new(log_tmp)
                 log_fh.write(_dumps({"frame": 0, "target": seed_frame.as_record(), "population": res.as_record()})
                              + "\n")
-            thumbs: List[str] = []
+            thumbs = ThumbsDigest()
             last_frame_ids: Set[str] = set()
-            hist_states: List[str] = []
-            rb_states: List[str] = []
+            hist_states: Counter = Counter()                  # counts only: nothing kept per frame (review L1)
+            rb_states: Counter = Counter()
             for fr in reader:
                 f = fr.rel_frame
                 cands = det.detect(fr.image)
                 cam = est.update(fr.image, [d.bbox for d in cands], 1.0 / fps)
                 res = pop.update(f, f / fps, cands, cam)
                 tf = tracker.update(res, fr.image)
-                excluded = set(tracker.target_tracklets)
-                if tf.observation_tracklet_id is not None:
-                    excluded.add(tf.observation_tracklet_id)
-                trec = builder.target_record(f, tf)
+                excluded = possibly_target(tracker, tf, res, cfg)
+                trec = builder.target_record(f, tf, excluded)
                 precs = builder.population_records(f, res, excluded)
                 written = {builder._tid} | {r["track_id"] for r in precs}
                 builder.record_conflicts(tf, res, excluded, written)
@@ -491,38 +596,42 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
                 if log_fh is not None:
                     log_fh.write(_dumps({"frame": f, "target": tf.as_record(), "camera": cam.as_record(),
                                          "population": res.as_record()}) + "\n")
-                thumbs.append(fr.thumb_sha1)
-                hist_states.append(trec["state"])
-                rb_states.append(tf.rb_state)
+                thumbs.update(fr.thumb_sha1)
+                hist_states[trec["state"]] += 1
+                rb_states[tf.rb_state] += 1
                 if on_frame is not None:
                     sizes = dict(pop.state_sizes(), **tracker.state_sizes(), **builder.state_sizes())
                     on_frame(f, sizes)
         # the reader is closed here and the source re-hashed (raises SourceChangedError on any change)
+        if checks.next_frame == 1:
+            raise RunRefusedError("no frame after the seed frame: nothing to track (the seed is not a frame_log step)")
         summary, finals = _summary(cfg, info, start_frame, contract_prov, builder, tracker, hist_states, rb_states,
                                    timer() - t0, last_frame_ids)
         checks.finish(summary, finals)
-        sidecar = PV.video_provenance_sidecar(reader, contract_prov, cfg, frame_thumbs=thumbs)
+        sidecar = PV.video_provenance_sidecar(reader, contract_prov, cfg, thumbs=thumbs)
         sidecar["backends"] = {"detector": det.provenance(), "embedding": emb.provenance()}
-        doc_sha = doc.finish(summary, finals)
-        doc = None
-        sidecar["results_file"] = os.path.basename(paths["results"])
-        sidecar["results_sha256"] = doc_sha
+        # publish: decision log, then results, then the provenance sidecar LAST (its presence marks a complete run
+        # and it carries the results file's SHA-256)
         if log_fh is not None:
             log_fh.close()
-            log_fh = None
-        PV.write_sidecar(sidecar, paths["provenance"])
+            files.publish(log_tmp, paths["decision_log"])
+        sidecar["results_file"] = os.path.basename(paths["results"])
+        sidecar["results_sha256"] = doc.finish(summary, finals)
+        side_tmp = paths["provenance"] + PARTIAL_SUFFIX
+        if os.path.exists(side_tmp):
+            raise RunRefusedError(f"refusing to overwrite existing file {side_tmp}")
+        with files.open_new(side_tmp) as fh:
+            fh.write(S.dumps_canonical(sidecar))
+        files.publish(side_tmp, paths["provenance"])
         ok = True
         return summary
     finally:
         if doc is not None:
-            doc.abort()
-        if log_fh is not None:
+            doc.close()
+        if log_fh is not None and not log_fh.closed:
             log_fh.close()
-        if not ok:                                           # fail closed: no partial output survives a failure
-            for k in ("results", "decision_log", "provenance"):
-                if k != "provenance" or not os.path.exists(paths["results"]):
-                    if os.path.exists(paths[k]):
-                        os.remove(paths[k])
+        if not ok:                         # fail closed: remove everything THIS run created, nothing else (M3)
+            files.cleanup()
 
 
 SUMMARY_NOTES: Tuple[str, ...] = (
@@ -533,9 +642,12 @@ SUMMARY_NOTES: Tuple[str, ...] = (
     "Target bbox = last confirmed (observed) box; observed_position_box = this frame's observed, predicted or held "
     "box (D06). v2.observation_source / bbox_is_observed / bbox_is_held / bbox_is_predicted say which.",
     "identity_confidence: v2.identity_confidence_rb when trusted, else <= untrusted_identity_confidence_ceiling "
-    "(D19). overall_track_confidence = identity_confidence. A reacquisition accepted without any banked competitor "
-    "to contrast (reacquisition_events[].evidence.contrast_available = false) keeps its whole episode at the "
-    "minimal trusted confidence 0.5 until a frame passes a real contrast. identity_confidence_rb is UNCALIBRATED.",
+    "(D19). overall_track_confidence = identity_confidence. identity_confidence_rb is UNCALIBRATED.",
+    "A reacquisition accepted without beating a confusable competitor (reacquisition_events[].evidence."
+    "contrast_verified = false; contrast_available says whether any banked competitor was contrasted) opens an "
+    "UNVERIFIED episode: its observed boxes are rb_state TRACKING (ACTIVE / CONFIRMED_DETECTION) but identity_trusted "
+    "= false, reason INSUFFICIENT_CONTRAST, confidence <= 0.49, until a TRACKING frame beats a confusable competitor "
+    "by the contrast margin. Such an episode never updates the appearance bank.",
     "NEW semantics (not the historical formulas, which are UNKNOWN): appearance_confidence and reid_confidence = "
     "composite appearance similarity of the reported box to the target bank (0 if none); motion_confidence = 1 "
     "while positional continuity is valid; visibility/position/track_continuity_confidence = 1 only when observed. "
@@ -554,10 +666,16 @@ SUMMARY_NOTES: Tuple[str, ...] = (
 )
 
 
+def _pct(counts: Counter, dp: int) -> Dict[str, float]:
+    """output_schema.selected_state_pct computed from counts (same formula and rounding)."""
+    n = sum(counts.values())
+    return {k: round(100.0 * v / n, dp) for k, v in sorted(counts.items())} if n else {}
+
+
 def _summary(cfg: TrackerConfig, info: Any, start_frame: int, prov: Dict[str, Any], b: _RecordBuilder,
-             tracker: T.TargetTracker, hist_states: List[str], rb_states: List[str], elapsed_s: float,
+             tracker: T.TargetTracker, hist_states: Counter, rb_states: Counter, elapsed_s: float,
              last_frame_ids: Set[str]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    n = len(hist_states)
+    n = sum(hist_states.values())
     tid = cfg.get("target_track_id")
     finals = []
     active = confirmed = provisional = 0
@@ -577,7 +695,7 @@ def _summary(cfg: TrackerConfig, info: Any, start_frame: int, prov: Dict[str, An
     summary = {
         "video": info.path, "start_frame": start_frame, "fps": info.fps, "processed_frames": n,
         "processing_time_s": round(float(elapsed_s), 3),
-        "selected_state_pct": S.selected_state_pct(hist_states, cfg.get("state_pct_round_dp")),
+        "selected_state_pct": _pct(hist_states, cfg.get("state_pct_round_dp")),
         "n_tracks_ever_created": 1 + len(b.population_ids_written),
         "n_tracks_final_active": active, "clip_output": None,
         "final_confirmed_count": confirmed, "final_provisional_count": provisional,
@@ -596,7 +714,7 @@ def _summary(cfg: TrackerConfig, info: Any, start_frame: int, prov: Dict[str, An
             "schema": S.SCHEMA_NAME, "schema_version": S.V2_SCHEMA_VERSION, "tracker": S.TRACKER_NAME,
             "tracker_version": TRACKER_VERSION, "provenance": prov, "config_hash": cfg.config_hash(),
             "reacquisition_events": [e.as_record() for e in tracker.reacquisition_events],
-            "rb_state_pct": S.selected_state_pct(rb_states, cfg.get("state_pct_round_dp")),
+            "rb_state_pct": _pct(rb_states, cfg.get("state_pct_round_dp")),
             "notes": list(SUMMARY_NOTES)},
     }
     return summary, finals

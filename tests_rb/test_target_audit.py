@@ -504,12 +504,14 @@ class DocumentedLimitations(unittest.TestCase):
 
 class UncontrastedEpisodeCap(unittest.TestCase):
     """R1-G rule (Nathan, 2026-10-25: 'keep uncontrasted reacquisition capped/flagged, not treated as
-    high-confidence identity'). An episode opened by a reacquisition that had nothing to contrast against stays at
-    the minimal trusted confidence (0.5) until a TRACKING frame actually contrasts the target against a banked
-    competitor and passes."""
+    high-confidence identity'; independent review H1: a 0.5 cap equals full trust for the surviving consumers).
+    An episode opened by a reacquisition that had nothing to contrast against reports its observed box as TRACKING
+    but UNTRUSTED (reason INSUFFICIENT_CONTRAST, confidence <= untrusted ceiling), never updates the target bank and
+    never rules out a body as a known other, until a TRACKING frame passes a real contrast against a competitor that
+    could be confused with the target (its similarity to the crop >= appearance_floor; review L4)."""
 
-    def _return_alone_then_opponent(self):
-        ppl = people(("PERSON_A", KIT_B, 0.0))
+    def _return_alone_then(self, other):
+        ppl = people(("PERSON_A",) + other)
         frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
         frames += [SceneFrame({}) for _ in range(40)]
         frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(40)]
@@ -517,22 +519,38 @@ class UncontrastedEpisodeCap(unittest.TestCase):
                    for _ in range(40)]
         return run(frames, ppl)
 
-    def test_episode_stays_capped_until_contrast_is_verified(self):
-        r = self._return_alone_then_opponent()
+    def _unverified_frames_ok(self, r, frames):
+        ceiling = CFG.get("untrusted_identity_confidence_ceiling")
+        for k in frames:
+            f = r.frames[k]
+            if f.rb_state == T.TRACKING:
+                self.assertFalse(f.identity_trusted, f"rel {k}")
+                self.assertEqual(f.identity_uncertainty_reasons, (T.INSUFFICIENT_CONTRAST,), f"rel {k}")
+                self.assertLessEqual(f.identity_confidence_rb, ceiling, f"rel {k}")
+                bank = f.decision.get("bank") or {}
+                self.assertNotEqual(bank.get("status"), "ACCEPTED", f"rel {k}: bank updated from unverified identity")
+
+    def test_same_kit_contrast_verifies_the_episode(self):
+        r = self._return_alone_then((KIT_A, SAME_KIT_COS))
         ev = r.tracker.reacquisition_events[0]
         self.assertFalse(ev.evidence["contrast_available"])
         acc = ev.reacq_accepted_frame
-        contrasted = [k for k in range(acc, len(r.frames)) for c in r.frames[k].decision.get("candidates", [])
-                      if c["role"] == T.CONTINUATION and c["contrast"] is not None and c["passed"]]
-        self.assertTrue(contrasted, "the scene must eventually contrast the target against a banked person")
-        first = min(contrasted)
-        for k in range(acc, first):
-            f = r.frames[k]
-            if f.rb_state == T.TRACKING:
-                self.assertLessEqual(f.identity_confidence_rb, 1.0 / 2 + 1e-9, f"rel {k}: uncontrasted episode")
-        self.assertGreater(r.frames[first].identity_confidence_rb, 1.0 / 2, "verified contrast lifts the cap")
+        verified = [k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted]
+        self.assertTrue(verified, "a same-kit competitor the target beats by the margin must verify the episode")
+        first = min(verified)
+        self.assertTrue(r.frames[first].decision.get("episode_contrast_verified"))
+        self._unverified_frames_ok(r, range(acc, first))
+        self.assertGreater(r.frames[first].identity_confidence_rb, 1.0 / 2)
+        self.assertTrue(all(r.frames[k].identity_trusted for k in range(first, len(r.frames))
+                            if r.frames[k].rb_state == T.TRACKING))
 
-    def test_wrong_lookalike_episode_never_rises_above_the_cap(self):
+    def test_contrast_against_an_obviously_different_person_does_not_verify(self):
+        r = self._return_alone_then((KIT_B, 0.0))
+        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
+        self.assertEqual([k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted], [])
+        self._unverified_frames_ok(r, range(acc, len(r.frames)))
+
+    def test_wrong_lookalike_is_never_trusted(self):
         for cos in (0.78, 0.8):
             with self.subTest(cos=cos):
                 ppl = people(("PERSON_A", KIT_A, cos))
@@ -541,13 +559,26 @@ class UncontrastedEpisodeCap(unittest.TestCase):
                 r = run(frames, ppl)
                 self.assertTrue(r.tracker.reacquisition_events)
                 acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
-                for f in r.frames[acc:]:
-                    if f.rb_state == T.TRACKING:
-                        self.assertLessEqual(f.identity_confidence_rb, 1.0 / 2 + 1e-9, f"rel {f.rel_frame}")
+                self.assertEqual([k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted], [])
+                self._unverified_frames_ok(r, range(acc, len(r.frames)))
+                self.assertTrue(r.bank_is_pure())
 
-    def test_seed_episode_is_not_capped(self):
+    def test_unverified_episode_rules_nobody_out(self):
+        """A body seen beside an unverified identity is not recorded as a known other: if the identity is wrong,
+        that body may be the real target and must stay reacquirable."""
+        ppl = people(("PERSON_A", KIT_B, 0.0))
+        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
+        frames += [SceneFrame({}) for _ in range(40)]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(620, 400, 40, 100)})
+                   for _ in range(60)]
+        r = run(frames, ppl)
+        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
+        self.assertFalse(any(r.frames[k].identity_trusted for k in range(acc, len(r.frames))))
+        self.assertEqual(r.tracker.state_sizes()["target_known_others"], 0)
+
+    def test_seed_episode_is_trusted(self):
         r = run([SceneFrame({"TARGET": b}) for b in linear(20, (300, 400), (3, 0))], people())
-        self.assertTrue(all(f.identity_confidence_rb > 1.0 / 2 for f in r.frames[1:]))
+        self.assertTrue(all(f.identity_trusted and f.identity_confidence_rb > 1.0 / 2 for f in r.frames[1:]))
 
 
 def _bank_logs(r):

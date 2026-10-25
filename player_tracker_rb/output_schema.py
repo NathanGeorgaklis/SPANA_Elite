@@ -772,7 +772,7 @@ def build_frame_record(cfg: TrackerConfig, *, frame: int, is_cut: bool, camera_s
         if fv.get("timestamp_s") is not None:
             fv["timestamp_s"] = round(float(fv["timestamp_s"]), cfg.get("timestamp_round_dp"))
         if fv.get("camera_shift_h") is not None:
-            fv["camera_shift_h"] = [round(float(e), cfg.get("confidence_round_dp")) for e in fv["camera_shift_h"]]
+            fv["camera_shift_h"] = [round(float(e), cfg.get("confidence_round_dp")) + 0.0 for e in fv["camera_shift_h"]]
         if fv.get("target_height_px") is not None:
             fv["target_height_px"] = round(float(fv["target_height_px"]), cfg.get("box_round_dp"))
         rec[V2_KEY] = fv

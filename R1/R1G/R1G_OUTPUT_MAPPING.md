@@ -36,12 +36,18 @@ File: `{video_basename}_mo_tracking_results.json`. Sidecars: `{video_basename}_r
 | `team`, `team_confidence`, `number_candidate` | `UNKNOWN`, 0, null | The generic tracker has no team or number logic. |
 | `v2` | `TargetFrame.v2_fields()`: exactly `V2_TARGET_FIELDS` | |
 
-### Uncontrasted reacquisition: capped and flagged
+### Uncontrasted reacquisition: observed, but untrusted until verified
 
-A reacquisition accepted with no banked competitor to contrast against is recorded as follows:
-- The event has `summary.v2.reacquisition_events[].evidence.contrast_available = false`.
-- The acceptance frame, **and every later frame of that episode**, has `identity_confidence_rb = 0.5`, the minimal trusted value.
-- The cap lifts only when a TRACKING frame passes a real contrast against a banked competitor. That frame is logged as `episode_contrast_verified` in the decision log.
+A reacquisition accepted without a confusable competitor to contrast against does not verify the identity: no banked person whose similarity to the crop reaches `appearance_floor` was beaten by the margin. It is recorded as follows (review H1 and L4):
+- The event carries `summary.v2.reacquisition_events[].evidence.contrast_available` (any banked competitor contrasted) and `contrast_verified` (a confusable one).
+- From the acceptance frame onwards, every observed frame of that episode is written as follows until verification:
+  - `rb_state = TRACKING`, because the box really is observed (ACTIVE / CONFIRMED_DETECTION);
+  - `identity_trusted = false`, with `identity_uncertainty_reasons = ["INSUFFICIENT_CONTRAST"]`;
+  - `identity_confidence_rb` at most 0.49, and the historical `identity_confidence` and `overall_track_confidence` at most 0.49.
+- The surviving `actor_attribution` therefore never attributes such a frame to the target.
+- `event_adapter` still sees the target as present (TRACKING), so Pass-2 events in that span get actor UNKNOWN.
+- That episode never updates the appearance bank and never rules a body out as a known other.
+- The episode becomes verified, and trusted, at the first TRACKING frame that passes the contrast against a confusable competitor. The decision log shows this as `episode_contrast_verified`.
 
 ## POPULATION records (every other live tracklet, `selected_player = false`)
 
@@ -57,11 +63,22 @@ A reacquisition accepted with no banked competitor to contrast against is record
 | `overall_track_confidence` | Detector score when detected, else 0. |
 | `v2` | `record_kind = POPULATION`, `detected_this_frame`, `raw_detection_conf`, `is_competitor`, `first_frame`. |
 
-**Physical-entity exclusion (project rule 28).** These tracklets are never written as a separate person:
-- every tracklet the target was confirmed on;
-- the tracklet the target's decision is about this frame (`v2.observation_tracklet_id`).
+**Physical-entity exclusion (project rule 28; `run_rb.possibly_target`).** A tracklet that is, or may physically be, the target this frame is never written as a separate person:
+- the tracklet of an observed (TRACKING) target box;
+- while the target is not TRACKING, every tracklet it was confirmed on, observed or not: each is one physical body chain of the target, because a tracklet never survives contact with another body;
+- the target's continuing tracklet (contested or hidden);
+- the candidate under reacquisition verification;
+- the target's own tracklets that are not observed this frame (coasting; while TRACKING, an old target tracklet observed as a separate box is another person and is written);
+- while the target is not TRACKING and its position is valid, a tracklet born after the target's last confirmation whose box lies on T001's reported box (IoU at least `population_match_iou_min`). That is where the target would re-emerge, and such a body cannot be one that was seen as a separate person beside the confirmed target (test audit C1). An occluder that existed before is another person and stays written.
 
-In `overlap_contests` they are written as `T001`. A merged box that physically contains the target is still written, because it also contains another person. Pass 2 must not treat a population record overlapping an untrusted target as independent of it (an R1-H question).
+In `overlap_contests` withheld tracklets are written as `T001`. `v2.occluder_track_ids` lists only written tracks. A person the tracker has rejected elsewhere is another body and **is** written (review M1).
+
+**Detections without a tracklet are not written as records.** These are merged boxes (two or more people in one box) and alternative boxes. The population deliberately gives them no tracklet, so they have no track id:
+- In `overlap_contests` such a box stands for the tracked bodies it claims, when those are written this frame.
+- A merged box whose people are no longer tracked does not appear in the output at all (review M2, a **known limit**). The identity layer still treats it as a competitor: contact of at least `identity_contact_cover_min` blocks trust in the target.
+- Representing untracked bodies to Pass 2 needs a vocabulary decision (an R1-H question).
+
+Pass 2 must also not treat a population record overlapping an untrusted target as independent of it.
 
 ## Frame record
 
@@ -86,7 +103,7 @@ In `overlap_contests` they are written as `T001`. A merged box that physically c
 | `final_confirmed_count` / `final_provisional_count` | Last-frame tracks by population provisional flag (the target counts as confirmed). |
 | `clip_output` | null (no debug video). |
 | `spawn_guard_stats` | `{}`: no spawn guard in R1. |
-| `identity_conflict_counts` | `T001\|Txxx` → number of frames in which Txxx was the competing hypothesis (best competitor, unknown contact, or reacquisition rival) that kept the target from being confirmed (F9 fix). |
+| `identity_conflict_counts` | `T001\|Txxx` → number of untrusted frames in which Txxx was a competing hypothesis about the target (F9 fix): the competitor that beat, or could not be contrasted with, the target's own failing continuation box; an unverifiable contact on that box; or a rival box that blocked the target during continuation (`continuation_rivals`) or reacquisition. Competitors of other boxes are not counted. A merged box counts as its written claimants. |
 | `identity_conflicts_logged` | Number of such frames. |
 | `health_metrics` | `frames_processed`; `total_tracks_spawned` (population tracklets, the target's own included); `new_tracks_per_frame`; `tracks_per_100_frames`; `median_track_lifetime_frames` (written population records); the others are null because R1 has no such mechanism. |
 | `v2` | Schema, versions, `provenance` (contract block), `config_hash`, `reacquisition_events`, `rb_state_pct`, `notes` (these semantics in short). |

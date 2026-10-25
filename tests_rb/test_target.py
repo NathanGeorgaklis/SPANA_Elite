@@ -43,15 +43,20 @@ def frame_invariants(tc, r):
         tc.assertIn(f.rb_state, S.RB_STATES)
         observed = f.rb_state == T.TRACKING
         tc.assertEqual(f.bbox_is_observed, observed, where)
-        tc.assertEqual(f.identity_trusted, observed, where)
+        if f.identity_trusted:                       # trusted => observed (TRACKING); an observed box of an episode
+            tc.assertTrue(observed, where)           # opened without contrast may be untrusted (R1-G)
         tc.assertEqual(sum((f.bbox_is_observed, f.bbox_is_held, f.bbox_is_predicted)), 1, where)
         tc.assertEqual({"DETECTION": f.bbox_is_observed, "HELD": f.bbox_is_held,
                         "PREDICTED": f.bbox_is_predicted}[f.observation_source], True, where)
         if observed:
             tc.assertEqual(f.held_age_s, 0.0)
-            tc.assertEqual(f.identity_uncertainty_reasons, ())
             tc.assertFalse(f.merged_suspected)
-            tc.assertGreaterEqual(f.identity_confidence_rb, CFG.get("legacy_identity_trust_threshold"))
+            if f.identity_trusted:
+                tc.assertEqual(f.identity_uncertainty_reasons, ())
+                tc.assertGreaterEqual(f.identity_confidence_rb, CFG.get("legacy_identity_trust_threshold"))
+            else:                                    # observed, identity not contrast-verified (R1-G)
+                tc.assertEqual(f.identity_uncertainty_reasons, (T.INSUFFICIENT_CONTRAST,), where)
+                tc.assertLessEqual(f.identity_confidence_rb, CFG.get("untrusted_identity_confidence_ceiling"))
             det = r.pops[k].observations[f.detection_index]
             tc.assertNotIn(P.MERGED_SUSPECTED, det.flags, where)
             tc.assertEqual(tuple(f.bbox), tuple(det.bbox))
@@ -508,10 +513,14 @@ class TestBankAndConfidence(Base):
             self.assertNotIn(P.CONTESTED, o.flags)
 
     def test_post_reacquisition_quarantine(self):
-        ppl = people()
-        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 50 else [])
+        # a same-kit person stands nearby (not in contact), so the reacquisition beats a confusable competitor and
+        # the episode is verified: the bank rules that apply are the quarantine ones, not EPISODE_UNVERIFIED
+        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
+        frames = [SceneFrame({"TARGET": b, "PERSON_A": box_at(600, 400, 40, 100)},
+                             drop=["TARGET"] if 10 <= k < 50 else [])
                   for k, b in enumerate(still(120, (500, 400)))]
         r = run(frames, ppl)
+        self.assertTrue(r.tracker.reacquisition_events[0].evidence["contrast_verified"])
         acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
         t_acc = r.frames[acc].time_s
         offered = 0

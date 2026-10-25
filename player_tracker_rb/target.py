@@ -85,7 +85,7 @@ SEARCH GATE (D13): radius = min(gate_base_h + gate_growth_h_per_s * u, gate_max_
 predicted centre, u = seconds since the last confirmation; frozen while AMBIGUOUS (gate_grows_while_ambiguous).
 h = median height of the target's non-partial observed boxes in the last target_height_window_s (camera-scaled).
 
-APPEARANCE BANK (D12): updated only on a TRACKING frame (trusted), from a box that the population also considers
+APPEARANCE BANK (D12): updated only on a TRACKING frame of a VERIFIED episode (trusted), from a box that the population also considers
 clean (not CONTESTED / PARTIAL / TOUCHES_IMAGE_EDGE / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGE_LINEAGE /
 merged, containing no other body's box), isolated from every other body outside its own nested group (IoU <=
 bank_contact_iou, covered <= bank_max_covered_fraction), in a camera-verified frame, outside the post-reacquisition
@@ -96,12 +96,16 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
   * seed frame: 1.0 (human-provided identity);
   * TRACKING: 0.5 + 0.5 * min(a, k), with
         a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
-        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation (the
-            tracklet itself is geometric evidence of one body) but k = 0 for an accepted REACQUISITION (appearance
-            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False) AND for every later
-            uncontrasted frame of that episode: an episode opened without contrast stays at 0.5 until a TRACKING
-            frame passes a real contrast against a banked competitor (R1-G; logged as episode_contrast_verified)
+        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation of a
+            VERIFIED episode (the tracklet itself is geometric evidence of one body), k = 0 otherwise
     so a trusted frame is in [0.5, 1] and the weakest piece of evidence decides;
+  * UNVERIFIED EPISODE (R1-G; review H1, L4): an episode is contrast-VERIFIED from the seed (human identification),
+    or once a TRACKING frame (or the accepting reacquisition frame) beats a CONFUSABLE competitor by the margin: one
+    whose bank similarity to the crop reaches appearance_floor. A reacquisition accepted otherwise opens an
+    UNVERIFIED episode: its observed frames stay rb_state TRACKING but identity_trusted = False, reason
+    INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
+    updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
+    banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
   * every untrusted frame: min(untrusted_identity_confidence_ceiling,
         last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
 Separate quantities are reported, never folded into this one: raw detector score, target similarity, best
@@ -137,6 +141,7 @@ MERGED_DETECTION_SUSPECTED = "MERGED_DETECTION_SUSPECTED"
 REACQUISITION_UNVERIFIED = "REACQUISITION_UNVERIFIED"
 BELOW_APPEARANCE_FLOOR = "BELOW_APPEARANCE_FLOOR"
 INSUFFICIENT_CONTRAST = "INSUFFICIENT_CONTRAST"
+EPISODE_UNVERIFIED = "EPISODE_UNVERIFIED"          # bank refusal: the episode's identity is not contrast-verified
 MOTION_VETO = "MOTION_VETO"
 NO_CANDIDATE_IN_GATE = "NO_CANDIDATE_IN_GATE"
 TARGET_OUT_OF_FRAME = "TARGET_OUT_OF_FRAME"
@@ -329,9 +334,9 @@ class TargetTracker:
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
         self._base_reasons: Tuple[str, ...] = ()
         self._episode = 1
-        # the current episode's identity has been CONTRASTED against at least one banked competitor (the seed is a
-        # human identification and counts as verified); an episode opened by an uncontrasted reacquisition stays
-        # capped at the minimal trusted confidence until a TRACKING frame passes a real contrast
+        # the current episode's identity has been CONTRAST-VERIFIED (beat a confusable competitor; the seed is a human
+        # identification and counts as verified). An episode opened by an unverified reacquisition reports observed
+        # boxes as untrusted until a TRACKING frame passes that contrast (see the module docstring)
         self._contrast_verified = True
         self._tracklet: Optional[str] = None                 # the target's current population tracklet
         self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
@@ -368,6 +373,16 @@ class TargetTracker:
                 "target_known_others": len(self._known_others), "target_bank_samples": len(self._bank),
                 "target_verification_history": len(self._verif.history) if self._verif is not None else 0,
                 "target_reacquisition_events": len(self._events)}
+
+    @property
+    def current_tracklet(self) -> Optional[str]:
+        """The population tracklet the target is following (its own geometric chain), or None once released."""
+        return self._tracklet
+
+    @property
+    def verifying_tracklet(self) -> Optional[str]:
+        """The tracklet under reacquisition verification, or None."""
+        return self._verif.tracklet_id if self._verif is not None else None
 
     @property
     def target_tracklets(self) -> Tuple[str, ...]:
@@ -592,6 +607,13 @@ class TargetTracker:
             k = min(1.0, max(0.0, (ev.contrast - ev.margin) / (1.0 - ev.margin)))
         return 1.0 / 2 + min(a, k) / 2
 
+    def _confusable_contrast(self, ev: CandidateEvaluation) -> bool:
+        """A passed contrast VERIFIES identity only if the competitor could be confused with the target: its bank's
+        similarity to this crop reaches appearance_floor. Beating an obviously different person says nothing about
+        an unseen look-alike (R1-G review L4)."""
+        return ev.contrast is not None and ev.best_competitor_similarity is not None and \
+            ev.best_competitor_similarity >= self._cfg.get("appearance_floor")
+
     def _confidence_untrusted(self, t: float) -> float:
         c = self._cfg
         if self._last_confirm_t is None:
@@ -639,7 +661,7 @@ class TargetTracker:
         """Bookkeeping for a TRACKING frame on detection ev.detection_index."""
         t = res.time_s
         o = res.observations[ev.detection_index]
-        if ev.contrast is not None:                          # passed a real contrast: the episode is verified
+        if self._confusable_contrast(ev):                    # the episode's identity is now contrast-verified
             self._contrast_verified = True
         partial = P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags
         if self._motion is None or not self._position_valid:
@@ -661,7 +683,7 @@ class TargetTracker:
         # whole tracklet)
         grp = self._group(res, ev.detection_index)
         seeding = self._last_confirm_t is None              # the seed box is the human's own identification
-        settled = seeding or (ev.role == CONTINUATION and
+        settled = seeding or (self._contrast_verified and ev.role == CONTINUATION and
                               t - self._tracklet_since_t >= self._cfg.get("target_known_other_min_s"))
         for other in (res.observations if settled else ()):
             if other.is_body and other.index not in grp and other.tracklet_id and \
@@ -675,6 +697,8 @@ class TargetTracker:
         self._lost_from_frame = None
         self._ambiguous_since_t = None
         self._verif = None
+        if not self._contrast_verified:                      # an unverified identity never shapes the bank
+            return {"status": "REFUSED", "refusals": [EPISODE_UNVERIFIED]}
         return self._bank_update(res, image, ev.detection_index, cache)
 
     def _enter_uncertain(self, res: P.FrameResult, state: str) -> None:
@@ -806,8 +830,10 @@ class TargetTracker:
                                                      pred_box=pred_box, gate_h=gate_h, h=h, absence_s=absence))
                 evals.extend(others)
                 details = list(ev.details)
-                if ev.passed and self._rivals(others, ev):
+                rivals = self._rivals(others, ev) if ev.passed else []
+                if rivals:
                     details.append(RIVAL_CANDIDATE)
+                    log["continuation_rivals"] = [e.detection_index for e in rivals]
                 if not details:
                     state, chosen = TRACKING, ev
                     conf_trusted = self._confidence_trusted(ev)
@@ -863,7 +889,7 @@ class TargetTracker:
             if acc["accepted"] is not None:
                 ev = acc["accepted"]
                 chosen, state, reidentified = ev, TRACKING, True
-                self._contrast_verified = ev.contrast is not None
+                self._contrast_verified = self._confusable_contrast(ev)
                 conf_trusted = self._confidence_trusted(ev)
                 self._episode += 1
                 uf_frame, uf_t = self._uncertain_from
@@ -890,11 +916,14 @@ class TargetTracker:
                     contested_box, det_idx = bf.box, bf.detection_index
 
         # ---- write ---------------------------------------------------------------------------------------------
+        trusted = True
         if state == TRACKING:
             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
             log["episode_contrast_verified"] = self._contrast_verified
             det_idx = chosen.detection_index
-            conf = conf_trusted
+            trusted = self._contrast_verified
+            conf = conf_trusted if trusted else min(conf_trusted, c.get("untrusted_identity_confidence_ceiling"))
+            self._last_trusted_conf = conf
         else:
             conf = self._confidence_untrusted(t)
             if not reasons:
@@ -904,6 +933,7 @@ class TargetTracker:
         self._state = state
         self._last_frame = res.rel_frame
         frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
+                            trusted=trusted,
                             contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)
         self._prev_t = t
         return frame
@@ -1002,6 +1032,7 @@ class TargetTracker:
             out["accepted"] = cur
             out["evidence"] = {"tracklet_id": v.tracklet_id, "window_s": win, "hit_fraction": frac,
                                "contrast_available": cur.contrast is not None,
+                               "contrast_verified": self._confusable_contrast(cur),
                                "frames_in_window": len(window), "absence_s": absence,
                                "positional_prior": pred_box is not None, "margin": cur.margin,
                                "target_similarity": cur.composite, "best_competitor": cur.best_competitor,
@@ -1019,7 +1050,7 @@ class TargetTracker:
     def _frame(self, res: P.FrameResult, state: str, reasons: Tuple[str, ...], det_idx: Optional[int],
                ev: Optional[CandidateEvaluation], conf: float, reidentified: bool, log: Dict[str, Any], *,
                contested_box: Optional[Box] = None, occluders: Tuple[str, ...] = (), merged: bool = False,
-               pred: Any = None) -> TargetFrame:
+               pred: Any = None, trusted: bool = True) -> TargetFrame:
         t = res.time_s
         if state == TRACKING:
             o = res.observations[det_idx]
@@ -1052,8 +1083,9 @@ class TargetTracker:
             bbox_is_predicted=src == PREDICTED, held_age_s=held_age, last_confirmed_frame=self._last_confirm_frame,
             time_since_confirmed_s=None if self._last_confirm_t is None else t - self._last_confirm_t,
             observed_or_contested_box=contested_box if state != TRACKING else box,
-            observation_tracklet_id=tracklet, target_episode=self._episode, identity_trusted=state == TRACKING,
-            identity_confidence_rb=float(conf), identity_uncertainty_reasons=() if state == TRACKING else reasons,
+            observation_tracklet_id=tracklet, target_episode=self._episode,
+            identity_trusted=state == TRACKING and trusted, identity_confidence_rb=float(conf),
+            identity_uncertainty_reasons=(() if trusted else (INSUFFICIENT_CONTRAST,)) if state == TRACKING else reasons,
             occluder_track_ids=tuple(occluders), merged_suspected=bool(merged), raw_detection_conf=raw,
             reidentified_this_frame=reidentified, target_similarity=tsim, best_competitor_similarity=csim,
             rel_frame=res.rel_frame, time_s=t, bbox=tuple(float(v) for v in box), detection_index=det_idx,

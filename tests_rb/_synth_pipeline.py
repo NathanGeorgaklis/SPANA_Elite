@@ -120,6 +120,26 @@ class E2E:
                 out.append(f)
         return out
 
+    def body_written_twice(self, name: str = "TARGET") -> List[Tuple[int, str, str]]:
+        """Rule 28 in EVERY frame: frames where T001's reported box is on the target's own body and a population
+        record (detected or coasting) is also on that body."""
+        out = []
+        for f in range(1, self.n + 1):
+            own = self.target_det_box(f, name)
+            if own is None:
+                continue
+            t = self.target(f)
+            if iou(own, t["observed_position_box"]) <= 0.5:
+                continue
+            for p in self.population(f):
+                if iou(own, p["observed_position_box"]) > 0.5:
+                    out.append((f, p["track_id"], t["v2"]["rb_state"]))
+        return out
+
+    def accepted_bank_frames(self) -> List[int]:
+        return [line["frame"] for line in self.decision_log
+                if ((line["target"].get("decision") or {}).get("bank") or {}).get("status") == "ACCEPTED"]
+
     def bank_violations(self, name: str = "TARGET") -> List[int]:
         """Frames whose accepted target bank sample was not a clean crop of the target alone: the sampled
         detection must be owned only by the target and no other person's TRUE box may touch the target's."""
@@ -166,7 +186,7 @@ def run_clip(frames: Sequence[ClipFrame], people: Dict[str, Person], work_dir: s
              seed_name: str = "TARGET", overrides: Optional[Dict[str, Any]] = None, visible_min: float = 0.35,
              debug: bool = True, name: str = "clip", fps: float = FPS,
              on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None,
-             video_path: Optional[str] = None) -> E2E:
+             video_path: Optional[str] = None, pose_gain: float = 0.0) -> E2E:
     """Write the clip, run the production pipeline on it, and load everything it wrote."""
     os.makedirs(work_dir, exist_ok=True)
     video = video_path or write_clip(os.path.join(work_dir, name + ".avi"), frames, people, fps)
@@ -179,7 +199,7 @@ def run_clip(frames: Sequence[ClipFrame], people: Dict[str, Person], work_dir: s
     seed_box = list(frames[start_frame].scene.boxes[seed_name])
     sizes: List[Tuple[int, Dict[str, int]]] = []
     summary = R.run(video, start_frame, seed_box, out_dir=out_dir, debug=debug, config_overrides=ov,
-                    detector=detector, embedder=SignatureEmbedding(people),
+                    detector=detector, embedder=SignatureEmbedding(people, pose_gain),
                     on_frame=(lambda f, s: sizes.append((f, s))) if on_frame is None else on_frame)
     paths = R.output_paths(out_dir, video)
     with open(paths["results"], encoding="ascii") as fh:
@@ -210,6 +230,16 @@ def box(cx: float, cy: float) -> Tuple[float, float, float, float]:
 
 def walk(n: int, start: Tuple[float, float], v: Tuple[float, float]) -> List[Tuple[float, float, float, float]]:
     return [box(start[0] + v[0] * k, start[1] + v[1] * k) for k in range(n)]
+
+
+def gait_walk(n: int, start: Tuple[float, float], v: Tuple[float, float]) -> List[Tuple[float, float, float, float]]:
+    """A walk whose box width cycles with the stride (pose variation for the pose-aware synthetic embedding)."""
+    out = []
+    for k in range(n):
+        cx, cy = start[0] + v[0] * k, start[1] + v[1] * k
+        w = PW - 8 + 8 * abs((k // 4) % 5 - 2)
+        out.append((cx - w / 2, cy - PH / 2, cx + w / 2, cy + PH / 2))
+    return out
 
 
 def clip(positions: Dict[str, Sequence[Optional[Tuple[float, float, float, float]]]], *,

@@ -377,8 +377,23 @@ class SequentialVideoReader:
 
 def thumbs_digest(thumbs: List[str]) -> str:
     """One SHA-256 over the ordered list of per-frame fingerprints (compact alignment summary)."""
-    h = hashlib.sha256()
+    d = ThumbsDigest()
     for t in thumbs:
-        h.update(t.encode("ascii"))
-        h.update(b"\n")
-    return h.hexdigest()
+        d.update(t)
+    return d.hexdigest()
+
+
+class ThumbsDigest:
+    """thumbs_digest computed incrementally, so a long run need not keep every fingerprint in memory."""
+
+    def __init__(self) -> None:
+        self._h = hashlib.sha256()
+        self.count = 0
+
+    def update(self, thumb: str) -> None:
+        self._h.update(thumb.encode("ascii"))
+        self._h.update(b"\n")
+        self.count += 1
+
+    def hexdigest(self) -> str:
+        return self._h.hexdigest()
