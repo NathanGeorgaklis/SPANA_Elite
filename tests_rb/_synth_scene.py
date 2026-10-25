@@ -120,9 +120,15 @@ class Detection:
     owners: Tuple[str, ...]
 
 
-def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H) -> np.ndarray:
+def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H,
+           background: Optional[np.ndarray] = None) -> np.ndarray:
     img = np.empty((height, width, 3), np.uint8)
-    img[:] = BACKGROUND
+    if background is None:
+        img[:] = BACKGROUND
+    else:
+        if background.shape != (height, width, 3):
+            raise ValueError(f"background must be {height}x{width}x3")
+        img[:] = background
     order = list(fr.order) or sorted(fr.boxes, key=lambda n: fr.boxes[n][3])
     for name in order:
         if name not in fr.boxes:

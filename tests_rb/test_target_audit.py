@@ -502,6 +502,54 @@ class DocumentedLimitations(unittest.TestCase):
                                              1.0 / 2 + 1e-9)
 
 
+class UncontrastedEpisodeCap(unittest.TestCase):
+    """R1-G rule (Nathan, 2026-10-25: 'keep uncontrasted reacquisition capped/flagged, not treated as
+    high-confidence identity'). An episode opened by a reacquisition that had nothing to contrast against stays at
+    the minimal trusted confidence (0.5) until a TRACKING frame actually contrasts the target against a banked
+    competitor and passes."""
+
+    def _return_alone_then_opponent(self):
+        ppl = people(("PERSON_A", KIT_B, 0.0))
+        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
+        frames += [SceneFrame({}) for _ in range(40)]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(40)]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(580, 400, 40, 100)})
+                   for _ in range(40)]
+        return run(frames, ppl)
+
+    def test_episode_stays_capped_until_contrast_is_verified(self):
+        r = self._return_alone_then_opponent()
+        ev = r.tracker.reacquisition_events[0]
+        self.assertFalse(ev.evidence["contrast_available"])
+        acc = ev.reacq_accepted_frame
+        contrasted = [k for k in range(acc, len(r.frames)) for c in r.frames[k].decision.get("candidates", [])
+                      if c["role"] == T.CONTINUATION and c["contrast"] is not None and c["passed"]]
+        self.assertTrue(contrasted, "the scene must eventually contrast the target against a banked person")
+        first = min(contrasted)
+        for k in range(acc, first):
+            f = r.frames[k]
+            if f.rb_state == T.TRACKING:
+                self.assertLessEqual(f.identity_confidence_rb, 1.0 / 2 + 1e-9, f"rel {k}: uncontrasted episode")
+        self.assertGreater(r.frames[first].identity_confidence_rb, 1.0 / 2, "verified contrast lifts the cap")
+
+    def test_wrong_lookalike_episode_never_rises_above_the_cap(self):
+        for cos in (0.78, 0.8):
+            with self.subTest(cos=cos):
+                ppl = people(("PERSON_A", KIT_A, cos))
+                frames = [SceneFrame({"TARGET": b}) for b in linear(40, (1150, 400), (8, 0))]
+                frames += [SceneFrame({"PERSON_A": b}) for b in linear(120, (1250, 400), (-4, 0))]
+                r = run(frames, ppl)
+                self.assertTrue(r.tracker.reacquisition_events)
+                acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
+                for f in r.frames[acc:]:
+                    if f.rb_state == T.TRACKING:
+                        self.assertLessEqual(f.identity_confidence_rb, 1.0 / 2 + 1e-9, f"rel {f.rel_frame}")
+
+    def test_seed_episode_is_not_capped(self):
+        r = run([SceneFrame({"TARGET": b}) for b in linear(20, (300, 400), (3, 0))], people())
+        self.assertTrue(all(f.identity_confidence_rb > 1.0 / 2 for f in r.frames[1:]))
+
+
 def _bank_logs(r):
     return [(f, f.decision.get("bank")) for f in r.frames[1:] if f.decision.get("bank")]
 

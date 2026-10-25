@@ -763,7 +763,7 @@ def build_frame_record(cfg: TrackerConfig, *, frame: int, is_cut: bool, camera_s
     pairs = [[str(a), str(b)] for a, b in overlap_contests]
     rec: Dict[str, Any] = {
         "frame": int(frame), "is_cut": bool(is_cut),
-        "camera_shift": [round(float(camera_shift_px[0]), sdp), round(float(camera_shift_px[1]), sdp)],
+        "camera_shift": [round(float(camera_shift_px[0]), sdp) + 0.0, round(float(camera_shift_px[1]), sdp) + 0.0],
         "n_detections": int(n_detections), "n_live_tracks": len(tracks),
         "overlap_contests": pairs, "tracks": tracks,
     }

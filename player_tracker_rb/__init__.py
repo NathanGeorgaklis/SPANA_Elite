@@ -9,6 +9,7 @@ the historical Pass-1 JSON contract (see output_schema) and adds clearly labelle
 Allowed imports: Python standard library, numpy, cv2, onnxruntime, and this package. Never football_analysis,
 player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ (D02, D21).
 
-Stages so far: R1-A (config, output_schema) and R1-B (video_io, provenance). No tracking logic yet.
+Stages: R1-A (config, output_schema), R1-B (video_io, provenance), R1-C (detector), R1-D (appearance), R1-E
+(population, motion, camera), R1-F (target identity), R1-G (run_rb: the integrated Pass-1 pipeline).
 """
-__version__ = "0.2.0-r1b"
+__version__ = "0.7.0-r1g"

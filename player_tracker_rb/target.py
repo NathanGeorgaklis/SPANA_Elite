@@ -98,7 +98,9 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
         a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
         k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation (the
             tracklet itself is geometric evidence of one body) but k = 0 for an accepted REACQUISITION (appearance
-            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False)
+            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False) AND for every later
+            uncontrasted frame of that episode: an episode opened without contrast stays at 0.5 until a TRACKING
+            frame passes a real contrast against a banked competitor (R1-G; logged as episode_contrast_verified)
     so a trusted frame is in [0.5, 1] and the weakest piece of evidence decides;
   * every untrusted frame: min(untrusted_identity_confidence_ceiling,
         last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
@@ -327,6 +329,10 @@ class TargetTracker:
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
         self._base_reasons: Tuple[str, ...] = ()
         self._episode = 1
+        # the current episode's identity has been CONTRASTED against at least one banked competitor (the seed is a
+        # human identification and counts as verified); an episode opened by an uncontrasted reacquisition stays
+        # capped at the minimal trusted confidence until a TRACKING frame passes a real contrast
+        self._contrast_verified = True
         self._tracklet: Optional[str] = None                 # the target's current population tracklet
         self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
         self._known_others: Set[str] = set()                 # tracklets seen as separate bodies beside the target
@@ -355,6 +361,13 @@ class TargetTracker:
     @property
     def reacquisition_events(self) -> Tuple[ReacquisitionEvent, ...]:
         return tuple(self._events)
+
+    def state_sizes(self) -> Dict[str, int]:
+        """Sizes of everything the target tracker keeps between frames (diagnostics: long-run memory checks)."""
+        return {"target_size_history": len(self._sizes), "target_tracklets": len(self._target_tracklets),
+                "target_known_others": len(self._known_others), "target_bank_samples": len(self._bank),
+                "target_verification_history": len(self._verif.history) if self._verif is not None else 0,
+                "target_reacquisition_events": len(self._events)}
 
     @property
     def target_tracklets(self) -> Tuple[str, ...]:
@@ -571,9 +584,10 @@ class TargetTracker:
         floor = c.get("reacq_appearance_floor") if ev.role == REACQUISITION else c.get("appearance_floor")
         a = min(1.0, max(0.0, (ev.composite - floor) / (1.0 - floor)))
         if ev.contrast is None:
-            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain), but for a
-            # REACQUISITION nothing positive separates the candidate from an unseen look-alike -> minimal trust
-            k = 1.0 if ev.role == CONTINUATION else 0.0
+            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain) of a verified
+            # episode; but for a REACQUISITION, or any frame of an episode that a reacquisition opened without
+            # contrast, nothing positive separates the target from an unseen look-alike -> minimal trust
+            k = 1.0 if ev.role == CONTINUATION and self._contrast_verified else 0.0
         else:
             k = min(1.0, max(0.0, (ev.contrast - ev.margin) / (1.0 - ev.margin)))
         return 1.0 / 2 + min(a, k) / 2
@@ -625,6 +639,8 @@ class TargetTracker:
         """Bookkeeping for a TRACKING frame on detection ev.detection_index."""
         t = res.time_s
         o = res.observations[ev.detection_index]
+        if ev.contrast is not None:                          # passed a real contrast: the episode is verified
+            self._contrast_verified = True
         partial = P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags
         if self._motion is None or not self._position_valid:
             self._motion = self._mm.start(o.bbox, t, partial=partial)
@@ -847,6 +863,7 @@ class TargetTracker:
             if acc["accepted"] is not None:
                 ev = acc["accepted"]
                 chosen, state, reidentified = ev, TRACKING, True
+                self._contrast_verified = ev.contrast is not None
                 conf_trusted = self._confidence_trusted(ev)
                 self._episode += 1
                 uf_frame, uf_t = self._uncertain_from
@@ -875,6 +892,7 @@ class TargetTracker:
         # ---- write ---------------------------------------------------------------------------------------------
         if state == TRACKING:
             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
+            log["episode_contrast_verified"] = self._contrast_verified
             det_idx = chosen.detection_index
             conf = conf_trusted
         else:

@@ -95,8 +95,10 @@ class TestNoMagicNumbers(unittest.TestCase):
 
 class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
     """R1-B: the frame-content fingerprint is for alignment debugging only. Only the video layer, provenance and the
-    output schema may refer to it; detection, appearance and state code must never read it."""
-    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py"}
+    output schema may refer to it; detection, appearance and state code must never read it. run_rb.py (R1-G) is the
+    output writer: it copies the fingerprint into the contract's frame v2 field and the provenance sidecar and never
+    passes it to a decision layer."""
+    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py", "run_rb.py"}
     TOKENS = ("thumb_sha1", "frame_fingerprint", "frame_thumb", "thumbs_digest")
 
     def test_fingerprint_confined_to_video_layer(self):

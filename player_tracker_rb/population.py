@@ -454,6 +454,13 @@ class Population:
         iy = max(0.0, min(float(self._h), b[3]) - max(0.0, b[1]))
         return ix * iy / (w * h)
 
+    def state_sizes(self) -> Dict[str, int]:
+        """Sizes of everything the population keeps between frames (diagnostics: long-run memory checks)."""
+        return {"population_live": len(self._live), "population_regions": len(self._regions),
+                "population_closed_memory": len(self._memory),
+                "population_live_bank_samples": sum(len(tr.bank) for tr in self._live),
+                "population_closed_bank_samples": sum(len(m.bank) for m in self._memory)}
+
     def inside_fraction(self, box: Sequence[float]) -> float:
         """Fraction of a box's area inside the image."""
         return self._inside_fraction(_box(box))
