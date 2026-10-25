@@ -1,0 +1,227 @@
+<!doctype html>
+<!-- SPANA engine v2-rebuild — REBUILT 2026-10 — NOT ORIGINAL SOURCE
+     R2 human-truth annotation page (schema r2_labels_v1, see tools_rb/r2_labels.py). Offline: open index.html from the
+     annotation pack folder. Shows only the clip's own frames: NO tracker, detector or model output is ever shown. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R2 Annotator</title>
+<style>
+:root{--bg:#14161a;--panel:#1d2026;--line:#2c3038;--text:#e8eaee;--muted:#9aa1ad;--accent:#4fa3ff;--ok:#3fb950;--bad:#f85149;--warn:#d29922;--tgt:#ffd23f;--oth:#ff6bd6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+header{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:14px;margin:0 8px 0 0}
+select,input,button,textarea{font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:4px;padding:3px 6px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#06121f}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:0;height:calc(100vh - 46px)}
+#stage{position:relative;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+#canvasWrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000}
+canvas#cv{max-width:100%;max-height:100%;cursor:crosshair}
+#bar{display:flex;gap:6px;align-items:center;padding:6px 10px;border-top:1px solid var(--line);flex-wrap:wrap}
+#fnum{font-variant-numeric:tabular-nums;min-width:170px}
+#timeline{height:34px;border-top:1px solid var(--line);cursor:pointer;display:block;width:100%}
+aside{overflow:auto;padding:10px 12px;background:var(--panel)}
+aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px}
+aside h2:first-child{margin-top:0}
+.row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.row label{min-width:92px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:3px 7px;background:#262a31}
+.seg button.on{background:var(--accent);color:#06121f}
+.pill{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;background:#262a31;border:1px solid var(--line)}
+.pill.ok{border-color:var(--ok);color:var(--ok)}.pill.bad{border-color:var(--bad);color:var(--bad)}.pill.warn{border-color:var(--warn);color:var(--warn)}
+#people .p{display:flex;gap:6px;align-items:center;margin:3px 0}
+#people .p.active{outline:1px solid var(--oth);border-radius:4px}
+#msgs{white-space:pre-wrap;font:11px/1.35 ui-monospace,Menlo,monospace;color:var(--muted);max-height:180px;overflow:auto;background:#15171b;padding:6px;border-radius:4px}
+.hint{color:var(--muted);font-size:11px}
+kbd{font:11px ui-monospace,Menlo,monospace;background:#262a31;border:1px solid var(--line);border-radius:3px;padding:0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>R2 Annotator</h1>
+  <select id="clipSel" aria-label="Clip"></select>
+  <span id="clipInfo" class="hint"></span>
+  <span style="flex:1"></span>
+  <label class="hint">Annotator <input id="annotator" size="10" placeholder="name"></label>
+  <button id="btnLoad">Load labels…</button><input id="fileIn" type="file" accept=".json" hidden>
+  <button id="btnSave" class="primary">Download labels</button>
+</header>
+<main>
+<section id="stage">
+  <div id="canvasWrap"><canvas id="cv" width="1280" height="720"></canvas></div>
+  <canvas id="timeline" height="34"></canvas>
+  <div id="bar">
+    <button id="bPrev10">« 10</button><button id="bPrev">‹ 1</button>
+    <span id="fnum"></span>
+    <button id="bNext">1 ›</button><button id="bNext10">10 »</button>
+    <button id="bNextReq" title="next required box frame still missing a box (N)">next missing ⟶</button>
+    <span style="flex:1"></span>
+    <span class="hint">Draw: drag on the frame. <kbd>←</kbd><kbd>→</kbd> frame · <kbd>⇧</kbd>+arrow 10 · <kbd>C</kbd> copy previous box · <kbd>Del</kbd> delete box · <kbd>N</kbd> next missing · <kbd>T</kbd> target layer</span>
+  </div>
+</section>
+<aside>
+  <h2>Proposed target (pointer only)</h2>
+  <div id="proposal" class="hint"></div>
+
+  <h2>Box layer</h2>
+  <div class="row"><div class="seg" id="layerSeg"></div></div>
+
+  <h2>This frame</h2>
+  <div class="row"><label>Visibility</label><div class="seg" id="visSeg"></div></div>
+  <div class="row"><label>Identity resolvable</label><div class="seg" id="resSeg"></div></div>
+  <div class="row"><label>Occlusion</label><select id="occSel"></select></div>
+  <div class="row"><label>Merged blob</label><input type="checkbox" id="merged"></div>
+  <div class="row"><label>Camera cut here</label><input type="checkbox" id="cut"><span class="hint">first frame after a hard cut</span></div>
+  <div class="row"><label>HUMAN_UNCERTAIN</label><input type="checkbox" id="unc"></div>
+  <div class="row"><label>First clean reappearance</label><input type="checkbox" id="fcr"></div>
+  <div class="row"><label>Contact with</label><span id="contactBox"></span></div>
+  <div class="row"><label>Note</label><input id="note" style="flex:1"></div>
+  <div class="row"><button id="bRangeStart">Range start = this frame</button><button id="bRangeApply">Apply this frame's state to range</button></div>
+  <div class="hint" id="rangeInfo"></div>
+
+  <h2>People (other than the target)</h2>
+  <div id="people"></div>
+  <div class="row"><input id="pDesc" placeholder="description, e.g. MAR #4" style="flex:1">
+    <select id="pRel"><option>OPPONENT</option><option>SAME_TEAM</option><option>OTHER</option></select>
+    <button id="bAddP">Add</button></div>
+
+  <h2>Seed</h2>
+  <div class="row"><button id="bSeed">Seed = this frame + target box</button><span id="seedInfo" class="hint"></span></div>
+
+  <h2>Clip</h2>
+  <div class="row"><button id="bReject">Reject clip…</button><span id="rejInfo" class="hint"></span></div>
+
+  <h2>Check</h2>
+  <div class="row"><button id="bCheck">Check labels</button><span id="checkPill"></span></div>
+  <div id="msgs"></div>
+  <p class="hint">Labels autosave in this browser per clip. Use <b>Download labels</b> to save the file that will be validated, hashed and frozen. Final validation is done by <code>tools_rb/r2_labels.py</code>.</p>
+</aside>
+</main>
+<script src="r2_clips_manifest.js"></script>
+<script>
+"use strict";
+const SCHEMA="r2_labels_v1", TOOL="tools_rb/r2_annotator.html v1", BOX_HZ=5, EVENT_PAD_S=0.5;
+const VIS=["VISIBLE","PARTIAL","HIDDEN","OUT_OF_FRAME"], RES=["YES","NO"];
+const OCC=["NONE","PARTIAL_BY_PERSON","FULL_BY_PERSON","PARTIAL_BY_OTHER","FULL_BY_OTHER"];
+const $=id=>document.getElementById(id);
+const clips=(window.R2_CLIPS||[]);
+let clip=null, lab=null, f=0, layer="TARGET", rangeStart=null, img=new Image(), cache=new Map(), drag=null;
+
+function blankFrame(){return {visibility:"VISIBLE",resolvable:"YES",occlusion:"NONE",merged:false,contact_with:[],camera_cut:false,human_uncertain:false,note:""};}
+function newLabels(c){return {schema:SCHEMA,clip_id:c.clip_id,clip_sha256:c.clip_sha256,fps:c.fps,frames:c.frames,width:c.width,height:c.height,
+  annotator:$("annotator").value||"",tool:TOOL,saved_utc:"",clip_rejected:null,seed:{frame:null,box:null},
+  per_frame:Array.from({length:c.frames},blankFrame),target_boxes:{},people:{},first_clean_reappearance:[]};}
+function key(c){return "r2lab:"+c.clip_id+":"+c.clip_sha256;}
+function persist(){try{lab.annotator=$("annotator").value;localStorage.setItem(key(clip),JSON.stringify(lab));localStorage.setItem("r2:annotator",lab.annotator);}catch(e){}}
+function frameUrl(i){return "frames/"+clip.clip_id+"/f_"+String(i).padStart(6,"0")+".jpg";}
+function preload(i){for(const j of [i+1,i+2,i-1]){if(j>=0&&j<clip.frames&&!cache.has(j)){const im=new Image();im.src=frameUrl(j);cache.set(j,im);if(cache.size>40){cache.delete(cache.keys().next().value);}}}}
+
+function eventFrames(){const pf=lab.per_frame,out=[];for(let i=0;i<pf.length;i++){const x=pf[i],p=i?pf[i-1]:null;
+  if(x.contact_with.length||x.occlusion!=="NONE"||x.merged||x.camera_cut||x.visibility==="OUT_OF_FRAME"||(p&&(p.visibility!==x.visibility||p.resolvable!==x.resolvable)))out.push(i);}return out;}
+function boxFrames(){const s=lab.seed.frame;if(s===null)return [];const n=lab.frames,step=Math.max(1,Math.round(lab.fps/BOX_HZ)),pad=Math.round(EVENT_PAD_S*lab.fps),req=new Set();
+  for(let i=s;i<n;i+=step)req.add(i);for(const e of eventFrames())for(let i=Math.max(s,e-pad);i<=Math.min(n-1,e+pad);i++)req.add(i);return [...req].sort((a,b)=>a-b);}
+function missingAt(i){const x=lab.per_frame[i],m=[];if((x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.human_uncertain&&!lab.target_boxes[i])m.push("target");
+  for(const p of x.contact_with)if(!(lab.people[p]&&lab.people[p].boxes[i]))m.push(p);return m;}
+
+function seg(el,vals,get,set){el.innerHTML="";for(const v of vals){const b=document.createElement("button");b.textContent=v.replace(/_/g," ");b.onclick=()=>{set(v);refresh();};if(get()===v)b.className="on";el.appendChild(b);}}
+function refresh(){if(!lab)return;const x=lab.per_frame[f];
+  seg($("visSeg"),VIS,()=>x.visibility,v=>{x.visibility=v;if(v==="HIDDEN"&&!x.occlusion.startsWith("FULL"))x.occlusion="FULL_BY_PERSON";if(v==="OUT_OF_FRAME"){x.occlusion="NONE";x.merged=false;x.contact_with=[];}if(v==="HIDDEN"||v==="OUT_OF_FRAME")delete lab.target_boxes[f];persist();});
+  seg($("resSeg"),RES,()=>x.resolvable,v=>{x.resolvable=v;persist();});
+  seg($("layerSeg"),["TARGET",...Object.keys(lab.people)],()=>layer,v=>{layer=v;});
+  $("occSel").value=x.occlusion;$("merged").checked=x.merged;$("cut").checked=x.camera_cut;$("unc").checked=x.human_uncertain;$("note").value=x.note;
+  $("fcr").checked=lab.first_clean_reappearance.includes(f);
+  const cb=$("contactBox");cb.innerHTML="";for(const pid of Object.keys(lab.people)){const l=document.createElement("label");l.style.minWidth="0";const c=document.createElement("input");c.type="checkbox";c.checked=x.contact_with.includes(pid);
+    c.onchange=()=>{x.contact_with=c.checked?[...new Set([...x.contact_with,pid])]:x.contact_with.filter(q=>q!==pid);persist();refresh();};l.append(c," "+pid+" ");cb.appendChild(l);}
+  if(!Object.keys(lab.people).length)cb.innerHTML='<span class="hint">add people below first</span>';
+  const pe=$("people");pe.innerHTML="";for(const [pid,p] of Object.entries(lab.people)){const d=document.createElement("div");d.className="p"+(layer===pid?" active":"");
+    d.innerHTML=`<b>${pid}</b><span class="pill">${p.relation}</span><span style="flex:1">${p.description.replace(/</g,"&lt;")}</span><span class="hint">${Object.keys(p.boxes).length} boxes</span>`;pe.appendChild(d);}
+  const req=new Set(boxFrames()),miss=missingAt(f);
+  $("fnum").innerHTML=`frame <b>${f}</b> / ${clip.frames-1} · t=${(f/clip.fps).toFixed(3)} s `+(req.has(f)?(miss.length?`<span class="pill bad">needs: ${miss.join(", ")}</span>`:'<span class="pill ok">required ✓</span>'):'<span class="pill">optional</span>');
+  $("seedInfo").textContent=lab.seed.frame===null?"not set":`frame ${lab.seed.frame}`;
+  $("rejInfo").textContent=lab.clip_rejected?("REJECTED: "+lab.clip_rejected):"";
+  $("rangeInfo").textContent=rangeStart===null?"":`range start: frame ${rangeStart}`;
+  draw();drawTimeline();}
+
+function load(i){f=Math.max(0,Math.min(clip.frames-1,i));const im=cache.get(f)||Object.assign(new Image(),{src:frameUrl(f)});cache.set(f,im);img=im;
+  if(im.complete)refresh();else im.onload=()=>{if(img===im)refresh();};preload(f);refresh();}
+function draw(){const cv=$("cv"),g=cv.getContext("2d");cv.width=clip.width;cv.height=clip.height;g.fillStyle="#000";g.fillRect(0,0,cv.width,cv.height);
+  if(img.complete&&img.naturalWidth)g.drawImage(img,0,0);
+  const dbox=(b,col,txt,w)=>{g.lineWidth=w;g.strokeStyle=col;g.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);g.font="bold 15px system-ui";g.fillStyle=col;g.fillText(txt,b[0],Math.max(14,b[1]-4));};
+  for(const [pid,p] of Object.entries(lab.people))if(p.boxes[f])dbox(p.boxes[f],"#ff6bd6",pid,layer===pid?3:2);
+  if(lab.target_boxes[f])dbox(lab.target_boxes[f],"#ffd23f","TARGET",layer==="TARGET"?3:2);
+  if(lab.seed.frame===f&&lab.seed.box)dbox(lab.seed.box,"#3fb950","SEED",1);
+  if(drag&&drag.b)dbox(drag.b,"#4fa3ff","",2);}
+function drawTimeline(){const tl=$("timeline"),g=tl.getContext("2d");tl.width=tl.clientWidth||800;const n=clip.frames,W=tl.width,col={VISIBLE:"#2f6f3e",PARTIAL:"#7a6a22",HIDDEN:"#6b2b2b",OUT_OF_FRAME:"#3a3f4a"};
+  const req=new Set(boxFrames());for(let i=0;i<n;i++){const x=Math.floor(i*W/n),w=Math.max(1,Math.ceil(W/n));const fr=lab.per_frame[i];g.fillStyle=col[fr.visibility];g.fillRect(x,0,w,16);
+    if(fr.human_uncertain){g.fillStyle="#d29922";g.fillRect(x,0,w,4);}if(fr.camera_cut){g.fillStyle="#4fa3ff";g.fillRect(x,0,w,16);}
+    if(req.has(i)){g.fillStyle=missingAt(i).length?"#f85149":"#3fb950";g.fillRect(x,18,w,7);}if(lab.target_boxes[i]){g.fillStyle="#ffd23f";g.fillRect(x,27,w,5);}}
+  g.fillStyle="#fff";g.fillRect(Math.floor(f*W/n),0,2,34);}
+
+function toImg(e){const cv=$("cv"),r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];}
+function clampBox(b){const [x1,y1,x2,y2]=[Math.min(b[0],b[2]),Math.min(b[1],b[3]),Math.max(b[0],b[2]),Math.max(b[1],b[3])];
+  return [Math.max(0,x1),Math.max(0,y1),Math.min(clip.width,x2),Math.min(clip.height,y2)].map(v=>Math.round(v*10)/10);}
+function setBox(b){if(layer==="TARGET"){const v=lab.per_frame[f].visibility;if(v==="HIDDEN"||v==="OUT_OF_FRAME"){msg("Target is "+v+" on this frame: no target box.");return;}lab.target_boxes[f]=b;if(lab.seed.frame===f)lab.seed.box=b;}
+  else lab.people[layer].boxes[f]=b;persist();refresh();}
+$("cv").onmousedown=e=>{const p=toImg(e);drag={p,b:null};};
+window.onmousemove=e=>{if(!drag)return;const q=toImg(e);drag.b=clampBox([drag.p[0],drag.p[1],q[0],q[1]]);draw();};
+window.onmouseup=()=>{if(drag&&drag.b&&drag.b[2]-drag.b[0]>=3&&drag.b[3]-drag.b[1]>=3)setBox(drag.b);drag=null;draw();};
+
+function prevBoxed(){const src=layer==="TARGET"?lab.target_boxes:lab.people[layer].boxes;for(let i=f-1;i>=0;i--)if(src[i])return src[i];return null;}
+function nextMissing(){const req=boxFrames();const nx=req.find(i=>i>f&&missingAt(i).length);if(nx!==undefined)load(nx);else msg("No missing required boxes after this frame.");}
+document.addEventListener("keydown",e=>{if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
+  if(e.key==="ArrowRight"){load(f+(e.shiftKey?10:1));e.preventDefault();}else if(e.key==="ArrowLeft"){load(f-(e.shiftKey?10:1));e.preventDefault();}
+  else if(e.key==="c"||e.key==="C"){const b=prevBoxed();if(b)setBox([...b]);}
+  else if(e.key==="Delete"||e.key==="Backspace"){if(layer==="TARGET"){delete lab.target_boxes[f];}else delete lab.people[layer].boxes[f];persist();refresh();}
+  else if(e.key==="n"||e.key==="N")nextMissing();else if(e.key==="t"||e.key==="T"){layer="TARGET";refresh();}});
+$("timeline").onclick=e=>{const r=e.target.getBoundingClientRect();load(Math.floor((e.clientX-r.left)/r.width*clip.frames));};
+$("bPrev").onclick=()=>load(f-1);$("bNext").onclick=()=>load(f+1);$("bPrev10").onclick=()=>load(f-10);$("bNext10").onclick=()=>load(f+10);$("bNextReq").onclick=nextMissing;
+
+$("occSel").innerHTML=OCC.map(o=>`<option>${o}</option>`).join("");
+$("occSel").onchange=e=>{lab.per_frame[f].occlusion=e.target.value;persist();refresh();};
+$("merged").onchange=e=>{lab.per_frame[f].merged=e.target.checked;persist();refresh();};
+$("cut").onchange=e=>{lab.per_frame[f].camera_cut=e.target.checked;persist();refresh();};
+$("unc").onchange=e=>{lab.per_frame[f].human_uncertain=e.target.checked;persist();refresh();};
+$("note").onchange=e=>{lab.per_frame[f].note=e.target.value;persist();};
+$("fcr").onchange=e=>{const s=new Set(lab.first_clean_reappearance);e.target.checked?s.add(f):s.delete(f);lab.first_clean_reappearance=[...s].sort((a,b)=>a-b);persist();};
+$("bRangeStart").onclick=()=>{rangeStart=f;refresh();};
+$("bRangeApply").onclick=()=>{if(rangeStart===null){msg("Set a range start first.");return;}const a=Math.min(rangeStart,f),b=Math.max(rangeStart,f),src=lab.per_frame[f];
+  for(let i=a;i<=b;i++){const t=JSON.parse(JSON.stringify(src));t.camera_cut=(i===f)?src.camera_cut:false;t.note=lab.per_frame[i].note;lab.per_frame[i]=t;
+    if(t.visibility==="HIDDEN"||t.visibility==="OUT_OF_FRAME")delete lab.target_boxes[i];}
+  msg(`Applied frame ${f}'s state to frames ${a}–${b} (camera-cut flag not copied).`);rangeStart=null;persist();refresh();};
+$("bAddP").onclick=()=>{const d=$("pDesc").value.trim();if(!d){msg("Describe the person (kit / number / role).");return;}let k=1;while(lab.people["P"+k])k++;
+  lab.people["P"+k]={description:d,relation:$("pRel").value,boxes:{}};$("pDesc").value="";layer="P"+k;persist();refresh();};
+$("bSeed").onclick=()=>{const b=lab.target_boxes[f];if(!b){msg("Draw the target box on this frame first.");return;}lab.seed={frame:f,box:b};persist();refresh();};
+$("bReject").onclick=()=>{const r=prompt("Reason for rejecting this clip (empty = un-reject):",lab.clip_rejected||"");if(r===null)return;lab.clip_rejected=r.trim()||null;persist();refresh();};
+$("btnSave").onclick=()=>{lab.annotator=$("annotator").value.trim();if(!lab.annotator){msg("Enter the annotator name first.");return;}lab.saved_utc=new Date().toISOString().replace(/\.\d+Z$/,"Z");persist();
+  const blob=new Blob([JSON.stringify(lab,null,1)+"\n"],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=clip.clip_id+".labels_v1.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);};
+$("btnLoad").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const l=JSON.parse(await file.text());
+  if(l.schema!==SCHEMA||l.clip_id!==clip.clip_id||l.clip_sha256!==clip.clip_sha256||l.frames!==clip.frames){msg("That file is for another clip / schema; not loaded.");return;}
+  lab=l;persist();msg("Loaded "+file.name);refresh();}catch(err){msg("Could not read: "+err);}e.target.value="";};
+$("bCheck").onclick=()=>{const p=[];if(!lab.annotator&&!$("annotator").value)p.push("annotator name missing");
+  if(lab.clip_rejected){p.length?0:0;}else{if(lab.seed.frame===null)p.push("seed not set");else{const s=lab.per_frame[lab.seed.frame];
+    if(!(s.visibility==="VISIBLE"&&s.resolvable==="YES"&&!s.merged&&!s.human_uncertain&&!s.contact_with.length))p.push("seed frame must be VISIBLE, resolvable, not merged/uncertain, no contact");}
+   for(const i of boxFrames()){const m=missingAt(i);if(m.length)p.push(`frame ${i}: missing ${m.join(", ")}`);}
+   lab.per_frame.forEach((x,i)=>{if(x.visibility==="HIDDEN"&&!x.occlusion.startsWith("FULL"))p.push(`frame ${i}: HIDDEN needs FULL_* occlusion`);});
+   for(const c of lab.first_clean_reappearance){const x=lab.per_frame[c],q=lab.per_frame[c-1];if(!q||((q.visibility==="VISIBLE"||q.visibility==="PARTIAL")&&q.resolvable==="YES"&&!q.merged))p.push(`first clean reappearance ${c}: previous frame already clean`);
+     if(!((x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.merged))p.push(`first clean reappearance ${c}: not clean`);}}
+  $("checkPill").innerHTML=p.length?`<span class="pill bad">${p.length} problems</span>`:'<span class="pill ok">looks complete</span>';msg(p.slice(0,200).join("\n")||"No problems found by the page (final validation: r2_labels.py).");};
+function msg(t){$("msgs").textContent=t;}
+
+function openClip(i){clip=clips[i];cache.clear();let saved=null;try{saved=JSON.parse(localStorage.getItem(key(clip))||"null");}catch(e){}
+  lab=saved||newLabels(clip);layer="TARGET";rangeStart=null;
+  $("clipInfo").textContent=`${clip.split} · ${clip.source} · ${clip.fps} fps · ${clip.frames} frames · ${clip.width}×${clip.height}`;
+  $("proposal").innerHTML=`${clip.proposed_target.replace(/</g,"&lt;")}<br>Suggested seed ≈ ${clip.proposed_seed_s.toFixed(1)} s (frame ${Math.round(clip.proposed_seed_s*clip.fps)}). <b>You decide</b> the target and seed; reject the clip if no target is identifiable.`;
+  load(saved&&saved.seed&&saved.seed.frame!==null?saved.seed.frame:Math.round(clip.proposed_seed_s*clip.fps));}
+try{$("annotator").value=localStorage.getItem("r2:annotator")||"";}catch(e){}
+$("clipSel").innerHTML=clips.map((c,i)=>`<option value="${i}">${c.clip_id} (${c.split})</option>`).join("");
+$("clipSel").onchange=e=>openClip(+e.target.value);
+window.addEventListener("resize",()=>clip&&drawTimeline());
+if(clips.length)openClip(0);else msg("No clips: r2_clips_manifest.js missing. Open index.html from the annotation pack folder.");
+</script>
+</body>
+</html>

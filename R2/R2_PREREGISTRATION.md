@@ -78,3 +78,16 @@
 ## 6. Downstream actor rule (recorded with R2; locked by Nathan on 2026-10-26)
 
 Only the frames used to establish target actor identity must be trusted. If any essential actor-evidence frame is untrusted, the actor is UNKNOWN and target stats do not count the event. Details: `R1/R1H/R1H_DOWNSTREAM_IDENTITY_RULE.md`.
+
+## Addendum A (2026-10-26, before any label or result exists): scoring details of the `r2_v1` adapter
+
+Recorded once the label schema existed (`tools_rb/r2_labels.py`), before any label was drawn and before any R2 inference. Implemented in `tools_rb/tracker_eval.py` (`_r2_v1`).
+
+- **Frames scored:** clip frames after the human seed. The seed is the run's frame 0, so frame f maps to rel f − seed.
+- **Box checks on the label's box grid only.** The grid is 5 Hz from the seed, plus every frame within 0.5 s of an event, plus any frame where Nathan drew a target box.
+  - On grid frames: wrong-box false trusted identity (IoU < 0.3), swaps (IoU ≥ 0.5 with an annotated person) and box quality are checked.
+  - Trusted frames between grid frames are counted and reported, but not box-checked. Priority 4 (trusted on hidden, merged or unresolvable) uses per-frame truth and is checked on **every** frame.
+- **Reacquisition** is judged on the first trusted frame after a gap. If that frame is off the grid, it is judged on the first grid frame of the same trusted run; if there is none, the outcome is UNVERIFIED (UNKNOWN, never CORRECT).
+- **HUMAN_UNCERTAIN frames** are excluded from error counts and coverage and reported separately (including trusted frames on them).
+- **Rejected clips** are never scored. An invalid label file, or a seed/fps mismatch, refuses the evaluation (fail closed).
+- **Annotation display:** the page shows every frame of the lossless clip as a JPEG (q2), with frame index = clip frame index (`tools_rb/r2_annotation_pack.py`). No model output is shown.

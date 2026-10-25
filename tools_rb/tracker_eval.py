@@ -61,6 +61,8 @@ class TruthFrame:
     other_boxes: Optional[Dict[str, Tuple[float, float, float, float]]] = None   # None = not annotated
     clean_reappearance: bool = False
     contact: Optional[bool] = None          # target overlapping / in contact with another person; None = not annotated
+    box_annotated: bool = True              # boxes are part of the truth on this frame (False: between box samples)
+    uncertain: bool = False                 # HUMAN_UNCERTAIN: excluded from error counts and coverage, reported
 
     @property
     def available(self) -> bool:
@@ -97,7 +99,45 @@ def _gold_v1(rows: Sequence[Dict[str, str]], seed_frame: int, fps: float) -> Lis
     return out
 
 
-ADAPTERS = {"gold_v1": _gold_v1}
+def _gold_v1_bytes(data: bytes, seed_frame: int, fps: float) -> List[TruthFrame]:
+    return _gold_v1(list(csv.DictReader(io.StringIO(data.decode("utf-8"), newline=""))), seed_frame, fps)
+
+
+def _r2_v1(data: bytes, seed_frame: int, fps: float) -> List[TruthFrame]:
+    """R2 labels (tools_rb/r2_labels.py, schema r2_labels_v1). Pre-registered mapping (R2/R2_PREREGISTRATION.md §5):
+    * frames after the seed only (rel = clip frame - seed frame; the seed is the run's frame 0);
+    * available = VISIBLE / PARTIAL, resolvable YES, not merged;
+    * box_annotated = the frame is on the label's required box grid (5 Hz + event padding) or carries a target box;
+      between grid frames box checks are not made (reported as off-grid confident frames);
+    * other_boxes = every annotated person box on that frame; contact = contact_with is non-empty;
+    * HUMAN_UNCERTAIN frames are excluded from error counts and coverage and reported separately."""
+    from tools_rb import r2_labels as L        # evaluation-only dependency
+    lab = json.loads(data.decode("utf-8"))
+    errs = L.validate(lab)
+    if errs:
+        raise EvalRefused(f"r2 labels invalid: {errs[:3]}")
+    if lab.get("clip_rejected"):
+        raise EvalRefused(f"clip rejected by the annotator: {lab['clip_rejected']}")
+    if abs(float(lab["fps"]) - fps) > 1e-6 or lab["seed"]["frame"] != seed_frame:
+        raise EvalRefused("labels fps / seed frame differ from the run (fail closed)")
+    grid = set(L.box_frames(lab))
+    out = []
+    for i in range(seed_frame + 1, lab["frames"]):
+        f = lab["per_frame"][i]
+        tb = lab["target_boxes"].get(str(i))
+        others = {pid: tuple(p["boxes"][str(i)]) for pid, p in lab["people"].items() if str(i) in p["boxes"]}
+        out.append(TruthFrame(
+            rel_frame=i - seed_frame,
+            visibility={"VISIBLE": VISIBLE, "PARTIAL": PARTIAL, "HIDDEN": HIDDEN,
+                        "OUT_OF_FRAME": OUT_OF_FRAME}[f["visibility"]],
+            identity_resolvable=f["resolvable"] == "YES", merged=bool(f["merged"]),
+            target_box=tuple(tb) if tb else None, other_boxes=others,
+            clean_reappearance=i in lab["first_clean_reappearance"], contact=bool(f["contact_with"]),
+            box_annotated=(i in grid or tb is not None), uncertain=bool(f["human_uncertain"])))
+    return out
+
+
+ADAPTERS = {"gold_v1": _gold_v1_bytes, "r2_v1": _r2_v1}
 
 
 def read_truth(labels_csv: str, fmt: str, seed_frame: int, fps: float) -> List[TruthFrame]:
@@ -109,8 +149,7 @@ def parse_truth(data: bytes, fmt: str, seed_frame: int, fps: float) -> List[Trut
     """Parse label bytes (the SAME bytes whose hash was checked, so nothing can change between check and use)."""
     if fmt not in ADAPTERS:
         raise EvalRefused(f"unknown label format {fmt!r}")
-    rows = list(csv.DictReader(io.StringIO(data.decode("utf-8"), newline="")))
-    return check_truth(ADAPTERS[fmt](rows, seed_frame, fps))
+    return check_truth(ADAPTERS[fmt](data, seed_frame, fps))
 
 
 def check_truth(truth: Sequence[TruthFrame]) -> List[TruthFrame]:
@@ -183,7 +222,10 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
 
     claims = {t.rel_frame: claim(sel[t.rel_frame]) for t in truth}
     box = {t.rel_frame: tuple(sel[t.rel_frame]["observed_position_box"]) for t in truth}
-    confident = [t for t in truth if claims[t.rel_frame] == "CONFIDENT"]
+    confident_all = [t for t in truth if claims[t.rel_frame] == "CONFIDENT"]
+    # HUMAN_UNCERTAIN frames: no error can be asserted there; excluded from errors and coverage, reported
+    confident = [t for t in confident_all if not t.uncertain]
+    confident_on_uncertain = [t.rel_frame for t in confident_all if t.uncertain]
     by_frame = {t.rel_frame: t for t in truth}
     first, last = truth[0].rel_frame, truth[-1].rel_frame
 
@@ -191,16 +233,19 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
     def grounded(v2):
         return (v2["rb_state"] == "TRACKING" and v2["bbox_is_observed"] and v2.get("observation_source") == "DETECTION"
                 and not v2.get("bbox_is_held") and not v2.get("bbox_is_predicted"))
-    grounded_violations = [t.rel_frame for t in confident if not grounded(sel[t.rel_frame]["v2"])]
+    grounded_violations = [t.rel_frame for t in confident_all if not grounded(sel[t.rel_frame]["v2"])]
 
     # priority 4 / B1 part 1: confident while the human says the identity is not available
     on_unavailable = [{"frame": t.rel_frame, "visibility": t.visibility, "resolvable": t.identity_resolvable,
                        "merged": t.merged} for t in confident if not t.available]
 
     # B1 part 2: confident on the wrong box (needs human target boxes)
-    wrong_box, ious, unverifiable = [], [], []
+    wrong_box, ious, unverifiable, off_grid = [], [], [], []
     for t in confident:
         if not t.available:
+            continue
+        if not t.box_annotated:
+            off_grid.append(t.rel_frame)                   # between box samples: no box check on this frame
             continue
         if t.target_box is None:
             unverifiable.append(t.rel_frame)
@@ -213,13 +258,15 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
     fci = {"count": _count(len(fci_frames), len(unverifiable)), "verified_count": len(fci_frames),
            "frames": fci_frames, "on_unavailable_target": on_unavailable, "on_wrong_box": wrong_box,
            "confident_frames_without_box_truth": unverifiable,
+           "confident_frames_between_box_samples": len(off_grid),
            "status": "COMPLETE" if not unverifiable else "PARTIAL_NO_BOX_TRUTH"}
 
     # B1 swaps: maximal runs of confident frames on a DIFFERENT annotated person (needs other people's boxes)
-    if any(t.other_boxes is None for t in confident):
+    boxed_conf = [t for t in confident if t.box_annotated]
+    if any(t.other_boxes is None for t in boxed_conf):
         swaps: Dict[str, Any] = {"count": UNKNOWN, "reason": "other people's boxes not annotated"}
     else:
-        on_other = [t.rel_frame for t in confident
+        on_other = [t.rel_frame for t in boxed_conf
                     if any(iou(box[t.rel_frame], ob) >= MATCH_IOU_MIN for ob in t.other_boxes.values())]
         swaps = {"count": len(_runs(on_other)), "runs": _runs(on_other)}
 
@@ -229,7 +276,7 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
     gaps = _runs([t.rel_frame for t in truth if not t.available])
     for k, (g0, g1) in enumerate(gaps):
         seg_end = gaps[k + 1][0] - 1 if k + 1 < len(gaps) else last
-        inside = [f for f in range(g0, g1 + 1) if claims[f] == "CONFIDENT"]
+        inside = [f for f in range(g0, g1 + 1) if claims[f] == "CONFIDENT" and not by_frame[f].uncertain]
         # a gap starting at the first truth frame may have begun before the labelled window: flagged, not dropped
         item: Dict[str, Any] = {"gap": [g0, g1], "trusted_inside_gap": inside, "gap_starts_at_window_start": g0 == first}
         if g1 == last:
@@ -256,8 +303,17 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
         else:
             item["first_confident_frame"] = conf
             item["delay_s"] = round((conf - back) / fps, 3)
-            ft = by_frame[conf]
-            if ft.target_box is None:
+            # judged on the first box-annotated frame of the confident run that starts at `conf`
+            judge = conf
+            while judge <= seg_end and claims[judge] == "CONFIDENT" and not by_frame[judge].box_annotated:
+                judge += 1
+            if judge > seg_end or claims[judge] != "CONFIDENT" or not by_frame[judge].box_annotated:
+                judge = None
+            item["judged_on_frame"] = judge
+            ft = by_frame[judge] if judge is not None else None
+            if ft is not None:
+                conf = judge
+            if ft is None or ft.target_box is None or ft.uncertain:
                 item["post_gap_outcome"] = "UNVERIFIED_NO_BOX_TRUTH"
             else:
                 v = iou(box[conf], ft.target_box)
@@ -278,7 +334,8 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
         half = int(round(B5_WINDOW_S * fps))
         contact = [t.rel_frame for t in truth if t.contact]
         window = sorted({f for c in contact for f in range(c - half, c + half + 1) if first <= f <= last})
-        conf_in = [f for f in window if claims[f] == "CONFIDENT"]
+        conf_in = [f for f in window if claims[f] == "CONFIDENT" and not by_frame[f].uncertain
+                   and by_frame[f].box_annotated]
         if not conf_in:
             status, on_partner = "PASS_NO_CONFIDENT_CLAIM", []
         elif all(by_frame[f].other_boxes is not None for f in conf_in):
@@ -292,17 +349,17 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
               "window_clipped_to_truth": True}
 
     # coverage and abstention (B1 correct-when-visible, B2)
-    avail = [t for t in truth if t.available]
+    avail = [t for t in truth if t.available and not t.uncertain]
     dist_avail: Dict[str, int] = {}
     for t in avail:
         dist_avail[claims[t.rel_frame]] = dist_avail.get(claims[t.rel_frame], 0) + 1
     dist_unavail: Dict[str, int] = {}
     for t in truth:
-        if not t.available:
+        if not t.available and not t.uncertain:
             dist_unavail[claims[t.rel_frame]] = dist_unavail.get(claims[t.rel_frame], 0) + 1
-    unres = [t for t in truth if not t.identity_resolvable]
+    unres = [t for t in truth if not t.identity_resolvable and not t.uncertain]
     n_av = len(avail)
-    n_un = len(truth) - n_av
+    n_un = sum(dist_unavail.values())
     cov = {"available_frames": n_av,
            "trusted_coverage_of_available": round(dist_avail.get("CONFIDENT", 0) / n_av, 3) if n_av else None,
            "abstention_rate_on_available": round(1 - dist_avail.get("CONFIDENT", 0) / n_av, 3) if n_av else None,
@@ -335,6 +392,7 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
                                                               "frames": [d["frame"] for d in on_unavailable]},
         "b5_contact_integrity": b5,
         "confident_not_grounded_violations": grounded_violations,
+        "human_uncertain": {"frames": sum(t.uncertain for t in truth), "confident_on_uncertain": confident_on_uncertain},
         "reacquisition": reacq,
         "coverage_and_abstention": cov,
         "box_quality": box_quality,
@@ -355,7 +413,7 @@ def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, 
         frozen = json.load(f)
     if frozen.get("status") != "FROZEN" or frozen.get("valid") is not True:
         raise EvalRefused("freeze record is not FROZEN / valid (fail closed)")
-    if os.path.basename(labels_csv) != frozen.get("labels_csv"):
+    if os.path.basename(labels_csv) != frozen.get("labels_file", frozen.get("labels_csv")):
         raise EvalRefused("labels file is not the one named by the freeze record (fail closed)")
     with open(labels_csv, "rb") as f:
         label_bytes = f.read()

@@ -214,13 +214,13 @@ class Refusals(unittest.TestCase):
     def test_unknown_label_values_and_formats_are_refused(self):
         good = {"frame": "30", "video_time_s": "1.000", "t23_visibility": "visible", "t23_identity_resolvable": "yes",
                 "merged_or_hidden": "none", "overlap_23_4": "No", "first_clean_reappearance": ""}
-        self.assertEqual(len(E.ADAPTERS["gold_v1"]([good], 0, 30.0)), 1)
+        self.assertEqual(len(E._gold_v1([good], 0, 30.0)), 1)
         for col, bad in (("t23_visibility", "blurry"), ("t23_identity_resolvable", "maybe"),
                          ("merged_or_hidden", "partly"), ("overlap_23_4", "?"), ("first_clean_reappearance", "x"),
                          ("video_time_s", "1.100")):
             with self.subTest(col=col):
                 with self.assertRaises(E.EvalRefused):
-                    E.ADAPTERS["gold_v1"]([dict(good, **{col: bad})], 0, 30.0)
+                    E._gold_v1([dict(good, **{col: bad})], 0, 30.0)
         with self.assertRaises(E.EvalRefused):
             E.read_truth(GOLD_LABELS, "no_such_format", 180, 30.0)
 
@@ -489,7 +489,7 @@ class AuditGaps(unittest.TestCase):
     def test_gold_v1_hidden_marker_maps_to_merged_and_frames_align(self):
         row = {"frame": "268", "video_time_s": "8.933", "t23_visibility": "visible", "t23_identity_resolvable": "yes",
                "merged_or_hidden": "T23_HIDDEN", "overlap_23_4": "Yes", "first_clean_reappearance": ""}
-        (t,) = E.ADAPTERS["gold_v1"]([row], 180, 30.0)
+        (t,) = E._gold_v1([row], 180, 30.0)
         self.assertTrue(t.merged)
         self.assertFalse(t.available)
         self.assertEqual(t.rel_frame, 88)              # video frame 268 = seed 180 + frame_log frame 88
