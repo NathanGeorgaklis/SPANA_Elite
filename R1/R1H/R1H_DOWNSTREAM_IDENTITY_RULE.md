@@ -10,9 +10,12 @@
    - not `identity_confidence` or any other score;
    - not `rb_state` alone (`TRACKING` can be untrusted).
 
-   For an event that spans frames, **every frame of its actor window** (the frames that establish who acted: the control span, or the release / contact frames) must have `identity_trusted = true`. A trusted *fraction* of the window is not enough.
+   **Multi-frame events (confirmed by Nathan, 2026-10-26 07:53, R2 instruction):** *"Only frames used to establish target actor identity must be trusted. If any essential actor-evidence frame is untrusted, actor = UNKNOWN and target stats do not count the event."*
+   - The frames that must be trusted are the **essential actor-evidence frames**: the frames from which the actor is established (for example the touch / release / contact frames that tie the ball action to a body). Other frames of the event (ball flight, the receiver's side, context) need not be trusted for the target attribution.
+   - **All** essential actor-evidence frames must be trusted. A trusted *fraction* is not enough: one untrusted essential frame makes the actor UNKNOWN.
+   - The Pass-2 rebuild must declare, per event type, which frames are essential actor evidence. That definition is Pass-2 work and is not decided here.
 
-   *Interpretation note (R1-H):* the per-frame form is explicit in the instruction; the "every frame of the actor window" extension to multi-frame events is the strictest reading. It is recorded here for Nathan to confirm before the Pass-2 rebuild.
+   *History:* R1-H first recorded the strictest reading, "every frame of the actor window", as an interpretation for Nathan to confirm. On 2026-10-26 07:53 Nathan replaced it with the essential-evidence-frame wording above.
 3. **Untrusted target attribution becomes UNKNOWN.** Never "probably the target", never a lowered confidence on a target attribution: the actor is UNKNOWN.
 4. **Target stats must not count events whose target attribution is untrusted.** A stat counts an event only if rule 2 credited it to the target. UNKNOWN-actor events are reported separately (as `excluded_unknown_actor`) and never folded into the target's totals.
 
@@ -44,11 +47,13 @@ These files are hash-pinned and unmodified (`tests_rb/test_surviving_consumers.p
 | False (as on a clip where R1 logs no identity conflict) | 83 | **15** (for example window 52–57 with one untrusted frame, trusted fraction 0.83) |
 | True (score halved; this is what this scenario's own conflict log gives) | 0 | 0 |
 
+**Relation to the confirmed rule.** The measurement used CARRY events. For control events the recovered `actor_window` is the control span itself, so every window frame is an actor-evidence frame and an untrusted frame there breaks the rule. Which frames are *essential* for other event types is for the Pass-2 rebuild to define.
+
 **How to read it.** This scenario does log an identity conflict involving T001, so its real path credits nothing (row 2). Row 1 shows what the same fraction rule does on a clip where no conflict is logged. The gap is therefore conditional (no clip-level conflict) but general: `assess_actor` lines 147–163 credit TARGET_PLAYER at a trusted fraction ≥ 0.75, so up to 25 % of the actor window may be untrusted.
 
 The measurement builds the frame index from the raw R1 frame_log, without the historical enrichment step. Raw R1 records carry no legacy `identity_state`, so `frame_identity`'s `identity_state` check does not fire. Whether the historical pipeline enriched the log before attribution is UNKNOWN; either way, R1 untrusted frames already fail `frame_identity` through the < 0.5 confidence bridge.
 
-The first failing layer is Pass-2 aggregation, not Pass 1: R1 marks those frames untrusted correctly. **Requirement for the Pass-2 rebuild:** replace the trusted-fraction rule with rule 2 (every actor-window frame `v2.identity_trusted = true`, otherwise UNKNOWN), and read `v2.identity_trusted` directly instead of reconstructing trust from legacy fields. The recovered originals are not modified.
+The first failing layer is Pass-2 aggregation, not Pass 1: R1 marks those frames untrusted correctly. **Requirement for the Pass-2 rebuild:** replace the trusted-fraction rule with rule 2 (every essential actor-evidence frame `v2.identity_trusted = true`, otherwise UNKNOWN), and read `v2.identity_trusted` directly instead of reconstructing trust from legacy fields. The recovered originals are not modified.
 
 ## Out of scope here
 
