@@ -26,6 +26,7 @@ UNKNOWN and the verified part is reported separately (``verified_count`` / ``ver
 """
 import csv
 import hashlib
+import io
 import json
 import os
 import sys
@@ -100,10 +101,15 @@ ADAPTERS = {"gold_v1": _gold_v1}
 
 
 def read_truth(labels_csv: str, fmt: str, seed_frame: int, fps: float) -> List[TruthFrame]:
+    with open(labels_csv, "rb") as f:
+        return parse_truth(f.read(), fmt, seed_frame, fps)
+
+
+def parse_truth(data: bytes, fmt: str, seed_frame: int, fps: float) -> List[TruthFrame]:
+    """Parse label bytes (the SAME bytes whose hash was checked, so nothing can change between check and use)."""
     if fmt not in ADAPTERS:
         raise EvalRefused(f"unknown label format {fmt!r}")
-    with open(labels_csv, newline="") as f:
-        rows = list(csv.DictReader(f))
+    rows = list(csv.DictReader(io.StringIO(data.decode("utf-8"), newline="")))
     return check_truth(ADAPTERS[fmt](rows, seed_frame, fps))
 
 
@@ -135,6 +141,8 @@ def iou(a, b) -> float:
 def claim(rec: Dict[str, Any]) -> str:
     """The tracker's claim for one TARGET record. identity_trusted is the authority."""
     v2 = rec["v2"]
+    if not isinstance(v2["identity_trusted"], bool):
+        raise EvalRefused(f"identity_trusted must be a bool, got {v2['identity_trusted']!r} (fail closed)")
     if v2["identity_trusted"]:
         return "CONFIDENT"
     if v2["rb_state"] == "TRACKING":
@@ -166,6 +174,8 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
         tgt = [t for t in fr["tracks"] if t["selected_player"]]
         if len(tgt) != 1:
             raise EvalRefused(f"frame {fr['frame']}: {len(tgt)} target records")
+        if fr["frame"] in sel:
+            raise EvalRefused(f"frame {fr['frame']} appears twice in the frame log (fail closed)")
         sel[fr["frame"]] = tgt[0]
     outside = [t.rel_frame for t in truth if t.rel_frame not in sel]
     if outside:
@@ -220,7 +230,8 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
     for k, (g0, g1) in enumerate(gaps):
         seg_end = gaps[k + 1][0] - 1 if k + 1 < len(gaps) else last
         inside = [f for f in range(g0, g1 + 1) if claims[f] == "CONFIDENT"]
-        item: Dict[str, Any] = {"gap": [g0, g1], "trusted_inside_gap": inside}
+        # a gap starting at the first truth frame may have begun before the labelled window: flagged, not dropped
+        item: Dict[str, Any] = {"gap": [g0, g1], "trusted_inside_gap": inside, "gap_starts_at_window_start": g0 == first}
         if g1 == last:
             item.update({"target_available_from": None, "outcome": "WRONG_PREMATURE" if inside
                          else "NOT_AVAILABLE_IN_WINDOW"})
@@ -346,7 +357,10 @@ def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, 
         raise EvalRefused("freeze record is not FROZEN / valid (fail closed)")
     if os.path.basename(labels_csv) != frozen.get("labels_csv"):
         raise EvalRefused("labels file is not the one named by the freeze record (fail closed)")
-    if _sha(labels_csv) != frozen.get("sha256"):
+    with open(labels_csv, "rb") as f:
+        label_bytes = f.read()
+    labels_sha = hashlib.sha256(label_bytes).hexdigest()
+    if labels_sha != frozen.get("sha256"):
         raise EvalRefused("labels sha256 differs from the freeze record (fail closed)")
     with open(fixture_json) as f:
         fx = json.load(f)
@@ -366,14 +380,14 @@ def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, 
     for name, other in (("fixture", fx.get("fps")), ("freeze record", frozen.get("fps"))):
         if other is None or abs(float(other) - fps) > 1e-6:
             raise EvalRefused(f"fps {fps} of the results differs from the {name}'s {other} (fail closed)")
-    rep = evaluate(doc, read_truth(labels_csv, fmt, fx["seed_frame"], fps))
+    rep = evaluate(doc, parse_truth(label_bytes, fmt, fx["seed_frame"], fps))
     head, dirty = (git or P.git_state)()
     rep.update({"tool": "tools_rb/tracker_eval.py", "tool_sha256": _sha(os.path.abspath(__file__)),
                 "evaluator_git_commit": head, "evaluator_git_dirty": dirty,
                 "command": ["python3", "tools_rb/tracker_eval.py", results_json, fixture_json, labels_csv,
                             freeze_json, fmt, out_json],
                 "events_evaluated": False, "label_format": fmt,
-                "labels_sha256": _sha(labels_csv), "freeze_record_sha256": _sha(freeze_json),
+                "labels_sha256": labels_sha, "freeze_record_sha256": _sha(freeze_json),
                 "fixture_sha256": _sha(fixture_json), "results_sha256": _sha(results_json),
                 "results_git_commit": prov.get("git_commit"), "results_git_dirty": prov.get("git_dirty"),
                 "results_config_hash": doc["summary"]["v2"]["config_hash"]})

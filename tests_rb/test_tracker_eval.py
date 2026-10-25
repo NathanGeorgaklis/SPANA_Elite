@@ -352,6 +352,22 @@ class FailClosedMain(unittest.TestCase):
                 with self.assertRaises(E.EvalRefused):
                     self._main(fixture=p)
 
+    def test_missing_or_inconsistent_provenance_is_refused(self):
+        with open(GOLD_RESULTS, encoding="ascii") as f:
+            base = json.load(f)
+        cases = {"no_video_sha": lambda p: p.pop("video_sha256"), "no_seed_bbox": lambda p: p.pop("seed_bbox"),
+                 "null_seed_bbox": lambda p: p.update(seed_bbox=None),
+                 "prov_seed_frame": lambda p: p.update(seed_frame=p["seed_frame"] + 1)}
+        for name, mutate in cases.items():
+            with self.subTest(case=name):
+                d = copy.deepcopy(base)
+                mutate(d["summary"]["v2"]["provenance"])
+                p = os.path.join(self.tmp, f"prov_{name}.json")
+                with open(p, "w", encoding="ascii") as f:
+                    json.dump(d, f)
+                with self.assertRaises(E.EvalRefused):
+                    self._main(results=p)
+
     def test_contract_violation_is_refused(self):
         with open(GOLD_RESULTS, encoding="ascii") as f:
             d = json.load(f)
@@ -361,6 +377,124 @@ class FailClosedMain(unittest.TestCase):
             json.dump(d, f)
         with self.assertRaises(E.EvalRefused):
             self._main(results=p)
+
+
+class AuditGaps(unittest.TestCase):
+    """Regressions for the R1-H test audit: mutants that survived the first suite, and missing edge cases."""
+    TK = (0.0, 0.0, 10.0, 10.0)                       # the tracker's box; areas below give exact IoUs with it
+
+    def _t(self, f, target, others=None, **kw):
+        return E.TruthFrame(rel_frame=f, visibility=E.VISIBLE, identity_resolvable=True, merged=False,
+                            target_box=target, other_boxes={} if others is None else others, **kw)
+
+    def test_iou_exactly_on_the_thresholds(self):
+        # target box area 30 inside TK: IoU exactly 0.3 -> NOT a false confident identity (strictly below 0.3 is)
+        r = E.evaluate(doc([rec(True, box=self.TK)]), [self._t(1, (0.0, 0.0, 3.0, 10.0))])
+        self.assertEqual(r["priority_1_false_confident_identity"]["count"], 0)
+        # another person's box with IoU exactly 0.5 -> a swap (0.5 or more is "on" that person)
+        r = E.evaluate(doc([rec(True, box=self.TK)]), [self._t(1, self.TK, {"P2": (0.0, 0.0, 10.0, 20.0)})])
+        self.assertEqual(r["priority_2_identity_swaps"]["count"], 1)
+
+    def test_iou_band_between_the_thresholds(self):
+        """IoU 0.4 with the target, 0.55 with another person: not FCI, but a swap and a WRONG reacquisition."""
+        tgt, other = (0.0, 0.0, 4.0, 10.0), (0.0, 0.0, 5.5, 10.0)
+        truth = [self._t(1, tgt, {"P2": other}),
+                 E.TruthFrame(rel_frame=2, visibility=E.HIDDEN, identity_resolvable=True, merged=False,
+                              other_boxes={}),
+                 self._t(3, tgt, {"P2": other})]
+        r = E.evaluate(doc([rec(True, box=self.TK), rec(False, "OCCLUDED"), rec(True, box=self.TK)]), truth)
+        self.assertEqual(r["priority_1_false_confident_identity"]["count"], 0)
+        self.assertEqual(r["priority_2_identity_swaps"]["count"], 2)
+        self.assertEqual(r["reacquisition"][0]["outcome"], "WRONG")
+        self.assertEqual(r["reacquisition"][0]["iou"], 0.4)
+
+    def test_b5_small_overlap_with_the_partner_is_not_a_failure(self):
+        truth = [self._t(f, self.TK, {"P2": (0.0, 0.0, 2.0, 10.0)}, contact=f == 2) for f in range(1, 4)]
+        r = E.evaluate(doc([rec(True, box=self.TK)] * 3), truth)
+        self.assertEqual(r["b5_contact_integrity"]["status"], "PASS")
+
+    def test_coverage_and_abstention_denominators_are_available_frames(self):
+        truth = [tf(1), tf(2), tf(3, vis=E.PARTIAL), tf(4, vis=E.HIDDEN, target=None), tf(5, merged=True)]
+        recs = [rec(True), rec(False, "AMBIGUOUS"), rec(False, "REACQUIRING"), rec(True), rec(True)]
+        c = E.evaluate(doc(recs), truth)["coverage_and_abstention"]
+        self.assertEqual(c["available_frames"], 3)
+        self.assertEqual(c["trusted_coverage_of_available"], 0.333)
+        self.assertEqual(c["abstention_rate_on_available"], 0.667)
+        self.assertEqual(sum(d["frames"] for d in c["by_visibility_on_available"].values()), 3)
+        self.assertEqual(c["by_visibility_on_available"], {"VISIBLE": {"frames": 2, "trusted": 1},
+                                                            "PARTIAL": {"frames": 1, "trusted": 0}})
+
+    def test_no_available_frames_gives_none_not_zero(self):
+        c = E.evaluate(doc([rec(False, "OCCLUDED")] * 2),
+                       [tf(1, vis=E.HIDDEN, target=None), tf(2, vis=E.OUT_OF_FRAME, target=None)])["coverage_and_abstention"]
+        self.assertIsNone(c["trusted_coverage_of_available"])
+        self.assertIsNone(c["abstention_rate_on_available"])
+
+    def test_swaps_are_numeric_when_only_untrusted_frames_lack_other_boxes(self):
+        truth = [tf(1), tf(2, others=None), E.TruthFrame(rel_frame=3, visibility=E.VISIBLE, identity_resolvable=True,
+                                                          merged=False, target_box=A)]
+        r = E.evaluate(doc([rec(True), rec(True), rec(False, "AMBIGUOUS")]), truth)
+        self.assertEqual(r["priority_2_identity_swaps"]["count"], 0)
+
+    def test_two_swap_runs_separated_by_an_untrusted_frame_count_twice(self):
+        recs = [rec(True, box=B), rec(False, "AMBIGUOUS", box=B), rec(True, box=B)]
+        r = E.evaluate(doc(recs), [tf(f) for f in range(1, 4)])
+        self.assertEqual(r["priority_2_identity_swaps"]["runs"], [(1, 1), (3, 3)])
+
+    def test_premature_lock_in_a_gap_reaching_the_window_end(self):
+        truth = [tf(1), tf(2, vis=E.HIDDEN, target=None), tf(3, vis=E.HIDDEN, target=None)]
+        r = E.evaluate(doc([rec(True), rec(False, "OCCLUDED"), rec(True)]), truth)
+        self.assertEqual(r["reacquisition"][0]["outcome"], "WRONG_PREMATURE")
+        self.assertEqual(r["priority_3_wrong_reacquisitions"]["count"], 1)
+
+    def test_out_of_frame_gap_three_gaps_and_a_gap_at_the_window_start(self):
+        vis = [E.HIDDEN, E.VISIBLE, E.OUT_OF_FRAME, E.OUT_OF_FRAME, E.VISIBLE, E.HIDDEN, E.VISIBLE, E.VISIBLE]
+        truth = [tf(i + 1, vis=v, target=None if v != E.VISIBLE else A) for i, v in enumerate(vis)]
+        claims = [rec(False, "LOST"), rec(True), rec(False, "LOST"), rec(False, "LOST"), rec(False, "REACQUIRING"),
+                  rec(False, "OCCLUDED"), rec(False, "REACQUIRING"), rec(True)]
+        r = E.evaluate(doc(claims), truth)
+        g = r["reacquisition"]
+        self.assertEqual([x["gap"] for x in g], [[1, 1], [3, 4], [6, 6]])
+        self.assertEqual([x["gap_starts_at_window_start"] for x in g], [True, False, False])
+        self.assertEqual([x["outcome"] for x in g], ["CORRECT", "NOT_REACQUIRED", "CORRECT"])
+        self.assertIs(g[1]["missed_reacquisition"], False)
+        self.assertAlmostEqual(g[2]["delay_s"], 0.1)
+
+    def test_grounded_contract_cases(self):
+        held, pred, occl = rec(True), rec(True), rec(True)
+        held["v2"]["bbox_is_held"] = True
+        pred["v2"]["bbox_is_predicted"] = True
+        occl["v2"]["rb_state"] = "OCCLUDED"
+        r = E.evaluate(doc([held, pred, occl, rec(True)]), [tf(f) for f in range(1, 5)])
+        self.assertEqual(r["confident_not_grounded_violations"], [1, 2, 3])
+
+    def test_duplicate_and_empty_truth_are_refused(self):
+        with self.assertRaises(E.EvalRefused):
+            E.check_truth([tf(1), tf(1)])
+        with self.assertRaises(E.EvalRefused):
+            E.check_truth([])
+
+    def test_duplicate_frame_log_records_are_refused(self):
+        d = doc([rec(True), rec(True)])
+        d["frame_log"].append({"frame": 1, "tracks": [rec(False, "LOST")]})
+        with self.assertRaises(E.EvalRefused):
+            E.evaluate(d, [tf(1), tf(2)])
+
+    def test_non_bool_identity_trusted_is_refused(self):
+        r_ = rec(True)
+        r_["v2"]["identity_trusted"] = "no"
+        with self.assertRaises(E.EvalRefused):
+            E.evaluate(doc([r_]), [tf(1)])
+
+    def test_gold_v1_hidden_marker_maps_to_merged_and_frames_align(self):
+        row = {"frame": "268", "video_time_s": "8.933", "t23_visibility": "visible", "t23_identity_resolvable": "yes",
+               "merged_or_hidden": "T23_HIDDEN", "overlap_23_4": "Yes", "first_clean_reappearance": ""}
+        (t,) = E.ADAPTERS["gold_v1"]([row], 180, 30.0)
+        self.assertTrue(t.merged)
+        self.assertFalse(t.available)
+        self.assertEqual(t.rel_frame, 88)              # video frame 268 = seed 180 + frame_log frame 88
+        truth = E.read_truth(GOLD_LABELS, "gold_v1", 180, 30.0)
+        self.assertEqual(truth[0].rel_frame, 250 - 180)
 
 
 def truth_from_synthetic(e):
