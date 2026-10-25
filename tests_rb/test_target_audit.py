@@ -285,6 +285,9 @@ class ReviewRegressions(unittest.TestCase):
         for f in r.frames[20:]:
             for c in f.decision.get("candidates", []):
                 self.assertNotIn(T.MOTION_VETO, c["details"], f.rel_frame)
+            self.assertNotEqual(f.target_height_px, 100.0, f"rel {f.rel_frame}: old-shot height after the cut")
+        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
+        self.assertEqual(r.states()[acc:], [T.TRACKING] * (len(frames) - acc), "the new scale must be its own reference")
 
     def test_seed_on_a_merged_detection_is_refused_and_tracker_stays_unusable(self):
         """L1 + seed contamination (found while writing this test): on the first frame the population has no size
@@ -348,6 +351,36 @@ class VerificationSwitch(unittest.TestCase):
         self.assertLessEqual(first, 56 + int(CFG.get("reacq_window_s") * FPS) + 1)
 
 
+class UnverifiableRivalsAndContacts(unittest.TestCase):
+    def test_bigger_unknown_body_touching_the_target_blocks_it(self):
+        """Contact is tested in BOTH directions: a newly detected, larger body (no bank yet) covers 12% of the
+        target's box while the target covers only ~8% of it. That is contact: the target cannot be confirmed."""
+        ppl = people(("PERSON_A", KIT_B, 0.0))
+        tb = box_at(500, 400, 40, 100)
+        big = (tb[2] - 4.8, tb[1], tb[2] - 4.8 + 50, tb[1] + 125)
+        frames = [SceneFrame({"TARGET": tb}) for _ in range(15)]
+        frames += [SceneFrame({"TARGET": tb, "PERSON_A": big}, order=["TARGET", "PERSON_A"]) for _ in range(3)]
+        r = run(frames, ppl)
+        cont = [c for c in r.frames[15].decision["candidates"] if c["role"] == T.CONTINUATION]
+        self.assertEqual(len(cont), 1)
+        self.assertIn(T.UNKNOWN_COMPETITOR_IN_CONTACT, cont[0]["details"])
+        self.assertNotEqual(r.frames[15].rb_state, T.TRACKING)
+
+    def test_rival_present_through_the_window_prevents_acceptance(self):
+        """Verification of the true target is under way when an almost identical person (no bank: edge crop)
+        appears in the gate, within ambiguity_margin. While the rival stays, the target is never accepted."""
+        ppl = people(("TWIN", KIT_A, 0.97))
+        frames = [SceneFrame({"TARGET": box_at(110, 400, 40, 100)}) for _ in range(10)]
+        frames += [SceneFrame({}) for _ in range(40)]
+        frames += [SceneFrame({"TARGET": box_at(170, 400, 40, 100)}) for _ in range(5)]
+        frames += [SceneFrame({"TARGET": box_at(170, 400, 40, 100), "TWIN": box_at(20, 400, 40, 100)})
+                   for _ in range(40)]
+        r = run(frames, ppl)
+        self.assertTrue(any(r.frames[k].decision.get("reacquisition", {}).get("rivals") for k in range(56, 60)))
+        self.assertEqual([k for k in r.tracking_frames() if k >= 10], [])
+        self.assertEqual(r.swaps(), [])
+
+
 class ContactMemory(unittest.TestCase):
     def test_closed_competitor_stops_counting_after_contact_memory(self):
         """The interrupted-verification scene: a closed target-looking tracklet blocks the real return by contrast.
@@ -367,6 +400,78 @@ class ContactMemory(unittest.TestCase):
         default = first_new_verification(None)
         self.assertLessEqual(short, 86 + int(FPS / 10))
         self.assertGreater(default, short + int(FPS / 2))
+
+
+class KnownOthersGate(unittest.TestCase):
+    def test_body_seen_briefly_beside_a_just_reacquired_target_is_not_ruled_out(self):
+        """M2: right after a reacquisition the target has been on its new tracklet for less than
+        target_known_other_min_s. A body seen beside it then is NOT recorded as a known other (one trusted frame
+        cannot rule a body out for its whole tracklet), so it stays a reacquisition candidate later."""
+        base = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
+        base += [SceneFrame({}) for _ in range(40)]
+        base += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(30)]
+        acc = run(base, people()).tracker.reacquisition_events[0].reacq_accepted_frame
+        ppl = people(("PERSON_A", KIT_B, 0.0))
+        frames = base[:acc + 1]
+        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(600, 400, 40, 100)})
+                   for _ in range(2)]
+        frames += [SceneFrame({"PERSON_A": box_at(600, 400, 40, 100)}) for _ in range(20)]
+        r = run(frames, ppl)
+        self.assertEqual(r.tracker.reacquisition_events[0].reacq_accepted_frame, acc)
+        self.assertTrue(all(r.frames[k].rb_state == T.TRACKING for k in range(acc, acc + 3)))
+        later = [r.frames[k].decision.get("reacquisition", {}) for k in range(acc + 3, len(frames))]
+        self.assertTrue(any("excluded_known_others" in d for d in later))
+        for d in later:
+            self.assertEqual(d.get("excluded_known_others", []), [])
+
+
+class H1Layers(unittest.TestCase):
+    """The H1 fix has two independent layers; each is pinned on its own (either alone stops the swap)."""
+
+    def test_layer_a_visible_target_competes_with_the_newcomer(self):
+        """Evidence layer: while the target's own box is observed beside a same-kit newcomer, the newcomer's
+        reacquisition contrast is computed AGAINST the target's tracklet (its logged best competitor is the target's
+        visible detection), so the target never competes with itself but always with the newcomer."""
+        ppl = people(("PERSON_A", KIT_A, 0.9))
+        frames = []
+        for k in range(45):
+            boxes = {"TARGET": box_at(400, 400, 40, 100)}
+            if k >= 20:
+                boxes["PERSON_A"] = box_at(434, 400, 40, 100)
+            frames.append(SceneFrame(boxes, order=["TARGET", "PERSON_A"]))
+        r = run(frames, ppl)
+        checked = 0
+        for k in range(20, 45):
+            tgt = [i for i, d in enumerate(r.dets[k]) if d.owners == ("TARGET",)]
+            for c in r.frames[k].decision.get("candidates", []):
+                if c["role"] == T.REACQUISITION and c["detection_index"] not in tgt:
+                    self.assertEqual(c["best_competitor"], f"D{tgt[0]}", k)
+                    self.assertFalse(c["passed"], k)
+                    checked += 1
+        self.assertGreater(checked, 0)
+        self.assertEqual(r.swaps(), [])
+
+    def test_layer_b_visible_target_box_is_a_rival_when_contrast_is_impossible(self):
+        """Rival layer: the target's tracklet has NO population bank (a small object inside its box from the first
+        update makes every crop CONTAINS_OTHER), so an identical newcomer cannot be contrasted against it and passes
+        every per-frame test. Only the target's own visible box, as a rival, blocks the newcomer's acceptance."""
+        ppl = make_people([("TARGET", KIT_A, 1.0), ("TWIN", KIT_A, 1.0), ("BALL", (250, 250, 250), 0.0)])
+        frames = []
+        for k in range(75):
+            tb = box_at(300, 400, 50, 120)
+            boxes = {"TARGET": tb}
+            if k >= 1:
+                boxes["BALL"] = (tb[0] + 6, tb[3] - 30, tb[0] + 50, tb[3] - 2)
+            if k >= 15:
+                boxes["TWIN"] = box_at(380, 400, 50, 120)
+            frames.append(SceneFrame(boxes, order=["TARGET", "BALL", "TWIN"]))
+        r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
+        twin_passing = [k for k in range(16, 75) for c in r.frames[k].decision.get("candidates", [])
+                        if c["role"] == T.REACQUISITION and r.dets[k][c["detection_index"]].owners == ("TWIN",)
+                        and c["passed"]]
+        self.assertTrue(twin_passing, "the scene must make the twin pass per frame (contrast impossible)")
+        self.assertEqual(r.swaps(), [])
+        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
 
 
 class DocumentedLimitations(unittest.TestCase):

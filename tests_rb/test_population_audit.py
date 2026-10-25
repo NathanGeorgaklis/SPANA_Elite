@@ -429,20 +429,27 @@ class MergeResolutionByEmergence(unittest.TestCase):
         self.assertFalse(any(P.MERGED_SUSPECTED in o.flags for o in last.observations))
 
     def test_a_body_that_existed_before_the_merge_does_not_resolve_it(self):
-        """A passer-by that was already tracked elsewhere when the merge formed is not a body coming out of it."""
+        """A person is absorbed behind another (one single-sized visible box, MULTI_CLAIM merge). A third person,
+        tracked elsewhere before the merge formed, walks into the region. That outsider is not one of the merged
+        bodies: the region must not resolve, and the visible box keeps MERGE_LINEAGE (it may still hold two)."""
         frames = []
         for k in range(40):
-            a, b = box_at(400, 400, 40, 100), box_at(436, 400, 40, 100)
-            c = box_at(700 - 6 * k, 380, 40, 100)              # walks across, touching the merged box later
+            a = box_at(400, 400, 40, 100)
+            c = box_at(max(470 - 2 * max(0, k - 10), 300), 400, 40, 100)
             if k < 10:
-                frames.append(Frame([cand(a), cand(b), cand(c)], [("PERSON_A",), ("PERSON_B",), ("PERSON_C",)]))
+                frames.append(Frame([cand(a), cand(box_at(405, 400, 40, 100)), cand(c)],
+                                    [("PERSON_A",), ("PERSON_B",), ("PERSON_C",)]))
             else:
-                m = (a[0], a[1], b[2], b[3])
-                frames.append(Frame([cand(m), cand(c)], [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
+                frames.append(Frame([cand(a), cand(c)], [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
         rn = run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
+        self.assertIn(P.MERGED_SUSPECTED, rn.results[10].observations[0].flags, "the merge must first form")
+        entered = [r for r in rn.results[10:] if P.IN_MERGED_REGION in r.observations[1].flags]
+        self.assertTrue(entered, "the outsider must actually enter the region")
         for r in rn.results[10:]:
-            o = r.observations[0]
-            self.assertIn(P.MERGED_SUSPECTED, o.flags, f"rel {r.rel_frame}")
+            a_obs = r.observations[0]
+            v = r.tracklet(a_obs.tracklet_id) if a_obs.tracklet_id else None
+            self.assertTrue(P.MERGED_SUSPECTED in a_obs.flags or (v is not None and P.MERGE_LINEAGE in v.flags),
+                            f"rel {r.rel_frame}")
 
     def _region_then(self, after):
         """Two bodies, then 10 frames merged into one box, then `after(k)` -> (dets, owners) per frame."""

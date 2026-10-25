@@ -1,0 +1,3026 @@
+diff --git a/player_tracker_rb/config.py b/player_tracker_rb/config.py
+index 5e6e7a7..864e0c8 100644
+--- a/player_tracker_rb/config.py
++++ b/player_tracker_rb/config.py
+@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
+ from types import MappingProxyType
+ from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+ 
+-CONFIG_REGISTRY_VERSION = "r1e-1"
++CONFIG_REGISTRY_VERSION = "r1f-2"   # r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+ 
+ # Unit constants (definitions, not tunable behaviour).
+ MS_PER_SECOND = 1000.0
+@@ -565,6 +565,19 @@ PARAMS: Tuple[Param, ...] = (
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "state", "D14", 0.001, 30.0),
+ 
+     # ---- reacquisition (D15) -----------------------------------------------------------------
++    _p("identity_contact_cover_min", "float", "fraction of the smaller box's area",
++       "A competitor is IN CONTACT with a target candidate box if either box covers at least this fraction of "
++       "the other. A competitor in contact whose appearance is unknown (no bank yet, e.g. provisional) blocks the "
++       "candidate: contrast cannot be verified (D10).", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
++       "R1-F (NEW); D08, D10", 0.0, 1.0),
++    _p("target_known_other_min_s", "float", "s",
++       "A body seen beside the confirmed target becomes a KNOWN OTHER person (never reacquired as the target "
++       "while its tracklet lives) at the seed frame, or once the target has been confirmed on the same tracklet, by "
++       "continuation, for at least this long: one trusted frame is not enough to rule a body out.", 0.2, N, "DESIGN_CHOICE",
++       UNV, "BEHAVIOURAL", "identity", "R1-F (NEW); R1-F code review M2", 0.0, 30.0),
++    _p("target_bank_sample_interval_s", "float", "s",
++       "Minimum time between samples offered to the target appearance bank.", 0.25, N, "DESIGN_CHOICE", UNV,
++       "BEHAVIOURAL", "bank", "R1-F (NEW); D12", 0.0, 30.0),
+     _p("reacq_appearance_floor", "float", "composite similarity (0-1)",
+        "Appearance floor during reacquisition (stricter than ordinary association).", 0.85, N,
+        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition",
+@@ -694,6 +707,9 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
+         errs.append("composite_weight_lab + composite_weight_embedding must equal 1.0")
+     if not v["untrusted_identity_confidence_ceiling"] < v["legacy_identity_trust_threshold"]:
+         errs.append("untrusted_identity_confidence_ceiling must be < legacy_identity_trust_threshold")
++    if v["contact_memory_s"] > v["population_closed_memory_s"]:
++        errs.append("contact_memory_s must be <= population_closed_memory_s (the population keeps closed "
++                    "competitors, with their banks, only that long)")
+     if v["reacq_appearance_floor"] < v["appearance_floor"]:
+         errs.append("reacq_appearance_floor must be >= appearance_floor (reacquisition is stricter)")
+     if v["reacq_contrastive_margin"] < v["contrastive_margin"]:
+diff --git a/player_tracker_rb/population.py b/player_tracker_rb/population.py
+index a3c34f9..1cafd45 100644
+--- a/player_tracker_rb/population.py
++++ b/player_tracker_rb/population.py
+@@ -48,7 +48,11 @@ Per frame (update), in order:
+      against that body. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
+      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
+      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
+-     RESOLVED (removed) when at least n separate bodies are observed in it. It LAPSES
++     RESOLVED (removed) when at least n separate single bodies are seen: bodies in it that are not merge-sized
++     against the region's reference, plus bodies EMERGING from it (overlapping its box by >=
++     population_contact_cover_min of the body; one merely standing beside it does not count). An OUTSIDER (a body
++     tracked before the merge formed that was not one of its claimants) never counts, inside or emerging; tracklets born in a region with merge lineage lose it when the
++     region resolves. It LAPSES
+      population_merged_region_hold_s after the last size or multi-claim evidence: a lapsed region no longer makes
+      a box merged, but is remembered until population_closed_memory_s after that evidence. Detections in a region
+      are IN_MERGED_REGION and are never appearance samples, because a second body may still be hidden in it.
+@@ -342,12 +346,13 @@ class Competitor:
+     provisional: Optional[bool]
+     flags: Tuple[str, ...]
+     bank: Optional[AppearanceBank] = field(compare=False, repr=False, default=None)
++    closed_age_s: Optional[float] = None   # RECENTLY_CLOSED only: seconds since the tracklet closed
+ 
+     def as_record(self) -> Dict[str, Any]:
+         return {"ref": self.ref, "kind": self.kind, "tracklet_id": self.tracklet_id, "box": list(self.box),
+                 "box_source": self.box_source, "position_valid": self.position_valid,
+                 "distance_h": self.distance_h, "provisional": self.provisional, "flags": list(self.flags),
+-                "bank_samples": None if self.bank is None else len(self.bank)}
++                "bank_samples": None if self.bank is None else len(self.bank), "closed_age_s": self.closed_age_s}
+ 
+ 
+ # ---------------------------------------------------------------------------------------------
+@@ -377,6 +382,8 @@ class _MergedRegion:
+     claimants: Tuple[str, ...]
+     n_bodies: int                         # bodies believed inside (>= 2)
+     last_evidence_t: float                # last frame with size or multi-claim evidence of a merge here
++    created_t: float = 0.0                # when the merge was first seen
++    born: Set[str] = field(default_factory=set)   # tracklets born in it with MERGE_LINEAGE
+ 
+ 
+ def _distinct_bodies(tids: Sequence[str], by_tid: Dict[str, "_Tracklet"]) -> int:
+@@ -447,6 +454,10 @@ class Population:
+         iy = max(0.0, min(float(self._h), b[3]) - max(0.0, b[1]))
+         return ix * iy / (w * h)
+ 
++    def inside_fraction(self, box: Sequence[float]) -> float:
++        """Fraction of a box's area inside the image."""
++        return self._inside_fraction(_box(box))
++
+     def _touches_edge(self, b: Box) -> bool:
+         m = self._cfg.get("detector_edge_touch_margin_px")
+         return b[0] <= m or b[1] <= m or b[2] >= self._w - m or b[3] >= self._h - m
+@@ -612,6 +623,7 @@ class Population:
+ 
+         # ---- 3. merged detections ----------------------------------------------------------------------
+         by_tid = {tr.tid: tr for tr in live}
++        by_tid0 = by_tid
+         cont_pd: Dict[Tuple[str, int], float] = {}
+         if live and track:
+             cm = containment(np.asarray([pbox[tr.tid] for tr in live]), np.asarray([boxes[i] for i in track]))
+@@ -638,7 +650,38 @@ class Population:
+                     k = max(cands_k, key=lambda q: (rm[q, b], rc[q, b], -q))     # deterministic
+                     region_of[i] = k
+                     in_region[k].append(i)
+-        resolved = {k for k, ds in in_region.items() if len(ds) >= self._regions[k].n_bodies}
++        # A region RESOLVES when at least as many separate SINGLE bodies as it holds are seen, counting only
++        # bodies that could be among its merged bodies (not an OUTSIDER: a body tracked before the merge formed that
++        # was not one of its claimants, whether it walks into the region or passes beside it):
++        #   * bodies in it that are not themselves merge-sized against the region's single-body reference (a box
++        #     still holding two people is not a resolved body), plus
++        #   * bodies EMERGING from it: overlapping the region's box (>= population_contact_cover_min of the body
++        #     inside it; a person coming out of a merge is still partly behind it when first detected). A body merely
++        #     standing beside it is not one of the merged bodies.
++        cmin = c.get("population_contact_cover_min")
++        lo_band, hi_band = c.get("merged_aspect_band")
++
++        def single_sized(i: int, ref: Optional[Tuple[float, float]]) -> bool:
++            if ref is None:
++                return True
++            w, h = _wh(boxes[i])
++            return (w * h) / (ref[0] * ref[1]) < c.get("merged_area_ratio") and \
++                (w / h) / (ref[0] / ref[1]) <= hi_band
++        def outsider(i: int, rg: _MergedRegion) -> bool:
++            if i not in assigned_d:
++                return False
++            tr = by_tid0[assigned_d[i]]
++            return tr.first_time < rg.created_t and tr.tid not in rg.claimants
++        emerged: Dict[int, Set[int]] = {k: set() for k in range(len(self._regions))}
++        for k, rg in enumerate(self._regions):
++            for i in track:
++                if region_of.get(i) == k or outsider(i, rg):
++                    continue
++                if float(containment(np.asarray([boxes[i]]), np.asarray([rg.box]))[0, 0]) >= cmin:
++                    emerged[k].add(i)
++        resolved = {k for k, rg in enumerate(self._regions)
++                    if len({i for i in in_region[k] if single_sized(i, rg.ref_wh) and not outsider(i, rg)}
++                           | emerged[k]) >= rg.n_bodies}
+         hold = c.get("population_merged_region_hold_s")
+         # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
+         # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies
+@@ -760,7 +803,7 @@ class Population:
+                         rg.ref_wh = ref_wh
+             elif evidence:
+                 n_in = _distinct_bodies(src, by_tid) if src else 0
+-                self._regions.append(_MergedRegion(boxes[i], ref_wh, tuple(sorted(set(src))), max(2, n_in), t))
++                self._regions.append(_MergedRegion(boxes[i], ref_wh, tuple(sorted(set(src))), max(2, n_in), t, t))
+         # contested groups: every tracklet in the group ends; every detection starts again
+         births: Dict[int, _Tracklet] = {}
+         for root in sorted(groups, key=lambda r: (r[0], r[1])):
+@@ -812,8 +855,11 @@ class Population:
+             if i in region_of:
+                 predecessors[i].update(self._regions[region_of[i]].claimants)
+                 lineage = region_of[i] not in resolved            # unresolved or lapsed: may hold two bodies
++            region_lineage = lineage
+             lineage = lineage or any(lineage_of.get(p_, False) for p_ in predecessors[i])
+             tr = self._birth(boxes[i], rel_frame, t, partial[i], predecessors[i], lineage)
++            if region_lineage:
++                self._regions[region_of[i]].born.add(tr.tid)
+             births[i] = tr
+             observed_now[tr.tid] = i
+             flags_now[tr.tid] = {CONTESTED} if i in contested_d else set()
+@@ -872,6 +918,11 @@ class Population:
+                     tr.contact_during_gap = True
+                     break
+ 
++        # a resolved region proves its bodies were seen apart again: tracklets born in it lose their merge lineage
++        for k in resolved:
++            for tr in new_live:
++                if tr.tid in self._regions[k].born:
++                    tr.merge_lineage = False
+         # merged regions are forgotten when resolved, or population_closed_memory_s after their last evidence
+         keep_region_s = c.get("population_closed_memory_s")
+         self._regions = [rg for k, rg in enumerate(self._regions)
+@@ -1067,10 +1118,10 @@ class Population:
+                 if not ok:
+                     continue
+                 out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
+-                                      True, dist, None, (m.reason,), m.bank))
++                                      True, dist, None, (m.reason,), m.bank, res.time_s - m.closed_time_s))
+             else:
+                 out.append(Competitor(m.tracklet_id, RECENTLY_CLOSED, m.tracklet_id, m.last_box, m.last_box_source,
+-                                      False, None, None, (m.reason,), m.bank))
++                                      False, None, None, (m.reason,), m.bank, res.time_s - m.closed_time_s))
+         kind_rank = {OBSERVATION: 0, HIDDEN_BODY: 1, RECENTLY_CLOSED: 2}
+         out.sort(key=lambda x: (kind_rank[x.kind], math.inf if x.distance_h is None else x.distance_h, x.ref))
+         return tuple(out)
+diff --git a/player_tracker_rb/target.py b/player_tracker_rb/target.py
+new file mode 100644
+index 0000000..fae5c98
+--- /dev/null
++++ b/player_tracker_rb/target.py
+@@ -0,0 +1,1043 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1/R1_DESIGN_DECISIONS.md D05, D06, D07, D08, D10, D11, D12, D13, D14, D15, D16, D18, D19;
++#                 R1/R1_GENERIC_TRACKER_REQUIREMENT.md; R1-F instruction (Nathan, 2026-10-25)
++"""
++player_tracker_rb.target: the identity layer for ONE target person (TARGET) among generic people.
++
++The target is seeded by a human box at the seed frame. From then on, a detection becomes the target's OBSERVED box
++only through contrastive identity evidence. Nothing here knows about teams, numbers, colours, clips or frames.
++
++Inputs per frame: the Population's FrameResult for this frame (R1-E: tracklets, observations, competitors, banks)
++and the image. update() first lets the population sample its own tracklet banks for this frame (competitor
++appearance), then decides the target.
++
++SEED (D18): the max-IoU body detection (>= seed_min_iou) to the human seed box, refused (SeedError, fail closed)
++if it is merged-suspected, merge-sized against the seed box itself (merged_area_ratio / merged_aspect_band: the
++only single-body size reference on the first frame), has an unusable crop, or cannot anchor the bank.
++
++States (D05): TRACKING (trusted, observed), OCCLUDED, AMBIGUOUS, LOST, REACQUIRING (verifying a candidate).
++Only TRACKING is trusted, and only TRACKING has an observed box (D06): every other state writes the target's
++PREDICTED or HELD box, and the contested candidate box (if any) separately in observed_or_contested_box.
++
++CANDIDATE EVALUATION (one detection i; D08; no fast path: applied even when it is the only box):
++  * MERGED: the box is MERGED_SUSPECTED, or its tracklet carries MERGE_LINEAGE, or (while position is valid and
++    the target has a size reference) it is merge-sized against the target's recent median size (merged_area_ratio
++    / merged_aspect_band) -> it may hold two people and can never confirm identity (D11).
++  * MOTION (veto only): while positional continuity is valid and a motion prior exists, the target motion model
++    must find the box physically plausible (motion.py). Motion never adds identity evidence.
++  * APPEARANCE: the crop's similarity to the target bank (best single sample) must pass identity_support()
++    (lab_floor, embedding_floor, appearance_floor; contaminated crops fail). Reacquisition uses the stricter
++    composite floor reacq_appearance_floor.
++  * CONTRAST against every competitor that could be this box (Population.competitors around the box:
++    observations, hidden tracklets, tracklets closed within contact_memory_s, with their banks). EXCLUDED, so the
++    target never competes with itself: the candidate's own tracklet, every tracklet the target was confirmed on
++    UNLESS that tracklet is observed this frame on a box outside the candidate's nested group (then it is a separate
++    body beside the candidate and competes; R1-F review H1), and boxes of the candidate's own nested group
++    (part-body / alternative boxes of the same body).
++      contrast = target_similarity - best competitor-bank similarity on this same crop
++    must be >= contrastive_margin (ordinary) or the reacquisition margin (below). With no banked competitor the
++    contrast is not defined and does not block.
++  * UNKNOWN COMPETITOR IN CONTACT: a competitor in contact with the box (either box covers >=
++    identity_contact_cover_min of the other) whose appearance is unknown (no bank yet, e.g. provisional) and whose
++    size could be the target's (the motion SCALE bound against the target height) blocks the box: contrast cannot
++    be verified (D10). A body that cannot physically be the target (a ball-sized fragment) does not compete; crop
++    contamination is handled by the crop-quality and bank rules.
++  * AMBIGUITY: another box in the gate (logged with role RIVAL, judged by the ordinary criteria) that also looks
++    like the target (no motion veto, passes the appearance floor, and is not more similar to another known person
++    than to the target) within ambiguity_margin of the candidate's target similarity blocks it (D08-5).
++
++ORDINARY ASSOCIATION (CONTINUATION): the target's current population tracklet was observed this frame. The
++tracklet is geometric evidence of one body with no contact since the last frame (R1-E), but its box must still pass
++every test above (ordinary floors and margin). Pass -> TRACKING; fail -> AMBIGUOUS with the reasons.
++
++NOT OBSERVED: the target's tracklet is hidden -> OCCLUDED (OCCLUDER_OVERLAP with the occluders' ids if a body
++covers >= occluder_cover_min of the predicted box, else NO_CANDIDATE_IN_GATE); a merged box over the predicted
++target -> OCCLUDED if the predicted centre is inside it, else AMBIGUOUS (MERGED_DETECTION_SUSPECTED; D11). The
++tracklet closed: CONTACT_AMBIGUITY -> AMBIGUOUS (COMPETING_CANDIDATE), MERGED_CONTACT -> D11 as above,
++LEFT_FRAME -> LOST (TARGET_OUT_OF_FRAME), UNMATCHED_TIMEOUT -> LOST (AGED_OUT). A closed tracklet is never
++continued: the target can then only come back through REACQUISITION.
++
++REACQUISITION (D15; any box that is not the continuing tracklet, after any break):
++  * candidates: every non-merged, non-alternative detection whose tracklet is not a KNOWN OTHER (a tracked body
++    observed as a separate box in the same frame as the target at the seed, or while the target was confirmed by
++    continuation on one tracklet for >= target_known_other_min_s; cleared when a reacquisition is accepted and
++    pruned to tracklets the population still knows); while positional continuity is valid and the target
++    was confirmed less than lost_long_s ago, only inside the search gate; otherwise anywhere (appearance only);
++  * per frame test: as above with reacq_appearance_floor and the margin
++        m(a) = min(reacq_contrastive_margin + reacq_margin_growth_per_s * a, reacq_margin_cap)
++    where a = seconds since the target was last confirmed (longer absence -> stricter);
++  * verification: the best passing candidate is followed by its population tracklet. It is accepted only when
++    (i) at least reacq_window_s has elapsed since verification started, (ii) it passed in at least
++    reacq_min_hit_fraction of the window's frames, (iii) it passes in the accepting frame, and (iv) no other box
++    (including the target's own continuing box, if observed) was within ambiguity_margin of it in that frame. If its tracklet closes, or another candidate becomes clearly
++    better, verification restarts. During verification the state is REACQUIRING (untrusted).
++  * acceptance: TRACKING, target_episode + 1, a reacquisition event (D07), and a bank quarantine of
++    post_reacq_quarantine_s.
++
++AGING (D14): OCCLUDED for longer than max_occluded_s, or AMBIGUOUS for longer than max_ambiguous_s (both counted
++from the last confirmation) -> LOST (AGED_OUT); the current tracklet is released (only reacquisition can return).
++CAMERA: a continuity break (CUT, UNKNOWN when configured, or an estimator reset) -> LOST (CAMERA_CUT); the motion
++state is discarded (position_valid False), and reacquisition is appearance-only. Otherwise the motion state and
++recent heights follow the measured camera transform (D16).
++
++SEARCH GATE (D13): radius = min(gate_base_h + gate_growth_h_per_s * u, gate_max_h) target heights around the
++predicted centre, u = seconds since the last confirmation; frozen while AMBIGUOUS (gate_grows_while_ambiguous).
++h = median height of the target's non-partial observed boxes in the last target_height_window_s (camera-scaled).
++
++APPEARANCE BANK (D12): updated only on a TRACKING frame (trusted), from a box that the population also considers
++clean (not CONTESTED / PARTIAL / TOUCHES_IMAGE_EDGE / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGE_LINEAGE /
++merged, containing no other body's box), isolated from every other body outside its own nested group (IoU <=
++bank_contact_iou, covered <= bank_max_covered_fraction), in a camera-verified frame, outside the post-reacquisition
++quarantine, at most once per target_bank_sample_interval_s; then AppearanceBank's own quality and
++self-consistency checks apply.
++
++IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
++  * seed frame: 1.0 (human-provided identity);
++  * TRACKING: 0.5 + 0.5 * min(a, k), with
++        a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
++        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation (the
++            tracklet itself is geometric evidence of one body) but k = 0 for an accepted REACQUISITION (appearance
++            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False)
++    so a trusted frame is in [0.5, 1] and the weakest piece of evidence decides;
++  * every untrusted frame: min(untrusted_identity_confidence_ceiling,
++        last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
++Separate quantities are reported, never folded into this one: raw detector score, target similarity, best
++competitor similarity.
++"""
++from __future__ import annotations
++
++import math
++from dataclasses import dataclass, field
++from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
++
++import numpy as np
++
++from .appearance import (AppearanceBank, AppearanceExtractor, AppearanceFeature, AppearanceSimilarity,
++                         BankUpdateContext, identity_support)
++from .camera import ESTIMATED, FIRST_FRAME
++from .config import TrackerConfig
++from .detector import box_iou_matrix, containment
++from .motion import DETECTION, HELD, PREDICTED, MotionModel, MotionState, centre
++from . import population as P
++
++# states (D05; the same strings as output_schema.RB_STATES)
++TRACKING = "TRACKING"
++OCCLUDED = "OCCLUDED"
++AMBIGUOUS = "AMBIGUOUS"
++LOST = "LOST"
++REACQUIRING = "REACQUIRING"
++
++# uncertainty reasons (output_schema.UNCERTAINTY_REASONS vocabulary)
++OCCLUDER_OVERLAP = "OCCLUDER_OVERLAP"
++COMPETING_CANDIDATE = "COMPETING_CANDIDATE"
++MERGED_DETECTION_SUSPECTED = "MERGED_DETECTION_SUSPECTED"
++REACQUISITION_UNVERIFIED = "REACQUISITION_UNVERIFIED"
++BELOW_APPEARANCE_FLOOR = "BELOW_APPEARANCE_FLOOR"
++INSUFFICIENT_CONTRAST = "INSUFFICIENT_CONTRAST"
++MOTION_VETO = "MOTION_VETO"
++NO_CANDIDATE_IN_GATE = "NO_CANDIDATE_IN_GATE"
++TARGET_OUT_OF_FRAME = "TARGET_OUT_OF_FRAME"
++CAMERA_CUT = "CAMERA_CUT"
++LOW_QUALITY_CROP = "LOW_QUALITY_CROP"
++AGED_OUT = "AGED_OUT"
++
++# candidate roles and detailed (decision-log) reasons
++CONTINUATION = "CONTINUATION"
++REACQUISITION = "REACQUISITION"
++RIVAL = "RIVAL"          # another in-gate box judged by the ORDINARY criteria only to see if it rivals the target
++UNKNOWN_COMPETITOR_IN_CONTACT = "UNKNOWN_COMPETITOR_IN_CONTACT"
++RIVAL_CANDIDATE = "RIVAL_CANDIDATE"
++MORE_LIKE_A_COMPETITOR = "MORE_LIKE_A_COMPETITOR"
++
++_DETAIL_TO_REASON = {
++    "MERGED": MERGED_DETECTION_SUSPECTED, MOTION_VETO: MOTION_VETO,
++    "LAB_MISSING": LOW_QUALITY_CROP, "EMBEDDING_MISSING": LOW_QUALITY_CROP, "NON_FINITE": LOW_QUALITY_CROP,
++    "LAB_NON_FINITE": LOW_QUALITY_CROP, "EMBEDDING_NON_FINITE": LOW_QUALITY_CROP,
++    "CROP_MERGED_SUSPECTED": MERGED_DETECTION_SUSPECTED, "CROP_OCCLUDED_BY_OTHER": OCCLUDER_OVERLAP,
++    "FEATURE_NOT_USABLE": LOW_QUALITY_CROP, "EMPTY_TARGET_BANK": LOW_QUALITY_CROP,
++    "LAB_INCOMPATIBLE": BELOW_APPEARANCE_FLOOR, "EMBEDDING_BELOW_FLOOR": BELOW_APPEARANCE_FLOOR,
++    "COMPOSITE_BELOW_FLOOR": BELOW_APPEARANCE_FLOOR, "BELOW_REACQ_FLOOR": BELOW_APPEARANCE_FLOOR,
++    "INSUFFICIENT_CONTRAST": INSUFFICIENT_CONTRAST, UNKNOWN_COMPETITOR_IN_CONTACT: COMPETING_CANDIDATE,
++    RIVAL_CANDIDATE: COMPETING_CANDIDATE,
++}
++
++# observations whose box the target bank must refuse (population flags)
++_BANK_REFUSE_FLAGS = (P.CONTESTED, P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION,
++                      P.MERGED_SUSPECTED, P.NESTED, P.ALTERNATIVE)
++
++Box = Tuple[float, float, float, float]
++
++
++class SeedError(RuntimeError):
++    """The seed cannot start a trustworthy target (fail closed; D18)."""
++
++
++class TargetError(RuntimeError):
++    """Invalid use of the target tracker (fail closed)."""
++
++
++def _wh(b: Sequence[float]) -> Tuple[float, float]:
++    return b[2] - b[0], b[3] - b[1]
++
++
++def _cover(a: Box, b: Box) -> float:
++    """Fraction of a's area inside b."""
++    return float(containment(np.asarray([a]), np.asarray([b]))[0, 0])
++
++
++# ---------------------------------------------------------------------------------------------
++# Records
++# ---------------------------------------------------------------------------------------------
++@dataclass(frozen=True)
++class CandidateEvaluation:
++    """The full evidence for one detection considered as the target in one frame (decision log, rule 19)."""
++    detection_index: int
++    tracklet_id: Optional[str]
++    box: Box
++    role: str
++    in_gate: bool
++    distance_h: Optional[float]
++    merged: bool
++    motion: Optional[Dict[str, Any]]
++    quality_flags: Tuple[str, ...]
++    target_similarity: Optional[Dict[str, Any]]
++    best_competitor: Optional[str]
++    best_competitor_similarity: Optional[float]
++    contrast: Optional[float]
++    margin: float
++    unknown_contacts: Tuple[str, ...]
++    passed: bool
++    details: Tuple[str, ...]
++
++    @property
++    def composite(self) -> Optional[float]:
++        return None if self.target_similarity is None else self.target_similarity.get("composite")
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"detection_index": self.detection_index, "tracklet_id": self.tracklet_id, "box": list(self.box),
++                "role": self.role, "in_gate": self.in_gate, "distance_h": self.distance_h, "merged": self.merged,
++                "motion": self.motion, "quality_flags": list(self.quality_flags),
++                "target_similarity": self.target_similarity, "best_competitor": self.best_competitor,
++                "best_competitor_similarity": self.best_competitor_similarity, "contrast": self.contrast,
++                "margin": self.margin, "unknown_contacts": list(self.unknown_contacts), "passed": self.passed,
++                "details": list(self.details)}
++
++
++@dataclass(frozen=True)
++class ReacquisitionEvent:
++    episode: int
++    lost_from_frame: int
++    uncertain_from_frame: int
++    reacq_started_frame: int
++    reacq_accepted_frame: int
++    uncertain_duration_s: float
++    evidence: Dict[str, Any]
++
++    def as_record(self) -> Dict[str, Any]:
++        return {"episode": self.episode, "lost_from_frame": self.lost_from_frame,
++                "uncertain_from_frame": self.uncertain_from_frame, "reacq_started_frame": self.reacq_started_frame,
++                "reacq_accepted_frame": self.reacq_accepted_frame,
++                "uncertain_duration_s": self.uncertain_duration_s, "evidence": self.evidence}
++
++
++@dataclass(frozen=True)
++class TargetFrame:
++    """The target decision for one frame. The first block is exactly output_schema.V2_TARGET_FIELDS (without
++    record_kind); the rest is context for the output writer and the decision log."""
++    rb_state: str
++    observation_source: str
++    bbox_is_observed: bool
++    bbox_is_held: bool
++    bbox_is_predicted: bool
++    held_age_s: float
++    last_confirmed_frame: Optional[int]
++    time_since_confirmed_s: Optional[float]
++    observed_or_contested_box: Optional[Box]
++    observation_tracklet_id: Optional[str]
++    target_episode: int
++    identity_trusted: bool
++    identity_confidence_rb: float
++    identity_uncertainty_reasons: Tuple[str, ...]
++    occluder_track_ids: Tuple[str, ...]
++    merged_suspected: bool
++    raw_detection_conf: Optional[float]
++    reidentified_this_frame: bool
++    target_similarity: Optional[float]
++    best_competitor_similarity: Optional[float]
++    # context
++    rel_frame: int
++    time_s: float
++    bbox: Box
++    detection_index: Optional[int]
++    predicted_inside_image: bool
++    position_valid: bool
++    target_height_px: Optional[float]
++    decision: Dict[str, Any] = field(compare=False)
++
++    def v2_fields(self) -> Dict[str, Any]:
++        """The v2 TARGET block (output_schema.V2_TARGET_FIELDS)."""
++        return {"record_kind": "TARGET", "rb_state": self.rb_state, "observation_source": self.observation_source,
++                "bbox_is_observed": self.bbox_is_observed, "bbox_is_held": self.bbox_is_held,
++                "bbox_is_predicted": self.bbox_is_predicted, "held_age_s": self.held_age_s,
++                "last_confirmed_frame": self.last_confirmed_frame,
++                "time_since_confirmed_s": self.time_since_confirmed_s,
++                "observed_or_contested_box": (None if self.observed_or_contested_box is None
++                                              else list(self.observed_or_contested_box)),
++                "observation_tracklet_id": self.observation_tracklet_id, "target_episode": self.target_episode,
++                "identity_trusted": self.identity_trusted, "identity_confidence_rb": self.identity_confidence_rb,
++                "identity_uncertainty_reasons": list(self.identity_uncertainty_reasons),
++                "occluder_track_ids": list(self.occluder_track_ids), "merged_suspected": self.merged_suspected,
++                "raw_detection_conf": self.raw_detection_conf,
++                "reidentified_this_frame": self.reidentified_this_frame,
++                "target_similarity": self.target_similarity,
++                "best_competitor_similarity": self.best_competitor_similarity}
++
++    def as_record(self) -> Dict[str, Any]:
++        rec = self.v2_fields()
++        rec.update({"rel_frame": self.rel_frame, "time_s": self.time_s, "bbox": list(self.bbox),
++                    "detection_index": self.detection_index, "predicted_inside_image": self.predicted_inside_image,
++                    "position_valid": self.position_valid, "target_height_px": self.target_height_px,
++                    "decision": self.decision})
++        return rec
++
++
++@dataclass
++class _Verification:
++    tracklet_id: str
++    start_t: float
++    start_frame: int
++    history: List[Tuple[float, bool]] = field(default_factory=list)
++
++
++# ---------------------------------------------------------------------------------------------
++# The target tracker
++# ---------------------------------------------------------------------------------------------
++class TargetTracker:
++    def __init__(self, cfg: TrackerConfig, population: P.Population, extractor: AppearanceExtractor):
++        self._cfg = cfg
++        self._pop = population
++        self._ext = extractor
++        self._mm = MotionModel(cfg)
++        self._bank = AppearanceBank(cfg, require_trust=True)
++        self._motion: Optional[MotionState] = None
++        self._sizes: List[Tuple[float, float, float]] = []   # (t, w, h px) of non-partial confirmed boxes
++        self._last_h: Optional[float] = None
++        self._state: Optional[str] = None
++        self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
++        self._base_reasons: Tuple[str, ...] = ()
++        self._episode = 1
++        self._tracklet: Optional[str] = None                 # the target's current population tracklet
++        self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
++        self._known_others: Set[str] = set()                 # tracklets seen as separate bodies beside the target
++        self._tracklet_since_t: Optional[float] = None       # when the target was first confirmed on its tracklet
++        self._failed = False                                 # a refused seed leaves the tracker unusable
++        self._last_confirm_t: Optional[float] = None
++        self._last_confirm_frame: Optional[int] = None
++        self._last_trusted_conf = 0.0
++        self._uncertain_from: Optional[Tuple[int, float]] = None
++        self._lost_from_frame: Optional[int] = None
++        self._ambiguous_since_t: Optional[float] = None
++        self._verif: Optional[_Verification] = None
++        self._reacq_t: Optional[float] = None
++        self._last_bank_t: Optional[float] = None
++        self._events: List[ReacquisitionEvent] = []
++        self._last_frame: Optional[int] = None
++        self._position_valid = False
++        self._last_box: Optional[Box] = None
++        self._prev_t: Optional[float] = None
++
++    # -- public --------------------------------------------------------------------------------------------
++    @property
++    def bank(self) -> AppearanceBank:
++        return self._bank
++
++    @property
++    def reacquisition_events(self) -> Tuple[ReacquisitionEvent, ...]:
++        return tuple(self._events)
++
++    @property
++    def target_tracklets(self) -> Tuple[str, ...]:
++        return tuple(sorted(self._target_tracklets))
++
++    # -- helpers -------------------------------------------------------------------------------------------
++    def _check_frame(self, res: P.FrameResult, image: np.ndarray) -> None:
++        if not isinstance(res, P.FrameResult) or res is not self._pop.last:
++            raise TargetError("update() needs the population's latest FrameResult (call Population.update first)")
++        if self._last_frame is not None and res.rel_frame <= self._last_frame:
++            raise TargetError("frames must be processed in increasing order")
++        if not isinstance(image, np.ndarray) or image.ndim != 3:
++            raise TargetError("image must be an (h, w, 3) array")
++
++    def _height(self, t: float) -> Optional[float]:
++        win = self._cfg.get("target_height_window_s")
++        recent = [hh for (ts, _ww, hh) in self._sizes if t - ts <= win]
++        if recent:
++            return float(np.median(recent))
++        return self._last_h
++
++    def _size_ref(self, t: float) -> Optional[Tuple[float, float]]:
++        """The target's ESTABLISHED recent size (median w, h of non-partial confirmed boxes within
++        target_height_window_s, spanning at least population_size_ref_min_s), or None."""
++        c = self._cfg
++        recent = [(ts, ww, hh) for (ts, ww, hh) in self._sizes if t - ts <= c.get("target_height_window_s")]
++        if len(recent) < 2 or recent[-1][0] - recent[0][0] < c.get("population_size_ref_min_s"):
++            return None
++        return float(np.median([x[1] for x in recent])), float(np.median([x[2] for x in recent]))
++
++    def _group(self, res: P.FrameResult, i: int) -> Set[int]:
++        """Detection indices of i's nested group (i, the boxes nested in it, and its host chain)."""
++        obs = res.observations
++        root = i
++        while obs[root].nested_in is not None:
++            root = obs[root].nested_in
++        members = {root}
++        changed = True
++        while changed:
++            changed = False
++            for o in obs:
++                if o.nested_in is not None and o.nested_in in members and o.index not in members:
++                    members.add(o.index)
++                    changed = True
++        return members
++
++    def _other_boxes(self, res: P.FrameResult, i: int) -> List[Box]:
++        """Every other body's box for crop contamination: other observations outside i's nested group, and hidden
++        tracklets' predicted boxes except the target's own tracklets."""
++        grp = self._group(res, i)
++        boxes = [o.bbox for o in res.observations if o.is_body and o.index not in grp]
++        boxes += [v.box for v in res.tracklets if not v.observed and v.tracklet_id not in self._target_tracklets]
++        return boxes
++
++    def _feature(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
++                 i: int) -> AppearanceFeature:
++        if i not in cache:
++            o = res.observations[i]
++            cache[i] = self._ext.extract(image, o.bbox, others=self._other_boxes(res, i),
++                                         merged_suspected=P.MERGED_SUSPECTED in o.flags)
++        return cache[i]
++
++    def _merged(self, res: P.FrameResult, i: int) -> bool:
++        o = res.observations[i]
++        if P.MERGED_SUSPECTED in o.flags:
++            return True
++        v = res.tracklet(o.tracklet_id) if o.tracklet_id else None
++        return v is not None and P.MERGE_LINEAGE in v.flags
++
++    def _reacq_margin(self, absence_s: float) -> float:
++        c = self._cfg
++        return min(c.get("reacq_contrastive_margin") + c.get("reacq_margin_growth_per_s") * absence_s,
++                   c.get("reacq_margin_cap"))
++
++    def _gate(self, t: float) -> float:
++        c = self._cfg
++        if self._last_confirm_t is None:
++            return c.get("gate_base_h")
++        ref_t = t
++        if not c.get("gate_grows_while_ambiguous") and self._ambiguous_since_t is not None:
++            ref_t = self._ambiguous_since_t                 # frozen from the start of the ambiguity
++        u = max(0.0, ref_t - self._last_confirm_t)
++        return min(c.get("gate_base_h") + c.get("gate_growth_h_per_s") * u, c.get("gate_max_h"))
++
++    def _in_gate(self, box: Box, pred_box: Optional[Box], gate_h: Optional[float], h: float) -> bool:
++        if pred_box is None or gate_h is None:
++            return True
++        pcx, pcy = centre(pred_box)
++        bcx, bcy = centre(box)
++        if math.hypot(bcx - pcx, bcy - pcy) / h <= gate_h:
++            return True
++        return float(box_iou_matrix(np.asarray([pred_box]), np.asarray([box]))[0, 0]) > 0
++
++    def _evaluate(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray, i: int, *,
++                  role: str, pred_box: Optional[Box], gate_h: Optional[float], h: float,
++                  absence_s: float) -> CandidateEvaluation:
++        c = self._cfg
++        t = res.time_s
++        o = res.observations[i]
++        details: List[str] = []
++        merged = self._merged(res, i)
++        # D11 at the target level: a box much larger or wider than the target's own established recent size may
++        # hold two people (applied while position/scale continuity holds)
++        ref = self._size_ref(t) if (self._position_valid and pred_box is not None) else None
++        if not merged and ref is not None:
++            w, hh = _wh(o.bbox)
++            lo, hi = c.get("merged_aspect_band")
++            aspect_rel = (w / hh) / (ref[0] / ref[1])
++            if (w * hh) / (ref[0] * ref[1]) >= c.get("merged_area_ratio") or \
++                    (aspect_rel > hi and hh / ref[1] >= c.get("population_partial_height_ratio")):
++                merged = True
++        if merged:
++            details.append("MERGED")
++        # position (gate) and motion veto, only while positional continuity is valid
++        in_gate, dist_h, mrec = True, None, None
++        if pred_box is not None and gate_h is not None:
++            pcx, pcy = centre(pred_box)
++            bcx, bcy = centre(o.bbox)
++            dist_h = math.hypot(bcx - pcx, bcy - pcy) / h
++            overlaps = float(box_iou_matrix(np.asarray([pred_box]), np.asarray([o.bbox]))[0, 0]) > 0
++            in_gate = dist_h <= gate_h or overlaps
++        if pred_box is not None and self._motion is not None and self._position_valid and t > self._motion.t_obs:
++            chk = self._mm.check(self._motion, o.bbox, t,
++                                 partial=P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags)
++            mrec = chk.as_record()
++            if not chk.plausible:
++                details.append(MOTION_VETO)
++        # appearance
++        feat = self._feature(cache, res, image, i)
++        sim: Optional[AppearanceSimilarity] = None
++        if not len(self._bank):
++            details.append("EMPTY_TARGET_BANK")
++        elif not feat.usable:
++            details.append("FEATURE_NOT_USABLE")
++        else:
++            sim, _ = self._bank.best_match(feat)
++            ok, why = identity_support(sim, c, feat.quality.flags)
++            details.extend(why)
++            if role == REACQUISITION and (sim.composite is None or sim.composite < c.get("reacq_appearance_floor")):
++                if "COMPOSITE_BELOW_FLOOR" not in details:
++                    details.append("BELOW_REACQ_FLOOR")
++        # contrast against every competitor that could be this box
++        margin = self._reacq_margin(absence_s) if role == REACQUISITION else c.get("contrastive_margin")
++        best_ref, best_sim, unknown = None, None, []
++        grp = self._group(res, i)
++        # the target never competes with itself: its own tracklets are excluded, EXCEPT one observed this frame on
++        # a box outside this candidate's group - that is a separate body (the target cannot be in two places), so
++        # it competes like anyone else (rule 28)
++        seen_elsewhere = {v.tracklet_id for v in res.tracklets
++                          if v.observed and v.tracklet_id in self._target_tracklets and v.detection_index not in grp}
++        excl_t = (set(self._target_tracklets) - seen_elsewhere) | ({o.tracklet_id} if o.tracklet_id else set())
++        comps = self._pop.competitors(o.bbox, h, exclude_tracklet_ids=sorted(excl_t),
++                                      exclude_detection_indices=sorted(grp))
++        for cp in comps:
++            if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
++                    cp.closed_age_s > c.get("contact_memory_s"):
++                continue
++            has_bank = cp.bank is not None and len(cp.bank) > 0
++            if not has_bank:
++                if cp.position_valid and cp.kind != P.RECENTLY_CLOSED and self._could_be_target(cp.box, h, t):
++                    cm = c.get("identity_contact_cover_min")
++                    if _cover(o.bbox, cp.box) >= cm or _cover(cp.box, o.bbox) >= cm:
++                        unknown.append(cp.ref)
++                continue
++            if feat.usable:
++                cs, _ = cp.bank.best_match(feat)
++                if cs is not None and cs.composite is not None and (best_sim is None or cs.composite > best_sim):
++                    best_ref, best_sim = cp.ref, cs.composite
++        contrast = None
++        if sim is not None and sim.composite is not None and best_sim is not None:
++            contrast = sim.composite - best_sim
++            if contrast < margin:
++                details.append("INSUFFICIENT_CONTRAST")
++        if unknown:
++            details.append(UNKNOWN_COMPETITOR_IN_CONTACT)
++        return CandidateEvaluation(
++            detection_index=i, tracklet_id=o.tracklet_id, box=o.bbox, role=role, in_gate=in_gate,
++            distance_h=dist_h, merged=merged, motion=mrec, quality_flags=tuple(feat.quality.flags),
++            target_similarity=None if sim is None else sim.as_record(), best_competitor=best_ref,
++            best_competitor_similarity=best_sim, contrast=contrast, margin=margin, unknown_contacts=tuple(unknown),
++            passed=not details, details=tuple(details))
++
++    def _could_be_target(self, box: Box, h: float, t: float) -> bool:
++        """Scale plausibility: could a box of this height be the target's body now? Same bound as the motion
++        SCALE veto (motion_scale_jitter_ratio x motion_veto_max_scale_ratio_per_s ** dt, dt = seconds since the
++        target was last confirmed). A body far smaller or larger than the target (a ball-sized fragment, a person
++        much nearer the camera) cannot be confused with it."""
++        c = self._cfg
++        dt = 0.0 if self._last_confirm_t is None else max(0.0, t - self._last_confirm_t)
++        k = c.get("motion_scale_jitter_ratio") * c.get("motion_veto_max_scale_ratio_per_s") ** dt
++        ratio = _wh(box)[1] / h
++        return 1.0 / k <= ratio <= k
++
++    def _looks_like_target(self, ev: CandidateEvaluation) -> bool:
++        """A rival target candidate: physically plausible (no motion veto), passes the appearance floors and is
++        not more like another known person."""
++        if MOTION_VETO in ev.details:
++            return False
++        floor_fail = {"LAB_MISSING", "EMBEDDING_MISSING", "LAB_NON_FINITE", "EMBEDDING_NON_FINITE",
++                      "LAB_INCOMPATIBLE", "EMBEDDING_BELOW_FLOOR", "COMPOSITE_BELOW_FLOOR", "FEATURE_NOT_USABLE",
++                      "EMPTY_TARGET_BANK"}
++        if ev.composite is None or floor_fail & set(ev.details):
++            return False
++        return ev.contrast is None or ev.contrast >= 0.0
++
++    def _rivals(self, evals: Sequence[CandidateEvaluation], best: CandidateEvaluation) -> List[CandidateEvaluation]:
++        m = self._cfg.get("ambiguity_margin")
++        return [e for e in evals if e.detection_index != best.detection_index and e.in_gate
++                and self._looks_like_target(e) and best.composite is not None
++                and e.composite >= best.composite - m]
++
++    def _confidence_trusted(self, ev: CandidateEvaluation) -> float:
++        c = self._cfg
++        floor = c.get("reacq_appearance_floor") if ev.role == REACQUISITION else c.get("appearance_floor")
++        a = min(1.0, max(0.0, (ev.composite - floor) / (1.0 - floor)))
++        if ev.contrast is None:
++            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain), but for a
++            # REACQUISITION nothing positive separates the candidate from an unseen look-alike -> minimal trust
++            k = 1.0 if ev.role == CONTINUATION else 0.0
++        else:
++            k = min(1.0, max(0.0, (ev.contrast - ev.margin) / (1.0 - ev.margin)))
++        return 1.0 / 2 + min(a, k) / 2
++
++    def _confidence_untrusted(self, t: float) -> float:
++        c = self._cfg
++        if self._last_confirm_t is None:
++            return 0.0
++        decay = (1.0 / 2) ** ((t - self._last_confirm_t) / c.get("confidence_half_life_s"))   # half-life
++        return min(c.get("untrusted_identity_confidence_ceiling"), self._last_trusted_conf * decay)
++
++    def _bank_update(self, res: P.FrameResult, image: np.ndarray, i: int,
++                     cache: Dict[int, AppearanceFeature]) -> Dict[str, Any]:
++        """D12: offer the confirmed box to the target bank if every condition holds."""
++        c = self._cfg
++        t = res.time_s
++        o = res.observations[i]
++        refusals: List[str] = [f for f in _BANK_REFUSE_FLAGS if f in o.flags]
++        v = res.tracklet(o.tracklet_id) if o.tracklet_id else None
++        if v is not None and P.MERGE_LINEAGE in v.flags:
++            refusals.append(P.MERGE_LINEAGE)
++        grp = self._group(res, i)
++        others = self._other_boxes(res, i)
++        # another body's box inside this one (not a part of the same body)
++        for other in res.observations:
++            if other.is_body and other.index not in grp and \
++                    _cover(other.bbox, o.bbox) >= c.get("population_nested_containment"):
++                refusals.append(P.CONTAINS_OTHER)
++                break
++        max_iou = float(box_iou_matrix(np.asarray([o.bbox]), np.asarray(others)).max()) if others else 0.0
++        if max_iou > c.get("bank_contact_iou"):
++            refusals.append("NOT_ISOLATED")
++        seed_frame = self._last_frame is None
++        if res.camera.status != ESTIMATED and not res.camera.continuity_broken and not seed_frame:
++            refusals.append("CAMERA_UNVERIFIED")
++        if self._last_bank_t is not None and t - self._last_bank_t < c.get("target_bank_sample_interval_s"):
++            refusals.append("SAMPLE_NOT_DUE")
++        if refusals:
++            return {"status": "REFUSED", "refusals": sorted(set(refusals))}
++        feat = self._feature(cache, res, image, i)
++        ctx = BankUpdateContext(identity_trusted=True, merged_suspected=False, max_competitor_iou=max_iou,
++                                seconds_since_reacquisition=None if self._reacq_t is None else t - self._reacq_t)
++        status, why = self._bank.add(feat, ctx)
++        self._last_bank_t = t
++        return {"status": status, "refusals": list(why)}
++
++    def _confirm(self, res: P.FrameResult, image: np.ndarray, ev: CandidateEvaluation, conf: float,
++                 cache: Dict[int, AppearanceFeature]) -> Dict[str, Any]:
++        """Bookkeeping for a TRACKING frame on detection ev.detection_index."""
++        t = res.time_s
++        o = res.observations[ev.detection_index]
++        partial = P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags
++        if self._motion is None or not self._position_valid:
++            self._motion = self._mm.start(o.bbox, t, partial=partial)
++        else:
++            self._motion = self._mm.update(self._motion, o.bbox, t, partial=partial)
++        if not partial:
++            self._sizes.append((t,) + _wh(o.bbox))
++            self._last_h = _wh(o.bbox)[1]
++        self._sizes = [x for x in self._sizes if t - x[0] <= self._cfg.get("target_height_window_s")]
++        self._position_valid = True
++        if o.tracklet_id != self._tracklet or self._tracklet_since_t is None:
++            self._tracklet_since_t = t
++        self._tracklet = o.tracklet_id
++        # every other tracked body observed in this frame, outside the target's own nested group, is a known
++        # different person (two separate boxes at once): it can never become the target by reacquisition. Only
++        # recorded at the seed (the human identified the target there) or once the target has been confirmed on
++        # the same tracklet for target_known_other_min_s (one trusted frame is not enough to rule a body out for its
++        # whole tracklet)
++        grp = self._group(res, ev.detection_index)
++        seeding = self._last_confirm_t is None              # the seed box is the human's own identification
++        settled = seeding or (ev.role == CONTINUATION and
++                              t - self._tracklet_since_t >= self._cfg.get("target_known_other_min_s"))
++        for other in (res.observations if settled else ()):
++            if other.is_body and other.index not in grp and other.tracklet_id and \
++                    other.tracklet_id != o.tracklet_id and other.tracklet_id not in self._target_tracklets:
++                self._known_others.add(other.tracklet_id)
++        if o.tracklet_id:
++            self._target_tracklets.add(o.tracklet_id)
++        self._last_confirm_t, self._last_confirm_frame = t, res.rel_frame
++        self._last_trusted_conf = conf
++        self._uncertain_from = None
++        self._lost_from_frame = None
++        self._ambiguous_since_t = None
++        self._verif = None
++        return self._bank_update(res, image, ev.detection_index, cache)
++
++    def _enter_uncertain(self, res: P.FrameResult, state: str) -> None:
++        if self._uncertain_from is None:
++            self._uncertain_from = (res.rel_frame, res.time_s)
++        if state == LOST and self._lost_from_frame is None:
++            self._lost_from_frame = res.rel_frame
++        if state == AMBIGUOUS and self._ambiguous_since_t is None:
++            self._ambiguous_since_t = res.time_s
++        if state != AMBIGUOUS:
++            self._ambiguous_since_t = None
++
++    # -- seed ----------------------------------------------------------------------------------------------
++    def seed(self, res: P.FrameResult, image: np.ndarray, seed_bbox: Sequence[float]) -> TargetFrame:
++        """Start the target from a human seed box at the seed frame (D18). Fails closed (SeedError) if no single,
++        clean detection matches the seed, or if its crop cannot anchor the appearance bank."""
++        if self._state is not None or self._failed:
++            raise TargetError("seed() may be called once, on the first frame")
++        self._check_frame(res, image)
++        c = self._cfg
++        sb = tuple(float(v) for v in seed_bbox)
++        if len(sb) != 4 or not all(math.isfinite(v) for v in sb) or not (sb[2] > sb[0] and sb[3] > sb[1]):
++            raise SeedError(f"seed box must be 4 finite numbers with positive size, got {seed_bbox!r}")
++        bodies = [o for o in res.observations if o.is_body]
++        if not bodies:
++            raise SeedError("no person detection at the seed frame")
++        ious = box_iou_matrix(np.asarray([sb]), np.asarray([o.bbox for o in bodies]))[0]
++        k = int(np.argmax(ious))
++        if ious[k] < c.get("seed_min_iou"):
++            raise SeedError(f"no detection overlaps the seed box by IoU >= {c.get('seed_min_iou')} "
++                            f"(best {float(ious[k]):.3f})")
++        o = bodies[k]
++        if self._merged(res, o.index):
++            raise SeedError("the detection matching the seed is merged-suspected (may hold two people)")
++        # the human's seed box is the one trustworthy single-body size reference at the seed frame: a detection
++        # that is merge-sized against it (D11 area / aspect test) may hold the target plus someone else
++        (dw, dh), (sw, sh) = _wh(o.bbox), _wh(sb)
++        if (dw * dh) / (sw * sh) >= c.get("merged_area_ratio") or \
++                (dw / dh) / (sw / sh) > c.get("merged_aspect_band")[1]:
++            raise SeedError("the detection matching the seed is merge-sized against the seed box "
++                            f"(area x{(dw * dh) / (sw * sh):.2f}, aspect x{(dw / dh) / (sw / sh):.2f})")
++        cache: Dict[int, AppearanceFeature] = {}
++        feat = self._feature(cache, res, image, o.index)
++        if not feat.usable:
++            raise SeedError(f"the seed crop is not usable: {feat.quality.flags}")
++        ev = CandidateEvaluation(o.index, o.tracklet_id, o.bbox, "SEED", True, None, False, None,
++                                 tuple(feat.quality.flags), None, None, None, None, 0.0, (), True, ())
++        self._state = TRACKING
++        bank = self._confirm(res, image, ev, 1.0, cache)
++        if bank["status"] != "ACCEPTED":
++            self._failed = True                              # never usable after a refused seed (fail closed)
++            raise SeedError(f"the seed crop cannot anchor the target appearance bank: {bank['refusals']}")
++        self._last_frame = res.rel_frame
++        fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, {"seed": True, "seed_iou": float(ious[k]),
++                                                                     "bank": bank, "transition": "SEED"})
++        self._prev_t = res.time_s
++        return fr
++
++    # -- per frame -----------------------------------------------------------------------------------------
++    def update(self, res: P.FrameResult, image: np.ndarray) -> TargetFrame:
++        if self._state is None or self._failed:
++            raise TargetError("seed() first (and successfully)")
++        self._check_frame(res, image)
++        c = self._cfg
++        t = res.time_s
++        self._pop.sample_appearance(res.rel_frame, image, self._ext)
++        alive = {v.tracklet_id for v in res.tracklets} | {m.tracklet_id for m in self._pop.recently_closed()}
++        self._known_others &= alive                          # bounded: only bodies the population still knows
++        self._target_tracklets &= alive | ({self._tracklet} if self._tracklet else set())
++        prev_state = self._state
++        cache: Dict[int, AppearanceFeature] = {}
++        log: Dict[str, Any] = {"from": prev_state}
++
++        # ---- camera ----------------------------------------------------------------------------------------
++        cam = res.camera
++        cut = cam.continuity_broken or cam.status == FIRST_FRAME
++        if cut:
++            self._motion = None
++            self._position_valid = False
++            self._tracklet = None
++            self._tracklet_since_t = None
++            self._verif = None
++            self._sizes, self._last_h = [], None              # scale from another shot means nothing here
++            log["camera"] = "CONTINUITY_BROKEN"
++        elif self._motion is not None:
++            self._motion = self._mm.apply_camera(self._motion, cam)
++            if cam.compensated:
++                self._sizes = [(ts, ww * cam.scale, hh * cam.scale) for (ts, ww, hh) in self._sizes]
++                if self._last_h is not None:
++                    self._last_h *= cam.scale
++                if self._last_box is not None:
++                    self._last_box = cam.warp_box(self._last_box)
++
++        h = self._height(t) or float(np.median([_wh(o.bbox)[1] for o in res.observations] or [1.0]))
++        pred = self._mm.predict(self._motion, t) if (self._motion is not None and t > self._motion.t_obs) else None
++        pred_box: Optional[Box] = pred.box if pred is not None else None
++        absence = 0.0 if self._last_confirm_t is None else t - self._last_confirm_t
++        prior = (self._position_valid and pred_box is not None and absence < c.get("lost_long_s"))
++        gate_h = self._gate(t) if prior else None
++        log.update({"h": h, "gate_h": gate_h, "absence_s": absence, "positional_prior": prior})
++
++        state: Optional[str] = None
++        reasons: List[str] = []
++        det_idx: Optional[int] = None
++        contested_box: Optional[Box] = None
++        occluders: Tuple[str, ...] = ()
++        merged_flag = False
++        chosen: Optional[CandidateEvaluation] = None
++        evals: List[CandidateEvaluation] = []
++        conf_trusted: Optional[float] = None
++        reidentified = False
++
++        if cut:
++            state, reasons = LOST, [CAMERA_CUT]
++        else:
++            views = {v.tracklet_id: v for v in res.tracklets}
++            closed = {cl.tracklet_id: cl for cl in res.closed}
++            tv = views.get(self._tracklet) if self._tracklet else None
++            if tv is not None and tv.observed:
++                # ---- ordinary association: continuation of the target's tracklet ----------------------------
++                ev = self._evaluate(cache, res, image, tv.detection_index, role=CONTINUATION, pred_box=pred_box,
++                                    gate_h=gate_h, h=h, absence_s=absence)
++                evals.append(ev)
++                others = []
++                grp = self._group(res, ev.detection_index)
++                for o in res.observations:
++                    if o.is_body and o.index not in grp and self._in_gate(o.bbox, pred_box, gate_h, h):
++                        others.append(self._evaluate(cache, res, image, o.index, role=RIVAL,
++                                                     pred_box=pred_box, gate_h=gate_h, h=h, absence_s=absence))
++                evals.extend(others)
++                details = list(ev.details)
++                if ev.passed and self._rivals(others, ev):
++                    details.append(RIVAL_CANDIDATE)
++                if not details:
++                    state, chosen = TRACKING, ev
++                    conf_trusted = self._confidence_trusted(ev)
++                else:
++                    state = AMBIGUOUS
++                    reasons = sorted({_DETAIL_TO_REASON.get(d, COMPETING_CANDIDATE) for d in details})
++                    contested_box, det_idx = ev.box, ev.detection_index
++                    merged_flag = ev.merged
++            elif tv is not None:
++                # ---- the target's tracklet is hidden -----------------------------------------------------------
++                state, reasons, occluders, merged_flag = self._unobserved(res, pred_box)
++            elif self._tracklet is not None and self._tracklet in closed:
++                reason = closed[self._tracklet].reason
++                self._tracklet = None
++                if reason == P.MERGED_CONTACT:
++                    state, reasons, occluders, merged_flag = self._unobserved(res, pred_box)
++                    if not merged_flag:
++                        state, reasons, merged_flag = AMBIGUOUS, [MERGED_DETECTION_SUSPECTED], True
++                elif reason == P.CONTACT_AMBIGUITY:
++                    state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]
++                elif reason == P.LEFT_FRAME:
++                    state, reasons = LOST, [TARGET_OUT_OF_FRAME]
++                else:
++                    state, reasons = LOST, [AGED_OUT]
++            else:
++                # no tracklet of its own: the underlying uncertain state carries on (it ages below)
++                state = self._base_state
++                reasons = list(self._base_reasons) or [NO_CANDIDATE_IN_GATE]
++                if state == OCCLUDED:
++                    # refresh what covers the predicted box now (reason and occluder ids must agree)
++                    s2, r2, occ2, m2 = self._unobserved(res, pred_box)
++                    if s2 in (OCCLUDED, AMBIGUOUS):
++                        state, reasons, occluders, merged_flag = s2, r2, occ2, m2
++
++        # ---- aging (D14) ------------------------------------------------------------------------------------
++        if state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None:
++            limit = c.get("max_occluded_s") if state == OCCLUDED else c.get("max_ambiguous_s")
++            if t - self._last_confirm_t > limit:
++                state, reasons = LOST, sorted(set(reasons) | {AGED_OUT})
++                self._tracklet = None
++        if state == LOST:
++            self._tracklet = None                           # only reacquisition can return from LOST
++            if pred_box is not None and self._position_valid and \
++                    self._pop.inside_fraction(pred_box) < c.get("population_min_inside_fraction"):
++                reasons = sorted(set(reasons) | {TARGET_OUT_OF_FRAME})
++
++        # ---- reacquisition (any non-TRACKING frame) ---------------------------------------------------------
++        if state != TRACKING:
++            self._enter_uncertain(res, state)
++            self._base_state, self._base_reasons = state, tuple(reasons)
++            acc = self._reacquire(cache, res, image, pred_box if prior else None, gate_h, h, absence, evals)
++            log["reacquisition"] = acc["log"]
++            if acc["accepted"] is not None:
++                ev = acc["accepted"]
++                chosen, state, reidentified = ev, TRACKING, True
++                conf_trusted = self._confidence_trusted(ev)
++                self._episode += 1
++                uf_frame, uf_t = self._uncertain_from
++                self._events.append(ReacquisitionEvent(
++                    episode=self._episode,
++                    lost_from_frame=self._lost_from_frame if self._lost_from_frame is not None else uf_frame,
++                    uncertain_from_frame=uf_frame, reacq_started_frame=acc["started_frame"],
++                    reacq_accepted_frame=res.rel_frame, uncertain_duration_s=t - uf_t,
++                    evidence=acc["evidence"]))
++                self._reacq_t = t
++                self._known_others = set()                   # a new episode: earlier co-observations are reset
++            elif self._verif is not None:
++                state = REACQUIRING
++                reasons = sorted(set(reasons) | {REACQUISITION_UNVERIFIED})
++                ve = acc["verifying"]
++                if ve is not None:
++                    contested_box, det_idx = ve.box, ve.detection_index
++            elif acc.get("best_failing") is not None:
++                # a box that looks like the target was found but not accepted: say why
++                bf = acc["best_failing"]
++                reasons = sorted(set(reasons) | {_DETAIL_TO_REASON.get(d, COMPETING_CANDIDATE) for d in bf.details}
++                                 | ({COMPETING_CANDIDATE} if not bf.details else set()))
++                if contested_box is None:
++                    contested_box, det_idx = bf.box, bf.detection_index
++
++        # ---- write ---------------------------------------------------------------------------------------------
++        if state == TRACKING:
++            log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
++            det_idx = chosen.detection_index
++            conf = conf_trusted
++        else:
++            conf = self._confidence_untrusted(t)
++            if not reasons:
++                reasons = [NO_CANDIDATE_IN_GATE]
++        log["candidates"] = [e.as_record() for e in evals]
++        log["transition"] = f"{prev_state}->{state}"
++        self._state = state
++        self._last_frame = res.rel_frame
++        frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
++                            contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)
++        self._prev_t = t
++        return frame
++
++    def _unobserved(self, res: P.FrameResult, pred_box: Optional[Box]) -> Tuple[str, List[str], Tuple[str, ...], bool]:
++        """State when the target has no box of its own this frame (D11, D14)."""
++        c = self._cfg
++        if pred_box is None:
++            return LOST, [NO_CANDIDATE_IN_GATE], (), False
++        pcx, pcy = centre(pred_box)
++        for o in res.observations:
++            if P.MERGED_SUSPECTED in o.flags and _cover(pred_box, o.bbox) >= c.get("merged_overlap_min"):
++                inside = o.bbox[0] <= pcx <= o.bbox[2] and o.bbox[1] <= pcy <= o.bbox[3]
++                return (OCCLUDED if inside else AMBIGUOUS), [MERGED_DETECTION_SUSPECTED], (), True
++        occ = []
++        own = set(self._target_tracklets) | ({self._verif.tracklet_id} if self._verif is not None else set())
++        for o in res.observations:
++            if o.is_body and o.tracklet_id not in own and _cover(pred_box, o.bbox) >= c.get("occluder_cover_min"):
++                occ.append(o.tracklet_id or o.ref)
++        if self._pop.inside_fraction(pred_box) < c.get("population_min_inside_fraction"):
++            return LOST, [TARGET_OUT_OF_FRAME], (), False
++        if occ:
++            return OCCLUDED, [OCCLUDER_OVERLAP], tuple(sorted(occ)), False
++        return OCCLUDED, [NO_CANDIDATE_IN_GATE], (), False
++
++    def _reacquire(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
++                   pred_box: Optional[Box], gate_h: Optional[float], h: float, absence: float,
++                   evals: List[CandidateEvaluation]) -> Dict[str, Any]:
++        c = self._cfg
++        t = res.time_s
++        cands: List[CandidateEvaluation] = []
++        # the target's own continuing box, if observed this frame, is a rival of every other candidate: a box
++        # elsewhere cannot be the target while the target's own tracklet is seen and looks as much like it
++        cont = [e for e in evals if e.role == CONTINUATION and self._tracklet is not None
++                and e.tracklet_id == self._tracklet]
++        excluded_known = []
++        for o in res.observations:
++            if not o.is_body or P.ALTERNATIVE in o.flags:
++                continue
++            if o.tracklet_id in self._known_others:
++                excluded_known.append(o.tracklet_id)        # seen beside the confirmed target: not the target
++                continue
++            if self._tracklet is not None and o.tracklet_id == self._tracklet:
++                continue                                    # the current (failing) continuation is not re-tested
++            if not self._in_gate(o.bbox, pred_box, gate_h, h):
++                continue
++            cands.append(self._evaluate(cache, res, image, o.index, role=REACQUISITION, pred_box=pred_box,
++                                        gate_h=gate_h, h=h, absence_s=absence))
++        evals.extend(cands)
++        passing = sorted([e for e in cands if e.passed and e.tracklet_id is not None],
++                         key=lambda e: (-e.composite, e.detection_index))
++        out: Dict[str, Any] = {"accepted": None, "verifying": None, "started_frame": None, "evidence": None,
++                               "log": {"candidates": len(cands), "passing": [e.detection_index for e in passing],
++                                       "excluded_known_others": sorted(excluded_known)}}
++        lookalikes = sorted([e for e in cands if self._looks_like_target(e) or
++                             (e.composite is not None and e.composite >= c.get("appearance_floor"))],
++                            key=lambda e: (-e.composite, e.detection_index))
++        out["best_failing"] = lookalikes[0] if lookalikes and not lookalikes[0].passed else None
++        best = passing[0] if passing else None
++        rivals = self._rivals(cands + cont, best) if best is not None else []
++        hit = best is not None and not rivals
++        v = self._verif
++        if v is not None:
++            vt = res.tracklet(v.tracklet_id)
++            if vt is None:                                   # its tracklet closed: restart
++                v = None
++            elif best is not None and best.tracklet_id != v.tracklet_id:
++                cur = next((e for e in cands if e.tracklet_id == v.tracklet_id), None)
++                if cur is None or not cur.passed or \
++                        best.composite - (cur.composite or 0.0) >= c.get("ambiguity_margin"):
++                    v = None                                 # another candidate is clearly better: restart
++        if v is None and best is not None and not rivals:
++            v = _Verification(best.tracklet_id, t, res.rel_frame)
++        if v is None:
++            self._verif = None
++            out["log"]["rivals"] = [e.detection_index for e in rivals]
++            return out
++        cur = next((e for e in cands if e.tracklet_id == v.tracklet_id), None)
++        cur_hit = cur is not None and cur.passed and hit and best.tracklet_id == v.tracklet_id
++        v.history.append((t, cur_hit))
++        win = c.get("reacq_window_s")
++        v.history = [(ts, ok) for (ts, ok) in v.history if t - ts < win + self._frame_dt(res) / 2]   # bounded
++        window = [ok for (_ts, ok) in v.history]
++        frac = sum(window) / len(window)
++        dt = self._frame_dt(res)
++        elapsed = t - v.start_t
++        self._verif = v
++        out["started_frame"] = v.start_frame
++        out["log"].update({"verifying": v.tracklet_id, "elapsed_s": elapsed, "hit_fraction": frac,
++                           "rivals": [e.detection_index for e in rivals]})
++        if not any(window) and elapsed >= win - dt / 2:
++            self._verif = None                               # a whole window without a pass: abandon
++            out["log"]["abandoned"] = v.tracklet_id
++            return out
++        if cur_hit and elapsed >= win - dt / 2 and frac >= c.get("reacq_min_hit_fraction"):
++            out["accepted"] = cur
++            out["evidence"] = {"tracklet_id": v.tracklet_id, "window_s": win, "hit_fraction": frac,
++                               "contrast_available": cur.contrast is not None,
++                               "frames_in_window": len(window), "absence_s": absence,
++                               "positional_prior": pred_box is not None, "margin": cur.margin,
++                               "target_similarity": cur.composite, "best_competitor": cur.best_competitor,
++                               "best_competitor_similarity": cur.best_competitor_similarity,
++                               "contrast": cur.contrast}
++            return out
++        out["verifying"] = cur                               # may be None (its tracklet is hidden this frame)
++        out["verifying_tracklet"] = v.tracklet_id
++        return out
++
++    def _frame_dt(self, res: P.FrameResult) -> float:
++        """Time since the previous processed frame (0 on the first)."""
++        return res.time_s - self._prev_t if self._prev_t is not None else 0.0
++
++    def _frame(self, res: P.FrameResult, state: str, reasons: Tuple[str, ...], det_idx: Optional[int],
++               ev: Optional[CandidateEvaluation], conf: float, reidentified: bool, log: Dict[str, Any], *,
++               contested_box: Optional[Box] = None, occluders: Tuple[str, ...] = (), merged: bool = False,
++               pred: Any = None) -> TargetFrame:
++        t = res.time_s
++        if state == TRACKING:
++            o = res.observations[det_idx]
++            box, src = o.bbox, DETECTION
++            held_age = 0.0
++            raw = float(o.score)
++            tsim = ev.composite if ev is not None else None
++            csim = ev.best_competitor_similarity if ev is not None else None
++            tracklet = o.tracklet_id
++            self._last_box = box
++        else:
++            if pred is not None:
++                box, src = pred.box, pred.source
++            else:
++                box, src = self._last_box, HELD
++            held_age = 0.0 if self._last_confirm_t is None else t - self._last_confirm_t
++            raw = None if det_idx is None else float(res.observations[det_idx].score)
++            cand = None
++            for e in log.get("candidates", []):
++                if e["detection_index"] == det_idx:
++                    cand = e
++            tsim = None if cand is None or cand["target_similarity"] is None else cand["target_similarity"]["composite"]
++            csim = None if cand is None else cand["best_competitor_similarity"]
++            tracklet = None if det_idx is None else res.observations[det_idx].tracklet_id
++        # with no valid position (after a cut) the box is only a placeholder: the target is not known to be outside
++        inside = (not self._position_valid and state != TRACKING) or \
++            self._pop.inside_fraction(box) >= self._cfg.get("population_min_inside_fraction")
++        return TargetFrame(
++            rb_state=state, observation_source=src, bbox_is_observed=src == DETECTION, bbox_is_held=src == HELD,
++            bbox_is_predicted=src == PREDICTED, held_age_s=held_age, last_confirmed_frame=self._last_confirm_frame,
++            time_since_confirmed_s=None if self._last_confirm_t is None else t - self._last_confirm_t,
++            observed_or_contested_box=contested_box if state != TRACKING else box,
++            observation_tracklet_id=tracklet, target_episode=self._episode, identity_trusted=state == TRACKING,
++            identity_confidence_rb=float(conf), identity_uncertainty_reasons=() if state == TRACKING else reasons,
++            occluder_track_ids=tuple(occluders), merged_suspected=bool(merged), raw_detection_conf=raw,
++            reidentified_this_frame=reidentified, target_similarity=tsim, best_competitor_similarity=csim,
++            rel_frame=res.rel_frame, time_s=t, bbox=tuple(float(v) for v in box), detection_index=det_idx,
++            predicted_inside_image=bool(inside), position_valid=self._position_valid,
++            target_height_px=self._height(t), decision=log)
+diff --git a/tests_rb/_synth_scene.py b/tests_rb/_synth_scene.py
+new file mode 100644
+index 0000000..2764894
+--- /dev/null
++++ b/tests_rb/_synth_scene.py
+@@ -0,0 +1,235 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-F instruction (synthetic identity scenarios: same-kit and opponent crossings, occlusion, merges,
++#                 exits, gaps, reacquisition, cuts, ambiguity, provisional competitors); test helper only
++"""Test helper: rendered synthetic scenes with ground truth for the R1-F target identity layer.
++
++Appearance is fully controlled, so identity evidence is real and measurable (not scripted per frame):
++  * every person is drawn as a box filled with a KIT colour (what the LAB cue sees: same kit = same colour), with a
++    small head block (top HEAD_FRAC of the box, above the LAB bands) in a unique SIGNATURE colour;
++  * SignatureEmbedding (a test EmbeddingBackend) counts the signature pixels of each person in a crop and returns the
++    count-weighted mix of their identity vectors (unit length). A crop showing one person's head gives that person's
++    vector; a merged or occluded crop gives a blend; no head gives a fixed background vector;
++  * identity vectors are built with a chosen cosine to the TARGET vector, so "same kit, cosine 0.75" reproduces the
++    hard case that colour cannot separate and the embedding separates only partly.
++The population and the target tracker see only images and detections; the helper keeps the ground truth.
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from typing import Dict, List, Optional, Sequence, Tuple
++
++import numpy as np
++
++from player_tracker_rb import population as P
++from player_tracker_rb import target as T
++from player_tracker_rb.appearance import AppearanceExtractor, EmbeddingBackend, l2_normalise
++from player_tracker_rb.camera import FIRST_FRAME, CameraMotion, identity_motion, motion_from_matrix
++from player_tracker_rb.config import TrackerConfig
++from player_tracker_rb.detector import PersonCandidate
++
++W, H = 1280, 720
++FPS = 30.0
++DIM = 16
++POSE_DIMS = (DIM - 3, DIM - 2)   # pose subspace (never used by identity vectors; DIM - 1 is the background)
++HEAD_FRAC = 0.12
++BACKGROUND = (40, 120, 40)
++
++
++def box_at(cx: float, cy: float, w: float, h: float) -> Tuple[float, float, float, float]:
++    return (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
++
++
++def iou(a, b) -> float:
++    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
++    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
++    inter = ix * iy
++    u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
++    return inter / u if u > 0 else 0.0
++
++
++def covered(a, b) -> float:
++    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
++    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
++    return ix * iy / ((a[2] - a[0]) * (a[3] - a[1]))
++
++
++@dataclass
++class Person:
++    name: str
++    kit: Tuple[int, int, int]
++    sig: Tuple[int, int, int]
++    vec: np.ndarray = field(repr=False)
++
++
++def make_people(spec: Sequence[Tuple[str, Tuple[int, int, int], float]]) -> Dict[str, Person]:
++    """spec: (name, kit BGR, cosine of its identity vector to TARGET's). The first entry must be TARGET (cos 1).
++    Signature colours are unique per person; identity vectors share only the TARGET component."""
++    out = {}
++    for k, (name, kit, cos) in enumerate(spec):
++        v = np.zeros(DIM)
++        v[0] = cos
++        if k:
++            v[k] = np.sqrt(max(0.0, 1.0 - cos * cos))
++        sig = (200 - 7 * k, 30 + 11 * k, 220 - 13 * k)
++        out[name] = Person(name, kit, sig, l2_normalise(v))
++    return out
++
++
++class SignatureEmbedding(EmbeddingBackend):
++    """pose_gain > 0 adds a view-dependent component (from the crop's aspect ratio) in POSE_DIMS, so the same
++    person seen in different poses gives different, non-redundant embeddings; identity stays in its own dims."""
++
++    def __init__(self, people: Dict[str, Person], pose_gain: float = 0.0):
++        self.people = people
++        self.pose_gain = pose_gain
++        bg = np.zeros(DIM)
++        bg[DIM - 1] = 1.0
++        self.bg = bg
++
++    def embed(self, crop: np.ndarray) -> np.ndarray:
++        v = np.zeros(DIM)
++        for p in self.people.values():
++            n = int(np.all(crop == np.asarray(p.sig, np.uint8), axis=2).sum())
++            v += n * p.vec
++        if not np.any(v):
++            return self.bg.copy()
++        v = l2_normalise(v)
++        if self.pose_gain:
++            a = 2 * np.pi * crop.shape[1] / crop.shape[0]
++            v[POSE_DIMS[0]] += self.pose_gain * np.cos(a)
++            v[POSE_DIMS[1]] += self.pose_gain * np.sin(a)
++        return l2_normalise(v)
++
++    def provenance(self):
++        return {"backend": "test_signature"}
++
++
++@dataclass
++class SceneFrame:
++    boxes: Dict[str, Tuple[float, float, float, float]]   # person -> true box (absent: not in the scene)
++    order: Sequence[str] = ()                             # draw order far -> near (default: by box bottom)
++    drop: Sequence[str] = ()                              # people present but not detected
++    merge: Sequence[Tuple[str, str]] = ()                 # pairs detected as ONE box
++    camera: Optional[CameraMotion] = None
++
++
++@dataclass
++class Detection:
++    box: Tuple[float, float, float, float]
++    owners: Tuple[str, ...]
++
++
++def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H) -> np.ndarray:
++    img = np.empty((height, width, 3), np.uint8)
++    img[:] = BACKGROUND
++    order = list(fr.order) or sorted(fr.boxes, key=lambda n: fr.boxes[n][3])
++    for name in order:
++        if name not in fr.boxes:
++            continue
++        x1, y1, x2, y2 = (int(round(v)) for v in fr.boxes[name])
++        x1, y1, x2, y2 = max(0, x1), max(0, y1), min(width, x2), min(height, y2)
++        if x2 <= x1 or y2 <= y1:
++            continue
++        p = people[name]
++        img[y1:y2, x1:x2] = p.kit
++        bh = fr.boxes[name][3] - fr.boxes[name][1]
++        hy2 = int(round(fr.boxes[name][1] + HEAD_FRAC * bh))
++        bw = fr.boxes[name][2] - fr.boxes[name][0]
++        hx1 = int(round(fr.boxes[name][0] + bw / 4))
++        hx2 = int(round(fr.boxes[name][2] - bw / 4))
++        hy1 = max(0, y1)
++        img[hy1:max(hy1, min(hy2, height)), max(0, hx1):min(width, hx2)] = p.sig
++    return img
++
++
++def detect(fr: SceneFrame, visible_min: float = 0.35, width: int = W, height: int = H) -> List[Detection]:
++    """Ideal detector: one full box per sufficiently visible person (not dropped); merged pairs give one union
++    box. Visibility = 1 - fraction covered by nearer people (drawn later)."""
++    order = list(fr.order) or sorted(fr.boxes, key=lambda n: fr.boxes[n][3])
++    merged_names = {n for pair in fr.merge for n in pair}
++    dets = []
++    for a, b in fr.merge:
++        if a in fr.boxes and b in fr.boxes:
++            ba, bb = fr.boxes[a], fr.boxes[b]
++            dets.append(Detection((min(ba[0], bb[0]), min(ba[1], bb[1]), max(ba[2], bb[2]), max(ba[3], bb[3])),
++                                  (a, b)))
++    for k, name in enumerate(order):
++        if name not in fr.boxes or name in fr.drop or name in merged_names:
++            continue
++        b = fr.boxes[name]
++        inside = covered(b, (0, 0, width, height))
++        if inside < 0.3:
++            continue
++        cov = max([covered(b, fr.boxes[m]) for m in order[k + 1:] if m in fr.boxes] or [0.0])
++        if 1.0 - cov < visible_min:
++            continue
++        cb = (max(0.0, b[0]), max(0.0, b[1]), min(float(width), b[2]), min(float(height), b[3]))
++        dets.append(Detection(cb, (name,)))
++    return dets
++
++
++@dataclass
++class Result:
++    frames: List[T.TargetFrame]
++    dets: List[List[Detection]]
++    pops: List[P.FrameResult]
++    tracker: T.TargetTracker
++    people: Dict[str, Person]
++
++    def swaps(self, target: str = "TARGET") -> List[int]:
++        """Frames where the target was TRACKING (trusted) on a detection that is not exactly the target."""
++        out = []
++        for k, (tf, ds) in enumerate(zip(self.frames, self.dets)):
++            if tf.rb_state == T.TRACKING and ds[tf.detection_index].owners != (target,):
++                out.append(k)
++        return out
++
++    def states(self) -> List[str]:
++        return [f.rb_state for f in self.frames]
++
++    def tracking_frames(self) -> List[int]:
++        return [k for k, f in enumerate(self.frames) if f.rb_state == T.TRACKING]
++
++    def bank_is_pure(self, target: str = "TARGET") -> bool:
++        """Every bank sample's IDENTITY part (pose dims removed) is exactly the target's identity vector."""
++        tv = self.people[target].vec
++        for smp in self.tracker.bank.samples:
++            e = np.array(smp.embedding, float)
++            e[list(POSE_DIMS)] = 0.0
++            if float(l2_normalise(e) @ tv) <= 1.0 - 1e-9:
++                return False
++        return True
++
++
++def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: str = "TARGET",
++        cfg: Optional[TrackerConfig] = None, fps: float = FPS, width: int = W, height: int = H,
++        visible_min: float = 0.35, pose_gain: float = 0.0) -> Result:
++    cfg = cfg or TrackerConfig.default()
++    pop = P.Population(cfg, width, height)
++    ext = AppearanceExtractor(cfg, SignatureEmbedding(people, pose_gain))
++    tt = T.TargetTracker(cfg, pop, ext)
++    out_frames, out_dets, out_pops = [], [], []
++    for k, fr in enumerate(frames):
++        img = render(fr, people, width, height)
++        ds = detect(fr, visible_min, width, height)
++        cands = [PersonCandidate(d.box, 0.9, d.box[0] <= 2 or d.box[2] >= width - 2, "synthetic") for d in ds]
++        if k == 0:
++            cam = identity_motion(FIRST_FRAME)
++        else:
++            cam = fr.camera if fr.camera is not None else motion_from_matrix([[1, 0, 0], [0, 1, 0]], width, height)
++        res = pop.update(k, k / fps, cands, cam)
++        tf = tt.seed(res, img, fr.boxes[seed_name]) if k == 0 else tt.update(res, img)
++        out_frames.append(tf)
++        out_dets.append(ds)
++        out_pops.append(res)
++    return Result(out_frames, out_dets, out_pops, tt, people)
++
++
++# ---- scenario builders (people move in image coordinates; h = body height in px) ---------------------------
++def linear(n: int, start: Tuple[float, float], v_px_per_frame: Tuple[float, float], w: float = 40, h: float = 100):
++    return [box_at(start[0] + v_px_per_frame[0] * k, start[1] + v_px_per_frame[1] * k, w, h) for k in range(n)]
++
++
++def still(n: int, at: Tuple[float, float], w: float = 40, h: float = 100):
++    return [box_at(at[0], at[1], w, h) for _ in range(n)]
+diff --git a/tests_rb/test_population_audit.py b/tests_rb/test_population_audit.py
+index 566408f..fdb54b5 100644
+--- a/tests_rb/test_population_audit.py
++++ b/tests_rb/test_population_audit.py
+@@ -391,3 +391,103 @@ class ProbeCameraDenominator(unittest.TestCase):
+         m = est.update(imgs[1], [(240, 60, 1140, 660)], DT)
+         self.assertEqual(m.status, C.ESTIMATED, m.reasons)
+         self.assertAlmostEqual(m.shift_px[0], -10.0, delta=0.5)
++
++
++class MergeResolutionByEmergence(unittest.TestCase):
++    """R1-F finding (first failing layer: population). A person in front is undetected while overlapping the person
++    behind, so the visible box 'absorbs' them (a correct MULTI_CLAIM merge). When the hidden person re-emerges, its
++    box first appears partly behind the merged box. The region must resolve (bodies first seen after the merge and
++    overlapping it are the bodies coming out of it), and tracklets born in the region lose MERGE_LINEAGE. A body
++    merely beside the region, or a box still merge-sized, must not resolve it (review H2)."""
++
++    def _scene(self, passer_by=False):
++        frames = []
++        for k in range(70):
++            ax = 300 + 5 * k
++            bx = 650 - 5 * k
++            a = box_at(ax, 400, 40, 100)
++            b = box_at(bx, 415, 40, 100)
++            dets, owners = [cand(a)], [("PERSON_A",)]
++            ov = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
++            if ov <= 0:
++                dets.append(cand(b))
++                owners.append(("PERSON_B",))
++            if passer_by:
++                dets.append(cand(box_at(900, 400, 40, 100)))
++                owners.append(("PERSON_C",))
++            frames.append(Frame(dets, owners))
++        return frames
++
++    def test_emerging_body_resolves_the_merge_and_clears_lineage(self):
++        rn = run(self._scene())
++        merged = [r.rel_frame for r in rn.results if any(P.MERGED_SUSPECTED in o.flags for o in r.observations)]
++        self.assertTrue(merged, "the absorbed person must first produce a merge")
++        last = rn.results[-1]
++        self.assertEqual(sum(v.observed for v in last.tracklets), 2)
++        for v in last.tracklets:
++            self.assertNotIn(P.MERGE_LINEAGE, v.flags)
++        self.assertFalse(any(P.MERGED_SUSPECTED in o.flags for o in last.observations))
++
++    def test_a_body_that_existed_before_the_merge_does_not_resolve_it(self):
++        """A person is absorbed behind another (one single-sized visible box, MULTI_CLAIM merge). A third person,
++        tracked elsewhere before the merge formed, walks into the region. That outsider is not one of the merged
++        bodies: the region must not resolve, and the visible box keeps MERGE_LINEAGE (it may still hold two)."""
++        frames = []
++        for k in range(40):
++            a = box_at(400, 400, 40, 100)
++            c = box_at(max(470 - 2 * max(0, k - 10), 300), 400, 40, 100)
++            if k < 10:
++                frames.append(Frame([cand(a), cand(box_at(405, 400, 40, 100)), cand(c)],
++                                    [("PERSON_A",), ("PERSON_B",), ("PERSON_C",)]))
++            else:
++                frames.append(Frame([cand(a), cand(c)], [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
++        rn = run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
++        self.assertIn(P.MERGED_SUSPECTED, rn.results[10].observations[0].flags, "the merge must first form")
++        entered = [r for r in rn.results[10:] if P.IN_MERGED_REGION in r.observations[1].flags]
++        self.assertTrue(entered, "the outsider must actually enter the region")
++        for r in rn.results[10:]:
++            a_obs = r.observations[0]
++            v = r.tracklet(a_obs.tracklet_id) if a_obs.tracklet_id else None
++            self.assertTrue(P.MERGED_SUSPECTED in a_obs.flags or (v is not None and P.MERGE_LINEAGE in v.flags),
++                            f"rel {r.rel_frame}")
++
++    def _region_then(self, after):
++        """Two bodies, then 10 frames merged into one box, then `after(k)` -> (dets, owners) per frame."""
++        frames = []
++        for k in range(60):
++            a = box_at(400, 400, 40, 100)
++            if k < 10:
++                frames.append(Frame([cand(a), cand(box_at(470, 400, 40, 100))], [("PERSON_A",), ("PERSON_B",)]))
++            elif k < 20:
++                frames.append(Frame([cand(box_at(418, 400, 76, 100))], [("PERSON_A", "PERSON_B")]))
++            else:
++                frames.append(Frame(*after(k)))
++        return run(frames, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
++
++    def test_body_emerging_partly_behind_the_region_resolves_it(self):
++        """The re-emerging body is still partly inside the merged box when first detected."""
++        rn = self._region_then(lambda k: ([cand(box_at(400, 400, 40, 100)), cand(box_at(441, 400, 40, 100))],
++                                          [("PERSON_A",), ("PERSON_B",)]))
++        last = rn.results[-1]
++        self.assertEqual(sum(v.observed for v in last.tracklets), 2)
++        for v in last.tracklets:
++            self.assertNotIn(P.MERGE_LINEAGE, v.flags)
++
++    def test_newcomer_merely_beside_the_region_does_not_resolve_it(self):
++        """R1-F review H2: a body first seen just OUTSIDE the merged box (no overlap) is not a body coming out of
++        it; the region must stay merged so the still-merged box cannot be trusted as one person."""
++        for first in (box_at(418, 400, 76, 100), box_at(400, 400, 40, 100)):   # still merged / one body showing
++            with self.subTest(first=first):
++                rn = self._region_then(lambda k: ([cand(first), cand(box_at(478, 400, 40, 100))],
++                                                  [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
++                for r in rn.results[20:]:
++                    lin = [v for v in r.tracklets if v.observed and P.MERGE_LINEAGE in v.flags]
++                    self.assertTrue(P.MERGED_SUSPECTED in r.observations[0].flags or lin, f"rel {r.rel_frame}")
++
++    def test_merge_sized_box_in_region_does_not_count_as_a_resolved_body(self):
++        """R1-F review H2: one body emerging beside a box that is STILL two-person sized must not resolve a
++        two-body region by counting the merged box as the second body."""
++        rn = self._region_then(lambda k: ([cand(box_at(418, 400, 76, 100)), cand(box_at(450, 400, 40, 100))],
++                                          [("PERSON_A", "PERSON_B"), ("PERSON_C",)]))
++        for r in rn.results[20:]:
++            self.assertIn(P.MERGED_SUSPECTED, r.observations[0].flags, f"rel {r.rel_frame}")
+diff --git a/tests_rb/test_target.py b/tests_rb/test_target.py
+new file mode 100644
+index 0000000..0318647
+--- /dev/null
++++ b/tests_rb/test_target.py
+@@ -0,0 +1,561 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-F instruction (Nathan, 2026-10-25); R1/R1_DESIGN_DECISIONS.md D05-D08, D10-D15, D18, D19
++"""R1-F target identity tests on rendered synthetic scenes (neutral TARGET / PERSON_A / PERSON_B; no benchmark
++knowledge). Appearance is real (rendered kits + identity signatures, see _synth_scene), so every identity decision
++is earned from evidence.
++
++Required scenarios: same-kit crossing, opponent crossing, full occlusion, merged detection, target leaves frame,
++short and long gaps, correct reacquisition, wrong reacquisition rejection, camera cut, ambiguous two-candidate
++case, provisional competitor, self-competition prevention. Plus: zero silent swaps across a crossing matrix,
++reacquisition stricter than association and stricter with absence, observed vs predicted/held on every frame,
++contract-shaped v2 fields, confidence semantics, appearance-bank purity, seed refusal, determinism.
++"""
++import math
++import unittest
++
++import numpy as np
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb import population as P
++from player_tracker_rb import target as T
++from player_tracker_rb.camera import CUT, identity_motion
++from player_tracker_rb.config import TrackerConfig
++from tests_rb._synth_scene import (FPS, H, W, SceneFrame, box_at, linear, make_people, run, still)
++
++CFG = TrackerConfig.default()
++KIT_A = (200, 60, 40)          # same kit for TARGET and same-kit people
++KIT_B = (40, 40, 210)          # an opponent kit
++SAME_KIT_COS = 0.75            # realistic same-kit embedding similarity (R1-D: same-kit P90 ~0.78)
++
++
++def people(*others):
++    return make_people([("TARGET", KIT_A, 1.0)] + list(others))
++
++
++def frame_invariants(tc, r):
++    """Checks on every frame of every scenario (D05, D06, D19 and the v2 contract)."""
++    for k, f in enumerate(r.frames):
++        where = f"rel {k}"
++        errs = []
++        S._check_fields({kk: vv for kk, vv in S.V2_TARGET_FIELDS.items()}, f.v2_fields(), where, errs)
++        tc.assertEqual(errs, [], where)
++        tc.assertIn(f.rb_state, S.RB_STATES)
++        observed = f.rb_state == T.TRACKING
++        tc.assertEqual(f.bbox_is_observed, observed, where)
++        tc.assertEqual(f.identity_trusted, observed, where)
++        tc.assertEqual(sum((f.bbox_is_observed, f.bbox_is_held, f.bbox_is_predicted)), 1, where)
++        tc.assertEqual({"DETECTION": f.bbox_is_observed, "HELD": f.bbox_is_held,
++                        "PREDICTED": f.bbox_is_predicted}[f.observation_source], True, where)
++        if observed:
++            tc.assertEqual(f.held_age_s, 0.0)
++            tc.assertEqual(f.identity_uncertainty_reasons, ())
++            tc.assertFalse(f.merged_suspected)
++            tc.assertGreaterEqual(f.identity_confidence_rb, CFG.get("legacy_identity_trust_threshold"))
++            det = r.pops[k].observations[f.detection_index]
++            tc.assertNotIn(P.MERGED_SUSPECTED, det.flags, where)
++            tc.assertEqual(tuple(f.bbox), tuple(det.bbox))
++        else:
++            tc.assertTrue(f.identity_uncertainty_reasons, where)
++            tc.assertTrue(set(f.identity_uncertainty_reasons) <= set(S.UNCERTAINTY_REASONS), where)
++            tc.assertLessEqual(f.identity_confidence_rb, CFG.get("untrusted_identity_confidence_ceiling"))
++            tc.assertGreater(f.held_age_s, 0.0, where)
++        inside = f.predicted_inside_image if f.rb_state == T.LOST else True
++        tc.assertIn((f.rb_state, inside), S.TARGET_TRIPLE_BY_RB_STATE)
++        tc.assertGreaterEqual(f.target_episode, 1)
++        # the target never competes against itself
++        tts = set(r.tracker.target_tracklets)
++        for cand in f.decision.get("candidates", []):
++            tc.assertNotIn(cand["best_competitor"], tts, where)
++            tc.assertFalse(set(cand["unknown_contacts"]) & tts, where)
++
++
++def crossing_frames(n, speed_px, dy_px, *, merge=False, hide=False, other="PERSON_A"):
++    a = linear(n, (300, 400), (speed_px, 0))
++    b = linear(n, (300 + speed_px * n, 400 + dy_px), (-speed_px, 0))
++    out = []
++    for k in range(n):
++        fr = SceneFrame({"TARGET": a[k], other: b[k]})
++        ov = max(0.0, min(a[k][2], b[k][2]) - max(a[k][0], b[k][0]))
++        if merge and ov > 20:
++            fr.merge = [("TARGET", other)]
++        elif hide and ov >= (a[k][2] - a[k][0]) / 2:
++            # the far person is missed only while at least half hidden, so on re-emergence it is detected while
++            # still partly behind the near one (as a real detector does), not first seen beside it
++            fr.drop = ["TARGET"] if dy_px <= 0 else [other]
++        out.append(fr)
++    return out
++
++
++class Base(unittest.TestCase):
++    def check(self, r, swaps_allowed=0):
++        frame_invariants(self, r)
++        self.assertEqual(r.swaps(), [], "silent identity swap")
++        self.assertTrue(r.bank_is_pure(), "target bank holds another person's appearance")
++
++
++class TestSeed(Base):
++    def test_seed_tracks_and_anchors(self):
++        r = run([SceneFrame({"TARGET": b}) for b in linear(10, (300, 400), (3, 0))], people())
++        self.assertEqual(r.states(), [T.TRACKING] * 10)
++        self.assertEqual(len(r.tracker.bank), 1)
++        self.assertEqual(r.frames[0].identity_confidence_rb, 1.0)
++        self.check(r)
++
++    def test_seed_refused_without_matching_detection(self):
++        ppl = people()
++        fr = [SceneFrame({"TARGET": box_at(300, 400, 40, 100)}, drop=["TARGET"])]
++        with self.assertRaises(T.SeedError):
++            run(fr, ppl)
++
++    def test_seed_refused_on_merged_or_contaminated_crop(self):
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        a, b = box_at(300, 400, 40, 100), box_at(320, 400, 40, 100)
++        with self.assertRaises(T.SeedError):        # overlapping a competitor: the anchor would be contaminated
++            run([SceneFrame({"TARGET": a, "PERSON_A": b})], ppl)
++
++    def test_update_requires_population_order(self):
++        ppl = people()
++        r = run([SceneFrame({"TARGET": box_at(300, 400, 40, 100)})], ppl)
++        with self.assertRaises(T.TargetError):
++            r.tracker.update(r.pops[0], np.zeros((H, W, 3), np.uint8))
++
++
++class TestCrossings(Base):
++    def test_same_kit_crossing(self):
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        r = run(crossing_frames(90, 4, 0), ppl)
++        self.check(r)
++        self.assertTrue(r.tracking_frames()[-1] == 89, "the target is reacquired after the crossing")
++        self.assertEqual(r.frames[-1].target_episode, 2)
++        ev = r.tracker.reacquisition_events[0]
++        self.assertGreaterEqual(ev.evidence["contrast"], ev.evidence["margin"])
++
++    def test_opponent_crossing(self):
++        ppl = people(("PERSON_A", KIT_B, 0.2))
++        r = run(crossing_frames(90, 4, 10), ppl)
++        self.check(r)
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++
++    def test_crossing_matrix_zero_silent_swaps(self):
++        n = 0
++        for kit, cos in ((KIT_A, SAME_KIT_COS), (KIT_B, 0.2)):
++            for speed in (2, 5, 9):
++                for dy in (0, 15, 45):
++                    for mode in ("visible", "merge", "hide"):
++                        with self.subTest(kit=kit, speed=speed, dy=dy, mode=mode):
++                            ppl = people(("PERSON_A", kit, cos))
++                            frames = crossing_frames(int(600 / speed) + 30, speed, dy, merge=mode == "merge",
++                                                     hide=mode == "hide")
++                            r = run(frames, ppl)
++                            self.check(r)
++                            # coverage: zero swaps must not come from never committing again
++                            self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++                            n += 1
++        self.assertEqual(n, 54)
++
++    def test_crossing_reacquisition_never_picks_the_other(self):
++        """After a contested split both new tracklets are candidates; only the target's may be accepted."""
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        r = run(crossing_frames(100, 3, 0, merge=True), ppl)
++        self.check(r)
++        for ev in r.tracker.reacquisition_events:
++            k = ev.reacq_accepted_frame
++            f = r.frames[k]
++            self.assertEqual(r.dets[k][f.detection_index].owners, ("TARGET",))
++
++
++class TestOcclusionAndMerge(Base):
++    def test_full_occlusion_occluder_never_inherits_identity(self):
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        tgt = still(80, (500, 400))
++        occ = linear(80, (200, 410), (8, 0), w=60, h=130)          # nearer, bigger, passes fully in front
++        frames = [SceneFrame({"TARGET": tgt[k], "PERSON_A": occ[k]}, order=["TARGET", "PERSON_A"])
++                  for k in range(80)]
++        r = run(frames, ppl)
++        self.check(r)
++        occluded = [k for k, f in enumerate(r.frames) if f.rb_state == T.OCCLUDED]
++        self.assertTrue(occluded)
++        for k in occluded:
++            f = r.frames[k]
++            if T.OCCLUDER_OVERLAP in f.identity_uncertainty_reasons:
++                self.assertTrue(f.occluder_track_ids)
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)          # back after the occluder has passed
++
++    def test_merged_detection_cannot_confirm(self):
++        ppl = people(("PERSON_A", KIT_B, 0.2))
++        a = still(60, (400, 400))
++        b = linear(8, (600, 400), (-20.5, 0)) + still(52, (436, 400))     # walks up beside the target
++        frames = []
++        for k in range(60):
++            fr = SceneFrame({"TARGET": a[k], "PERSON_A": b[k]})
++            if 10 <= k < 40:
++                fr.merge = [("TARGET", "PERSON_A")]
++            frames.append(fr)
++        r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
++        self.check(r)
++        for k in range(10, 40):
++            self.assertNotEqual(r.frames[k].rb_state, T.TRACKING)
++            self.assertTrue(r.frames[k].merged_suspected or
++                            T.MERGED_DETECTION_SUSPECTED in r.frames[k].identity_uncertainty_reasons
++                            or r.frames[k].rb_state in (T.LOST, T.REACQUIRING))
++
++
++class TestExitAndGaps(Base):
++    def test_target_leaves_frame_and_returns(self):
++        ppl = people()
++        n = 150
++        boxes = linear(60, (1150, 400), (6, 0)) + [None] * 30 + linear(60, (1250, 400), (-6, 0))
++        frames = [SceneFrame({} if b is None else {"TARGET": b}) for b in boxes]
++        r = run(frames, ppl)
++        self.check(r)
++        out = [f for f in r.frames if f.rb_state == T.LOST and T.TARGET_OUT_OF_FRAME in f.identity_uncertainty_reasons]
++        self.assertTrue(out)
++        self.assertTrue(any(not f.predicted_inside_image for f in out))
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++        self.assertEqual(r.frames[-1].target_episode, 2)
++
++    def test_short_gap_in_open_space_continues_without_reacquisition(self):
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 20 <= k < 23 else []) for k, b in
++                  enumerate(linear(50, (300, 400), (3, 0)))]
++        r = run(frames, ppl)
++        self.check(r)
++        for k in (20, 21, 22):
++            self.assertEqual(r.frames[k].rb_state, T.OCCLUDED)
++            self.assertIn(T.NO_CANDIDATE_IN_GATE, r.frames[k].identity_uncertainty_reasons)
++            self.assertIn(r.frames[k].observation_source, ("PREDICTED", "HELD"))
++        self.assertEqual(r.frames[23].rb_state, T.TRACKING)          # continuation, not reacquisition
++        self.assertEqual(r.frames[-1].target_episode, 1)
++
++    def test_long_gap_ages_to_lost_then_reacquires(self):
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 20 <= k < 80 else []) for k, b in
++                  enumerate(linear(130, (300, 400), (2, 0)))]
++        r = run(frames, ppl)
++        self.check(r)
++        st = r.states()
++        self.assertIn(T.LOST, st[20:80])
++        lost_k = st.index(T.LOST)
++        self.assertLessEqual((lost_k - 19) / FPS, CFG.get("max_occluded_s") + 2 / FPS)
++        self.assertIn(T.AGED_OUT, r.frames[lost_k].identity_uncertainty_reasons)
++        back = r.tracking_frames()[r.tracking_frames().index(19) + 1]
++        self.assertGreaterEqual((back - 80) / FPS, CFG.get("reacq_window_s") - 1 / FPS)   # verified, not instant
++        self.assertEqual(r.frames[-1].target_episode, 2)
++        # held/predicted while unobserved, never observed
++        for k in range(20, 80):
++            self.assertIn(r.frames[k].observation_source, ("PREDICTED", "HELD"))
++        self.assertIn("HELD", [r.frames[k].observation_source for k in range(20, 80)])
++
++
++class TestReacquisition(Base):
++    def test_correct_reacquisition_needs_the_full_window(self):
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 50 else []) for k, b in
++                  enumerate(still(100, (500, 400)))]
++        r = run(frames, ppl)
++        self.check(r)
++        reacq = [k for k, f in enumerate(r.frames) if f.rb_state == T.REACQUIRING]
++        self.assertTrue(reacq)
++        self.assertEqual(reacq[0], 50)
++        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++        self.assertGreaterEqual((acc - 50) / FPS, CFG.get("reacq_window_s") - 1 / (2 * FPS))
++        self.assertTrue(r.frames[acc].reidentified_this_frame)
++        ev = r.tracker.reacquisition_events[0].as_record()
++        errs = []
++        S._check_fields(S.REACQ_EVENT_FIELDS, ev, "event", errs)
++        self.assertEqual(errs, [])
++
++    def test_wrong_reacquisition_rejected_same_kit(self):
++        """The target leaves; a same-kit look-alike walks in. It must never be accepted."""
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        boxes = linear(40, (1150, 400), (8, 0))
++        frames = [SceneFrame({"TARGET": b}) for b in boxes]
++        frames += [SceneFrame({"PERSON_A": b}) for b in linear(120, (1250, 400), (-4, 0))]
++        r = run(frames, ppl)
++        self.check(r)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 40], [])
++
++    def test_wrong_reacquisition_rejected_opponent_at_last_position(self):
++        ppl = people(("PERSON_B", KIT_B, 0.3))
++        frames = [SceneFrame({"TARGET": b}) for b in still(20, (500, 400))]
++        frames += [SceneFrame({"PERSON_B": b}) for b in still(60, (500, 400))]
++        r = run(frames, ppl)
++        self.check(r)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 20], [])
++
++    def test_true_target_chosen_over_look_alike(self):
++        """Both the target and a same-kit look-alike reappear after a gap: only the target is accepted."""
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(800, 400, 40, 100)})
++                  for _ in range(15)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(560, 400, 40, 100), "PERSON_A": box_at(470, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        self.check(r)
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++
++    def test_reacquisition_margin_grows_with_absence(self):
++        tt = run([SceneFrame({"TARGET": box_at(500, 400, 40, 100)})], people()).tracker
++        m = [tt._reacq_margin(a) for a in (0.0, 1.0, 2.0, 5.0, 100.0)]
++        self.assertEqual(m, sorted(m))
++        self.assertAlmostEqual(m[0], CFG.get("reacq_contrastive_margin"))
++        self.assertAlmostEqual(m[-1], CFG.get("reacq_margin_cap"))
++        self.assertGreater(CFG.get("reacq_contrastive_margin"), CFG.get("contrastive_margin"))
++        self.assertGreater(CFG.get("reacq_appearance_floor"), CFG.get("appearance_floor"))
++
++    def _absence_scene(self, gap_frames):
++        """Target and a banked same-kit neighbour; the target vanishes for gap_frames and returns beside the
++        neighbour. contrast = 0.65 * (1 - cos) = 0.14: enough for a short absence, not for a long one."""
++        cos = 1 - 0.14 / CFG.get("composite_weight_embedding")
++        ppl = people(("PERSON_A", KIT_A, cos))
++        nb = box_at(640, 400, 40, 100)
++        frames = [SceneFrame({"TARGET": box_at(560, 400, 40, 100), "PERSON_A": nb}) for _ in range(15)]
++        frames += [SceneFrame({"PERSON_A": nb}) for _ in range(gap_frames)]
++        frames += [SceneFrame({"TARGET": box_at(560, 400, 40, 100), "PERSON_A": nb}) for _ in range(45)]
++        return run(frames, ppl)
++
++    def test_body_seen_beside_the_target_is_never_reacquired_as_it(self):
++        """A same-kit neighbour observed in the same frames as the confirmed target is a different person. When
++        the target disappears, the neighbour is never accepted, however similar it looks."""
++        cos = 0.9                                                   # composite 0.935: above every floor
++        ppl = people(("PERSON_A", KIT_A, cos))
++        nb = box_at(640, 400, 40, 100)
++        frames = [SceneFrame({"TARGET": box_at(560, 400, 40, 100), "PERSON_A": nb}) for _ in range(15)]
++        frames += [SceneFrame({"PERSON_A": nb}) for _ in range(150)]
++        r = run(frames, ppl)
++        self.check(r)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
++
++    def test_long_absence_is_stricter(self):
++        short = self._absence_scene(int(0.3 * FPS))
++        long_ = self._absence_scene(int(2.5 * FPS))
++        self.check(short)
++        self.check(long_)
++        self.assertEqual(short.frames[-1].rb_state, T.TRACKING)
++        self.assertNotEqual(long_.frames[-1].rb_state, T.TRACKING)
++        tail = [c for f in long_.frames[-10:] for c in f.decision.get("candidates", [])
++                if c["role"] == T.REACQUISITION and c["contrast"] is not None]
++        self.assertTrue(tail and all(c["contrast"] < c["margin"] for c in tail))
++
++
++class TestCameraCut(Base):
++    def test_cut_invalidates_position_and_rejects_impostor_at_same_place(self):
++        """After a cut, a same-kit look-alike stands exactly where the target was; the real target appears
++        elsewhere. Position is meaningless after a cut: the impostor is never accepted, the target is (by
++        appearance alone, after verification)."""
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(20)]
++        cut = identity_motion(CUT, reasons=("HISTOGRAM_CHANGE",), continuity_broken=True)
++        frames.append(SceneFrame({"PERSON_A": box_at(500, 400, 40, 100), "TARGET": box_at(900, 380, 44, 110)},
++                                 camera=cut))
++        frames += [SceneFrame({"PERSON_A": box_at(500, 400, 40, 100), "TARGET": box_at(900, 380, 44, 110)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        self.check(r)
++        f = r.frames[20]
++        self.assertNotEqual(f.rb_state, T.TRACKING)
++        self.assertIn(T.CAMERA_CUT, f.identity_uncertainty_reasons)
++        self.assertFalse(f.position_valid)
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++        ev = r.tracker.reacquisition_events[-1]
++        self.assertFalse(ev.evidence["positional_prior"])
++
++
++class TestAmbiguityAndCompetitors(Base):
++    def test_two_identical_candidates_stay_ambiguous(self):
++        """A twin with the target's exact appearance: after the target is lost, two equally good candidates
++        appear. No confident decision is possible: never TRACKING."""
++        ppl = people(("TWIN", KIT_A, 1.0))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({}) for _ in range(10)]
++        frames += [SceneFrame({"TARGET": box_at(470, 400, 40, 100), "TWIN": box_at(540, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        frame_invariants(self, r)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
++        later = [f for f in r.frames[25:]]
++        self.assertTrue(all({T.COMPETING_CANDIDATE, T.INSUFFICIENT_CONTRAST} & set(f.identity_uncertainty_reasons)
++                            for f in later), [f.identity_uncertainty_reasons for f in later])
++
++    def test_provisional_competitor_blocks_from_birth(self):
++        """A person appears overlapping the tracked target (born this frame, no appearance yet): the target
++        cannot stay TRACKING on that frame."""
++        ppl = people(("PERSON_A", KIT_B, 0.2))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(532, 405, 40, 100)},
++                              order=["TARGET", "PERSON_A"]) for _ in range(10)]
++        r = run(frames, ppl)
++        self.check(r)
++        f = r.frames[15]
++        self.assertNotEqual(f.rb_state, T.TRACKING)
++        self.assertIn(T.COMPETING_CANDIDATE, f.identity_uncertainty_reasons)
++        cands = [c for c in f.decision["candidates"] if c["role"] == T.CONTINUATION]
++        self.assertTrue(any(c["unknown_contacts"] for c in cands))
++
++    def test_small_fragment_inside_target_box_does_not_block(self):
++        """A small non-person-sized box (ball, leg fragment) appears inside the bottom of the tracked target's box.
++        It cannot physically be the target (scale), so it does not block the target as an unknown competitor;
++        the target's crop and bank stay protected by the contamination rules (R1-F development-clip finding)."""
++        ppl = make_people([("TARGET", KIT_A, 1.0), ("BALL", (250, 250, 250), 0.0)])
++        frames = []
++        for k in range(40):
++            tb = box_at(400 + 2 * k, 400, 50, 120)
++            boxes = {"TARGET": tb}
++            if k >= 15:
++                boxes["BALL"] = (tb[0] + 6, tb[3] - 30, tb[0] + 50, tb[3] - 2)
++            frames.append(SceneFrame(boxes, order=["TARGET", "BALL"]))
++        r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
++        self.check(r)
++        self.assertEqual(r.states()[15:], [T.TRACKING] * 25)
++        offered = [f for f in r.frames[15:] if f.decision.get("bank")
++                   and "SAMPLE_NOT_DUE" not in f.decision["bank"]["refusals"]]
++        self.assertTrue(offered, "the bank rule was never exercised")
++        for f in offered:                       # a crop holding another object never enters the bank
++            self.assertEqual(f.decision["bank"]["status"], "REFUSED", f.rel_frame)
++            self.assertIn(P.CONTAINS_OTHER, f.decision["bank"]["refusals"], f.rel_frame)
++
++    def test_motion_vetoed_box_is_not_a_rival(self):
++        """Rule check: a box the motion model vetoes (physically implausible as the target this frame) never
++        counts as a rival target candidate, however similar it looks; without the veto it does. Nor does a box that
++        is more similar to another known person than to the target."""
++        tt = run([SceneFrame({"TARGET": box_at(500, 400, 40, 100)})], people()).tracker
++        base = dict(detection_index=1, tracklet_id="T009", box=(0.0, 0.0, 10.0, 20.0), role=T.CONTINUATION,
++                    in_gate=True, distance_h=0.5, merged=False, motion=None, quality_flags=(),
++                    target_similarity={"composite": 0.99, "lab": 1.0, "embedding": 0.98}, best_competitor=None,
++                    best_competitor_similarity=None, contrast=None, margin=0.08, unknown_contacts=())
++        self.assertTrue(tt._looks_like_target(T.CandidateEvaluation(passed=True, details=(), **base)))
++        self.assertFalse(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(T.MOTION_VETO,),
++                                                                     **base)))
++        # a box more similar to another known person's bank than to the target's is that person, not a rival
++        other = dict(base, best_competitor="T010", best_competitor_similarity=0.995, contrast=-0.005)
++        self.assertFalse(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(), **other)))
++        same = dict(base, best_competitor="T010", best_competitor_similarity=0.99, contrast=0.0)
++        self.assertTrue(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(), **same)))
++
++    def test_target_never_competes_against_itself(self):
++        """The target goes undetected long enough for the population to start a new tracklet while the old one
++        is still HIDDEN at the same place (possible predecessor). The old tracklet is the target itself: it must
++        not block or out-score the target's own reacquisition."""
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 15 <= k < 23 else [])
++                  for k, b in enumerate(still(80, (500, 400)))]
++        r = run(frames, ppl)
++        self.check(r)
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++        tts = set(r.tracker.target_tracklets)
++        self.assertGreaterEqual(len(tts), 2)
++        for f in r.frames:
++            for c in f.decision.get("candidates", []):
++                self.assertNotIn(c["best_competitor"], tts)
++
++    def test_competitor_list_excludes_own_nested_part_box(self):
++        """A part-body box (upper 90%) is detected inside the target's box every frame. It is the same body: it is
++        never a competitor or unknown contact, and the target stays TRACKING."""
++        from tests_rb import _synth_scene as SS
++        orig = SS.detect
++
++        def detect(fr, *a, **k):
++            ds = orig(fr, *a, **k)
++            return ds + [SS.Detection((d.box[0] + 2, d.box[1], d.box[2] - 2, d.box[1] + 0.9 * (d.box[3] - d.box[1])),
++                                      ("TARGET",)) for d in ds if d.owners == ("TARGET",)]
++        SS.detect = detect
++        try:
++            frames = [SceneFrame({"TARGET": b}) for b in linear(40, (400, 400), (2, 0), w=50, h=140)]
++            r = run(frames, people(), cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
++        finally:
++            SS.detect = orig
++        self.assertTrue(all(any(o.nested_in is not None for o in p.observations) for p in r.pops[1:]),
++                        "the part box must actually be produced")
++        self.assertEqual(r.states(), [T.TRACKING] * 40)
++        for f, p in zip(r.frames[1:], r.pops[1:]):
++            nested = {o.ref for o in p.observations if o.nested_in is not None}
++            for c in f.decision["candidates"]:
++                self.assertFalse(set(c["unknown_contacts"]) & nested, f.rel_frame)
++                self.assertNotIn(c["best_competitor"], nested, f.rel_frame)
++
++
++class TestBankAndConfidence(Base):
++    def test_bank_updated_only_when_isolated_and_trusted(self):
++        ppl = make_people([("TARGET", KIT_A, 1.0), ("PERSON_A", KIT_B, 0.2)])
++        # give the target several distinct views so updates are not all redundant: vary its head size
++        r = run(crossing_frames(120, 3, 0, merge=True), ppl)
++        self.check(r)
++        for k, f in enumerate(r.frames):
++            b = f.decision.get("bank")
++            if b and b["status"] == "ACCEPTED":
++                self.assertEqual(f.rb_state, T.TRACKING)
++                o = r.pops[k].observations[f.detection_index]
++                self.assertLessEqual(o.max_iou_other, CFG.get("bank_contact_iou"))
++
++    def test_bank_grows_with_new_poses_and_stays_pure_through_a_crossing(self):
++        """With view-dependent embeddings (gait changes the box shape), the bank accepts several distinct isolated
++        views of the target, never one taken during contact or on an untrusted frame, and never another person."""
++        ppl = make_people([("TARGET", KIT_A, 1.0), ("PERSON_A", KIT_B, 0.2)])
++        frames = [SceneFrame({"TARGET": box_at(300 + 3 * k, 400, 36 + 10 * abs((k // 6) % 4 - 2), 100),
++                              "PERSON_A": box_at(800 - 3 * k, 410, 40, 100)}) for k in range(150)]
++        r = run(frames, ppl, pose_gain=0.5)
++        self.check(r)
++        accepted = [(k, f) for k, f in enumerate(r.frames[1:], 1)
++                    if f.decision.get("bank", {}).get("status") == "ACCEPTED"]
++        self.assertGreaterEqual(len(accepted), 2, "distinct poses must enter the bank")
++        self.assertEqual(len(r.tracker.bank), len(accepted) + 1)
++        for k, f in accepted:
++            self.assertEqual(f.rb_state, T.TRACKING)
++            o = r.pops[k].observations[f.detection_index]
++            self.assertLessEqual(o.max_iou_other, CFG.get("bank_contact_iou"))
++            self.assertNotIn(P.CONTESTED, o.flags)
++
++    def test_post_reacquisition_quarantine(self):
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 50 else [])
++                  for k, b in enumerate(still(120, (500, 400)))]
++        r = run(frames, ppl)
++        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++        t_acc = r.frames[acc].time_s
++        offered = 0
++        for f in r.frames[acc:]:
++            if f.time_s - t_acc >= CFG.get("post_reacq_quarantine_s"):
++                break
++            b = f.decision.get("bank")
++            if b and "SAMPLE_NOT_DUE" not in b["refusals"]:
++                offered += 1
++                self.assertEqual(b["status"], "REFUSED", f.rel_frame)
++                self.assertIn("POST_REACQUISITION_QUARANTINE", b["refusals"])
++        self.assertGreater(offered, 0, "the quarantine path was never exercised")
++
++    def test_confidence_semantics(self):
++        ppl = people()
++        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 40 else [])
++                  for k, b in enumerate(still(60, (500, 400)))]
++        r = run(frames, ppl)
++        conf = [f.identity_confidence_rb for f in r.frames[10:40]]
++        self.assertEqual(conf, sorted(conf, reverse=True))           # decays while unconfirmed
++        self.assertTrue(all(c <= CFG.get("untrusted_identity_confidence_ceiling") for c in conf))
++        for f in r.frames:
++            self.assertTrue(0.0 <= f.identity_confidence_rb <= 1.0)
++
++    def test_deterministic(self):
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        a = run(crossing_frames(80, 4, 10, merge=True), ppl)
++        b = run(crossing_frames(80, 4, 10, merge=True), ppl)
++        self.assertEqual([f.as_record() for f in a.frames], [f.as_record() for f in b.frames])
++
++
++class TestInvariance(Base):
++    def test_fps_invariance_of_decisions(self):
++        sig = {}
++        for fps in (30.0, 60.0):
++            k = fps / 30.0
++            ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++            n = int(90 * k)
++            frames = crossing_frames(n, 4 / k, 0)
++            r = run(frames, ppl, fps=fps)
++            self.check(r)
++            sig[fps] = (r.frames[-1].rb_state, r.frames[-1].target_episode)
++        self.assertEqual(sig[30.0], sig[60.0])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_target_audit.py b/tests_rb/test_target_audit.py
+new file mode 100644
+index 0000000..d749074
+--- /dev/null
++++ b/tests_rb/test_target_audit.py
+@@ -0,0 +1,552 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-F independent code review + test audit (2026-10-25) of commit 3f9dd51; R1-F instruction
++"""R1-F audit tests: probes that closed gaps found by mutation testing, regressions for the defects the
++independent review reproduced (H1 newcomer-in-contact swap, H2 merge resolved by an unrelated newcomer, M1 scale
++across a cut, L1 half-initialised seed), and the documented uncontrasted-reacquisition limitation. Neutral
++TARGET / PERSON_* / TWIN names only; no benchmark knowledge."""
++import unittest
++
++from player_tracker_rb import population as P
++from player_tracker_rb import target as T
++from player_tracker_rb.config import TrackerConfig
++from player_tracker_rb.appearance import AppearanceExtractor
++from player_tracker_rb.camera import CUT, FIRST_FRAME, identity_motion, motion_from_matrix
++from player_tracker_rb.detector import PersonCandidate
++from tests_rb import _synth_scene as SS
++from tests_rb._synth_scene import FPS, SceneFrame, box_at, make_people, run, still, linear
++
++CFG = TrackerConfig.default()
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++SAME_KIT_COS = 0.75
++
++
++def people(*others):
++    return make_people([("TARGET", KIT_A, 1.0)] + list(others))
++
++
++def _gap_then_return(gap, back, total_after):
++    return [SceneFrame({"TARGET": b}, drop=["TARGET"] if gap[0] <= k < gap[1] else [])
++            for k, b in enumerate(still(back + total_after, (500, 400)))]
++
++
++class ProbeConfidence(unittest.TestCase):
++    def test_untrusted_confidence_strictly_decays_below_the_ceiling(self):
++        r = run(_gap_then_return((10, 50), 50, 10), people())
++        last = r.frames[9].identity_confidence_rb
++        hl = CFG.get("confidence_half_life_s")
++        for f in r.frames[10:50]:
++            expect = min(CFG.get("untrusted_identity_confidence_ceiling"),
++                         last * 0.5 ** (f.time_since_confirmed_s / hl))
++            self.assertAlmostEqual(f.identity_confidence_rb, expect, places=9)
++        self.assertLess(r.frames[49].identity_confidence_rb, 0.5 * CFG.get("untrusted_identity_confidence_ceiling"))
++
++    def test_trusted_confidence_is_decided_by_the_weakest_evidence(self):
++        tt = run([SceneFrame({"TARGET": box_at(500, 400, 40, 100)})], people()).tracker
++        m = CFG.get("contrastive_margin")
++        ev = T.CandidateEvaluation(
++            detection_index=1, tracklet_id="T1", box=(0, 0, 1, 1), role=T.CONTINUATION, in_gate=True,
++            distance_h=0.1, merged=False, motion=None, quality_flags=(), target_similarity={"composite": 0.999},
++            best_competitor="X", best_competitor_similarity=0.999 - m, contrast=m, margin=m, unknown_contacts=(),
++            passed=True, details=())
++        # high appearance, contrast exactly at the margin -> k ~ 0 -> confidence ~ 0.5
++        self.assertLess(tt._confidence_trusted(ev), 0.51)
++
++
++class ProbeAmbiguousAging(unittest.TestCase):
++    def test_persistent_ambiguity_ages_to_lost(self):
++        """A person first detected already in contact with the tracked target stays there for longer than
++        max_ambiguous_s: the target must not stay AMBIGUOUS indefinitely; it ages to LOST (AGED_OUT)."""
++        ppl = people(("PERSON_A", KIT_B, 0.2))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(530, 400, 40, 100)},
++                              order=["TARGET", "PERSON_A"]) for _ in range(60)]
++        r = run(frames, ppl)
++        self.assertEqual(r.swaps(), [])
++        self.assertIn(T.AMBIGUOUS, r.states()[15:])
++        lim = CFG.get("max_ambiguous_s") + 1.5 / FPS
++        late = [f for f in r.frames[15:] if f.time_since_confirmed_s is not None and f.time_since_confirmed_s > lim]
++        self.assertTrue(late)
++        for f in late:
++            self.assertNotEqual(f.rb_state, T.AMBIGUOUS, f.rel_frame)
++        self.assertTrue(any(T.AGED_OUT in f.identity_uncertainty_reasons for f in late))
++
++
++class ProbeNewcomerInContact(unittest.TestCase):
++    def test_newcomer_first_seen_in_contact_never_becomes_the_target(self):
++        """FAILS ON 3f9dd51 (real silent swap). A same-kit person (embedding cosine 0.8, inside the realistic
++        same-kit range) is first detected already overlapping the tracked target and stands beside it. The
++        target's continuation is blocked (unknown competitor in contact); reacquisition must not then accept the
++        newcomer: the target's own observed box is a physically separate body right beside it."""
++        for cos in (0.8, 0.9, 1.0):
++            with self.subTest(cos=cos):
++                ppl = people(("PERSON_A", KIT_A, cos))
++                frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++                frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(530, 400, 40, 100)},
++                                      order=["TARGET", "PERSON_A"]) for _ in range(60)]
++                r = run(frames, ppl)
++                self.assertEqual(r.swaps(), [], "silent identity swap onto the newcomer")
++
++
++class ProbeGate(unittest.TestCase):
++    def test_gate_frozen_while_ambiguous(self):
++        tt = run([SceneFrame({"TARGET": box_at(500, 400, 40, 100)})], people()).tracker
++        tt._last_confirm_t = 0.0
++        tt._state = T.AMBIGUOUS
++        tt._ambiguous_since_t = 0.2
++        g = tt._gate(0.9)
++        self.assertAlmostEqual(g, min(CFG.get("gate_base_h") + CFG.get("gate_growth_h_per_s") * 0.2,
++                                      CFG.get("gate_max_h")))
++        tt._state, tt._ambiguous_since_t = T.OCCLUDED, None      # as _enter_uncertain does on leaving AMBIGUOUS
++        self.assertGreater(tt._gate(0.9), g)
++
++
++class ProbeVerification(unittest.TestCase):
++    def test_flickering_candidate_is_not_accepted(self):
++        """After a long absence the returning box is detected in only one frame of three: the hit fraction stays
++        below reacq_min_hit_fraction, so it must not be accepted while that persists."""
++        frames = []
++        for k in range(130):
++            drop = (10 <= k < 50) or (k >= 50 and (k - 50) % 3 != 0)
++            frames.append(SceneFrame({"TARGET": box_at(500, 400, 40, 100)}, drop=["TARGET"] if drop else []))
++        r = run(frames, people())
++        self.assertEqual([k for k in r.tracking_frames() if k >= 10], [])
++
++    def test_return_far_away_after_long_absence_is_reacquired(self):
++        """After more than lost_long_s the position is stale: the target is searched anywhere (appearance only)."""
++        n_gap = int((CFG.get("lost_long_s") + 0.5) * FPS)
++        frames = [SceneFrame({"TARGET": box_at(300, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(n_gap)]
++        frames += [SceneFrame({"TARGET": box_at(1000, 400, 40, 100)}) for _ in range(40)]
++        r = run(frames, people())
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++
++    def test_rival_in_accepting_frame_blocks_acceptance(self):
++        """Verification has started on the true target; an identical twin then appears in the gate. The accepting
++        frame has a rival within ambiguity_margin: no acceptance while the twin is present."""
++        ppl = people(("TWIN", KIT_A, 1.0))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(5)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "TWIN": box_at(580, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 10], [])
++
++
++class ProbeMotionVeto(unittest.TestCase):
++    def test_implausibly_sized_lookalike_is_not_reacquired_soon_after_loss(self):
++        """The target vanishes; 0.1 s later a same-kit look-alike 2.5x its height stands at the same place. Within
++        0.8 s no body can change apparent size that much (motion SCALE veto), so it is never accepted."""
++        ppl = people(("PERSON_A", KIT_A, 0.9))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({}) for _ in range(3)]
++        frames += [SceneFrame({"PERSON_A": box_at(500, 400, 100, 250)}) for _ in range(21)]
++        r = run(frames, ppl)
++        self.assertEqual(r.swaps(), [])
++        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
++
++
++class MotionVetoApplied(unittest.TestCase):
++    def test_box_too_far_for_one_frame_is_vetoed_and_logged(self):
++        """One frame after the target's last confirmation, a same-kit look-alike appears 0.65 target heights away:
++        inside the search gate (0.75 h) but beyond what a body can move in 1/30 s (motion bound ~0.52 h). The
++        candidate carries MOTION_VETO, does not pass, and the target is not in a verifying state on that frame.
++        (Defence in depth: population tracklets and the reacquisition window also protect; this pins the veto.)"""
++        ppl = people(("PERSON_A", KIT_A, 0.9))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"PERSON_A": box_at(565, 400, 40, 100)}) for _ in range(3)]
++        r = run(frames, ppl)
++        c = r.frames[15].decision["candidates"]
++        self.assertEqual(len(c), 1)
++        self.assertTrue(c[0]["in_gate"])
++        self.assertIn(T.MOTION_VETO, c[0]["details"])
++        self.assertFalse(c[0]["passed"])
++        self.assertNotEqual(r.frames[15].rb_state, T.REACQUIRING)
++        self.assertEqual(r.swaps(), [])
++
++
++class BankIsolationRule(unittest.TestCase):
++    def test_trusted_but_touching_box_is_refused_by_the_target_rule(self):
++        """The target stays TRACKING (an opponent with its own bank stands slightly overlapping it), but every bank
++        offer while the boxes overlap above bank_contact_iou is refused by the TARGET rule itself (NOT_ISOLATED),
++        not only by AppearanceBank's own check (defence in depth)."""
++        from tests_rb._synth_scene import iou
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100),
++                              "PERSON_A": box_at(max(600 - 2 * k, 532), 400, 40, 100)}) for k in range(60)]
++        r = run(frames, ppl, pose_gain=0.5)
++        touching = [f for f in r.frames if len(r.dets[f.rel_frame]) == 2
++                    and iou(r.dets[f.rel_frame][0].box, r.dets[f.rel_frame][1].box) > CFG.get("bank_contact_iou")
++                    and f.decision.get("bank") and "SAMPLE_NOT_DUE" not in f.decision["bank"]["refusals"]]
++        self.assertTrue(touching)
++        for f in touching:
++            self.assertEqual(f.rb_state, T.TRACKING)
++            self.assertEqual(f.decision["bank"]["status"], "REFUSED")
++            self.assertIn("NOT_ISOLATED", f.decision["bank"]["refusals"], f.rel_frame)
++
++
++class ProbeBankOnlyOnTrusted(unittest.TestCase):
++    def test_bank_never_offered_on_an_untrusted_frame(self):
++        """An identical-looking person stands clear of the target inside its gate (target AMBIGUOUS, its own box
++        isolated). The target bank must not even be offered a sample on any non-TRACKING frame."""
++        from player_tracker_rb import appearance as A
++        calls = []
++        orig = A.AppearanceBank.add
++
++        def add(self_, feat, ctx):
++            calls.append(self_)
++            return orig(self_, feat, ctx)
++        ppl = people(("TWIN", KIT_A, 1.0))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "TWIN": box_at(570, 400, 40, 100)})
++                   for _ in range(20)]
++        A.AppearanceBank.add = add
++        per_frame = []
++        try:
++            from tests_rb import _synth_scene as SS
++            orig_update = T.TargetTracker.update
++
++            def update(self_, res, image):
++                n0 = sum(1 for b in calls if b is self_.bank)
++                f = orig_update(self_, res, image)
++                per_frame.append((f.rb_state, sum(1 for b in calls if b is self_.bank) - n0))
++                return f
++            T.TargetTracker.update = update
++            try:
++                r = run(frames, ppl)
++            finally:
++                T.TargetTracker.update = orig_update
++        finally:
++            A.AppearanceBank.add = orig
++        self.assertIn(T.AMBIGUOUS, r.states())
++        for state, n in per_frame:
++            if state != T.TRACKING:
++                self.assertEqual(n, 0, state)
++
++
++class ReviewRegressions(unittest.TestCase):
++    """Defects found by the independent R1-F review/audit on 3f9dd51 (each reproduced before the fix)."""
++
++    def test_identical_unbanked_neighbour_beside_tracked_target_never_becomes_target(self):
++        """H1/A1: an identical-looking person appears 50 px beside the tracked target at the image edge (edge crop:
++        no bank yet). Reacquisition must not accept the neighbour while the target's own box is observed beside
++        it (the target's observed tracklet is a competitor, not excluded as 'self')."""
++        ppl = people(("TWIN", KIT_A, 1.0))
++        frames = [SceneFrame({"TARGET": box_at(70, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": box_at(70, 400, 40, 100), "TWIN": box_at(20, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        self.assertEqual(r.swaps(), [])
++
++    def test_newcomer_appearing_in_contact_after_being_hidden_never_becomes_target(self):
++        """H1: a same-kit person, undetected until it stands in contact beside the visible target, is never
++        reacquired as the target (cosines across and above the realistic same-kit range)."""
++        for cos in (0.78, 0.9, 1.0):
++            with self.subTest(cos=cos):
++                ppl = people(("PERSON_A", KIT_A, cos))
++                frames = []
++                for k in range(70):
++                    boxes = {"TARGET": box_at(400, 400, 40, 100)}
++                    if k >= 20:
++                        boxes["PERSON_A"] = box_at(434, 400, 40, 100)
++                    frames.append(SceneFrame(boxes, order=["TARGET", "PERSON_A"]))
++                r = run(frames, ppl)
++                self.assertEqual(r.swaps(), [])
++
++    def test_unrelated_newcomer_beside_a_merged_box_does_not_let_the_target_track_it(self):
++        """H2: the target and a same-kit person merge into one detection; an unrelated third person then appears
++        just beside the merged box. The merge must not be 'resolved' by that newcomer: the target never TRACKS the
++        two-person box and its bank stays pure."""
++        ppl = people(("PERSON_A", KIT_A, 0.78), ("PERSON_B", KIT_B, 0.0))
++        frames = []
++        for k in range(150):
++            boxes = {"TARGET": box_at(400, 400, 40, 100), "PERSON_A": box_at(440 - min(k, 25), 400, 40, 100)}
++            fr = SceneFrame(boxes, order=["TARGET", "PERSON_A", "PERSON_B"])
++            if k >= 25:
++                fr.merge = [("TARGET", "PERSON_A")]
++            if k >= 34:
++                boxes["PERSON_B"] = box_at(470 + 12 * (k - 34), 400, 40, 100)
++            frames.append(fr)
++        r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_duplicate_iou": 0.99}))
++        self.assertEqual(r.swaps(), [])
++        self.assertTrue(r.bank_is_pure())
++
++    def test_cut_resets_scale_so_a_zoomed_target_can_be_reacquired(self):
++        """M1: after a hard cut the target reappears 2.5x taller (new shot, closer camera). Size history from the
++        previous shot means nothing: no scale veto, and the target is reacquired by appearance."""
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(20)]
++        cut = identity_motion(CUT, reasons=("CUT",), continuity_broken=True)
++        frames.append(SceneFrame({"TARGET": box_at(700, 380, 100, 250)}, camera=cut))
++        frames += [SceneFrame({"TARGET": box_at(700, 380, 100, 250)}) for _ in range(40)]
++        r = run(frames, people())
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++        for f in r.frames[20:]:
++            for c in f.decision.get("candidates", []):
++                self.assertNotIn(T.MOTION_VETO, c["details"], f.rel_frame)
++            self.assertNotEqual(f.target_height_px, 100.0, f"rel {f.rel_frame}: old-shot height after the cut")
++        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++        self.assertEqual(r.states()[acc:], [T.TRACKING] * (len(frames) - acc), "the new scale must be its own reference")
++
++    def test_seed_on_a_merged_detection_is_refused_and_tracker_stays_unusable(self):
++        """L1 + seed contamination (found while writing this test): on the first frame the population has no size
++        history, so a two-person detection is not yet merge-flagged. The human's seed box is the size reference:
++        a detection merge-sized against it is refused, and the tracker then refuses update()."""
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        a, b = box_at(300, 400, 40, 100), box_at(330, 400, 40, 100)
++        fr = SceneFrame({"TARGET": a, "PERSON_A": b}, merge=[("TARGET", "PERSON_A")])
++        pop = P.Population(CFG, SS.W, SS.H)
++        tt = T.TargetTracker(CFG, pop, AppearanceExtractor(CFG, SS.SignatureEmbedding(ppl)))
++        cands = [PersonCandidate(d.box, 0.9, False, "synthetic") for d in SS.detect(fr)]
++        res = pop.update(0, 0.0, cands, identity_motion(FIRST_FRAME))
++        with self.assertRaises(T.SeedError):
++            tt.seed(res, SS.render(fr, ppl), a)        # the human boxes the target; the detection holds two
++        res2 = pop.update(1, 1 / FPS, cands, motion_from_matrix([[1, 0, 0], [0, 1, 0]], SS.W, SS.H))
++        with self.assertRaises(T.TargetError):
++            tt.update(res2, SS.render(fr, ppl))
++
++    def test_interrupted_verification_never_carries_over_to_a_new_box(self):
++        """Verification starts on a returning box, which then vanishes before the window completes. A later box
++        (a new tracklet) never inherits that verification: its window starts from zero, nothing is TRACKED in
++        between, and, while the interrupted target-looking tracklet is still remembered as a recent competitor,
++        the new box cannot pass on contrast (conservative: KNOWN coverage cost until population_closed_memory_s)."""
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(6)]   # verification starts
++        frames += [SceneFrame({}) for _ in range(30)]                                     # and is interrupted
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(190)]
++        r = run(frames, people())
++        ver = [(k, f.decision["reacquisition"]) for k, f in enumerate(r.frames)
++               if f.decision.get("reacquisition", {}).get("verifying")]
++        first = {d["verifying"] for k, d in ver if k < 86}
++        later = [(k, d) for k, d in ver if d["verifying"] not in first]
++        self.assertEqual(len(first), 1)
++        self.assertTrue(later, "the returning box must eventually be verified")
++        self.assertEqual(later[0][1]["elapsed_s"], 0.0)
++        self.assertEqual([k for k in r.tracking_frames() if 10 <= k < later[0][0]], [])
++        self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
++        self.assertEqual(r.swaps(), [])
++
++
++class VerificationSwitch(unittest.TestCase):
++    def test_verification_moves_to_a_clearly_better_candidate_at_once(self):
++        """A same-kit look-alike at the image edge (edge crop: never bank-eligible, so it cannot be contrasted
++        against) starts verification. When the true target reappears inside the gate, clearly more similar and
++        passing, verification restarts on the target in that frame (not after a wasted window), and the target, not
++        the look-alike, is accepted after reacq_window_s."""
++        ppl = people(("PERSON_A", KIT_A, 0.8))
++        frames = [SceneFrame({"TARGET": box_at(110, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"PERSON_A": box_at(20, 400, 40, 100)}) for _ in range(6)]
++        frames += [SceneFrame({"PERSON_A": box_at(20, 400, 40, 100), "TARGET": box_at(170, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        ver = lambda k: r.frames[k].decision.get("reacquisition", {}).get("verifying")
++        self.assertIsNotNone(ver(55))
++        self.assertNotEqual(ver(56), ver(55))
++        self.assertEqual(r.frames[56].decision["reacquisition"]["elapsed_s"], 0.0)
++        self.assertEqual(r.swaps(), [])
++        first = min(r.tracking_frames()[10:] or [len(frames)])
++        self.assertLessEqual(first, 56 + int(CFG.get("reacq_window_s") * FPS) + 1)
++
++
++class UnverifiableRivalsAndContacts(unittest.TestCase):
++    def test_bigger_unknown_body_touching_the_target_blocks_it(self):
++        """Contact is tested in BOTH directions: a newly detected, larger body (no bank yet) covers 12% of the
++        target's box while the target covers only ~8% of it. That is contact: the target cannot be confirmed."""
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        tb = box_at(500, 400, 40, 100)
++        big = (tb[2] - 4.8, tb[1], tb[2] - 4.8 + 50, tb[1] + 125)
++        frames = [SceneFrame({"TARGET": tb}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": tb, "PERSON_A": big}, order=["TARGET", "PERSON_A"]) for _ in range(3)]
++        r = run(frames, ppl)
++        cont = [c for c in r.frames[15].decision["candidates"] if c["role"] == T.CONTINUATION]
++        self.assertEqual(len(cont), 1)
++        self.assertIn(T.UNKNOWN_COMPETITOR_IN_CONTACT, cont[0]["details"])
++        self.assertNotEqual(r.frames[15].rb_state, T.TRACKING)
++
++    def test_rival_present_through_the_window_prevents_acceptance(self):
++        """Verification of the true target is under way when an almost identical person (no bank: edge crop)
++        appears in the gate, within ambiguity_margin. While the rival stays, the target is never accepted."""
++        ppl = people(("TWIN", KIT_A, 0.97))
++        frames = [SceneFrame({"TARGET": box_at(110, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(170, 400, 40, 100)}) for _ in range(5)]
++        frames += [SceneFrame({"TARGET": box_at(170, 400, 40, 100), "TWIN": box_at(20, 400, 40, 100)})
++                   for _ in range(40)]
++        r = run(frames, ppl)
++        self.assertTrue(any(r.frames[k].decision.get("reacquisition", {}).get("rivals") for k in range(56, 60)))
++        self.assertEqual([k for k in r.tracking_frames() if k >= 10], [])
++        self.assertEqual(r.swaps(), [])
++
++
++class ContactMemory(unittest.TestCase):
++    def test_closed_competitor_stops_counting_after_contact_memory(self):
++        """The interrupted-verification scene: a closed target-looking tracklet blocks the real return by contrast.
++        It may block only for contact_memory_s after closing: with a shorter contact memory the return is verified
++        much earlier than with the default (equal to population_closed_memory_s)."""
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(6)]
++        frames += [SceneFrame({}) for _ in range(30)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(120)]
++
++        def first_new_verification(cfg):
++            r = run(frames, people(), cfg=cfg)
++            return min(k for k, f in enumerate(r.frames) if k >= 86
++                       and f.decision.get("reacquisition", {}).get("verifying"))
++        short = first_new_verification(TrackerConfig.with_overrides({"contact_memory_s": 0.5}))
++        default = first_new_verification(None)
++        self.assertLessEqual(short, 86 + int(FPS / 10))
++        self.assertGreater(default, short + int(FPS / 2))
++
++
++class KnownOthersGate(unittest.TestCase):
++    def test_body_seen_briefly_beside_a_just_reacquired_target_is_not_ruled_out(self):
++        """M2: right after a reacquisition the target has been on its new tracklet for less than
++        target_known_other_min_s. A body seen beside it then is NOT recorded as a known other (one trusted frame
++        cannot rule a body out for its whole tracklet), so it stays a reacquisition candidate later."""
++        base = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        base += [SceneFrame({}) for _ in range(40)]
++        base += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(30)]
++        acc = run(base, people()).tracker.reacquisition_events[0].reacq_accepted_frame
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        frames = base[:acc + 1]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(600, 400, 40, 100)})
++                   for _ in range(2)]
++        frames += [SceneFrame({"PERSON_A": box_at(600, 400, 40, 100)}) for _ in range(20)]
++        r = run(frames, ppl)
++        self.assertEqual(r.tracker.reacquisition_events[0].reacq_accepted_frame, acc)
++        self.assertTrue(all(r.frames[k].rb_state == T.TRACKING for k in range(acc, acc + 3)))
++        later = [r.frames[k].decision.get("reacquisition", {}) for k in range(acc + 3, len(frames))]
++        self.assertTrue(any("excluded_known_others" in d for d in later))
++        for d in later:
++            self.assertEqual(d.get("excluded_known_others", []), [])
++
++
++class H1Layers(unittest.TestCase):
++    """The H1 fix has two independent layers; each is pinned on its own (either alone stops the swap)."""
++
++    def test_layer_a_visible_target_competes_with_the_newcomer(self):
++        """Evidence layer: while the target's own box is observed beside a same-kit newcomer, the newcomer's
++        reacquisition contrast is computed AGAINST the target's tracklet (its logged best competitor is the target's
++        visible detection), so the target never competes with itself but always with the newcomer."""
++        ppl = people(("PERSON_A", KIT_A, 0.9))
++        frames = []
++        for k in range(45):
++            boxes = {"TARGET": box_at(400, 400, 40, 100)}
++            if k >= 20:
++                boxes["PERSON_A"] = box_at(434, 400, 40, 100)
++            frames.append(SceneFrame(boxes, order=["TARGET", "PERSON_A"]))
++        r = run(frames, ppl)
++        checked = 0
++        for k in range(20, 45):
++            tgt = [i for i, d in enumerate(r.dets[k]) if d.owners == ("TARGET",)]
++            for c in r.frames[k].decision.get("candidates", []):
++                if c["role"] == T.REACQUISITION and c["detection_index"] not in tgt:
++                    self.assertEqual(c["best_competitor"], f"D{tgt[0]}", k)
++                    self.assertFalse(c["passed"], k)
++                    checked += 1
++        self.assertGreater(checked, 0)
++        self.assertEqual(r.swaps(), [])
++
++    def test_layer_b_visible_target_box_is_a_rival_when_contrast_is_impossible(self):
++        """Rival layer: the target's tracklet has NO population bank (a small object inside its box from the first
++        update makes every crop CONTAINS_OTHER), so an identical newcomer cannot be contrasted against it and passes
++        every per-frame test. Only the target's own visible box, as a rival, blocks the newcomer's acceptance."""
++        ppl = make_people([("TARGET", KIT_A, 1.0), ("TWIN", KIT_A, 1.0), ("BALL", (250, 250, 250), 0.0)])
++        frames = []
++        for k in range(75):
++            tb = box_at(300, 400, 50, 120)
++            boxes = {"TARGET": tb}
++            if k >= 1:
++                boxes["BALL"] = (tb[0] + 6, tb[3] - 30, tb[0] + 50, tb[3] - 2)
++            if k >= 15:
++                boxes["TWIN"] = box_at(380, 400, 50, 120)
++            frames.append(SceneFrame(boxes, order=["TARGET", "BALL", "TWIN"]))
++        r = run(frames, ppl, cfg=TrackerConfig.with_overrides({"population_part_box_min_height_ratio": 0.3}))
++        twin_passing = [k for k in range(16, 75) for c in r.frames[k].decision.get("candidates", [])
++                        if c["role"] == T.REACQUISITION and r.dets[k][c["detection_index"]].owners == ("TWIN",)
++                        and c["passed"]]
++        self.assertTrue(twin_passing, "the scene must make the twin pass per frame (contrast impossible)")
++        self.assertEqual(r.swaps(), [])
++        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
++
++
++class DocumentedLimitations(unittest.TestCase):
++    """KNOWN LIMIT (reported to the user, not hidden): with no competitor bank to contrast against, a lone
++    same-kit look-alike whose appearance passes reacq_appearance_floor can be reacquired as the target. On rendered
++    scenes this happens from embedding cosine ~0.78 (composite ~0.86, inside the real same-kit tail: R1-D same-kit
++    P99 0.855, max 0.867). These tests pin how such a decision is EXPOSED so downstream can treat it carefully."""
++
++    def test_below_the_floor_a_lone_lookalike_is_rejected(self):
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        frames = [SceneFrame({"TARGET": b}) for b in linear(40, (1150, 400), (8, 0))]
++        frames += [SceneFrame({"PERSON_A": b}) for b in linear(120, (1250, 400), (-4, 0))]
++        r = run(frames, ppl)
++        self.assertEqual(r.swaps(), [])
++
++    def test_uncontrasted_reacquisition_is_flagged_and_capped(self):
++        for cos in (0.78, 0.8):
++            with self.subTest(cos=cos):
++                ppl = people(("PERSON_A", KIT_A, cos))
++                frames = [SceneFrame({"TARGET": b}) for b in linear(40, (1150, 400), (8, 0))]
++                frames += [SceneFrame({"PERSON_A": b}) for b in linear(120, (1250, 400), (-4, 0))]
++                r = run(frames, ppl)
++                for ev in r.tracker.reacquisition_events:
++                    if ev.evidence["best_competitor"] is None:
++                        self.assertFalse(ev.evidence["contrast_available"])
++                        self.assertIsNone(ev.evidence["contrast"])
++                        self.assertLessEqual(r.frames[ev.reacq_accepted_frame].identity_confidence_rb,
++                                             1.0 / 2 + 1e-9)
++
++
++def _bank_logs(r):
++    return [(f, f.decision.get("bank")) for f in r.frames[1:] if f.decision.get("bank")]
++
++
++class ProbeBankRules(unittest.TestCase):
++    def test_sample_interval_respected(self):
++        r = run([SceneFrame({"TARGET": b}) for b in linear(60, (300, 400), (3, 0))], people())
++        reached = [f.time_s for f, b in _bank_logs(r) if "SAMPLE_NOT_DUE" not in b["refusals"]]
++        self.assertGreater(len(reached), 2)
++        for a, b in zip(reached, reached[1:]):
++            self.assertGreaterEqual(b - a, CFG.get("target_bank_sample_interval_s") - 1e-9)
++
++    def test_edge_touching_box_refused_by_target_rule(self):
++        frames = [SceneFrame({"TARGET": b}) for b in linear(60, (1200, 400), (2, 0))]
++        r = run(frames, people())
++        edge = [(f, b) for f, b in _bank_logs(r) if f.rb_state == T.TRACKING
++                and P.TOUCHES_IMAGE_EDGE in r.pops[f.rel_frame].observations[f.detection_index].flags]
++        self.assertTrue(edge)
++        for f, b in edge:
++            self.assertIn(P.TOUCHES_IMAGE_EDGE, b["refusals"], f.rel_frame)
++
++    def test_unverified_camera_frame_refused(self):
++        from player_tracker_rb.camera import UNKNOWN, identity_motion
++        cfg = TrackerConfig.with_overrides({"camera_unknown_breaks_continuity": False})
++        unk = identity_motion(UNKNOWN, reasons=("TOO_FEW_FEATURES",), continuity_broken=False)
++        frames = [SceneFrame({"TARGET": b}, camera=unk if k >= 10 else None)
++                  for k, b in enumerate(linear(40, (300, 400), (3, 0)))]
++        r = run(frames, people(), cfg=cfg)
++        offered = [(f, b) for f, b in _bank_logs(r) if f.rel_frame >= 10]
++        self.assertTrue(offered)
++        for f, b in offered:
++            self.assertIn("CAMERA_UNVERIFIED", b["refusals"], f.rel_frame)
++
++
++class ProbeRivalContinuation(unittest.TestCase):
++    def test_unbanked_identical_neighbour_blocks_continuation(self):
++        """An identical-looking person with no bank yet (edge crop) appears 50 px beside the tracked target, inside
++        the motion bound but not in contact: the target may not stay TRACKING (ambiguity, D08-5)."""
++        ppl = people(("TWIN", KIT_A, 1.0))
++        frames = [SceneFrame({"TARGET": box_at(70, 400, 40, 100)}) for _ in range(15)]
++        frames += [SceneFrame({"TARGET": box_at(70, 400, 40, 100), "TWIN": box_at(20, 400, 40, 100)})
++                   for _ in range(10)]
++        r = run(frames, ppl)
++        self.assertEqual([k for k in r.tracking_frames() if k >= 15], [])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tools_rb/crossing_matrix.py b/tools_rb/crossing_matrix.py
+new file mode 100644
+index 0000000..ad8a8ac
+--- /dev/null
++++ b/tools_rb/crossing_matrix.py
+@@ -0,0 +1,51 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-F instruction (zero silent identity swaps in synthetic crossing tests); tests_rb/_synth_scene
++"""R1-F synthetic crossing matrix: kit (same kit at the realistic same-kit cosine / opponent) x speed x vertical
++offset x detection mode (both visible / merged into one box / far person missed while >= half hidden).
++
++Reports per case: silent swaps (TRACKING on a box that is not exactly the target), frames TRACKING, frames on which
++the target was detected alone, coverage = TRACKING / detected-alone, final state and episode count. Synthetic
++only: it says nothing about real footage.
++
++    python3 tools_rb/crossing_matrix.py OUT.json
++"""
++import json
++import os
++import statistics
++import sys
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++
++from tests_rb.test_target import KIT_A, KIT_B, SAME_KIT_COS, crossing_frames, people
++from tests_rb._synth_scene import run
++
++
++def main(out_path):
++    rows = []
++    for kit_name, kit, cos in (("same_kit", KIT_A, SAME_KIT_COS), ("opponent", KIT_B, 0.2)):
++        for speed in (2, 5, 9):
++            for dy in (0, 15, 45):
++                for mode in ("visible", "merge", "hide"):
++                    fr = crossing_frames(int(600 / speed) + 30, speed, dy, merge=mode == "merge",
++                                         hide=mode == "hide")
++                    r = run(fr, people(("PERSON_A", kit, cos)))
++                    alone = [k for k in range(len(fr)) if any(d.owners == ("TARGET",) for d in r.dets[k])]
++                    trk = r.tracking_frames()
++                    rows.append(dict(kit=kit_name, cos=cos, speed_px_per_frame=speed, dy_px=dy, mode=mode,
++                                     frames=len(fr), swaps=len(r.swaps()), tracking=len(trk),
++                                     target_detected_alone=len(alone), coverage=round(len(trk) / len(alone), 3),
++                                     final=r.frames[-1].rb_state, episodes=r.frames[-1].target_episode,
++                                     bank_pure=r.bank_is_pure()))
++    cov = [x["coverage"] for x in rows]
++    summary = dict(cases=len(rows), total_swaps=sum(x["swaps"] for x in rows),
++                   final_tracking=sum(x["final"] == "TRACKING" for x in rows),
++                   banks_pure=sum(x["bank_pure"] for x in rows),
++                   coverage_median=statistics.median(cov), coverage_min=min(cov))
++    with open(out_path, "w") as f:
++        json.dump({"summary": summary, "rows": rows}, f, indent=1)
++    print(json.dumps(summary))
++
++
++if __name__ == "__main__":
++    main(sys.argv[1])
+diff --git a/tools_rb/target_eval.py b/tools_rb/target_eval.py
+new file mode 100644
+index 0000000..bebfe96
+--- /dev/null
++++ b/tools_rb/target_eval.py
+@@ -0,0 +1,251 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-F instruction (Nathan, 2026-10-25: GOLD only as development footage after synthetic tests pass;
++#                 no event evaluation); R1/R1C/detector_eval (saved person candidates); R1/gold_label_sheet (frozen
++#                 human tracking labels v1, identity/visibility only)
++"""Target identity behaviour on a development clip (no events).
++
++Two steps, so a run fits within a short process limit:
++  embed  VIDEO FIXTURE_JSON DETECTOR_EVAL_DIR SETTING CACHE_DIR FROM_REL TO_REL
++         DINOv2 embeddings (pinned model) for every saved candidate box crop of frames [FROM_REL, TO_REL), keyed
++         by the SHA-1 of the exact crop bytes and shape. Written to CACHE_DIR/emb_<from>_<to>.npz.
++  run    VIDEO FIXTURE_JSON DETECTOR_EVAL_DIR SETTING CACHE_DIR LABELS_CSV OUT_JSON
++         Camera + population + target tracker from the seed with a cached embedding backend (a cache miss stops
++         the run: fail closed). The tracker sees only images, candidates and the seed box.
++
++From the fixture only video_sha256, seed_frame and seed_bbox are read (the seed is a tracker input; no event
++field is read). The frozen human labels are used only AFTER the run, to classify the tracker's states per labelled
++frame (visibility / identity resolvability / merged-or-hidden); they never influence the tracker. Reported:
++  * state counts and transitions, reacquisition events, uncertainty reasons, decision logs for the label window;
++  * per label class: frames where the tracker claimed TRACKING (a claim on a frame labelled hidden or
++    not-resolvable contradicts the human truth and must be zero), and coverage on frames labelled visible;
++  * a contact sheet of the label window (target box coloured by state) so a human can check which person each
++    TRACKING box is on.
++"""
++import csv
++import hashlib
++import json
++import os
++import sys
++import time
++
++import cv2
++import numpy as np
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from player_tracker_rb import population as P  # noqa: E402
++from player_tracker_rb import target as T  # noqa: E402
++from player_tracker_rb.appearance import AppearanceExtractor, EmbeddingBackend, crop_image  # noqa: E402
++from player_tracker_rb.camera import CameraMotionEstimator  # noqa: E402
++from player_tracker_rb.config import TrackerConfig  # noqa: E402
++from player_tracker_rb.detector import PersonCandidate  # noqa: E402
++from player_tracker_rb.video_io import SequentialVideoReader  # noqa: E402
++from tools_rb.population_eval import candidate_files, file_sha256, load_candidates  # noqa: E402
++
++FIXTURE_FIELDS = ("video_sha256", "seed_frame", "seed_bbox")
++SHEET_FROM_BEFORE_LABELS = 10
++SHEET_STEP = 2
++SHEET_COLS = 4
++SHEET_TILE_W = 480
++SHEET_JPEG_QUALITY = 80
++STATE_COLOUR = {"TRACKING": (0, 255, 0), "OCCLUDED": (0, 165, 255), "AMBIGUOUS": (0, 255, 255),
++                "LOST": (0, 0, 255), "REACQUIRING": (255, 0, 255)}
++
++
++def crop_key(crop):
++    h = hashlib.sha1()
++    h.update(str(crop.shape).encode())
++    h.update(np.ascontiguousarray(crop).tobytes())
++    return h.hexdigest()
++
++
++class CachedEmbedding(EmbeddingBackend):
++    def __init__(self, table, provenance):
++        self.table = table
++        self._prov = provenance
++
++    def embed(self, crop):
++        k = crop_key(crop)
++        if k not in self.table:
++            raise SystemExit(f"embedding cache miss for a crop of shape {crop.shape} (fail closed)")
++        return self.table[k]
++
++    def provenance(self):
++        return dict(self._prov, cache=True)
++
++
++def read_fixture(path):
++    d = json.load(open(path))
++    return {k: d[k] for k in FIXTURE_FIELDS}
++
++
++def embed(video, fx_json, det_dir, setting, cache_dir, a, b):
++    from player_tracker_rb.embedding_dinov2 import Dinov2OnnxEmbedding
++    fx = read_fixture(fx_json)
++    cfg = TrackerConfig.default()
++    emb = Dinov2OnnxEmbedding(cfg)
++    cands = load_candidates(det_dir, setting)
++    keys, vecs = [], []
++    t0 = time.time()
++    with SequentialVideoReader(video, fx["seed_frame"], cfg, expected_sha256=fx["video_sha256"]) as reader:
++        for fr in [reader.seed] + list(reader):
++            if fr.rel_frame < a:
++                continue
++            if fr.rel_frame >= b:
++                break
++            for row in cands[fr.rel_frame]:
++                crop = crop_image(fr.image, row[:4])
++                if crop is None:
++                    continue
++                k = crop_key(crop)
++                if k in keys:
++                    continue
++                keys.append(k)
++                vecs.append(emb.embed(crop))
++    os.makedirs(cache_dir, exist_ok=True)
++    out = os.path.join(cache_dir, f"emb_{a:04d}_{b:04d}.npz")
++    np.savez(out, keys=np.asarray(keys), vecs=np.asarray(vecs), provenance=json.dumps(emb.provenance()))
++    print(json.dumps({"frames": [a, b], "crops": len(keys), "seconds": round(time.time() - t0, 1), "out": out}))
++
++
++def load_cache(cache_dir):
++    table, prov, files = {}, None, {}
++    for f in sorted(os.listdir(cache_dir)):
++        if f.startswith("emb_") and f.endswith(".npz"):
++            z = np.load(os.path.join(cache_dir, f))
++            for k, v in zip(z["keys"], z["vecs"]):
++                table[str(k)] = v
++            prov = json.loads(str(z["provenance"]))
++            files[f] = file_sha256(os.path.join(cache_dir, f))
++    if not table:
++        raise SystemExit("empty embedding cache (fail closed)")
++    return table, prov, files
++
++
++def read_labels(path, seed_frame):
++    rows = {}
++    with open(path, newline="") as f:
++        for r in csv.DictReader(f):
++            rows[int(r["frame"]) - seed_frame] = r
++    return rows
++
++
++def label_class(r):
++    """Generic per-frame class from the human label columns (identity/visibility only)."""
++    vis = r["t23_visibility"].strip().lower()
++    res = r["t23_identity_resolvable"].strip().lower()
++    mh = r["merged_or_hidden"].strip().lower()
++    if res == "no" or vis == "hidden":
++        return "HIDDEN_OR_NOT_RESOLVABLE"
++    if mh in ("merged", "t23_hidden"):
++        return "MERGED_WITH_OPPONENT"
++    if vis == "partial":
++        return "PARTIAL"
++    return "VISIBLE"
++
++
++def draw(img, tf, res):
++    out = img.copy()
++    for o in res.observations:
++        x1, y1, x2, y2 = (int(round(v)) for v in o.bbox)
++        cv2.rectangle(out, (x1, y1), (x2, y2), (160, 160, 160), 1)
++    col = STATE_COLOUR[tf.rb_state]
++    x1, y1, x2, y2 = (int(round(v)) for v in tf.bbox)
++    cv2.rectangle(out, (x1, y1), (x2, y2), col, 3 if tf.rb_state == "TRACKING" else 1)
++    if tf.observed_or_contested_box is not None and tf.rb_state != "TRACKING":
++        x1, y1, x2, y2 = (int(round(v)) for v in tf.observed_or_contested_box)
++        cv2.rectangle(out, (x1, y1), (x2, y2), col, 2)
++    txt = f"rel {tf.rel_frame} {tf.rb_state} ep{tf.target_episode} c{tf.identity_confidence_rb:.2f}"
++    cv2.putText(out, txt, (8, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
++    cv2.putText(out, ",".join(tf.identity_uncertainty_reasons)[:60], (8, 54), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
++                (255, 255, 255), 2, cv2.LINE_AA)
++    return out
++
++
++def run(video, fx_json, det_dir, setting, cache_dir, labels_csv, out_json):
++    fx = read_fixture(fx_json)
++    cfg = TrackerConfig.default()
++    table, prov, cache_files = load_cache(cache_dir)
++    cands = load_candidates(det_dir, setting)
++    labels = read_labels(labels_csv, fx["seed_frame"])
++    lo, hi = min(labels), max(labels)
++    frames, sheet, timings = [], [], []
++    with SequentialVideoReader(video, fx["seed_frame"], cfg, expected_sha256=fx["video_sha256"]) as reader:
++        fps = reader.info.fps
++        w, h = reader.info.frame_width, reader.info.frame_height
++        est = CameraMotionEstimator(cfg)
++        pop = P.Population(cfg, w, h)
++        ext = AppearanceExtractor(cfg, CachedEmbedding(table, prov))
++        tt = T.TargetTracker(cfg, pop, ext)
++        for fr in [reader.seed] + list(reader):
++            r_ = fr.rel_frame
++            if r_ not in cands:
++                raise SystemExit(f"no saved candidates for rel frame {r_} (fail closed)")
++            dets = [PersonCandidate(tuple(float(v) for v in row[:4]), float(row[4]), bool(row[5]), "saved")
++                    for row in cands[r_]]
++            t0 = time.perf_counter()
++            cam = est.update(fr.image, [d.bbox for d in dets], 1.0 / fps)
++            res = pop.update(r_, r_ / fps, dets, cam)
++            tf = tt.seed(res, fr.image, fx["seed_bbox"]) if r_ == 0 else tt.update(res, fr.image)
++            timings.append(time.perf_counter() - t0)
++            frames.append(tf)
++            if lo - SHEET_FROM_BEFORE_LABELS <= r_ <= hi and (r_ - lo) % SHEET_STEP == 0:
++                sheet.append(draw(fr.image, tf, res))
++    states = {}
++    for f in frames:
++        states[f.rb_state] = states.get(f.rb_state, 0) + 1
++    transitions = [{"rel": f.rel_frame, "state": f.rb_state, "reasons": list(f.identity_uncertainty_reasons),
++                    "episode": f.target_episode} for k, f in enumerate(frames)
++                   if k == 0 or f.rb_state != frames[k - 1].rb_state
++                   or f.identity_uncertainty_reasons != frames[k - 1].identity_uncertainty_reasons]
++    outside = [rel for rel in labels if not 0 <= rel < len(frames) or frames[rel].rel_frame != rel]
++    if outside:                                  # a label frame the run never produced: fail closed, never wrap
++        raise SystemExit(f"label frames outside the run (rel {sorted(outside)[:5]}...): fail closed")
++    by_class = {}
++    for rel, row in sorted(labels.items()):
++        cl = label_class(row)
++        d = by_class.setdefault(cl, {"frames": 0, "tracking": 0, "states": {}, "tracking_rel": []})
++        d["frames"] += 1
++        st = frames[rel].rb_state
++        d["states"][st] = d["states"].get(st, 0) + 1
++        if st == "TRACKING":
++            d["tracking"] += 1
++            d["tracking_rel"].append(rel)
++    window = [frames[rel].as_record() for rel in sorted(labels)]
++    report = {
++        "tool": "tools_rb/target_eval.py", "fixture_fields_used": list(FIXTURE_FIELDS),
++        "events_evaluated": False, "labels_used_by_tracker": False,
++        "labels_file_sha256": file_sha256(labels_csv), "video_sha256": fx["video_sha256"],
++        "candidate_files_sha256": {f: file_sha256(os.path.join(det_dir, f)) for f in candidate_files(det_dir, setting)},
++        "embedding_cache_files_sha256": cache_files, "embedding_provenance": prov,
++        "config_registry_version": cfg.as_record()["registry_version"], "config_hash": cfg.config_hash(),
++        "frames": len(frames), "fps": fps, "state_counts": states, "transitions": transitions,
++        "reacquisition_events": [e.as_record() for e in tt.reacquisition_events],
++        "target_bank_samples": len(tt.bank), "target_tracklets": list(tt.target_tracklets),
++        "label_window_rel": [lo, hi], "by_label_class": by_class,
++        "runtime_ms_per_frame_median": float(np.median(timings) * 1000.0),
++        "label_window_frames": window,
++    }
++    with open(out_json, "w") as f:
++        json.dump(report, f, indent=1, sort_keys=True, default=str)
++    if sheet:
++        tiles = [cv2.resize(im, (SHEET_TILE_W, int(round(im.shape[0] * SHEET_TILE_W / im.shape[1]))),
++                            interpolation=cv2.INTER_AREA) for im in sheet]
++        while len(tiles) % SHEET_COLS:
++            tiles.append(np.zeros_like(tiles[0]))
++        rows = [np.hstack(tiles[k:k + SHEET_COLS]) for k in range(0, len(tiles), SHEET_COLS)]
++        cv2.imwrite(os.path.splitext(out_json)[0] + "_contact_sheet.jpg", np.vstack(rows),
++                    [cv2.IMWRITE_JPEG_QUALITY, SHEET_JPEG_QUALITY])
++    print(json.dumps({k: report[k] for k in ("frames", "state_counts", "by_label_class", "reacquisition_events",
++                                             "target_bank_samples", "runtime_ms_per_frame_median")},
++                     indent=1, default=str)[:6000])
++    print(json.dumps(transitions, indent=0)[:4000])
++
++
++if __name__ == "__main__":
++    if len(sys.argv) >= 2 and sys.argv[1] == "embed" and len(sys.argv) == 9:
++        embed(*sys.argv[2:7], int(sys.argv[7]), int(sys.argv[8]))
++    elif len(sys.argv) >= 2 and sys.argv[1] == "run" and len(sys.argv) == 9:
++        run(*sys.argv[2:9])
++    else:
++        raise SystemExit(__doc__)

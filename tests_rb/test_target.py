@@ -418,7 +418,8 @@ class TestAmbiguityAndCompetitors(Base):
 
     def test_motion_vetoed_box_is_not_a_rival(self):
         """Rule check: a box the motion model vetoes (physically implausible as the target this frame) never
-        counts as a rival target candidate, however similar it looks; without the veto it does."""
+        counts as a rival target candidate, however similar it looks; without the veto it does. Nor does a box that
+        is more similar to another known person than to the target."""
         tt = run([SceneFrame({"TARGET": box_at(500, 400, 40, 100)})], people()).tracker
         base = dict(detection_index=1, tracklet_id="T009", box=(0.0, 0.0, 10.0, 20.0), role=T.CONTINUATION,
                     in_gate=True, distance_h=0.5, merged=False, motion=None, quality_flags=(),
@@ -427,6 +428,11 @@ class TestAmbiguityAndCompetitors(Base):
         self.assertTrue(tt._looks_like_target(T.CandidateEvaluation(passed=True, details=(), **base)))
         self.assertFalse(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(T.MOTION_VETO,),
                                                                      **base)))
+        # a box more similar to another known person's bank than to the target's is that person, not a rival
+        other = dict(base, best_competitor="T010", best_competitor_similarity=0.995, contrast=-0.005)
+        self.assertFalse(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(), **other)))
+        same = dict(base, best_competitor="T010", best_competitor_similarity=0.99, contrast=0.0)
+        self.assertTrue(tt._looks_like_target(T.CandidateEvaluation(passed=False, details=(), **same)))
 
     def test_target_never_competes_against_itself(self):
         """The target goes undetected long enough for the population to start a new tracklet while the old one

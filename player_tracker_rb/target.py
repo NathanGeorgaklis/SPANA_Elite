@@ -43,9 +43,9 @@ CANDIDATE EVALUATION (one detection i; D08; no fast path: applied even when it i
     size could be the target's (the motion SCALE bound against the target height) blocks the box: contrast cannot
     be verified (D10). A body that cannot physically be the target (a ball-sized fragment) does not compete; crop
     contamination is handled by the crop-quality and bank rules.
-  * AMBIGUITY: another box in the gate that also looks like the target (no motion veto, passes the appearance
-    floor, and is not more similar to another known person than to the target) within ambiguity_margin of the
-    candidate's target similarity blocks it (D08-5).
+  * AMBIGUITY: another box in the gate (logged with role RIVAL, judged by the ordinary criteria) that also looks
+    like the target (no motion veto, passes the appearance floor, and is not more similar to another known person
+    than to the target) within ambiguity_margin of the candidate's target similarity blocks it (D08-5).
 
 ORDINARY ASSOCIATION (CONTINUATION): the target's current population tracklet was observed this frame. The
 tracklet is geometric evidence of one body with no contact since the last frame (R1-E), but its box must still pass
@@ -145,6 +145,7 @@ AGED_OUT = "AGED_OUT"
 # candidate roles and detailed (decision-log) reasons
 CONTINUATION = "CONTINUATION"
 REACQUISITION = "REACQUISITION"
+RIVAL = "RIVAL"          # another in-gate box judged by the ORDINARY criteria only to see if it rivals the target
 UNKNOWN_COMPETITOR_IN_CONTACT = "UNKNOWN_COMPETITOR_IN_CONTACT"
 RIVAL_CANDIDATE = "RIVAL_CANDIDATE"
 MORE_LIKE_A_COMPETITOR = "MORE_LIKE_A_COMPETITOR"
@@ -496,7 +497,7 @@ class TargetTracker:
                 if "COMPOSITE_BELOW_FLOOR" not in details:
                     details.append("BELOW_REACQ_FLOOR")
         # contrast against every competitor that could be this box
-        margin = c.get("contrastive_margin") if role == CONTINUATION else self._reacq_margin(absence_s)
+        margin = self._reacq_margin(absence_s) if role == REACQUISITION else c.get("contrastive_margin")
         best_ref, best_sim, unknown = None, None, []
         grp = self._group(res, i)
         # the target never competes with itself: its own tracklets are excluded, EXCEPT one observed this frame on
@@ -567,7 +568,7 @@ class TargetTracker:
 
     def _confidence_trusted(self, ev: CandidateEvaluation) -> float:
         c = self._cfg
-        floor = c.get("appearance_floor") if ev.role == CONTINUATION else c.get("reacq_appearance_floor")
+        floor = c.get("reacq_appearance_floor") if ev.role == REACQUISITION else c.get("appearance_floor")
         a = min(1.0, max(0.0, (ev.composite - floor) / (1.0 - floor)))
         if ev.contrast is None:
             # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain), but for a
@@ -785,7 +786,7 @@ class TargetTracker:
                 grp = self._group(res, ev.detection_index)
                 for o in res.observations:
                     if o.is_body and o.index not in grp and self._in_gate(o.bbox, pred_box, gate_h, h):
-                        others.append(self._evaluate(cache, res, image, o.index, role=CONTINUATION,
+                        others.append(self._evaluate(cache, res, image, o.index, role=RIVAL,
                                                      pred_box=pred_box, gate_h=gate_h, h=h, absence_s=absence))
                 evals.extend(others)
                 details = list(ev.details)

@@ -11,8 +11,11 @@ only: it says nothing about real footage.
     python3 tools_rb/crossing_matrix.py OUT.json
 """
 import json
+import os
 import statistics
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tests_rb.test_target import KIT_A, KIT_B, SAME_KIT_COS, crossing_frames, people
 from tests_rb._synth_scene import run
