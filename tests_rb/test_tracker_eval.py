@@ -29,7 +29,9 @@ FPS = 10.0
 def rec(trusted, state="TRACKING", box=A):
     observed = state == "TRACKING"
     return {"selected_player": True, "observed_position_box": list(box), "state": "ACTIVE" if observed else "OCCLUDED",
-            "v2": {"identity_trusted": trusted, "rb_state": state, "bbox_is_observed": observed}}
+            "v2": {"identity_trusted": trusted, "rb_state": state, "bbox_is_observed": observed,
+                   "observation_source": "DETECTION" if observed else "HELD", "bbox_is_held": not observed,
+                   "bbox_is_predicted": False}}
 
 
 def doc(records):
@@ -37,10 +39,15 @@ def doc(records):
             "frame_log": [{"frame": i + 1, "tracks": [r]} for i, r in enumerate(records)]}
 
 
-def tf(f, vis=E.VISIBLE, res=True, merged=False, target=A, others=None, clean=False):
+def tf(f, vis=E.VISIBLE, res=True, merged=False, target=A, others=None, clean=False, contact=False):
     return E.TruthFrame(rel_frame=f, visibility=vis, identity_resolvable=res, merged=merged,
                         target_box=target, other_boxes={"P2": B} if others is None else others,
-                        clean_reappearance=clean)
+                        clean_reappearance=clean, contact=contact)
+
+
+def bare(f, vis=E.VISIBLE):
+    """Truth without boxes or contact (like GOLD labels v1 minus contact)."""
+    return E.TruthFrame(rel_frame=f, visibility=vis, identity_resolvable=True, merged=False)
 
 
 class ClaimAuthority(unittest.TestCase):
@@ -101,6 +108,8 @@ class Priorities(unittest.TestCase):
                               merged=False) for t in truth]
         r = E.evaluate(doc([rec(True)] * 3), truth)
         self.assertEqual(r["priority_1_false_confident_identity"]["status"], "PARTIAL_NO_BOX_TRUTH")
+        self.assertEqual(r["priority_1_false_confident_identity"]["count"], E.UNKNOWN)     # review finding 1
+        self.assertEqual(r["priority_1_false_confident_identity"]["verified_count"], 0)
         self.assertEqual(r["priority_1_false_confident_identity"]["confident_frames_without_box_truth"], [1, 2, 3])
         self.assertEqual(r["priority_2_identity_swaps"]["count"], E.UNKNOWN)
         self.assertEqual(r["box_quality"]["mean_iou_confident"], E.UNKNOWN)
@@ -135,15 +144,20 @@ class Reacquisition(unittest.TestCase):
         recs = [rec(True), rec(True), rec(False, "OCCLUDED"), rec(False, "OCCLUDED"), rec(True)] + [rec(True)] * 5
         r = E.evaluate(doc(recs), self._truth(10, gap))
         self.assertEqual(r["priority_4_trusted_on_hidden_merged_unresolvable"]["frames"], [5])
-        # the gap's own trusted frame is reported under priority 4; the first trusted frame AFTER the gap is correct
-        self.assertEqual(r["reacquisition"][0]["outcome"], "CORRECT")
+        # review finding 4: a lock while the target is still unavailable is a (premature) wrong reacquisition
+        item = r["reacquisition"][0]
+        self.assertEqual(item["outcome"], "WRONG_PREMATURE")
+        self.assertEqual(item["trusted_inside_gap"], [5])
+        self.assertEqual(item["post_gap_outcome"], "CORRECT")
+        self.assertEqual(r["priority_3_wrong_reacquisitions"]["count"], 1)
 
     def test_not_reacquired_is_censored_and_missed_only_when_long_enough(self):
         gap = range(3, 6)
         short = [rec(True), rec(True)] + [rec(False, "OCCLUDED")] * 3 + [rec(False, "REACQUIRING")] * 5
         r = E.evaluate(doc(short), self._truth(10, gap))
         item = r["reacquisition"][0]
-        self.assertEqual(item["outcome"], "NOT_REACQUIRED_IN_WINDOW")
+        self.assertEqual(item["outcome"], "NOT_REACQUIRED")
+        self.assertEqual(item["censored_by"], "window_end")
         self.assertAlmostEqual(item["delay_s_at_least"], 0.5)
         self.assertEqual(item["missed_reacquisition"], E.UNKNOWN)     # 0.5 s < 2 s: window cannot tell
         n = 5 + int(E.MISSED_REACQ_S * FPS)
@@ -155,8 +169,35 @@ class Reacquisition(unittest.TestCase):
     def test_reacquisition_without_box_truth_is_unverified_not_correct(self):
         truth = [E.TruthFrame(rel_frame=f, visibility=E.HIDDEN if f == 2 else E.VISIBLE, identity_resolvable=True,
                               merged=False) for f in range(1, 5)]
-        r = E.evaluate(doc([rec(True), rec(False, "OCCLUDED"), rec(True), rec(True)]), truth)
+        r = E.evaluate(doc([rec(True), rec(False, "OCCLUDED"), rec(True, box=B), rec(True)]), truth)
         self.assertEqual(r["reacquisition"][0]["outcome"], "UNVERIFIED_NO_BOX_TRUTH")
+        p3 = r["priority_3_wrong_reacquisitions"]                         # review finding 2: never a silent 0
+        self.assertEqual(p3["count"], E.UNKNOWN)
+        self.assertEqual((p3["verified_wrong"], p3["unverified"]), (0, 1))
+
+    def test_back_to_back_gaps_are_scored_separately(self):
+        """Review finding 3: each gap's search stops at the next gap; one wrong lock is counted once."""
+        truth = [tf(1), tf(2, vis=E.HIDDEN, target=None), tf(3), tf(4, vis=E.HIDDEN, target=None)] + \
+            [tf(f) for f in range(5, 8)]
+        recs = [rec(True), rec(False, "OCCLUDED"), rec(False, "REACQUIRING"), rec(False, "OCCLUDED"),
+                rec(True, box=B), rec(True), rec(True)]
+        r = E.evaluate(doc(recs), truth)
+        g1, g2 = r["reacquisition"]
+        self.assertEqual(g1["post_gap_outcome"], "NOT_REACQUIRED")
+        self.assertEqual(g1["censored_by"], "next_gap")
+        self.assertIs(g1["missed_reacquisition"], False)             # available 0.1 s only: not required
+        self.assertEqual(g2["outcome"], "WRONG")
+        self.assertEqual(r["priority_3_wrong_reacquisitions"]["count"], 1)
+        self.assertAlmostEqual(g2["delay_s"], 0.0)
+
+    def test_missed_needs_continuous_availability(self):
+        n = int(E.MISSED_REACQ_S * FPS)
+        truth = [tf(1), tf(2, vis=E.HIDDEN, target=None), tf(3), tf(4, vis=E.HIDDEN, target=None)] + \
+            [tf(f) for f in range(5, 5 + n)]
+        recs = [rec(True)] + [rec(False, "LOST")] * (3 + n)
+        r = E.evaluate(doc(recs), truth)
+        self.assertIs(r["reacquisition"][0]["missed_reacquisition"], False)
+        self.assertIs(r["reacquisition"][1]["missed_reacquisition"], True)
 
 
 class Refusals(unittest.TestCase):
@@ -171,25 +212,81 @@ class Refusals(unittest.TestCase):
             E.evaluate(d, [tf(1)])
 
     def test_unknown_label_values_and_formats_are_refused(self):
-        row = {"frame": "10", "t23_visibility": "blurry", "t23_identity_resolvable": "yes",
-               "merged_or_hidden": "none", "first_clean_reappearance": ""}
+        good = {"frame": "30", "video_time_s": "1.000", "t23_visibility": "visible", "t23_identity_resolvable": "yes",
+                "merged_or_hidden": "none", "overlap_23_4": "No", "first_clean_reappearance": ""}
+        self.assertEqual(len(E.ADAPTERS["gold_v1"]([good], 0, 30.0)), 1)
+        for col, bad in (("t23_visibility", "blurry"), ("t23_identity_resolvable", "maybe"),
+                         ("merged_or_hidden", "partly"), ("overlap_23_4", "?"), ("first_clean_reappearance", "x"),
+                         ("video_time_s", "1.100")):
+            with self.subTest(col=col):
+                with self.assertRaises(E.EvalRefused):
+                    E.ADAPTERS["gold_v1"]([dict(good, **{col: bad})], 0, 30.0)
         with self.assertRaises(E.EvalRefused):
-            E.ADAPTERS["gold_v1"]([row], 0)
+            E.read_truth(GOLD_LABELS, "no_such_format", 180, 30.0)
+
+    def test_non_contiguous_truth_is_refused(self):
+        """Review finding 5: runs are built over consecutive frames, so sparse truth must not be scored silently."""
         with self.assertRaises(E.EvalRefused):
-            E.read_truth(GOLD_LABELS, "no_such_format", 180)
+            E.evaluate(doc([rec(True)] * 5), [tf(1), tf(3), tf(5)])
+
+    def test_held_or_predicted_confident_claim_is_a_contract_violation(self):
+        r_ = rec(True)
+        r_["v2"]["observation_source"] = "HELD"
+        r = E.evaluate(doc([r_, rec(True)]), [tf(1), tf(2)])
+        self.assertEqual(r["confident_not_grounded_violations"], [1])
 
 
 class GoldLabelsV1(unittest.TestCase):
     """The frozen GOLD labels v1 through the adapter (identity / visibility only, no boxes)."""
 
     def test_adapter_classes(self):
-        truth = E.read_truth(GOLD_LABELS, "gold_v1", 180)
+        truth = E.read_truth(GOLD_LABELS, "gold_v1", 180, 30.0)
         self.assertEqual([truth[0].rel_frame, truth[-1].rel_frame], [70, 110])
         self.assertEqual(len(truth), 41)
         unavailable = [t.rel_frame for t in truth if not t.available]
         self.assertEqual(len(unavailable), 11)                  # 5 hidden / unresolvable + 6 merged
         self.assertTrue(all(t.target_box is None and t.other_boxes is None for t in truth))
         self.assertEqual([t.rel_frame for t in truth if t.clean_reappearance], [93])
+        self.assertEqual([t.rel_frame for t in truth if t.contact], list(range(81, 93)))   # overlap yes / Yes
+        self.assertEqual(len([t for t in truth if not t.identity_resolvable]), 3)
+
+
+class ContactIntegrity(unittest.TestCase):
+    """R0 B5 (review finding 6): no confident claim on the contact partner within +-0.5 s of a human contact."""
+
+    def test_unannotated_contact_is_unknown(self):
+        r = E.evaluate(doc([rec(True)] * 3), [bare(1), bare(2), bare(3)])
+        self.assertEqual(r["b5_contact_integrity"]["status"], E.UNKNOWN)
+
+    def test_no_confident_claim_near_contact_passes(self):
+        n = 20
+        recs = [rec(True)] * 3 + [rec(False, "AMBIGUOUS")] * (n - 3)
+        truth = [tf(f, contact=f == 12) for f in range(1, n + 1)]
+        r = E.evaluate(doc(recs), truth)
+        b5 = r["b5_contact_integrity"]
+        self.assertEqual(b5["status"], "PASS_NO_CONFIDENT_CLAIM")
+        self.assertEqual(b5["window_frames"], [7, 17])                   # +-0.5 s at 10 fps
+
+    def test_confident_on_the_partner_near_contact_fails(self):
+        recs = [rec(True)] * 5 + [rec(True, box=B)] + [rec(True)] * 4
+        r = E.evaluate(doc(recs), [tf(f, contact=f == 5) for f in range(1, 11)])
+        self.assertEqual(r["b5_contact_integrity"]["status"], "FAIL")
+        self.assertEqual(r["b5_contact_integrity"]["confident_on_partner"], [6])
+
+    def test_confident_near_contact_without_partner_boxes_is_unknown(self):
+        truth = [E.TruthFrame(rel_frame=f, visibility=E.VISIBLE, identity_resolvable=True, merged=False,
+                              contact=f == 2) for f in range(1, 4)]
+        r = E.evaluate(doc([rec(True)] * 3), truth)
+        self.assertEqual(r["b5_contact_integrity"]["status"], E.UNKNOWN)
+
+
+class Uncertainty(unittest.TestCase):
+    def test_unresolvable_subset_is_reported_separately(self):
+        truth = [tf(1), tf(2, merged=True), tf(3, res=False)]
+        r = E.evaluate(doc([rec(True), rec(True), rec(False, "AMBIGUOUS")]), truth)
+        c = r["coverage_and_abstention"]
+        self.assertEqual(c["uncertainty_when_unavailable"], 0.5)
+        self.assertEqual(c["uncertainty_when_unresolvable_r0_b1"], 1.0)
 
 
 @unittest.skipUnless(os.path.exists(GOLD_RESULTS), "committed R1-G GOLD output not present")
@@ -212,20 +309,40 @@ class FailClosedMain(unittest.TestCase):
         with self.assertRaises(FileExistsError):                # never overwrites a report
             self._main()
 
+    def test_report_records_reproducibility_fields(self):
+        """Review finding 8 (project rule 22)."""
+        r = self._main()
+        for k in ("tool_sha256", "evaluator_git_commit", "evaluator_git_dirty", "command", "fixture_sha256",
+                  "freeze_record_sha256", "labels_sha256", "results_sha256"):
+            self.assertIn(k, r)
+        self.assertEqual(r["b5_contact_integrity"]["status"], E.UNKNOWN)  # trusted frames near contact, no boxes
+
+    def test_freeze_record_must_be_frozen_valid_and_name_these_labels(self):
+        """Review finding 7."""
+        with open(GOLD_FREEZE) as f:
+            fr = json.load(f)
+        for key, value in (("status", "DRAFT"), ("valid", False), ("labels_csv", "OTHER.csv"), ("fps", 25.0)):
+            with self.subTest(key=key):
+                p = os.path.join(self.tmp, f"freeze_{key}.json")
+                with open(p, "w") as f:
+                    json.dump(dict(fr, **{key: value}), f)
+                with self.assertRaises(E.EvalRefused):
+                    self._main(freeze=p)
+
     def test_tampered_labels_are_refused(self):
-        bad = os.path.join(self.tmp, "labels.csv")
+        bad = os.path.join(self.tmp, os.path.basename(GOLD_LABELS))     # same name: the hash check must refuse it
         with open(GOLD_LABELS) as f:
             text = f.read()
         with open(bad, "w") as f:
             f.write(text.replace("hidden", "visible", 1))
-        with self.assertRaises(E.EvalRefused):
+        with self.assertRaisesRegex(E.EvalRefused, "sha256"):
             self._main(labels=bad)
 
     def test_results_from_another_video_or_seed_are_refused(self):
         with open(GOLD_FIXTURE) as f:
             fx = json.load(f)
         for key, value in (("video_sha256", "0" * 64), ("seed_frame", fx["seed_frame"] + 1),
-                           ("seed_bbox", [v + 5.0 for v in fx["seed_bbox"]])):
+                           ("seed_bbox", [v + 5.0 for v in fx["seed_bbox"]]), ("fps", 25.0)):
             with self.subTest(key=key):
                 other = copy.deepcopy(fx)
                 other[key] = value

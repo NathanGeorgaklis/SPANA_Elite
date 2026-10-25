@@ -24,7 +24,7 @@
 | Never trusted on a frame without the target's own detection (hidden, merged, dropped, absent). | `test_pipeline_e2e.py` (15 scenarios); `test_tracker_eval.py` SyntheticIntegration |
 | Untrusted ⇒ `identity_confidence`, `overall_track_confidence` and `identity_confidence_rb` < 0.5. This is the compatibility bridge for legacy consumers that read scores (below). | `test_pipeline_e2e.py`, `test_surviving_consumers.py` |
 | An unverified episode (reacquired without beating a confusable competitor) is `TRACKING` but untrusted, with reason `INSUFFICIENT_CONTRAST`. | `test_target_audit.py`, `test_pipeline_audit.py` |
-| GOLD (development clip): 0 trusted frames on 11 human-labelled hidden, merged or unresolvable frames. | `R1/R1H/gold_eval/GOLD_R1H_TRACKER_EVAL.json` |
+| GOLD (development clip): 0 trusted frames on 11 human-labelled hidden, merged or unresolvable frames. This comes with broad abstention: only 10/30 available frames are trusted, and none after rel 79. It is not proof of identity accuracy on visible frames (no box truth). | `R1/R1H/gold_eval/GOLD_R1H_TRACKER_EVAL.json` |
 
 ## The surviving recovered consumers, measured against the rule
 
@@ -39,10 +39,14 @@ These files are hash-pinned and unmodified (`tests_rb/test_surviving_consumers.p
 
 **Measured gap** (`tools_rb/r1h_legacy_attribution_gap.py` → `R1H_LEGACY_ATTRIBUTION_GAP.json`; synthetic mixed scenario, CARRY windows of 5–30 frames, target status RESOLVED):
 
-| Clip-level identity conflict | Windows credited TARGET_PLAYER | Of which contain untrusted frames |
+| Clip-level identity conflict flag passed to `assess_actor` | Windows credited TARGET_PLAYER | Of which contain untrusted frames |
 |---|---|---|
-| No | 83 | **15** (for example window 52–57 with one untrusted frame, trusted fraction 0.83) |
-| Yes (score halved) | 0 | 0 |
+| False (as on a clip where R1 logs no identity conflict) | 83 | **15** (for example window 52–57 with one untrusted frame, trusted fraction 0.83) |
+| True (score halved; this is what this scenario's own conflict log gives) | 0 | 0 |
+
+**How to read it.** This scenario does log an identity conflict involving T001, so its real path credits nothing (row 2). Row 1 shows what the same fraction rule does on a clip where no conflict is logged. The gap is therefore conditional (no clip-level conflict) but general: `assess_actor` lines 147–163 credit TARGET_PLAYER at a trusted fraction ≥ 0.75, so up to 25 % of the actor window may be untrusted.
+
+The measurement builds the frame index from the raw R1 frame_log, without the historical enrichment step. Raw R1 records carry no legacy `identity_state`, so `frame_identity`'s `identity_state` check does not fire. Whether the historical pipeline enriched the log before attribution is UNKNOWN; either way, R1 untrusted frames already fail `frame_identity` through the < 0.5 confidence bridge.
 
 The first failing layer is Pass-2 aggregation, not Pass 1: R1 marks those frames untrusted correctly. **Requirement for the Pass-2 rebuild:** replace the trusted-fraction rule with rule 2 (every actor-window frame `v2.identity_trusted = true`, otherwise UNKNOWN), and read `v2.identity_trusted` directly instead of reconstructing trust from legacy fields. The recovered originals are not modified.
 
