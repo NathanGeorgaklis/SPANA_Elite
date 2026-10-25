@@ -1,0 +1,64 @@
+{
+ "clip_conflict_false": {
+  "examples": [
+   {
+    "trusted_fraction": 0.8333333333333334,
+    "untrusted_frames": [
+     52
+    ],
+    "window": [
+     52,
+     57
+    ]
+   },
+   {
+    "trusted_fraction": 0.8333333333333334,
+    "untrusted_frames": [
+     60
+    ],
+    "window": [
+     55,
+     60
+    ]
+   },
+   {
+    "trusted_fraction": 0.8181818181818182,
+    "untrusted_frames": [
+     30
+    ],
+    "window": [
+     20,
+     30
+    ]
+   },
+   {
+    "trusted_fraction": 0.875,
+    "untrusted_frames": [
+     30
+    ],
+    "window": [
+     15,
+     30
+    ]
+   },
+   {
+    "trusted_fraction": 0.8125,
+    "untrusted_frames": [
+     30,
+     31
+    ],
+    "window": [
+     16,
+     31
+    ]
+   }
+  ],
+  "of_which_contain_untrusted_frames": 15,
+  "windows_credited_target_player": 83
+ },
+ "clip_conflict_true": {
+  "examples": [],
+  "of_which_contain_untrusted_frames": 0,
+  "windows_credited_target_player": 0
+ }
+}

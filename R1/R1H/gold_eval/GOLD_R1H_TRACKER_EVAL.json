@@ -1,0 +1,146 @@
+{
+ "box_quality": {
+  "mean_iou_confident": "UNKNOWN",
+  "reason": "no human target boxes on confident frames"
+ },
+ "claims_per_frame": {
+  "100": "REACQUIRING",
+  "101": "REACQUIRING",
+  "102": "REACQUIRING",
+  "103": "REACQUIRING",
+  "104": "REACQUIRING",
+  "105": "REACQUIRING",
+  "106": "REACQUIRING",
+  "107": "REACQUIRING",
+  "108": "REACQUIRING",
+  "109": "REACQUIRING",
+  "110": "REACQUIRING",
+  "70": "CONFIDENT",
+  "71": "CONFIDENT",
+  "72": "CONFIDENT",
+  "73": "CONFIDENT",
+  "74": "CONFIDENT",
+  "75": "CONFIDENT",
+  "76": "CONFIDENT",
+  "77": "CONFIDENT",
+  "78": "CONFIDENT",
+  "79": "CONFIDENT",
+  "80": "AMBIGUOUS",
+  "81": "AMBIGUOUS",
+  "82": "AMBIGUOUS",
+  "83": "AMBIGUOUS",
+  "84": "OCCLUDED",
+  "85": "OCCLUDED",
+  "86": "OCCLUDED",
+  "87": "OCCLUDED",
+  "88": "OCCLUDED",
+  "89": "OCCLUDED",
+  "90": "OCCLUDED",
+  "91": "OCCLUDED",
+  "92": "OCCLUDED",
+  "93": "OCCLUDED",
+  "94": "OCCLUDED",
+  "95": "REACQUIRING",
+  "96": "REACQUIRING",
+  "97": "REACQUIRING",
+  "98": "REACQUIRING",
+  "99": "REACQUIRING"
+ },
+ "confident_not_grounded_violations": [],
+ "constants": {
+  "FCI_IOU_MAX": 0.3,
+  "MATCH_IOU_MIN": 0.5,
+  "MISSED_REACQ_S": 2.0
+ },
+ "coverage_and_abstention": {
+  "abstention_rate_on_available": 0.667,
+  "available_frames": 30,
+  "by_visibility_on_available": {
+   "PARTIAL": {
+    "frames": 4,
+    "trusted": 2
+   },
+   "VISIBLE": {
+    "frames": 26,
+    "trusted": 8
+   }
+  },
+  "claims_on_available": {
+   "AMBIGUOUS": 2,
+   "CONFIDENT": 10,
+   "OCCLUDED": 2,
+   "REACQUIRING": 16
+  },
+  "claims_on_unavailable": {
+   "AMBIGUOUS": 2,
+   "OCCLUDED": 9
+  },
+  "rates_on_available": {
+   "AMBIGUOUS": 0.067,
+   "CONFIDENT": 0.333,
+   "OCCLUDED": 0.067,
+   "REACQUIRING": 0.533
+  },
+  "trusted_coverage_of_available": 0.333,
+  "unavailable_frames": 11,
+  "uncertainty_when_unavailable": 1.0
+ },
+ "events_evaluated": false,
+ "fps": 30.0,
+ "label_format": "gold_v1",
+ "labels_sha256": "490a8af14005b09e2302fea81b9831b0e702958620a4508f33cdaae7bcb0d428",
+ "priority_1_false_confident_identity": {
+  "confident_frames_without_box_truth": [
+   70,
+   71,
+   72,
+   73,
+   74,
+   75,
+   76,
+   77,
+   78,
+   79
+  ],
+  "count": 0,
+  "frames": [],
+  "on_unavailable_target": [],
+  "on_wrong_box": [],
+  "status": "PARTIAL_NO_BOX_TRUTH"
+ },
+ "priority_2_identity_swaps": {
+  "count": "UNKNOWN",
+  "reason": "other people's boxes not annotated"
+ },
+ "priority_3_wrong_reacquisitions": {
+  "count": 0,
+  "items": []
+ },
+ "priority_4_trusted_on_hidden_merged_unresolvable": {
+  "count": 0,
+  "frames": []
+ },
+ "reacquisition": [
+  {
+   "delay_s_at_least": 0.6,
+   "gap": [
+    82,
+    92
+   ],
+   "human_clean_reappearance": 93,
+   "missed_reacquisition": "UNKNOWN",
+   "outcome": "NOT_REACQUIRED_IN_WINDOW",
+   "target_available_from": 93
+  }
+ ],
+ "results_config_hash": "8e3b9d6781c0f5b6bd4ddf5dd3afa051061972f567fc2c70a70f187a73c9c62c",
+ "results_git_commit": "30f2e397b268204fec0280fedfb9f4839f958ce3",
+ "results_git_dirty": false,
+ "results_sha256": "9dde1440288d178cc2198b58028b5e408ee61b89e96d1cd8cbafc325bf1491e7",
+ "tool": "tools_rb/tracker_eval.py",
+ "truth_frames": 41,
+ "window": [
+  70,
+  110
+ ]
+}

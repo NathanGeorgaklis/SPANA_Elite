@@ -1,0 +1,406 @@
+{
+ "full_occlusion": {
+  "available_frames": 112,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.018,
+   "CONFIDENT": 0.384,
+   "OBSERVED_UNVERIFIED": 0.429,
+   "OCCLUDED": 0.036,
+   "REACQUIRING": 0.134
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 2.233,
+    "gap": [
+     46,
+     50
+    ],
+    "missed_reacquisition": true,
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.384,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "gap_self_competition": {
+  "available_frames": 79,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "CONFIDENT": 0.215,
+   "OBSERVED_UNVERIFIED": 0.595,
+   "REACQUIRING": 0.19
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 2.067,
+    "gap": [
+     18,
+     25
+    ],
+    "missed_reacquisition": true,
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.215,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "hard_cut_impostor": {
+  "available_frames": 127,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "CONFIDENT": 0.291,
+   "OBSERVED_UNVERIFIED": 0.591,
+   "REACQUIRING": 0.118
+  },
+  "reacquisitions": [],
+  "swaps": 0,
+  "trusted_coverage": 0.291,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": null,
+  "wrong_reacq": 0
+ },
+ "leave_and_return": {
+  "available_frames": 79,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.013,
+   "CONFIDENT": 0.228,
+   "OBSERVED_UNVERIFIED": 0.57,
+   "REACQUIRING": 0.19
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 2.0,
+    "gap": [
+     20,
+     67
+    ],
+    "missed_reacquisition": true,
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.228,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "newcomer_in_contact": {
+  "available_frames": 87,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.345,
+   "CONFIDENT": 0.195,
+   "LOST": 0.46
+  },
+  "reacquisitions": [],
+  "swaps": 0,
+  "trusted_coverage": 0.195,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": null,
+  "wrong_reacq": 0
+ },
+ "opponent_crossing": {
+  "available_frames": 114,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.018,
+   "CONFIDENT": 0.474,
+   "OBSERVED_UNVERIFIED": 0.351,
+   "OCCLUDED": 0.026,
+   "REACQUIRING": 0.132
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 1.933,
+    "gap": [
+     57,
+     59
+    ],
+    "missed_reacquisition": "UNKNOWN",
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.474,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "opponent_crossing_hidden": {
+  "available_frames": 112,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.009,
+   "CONFIDENT": 0.482,
+   "OBSERVED_UNVERIFIED": 0.357,
+   "OCCLUDED": 0.018,
+   "REACQUIRING": 0.134
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 1.9,
+    "gap": [
+     56,
+     60
+    ],
+    "missed_reacquisition": "UNKNOWN",
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.482,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "pan_crossing": {
+  "available_frames": 114,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.018,
+   "CONFIDENT": 0.825,
+   "OCCLUDED": 0.026,
+   "REACQUIRING": 0.132
+  },
+  "reacquisitions": [
+   {
+    "delay_s": 0.6,
+    "gap": [
+     57,
+     59
+    ],
+    "outcome": "CORRECT"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.825,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [
+   0.6
+  ],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "posed_crossing": {
+  "available_frames": 152,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.013,
+   "CONFIDENT": 0.48,
+   "LOST": 0.118,
+   "OBSERVED_UNVERIFIED": 0.138,
+   "OCCLUDED": 0.013,
+   "REACQUIRING": 0.237
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 2.567,
+    "gap": [
+     76,
+     80
+    ],
+    "missed_reacquisition": true,
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.48,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "same_kit_crossing": {
+  "available_frames": 114,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.018,
+   "CONFIDENT": 0.825,
+   "OCCLUDED": 0.026,
+   "REACQUIRING": 0.132
+  },
+  "reacquisitions": [
+   {
+    "delay_s": 0.6,
+    "gap": [
+     57,
+     59
+    ],
+    "outcome": "CORRECT"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.825,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [
+   0.6
+  ],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "same_kit_crossing_hidden": {
+  "available_frames": 112,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.009,
+   "CONFIDENT": 0.839,
+   "OCCLUDED": 0.018,
+   "REACQUIRING": 0.134
+  },
+  "reacquisitions": [
+   {
+    "delay_s": 0.567,
+    "gap": [
+     56,
+     60
+    ],
+    "outcome": "CORRECT"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.839,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [
+   0.567
+  ],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "same_kit_crossing_merged": {
+  "available_frames": 110,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "CONFIDENT": 0.855,
+   "OCCLUDED": 0.009,
+   "REACQUIRING": 0.136
+  },
+  "reacquisitions": [
+   {
+    "delay_s": 0.533,
+    "gap": [
+     55,
+     61
+    ],
+    "outcome": "CORRECT"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.855,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [
+   0.533
+  ],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "twin_appears": {
+  "available_frames": 87,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.345,
+   "CONFIDENT": 0.195,
+   "LOST": 0.46
+  },
+  "reacquisitions": [],
+  "swaps": 0,
+  "trusted_coverage": 0.195,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": null,
+  "wrong_reacq": 0
+ },
+ "uncontrasted_return": {
+  "available_frames": 57,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "CONFIDENT": 0.123,
+   "OBSERVED_UNVERIFIED": 0.614,
+   "REACQUIRING": 0.263
+  },
+  "reacquisitions": [
+   {
+    "delay_s_at_least": 1.667,
+    "gap": [
+     8,
+     47
+    ],
+    "missed_reacquisition": "UNKNOWN",
+    "outcome": "NOT_REACQUIRED_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.123,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ },
+ "wrong_reacquisition": {
+  "available_frames": 19,
+  "fci": 0,
+  "fci_status": "COMPLETE",
+  "mean_iou_confident": 1.0,
+  "rates_on_available": {
+   "AMBIGUOUS": 0.053,
+   "CONFIDENT": 0.947
+  },
+  "reacquisitions": [
+   {
+    "gap": [
+     20,
+     157
+    ],
+    "outcome": "NOT_AVAILABLE_IN_WINDOW"
+   }
+  ],
+  "swaps": 0,
+  "trusted_coverage": 0.947,
+  "trusted_on_unavailable": 0,
+  "trusted_reacq_delay_s": [],
+  "uncertainty_when_unavailable": 1.0,
+  "wrong_reacq": 0
+ }
+}
