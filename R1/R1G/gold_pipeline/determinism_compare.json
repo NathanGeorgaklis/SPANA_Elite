@@ -1,0 +1,15 @@
+{
+ "documents_identical_except_wall_clock": true,
+ "first_difference": null,
+ "wall_clock": {
+  "summary.processing_time_s": [
+   251.229,
+   242.985
+  ],
+  "summary.v2.provenance.run_started_utc": [
+   "2026-10-25T18:01:53Z",
+   "2026-10-25T18:10:35Z"
+  ]
+ },
+ "decision_logs_byte_identical": true
+}

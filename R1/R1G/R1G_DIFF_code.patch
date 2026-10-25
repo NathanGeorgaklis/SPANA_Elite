@@ -1,0 +1,3239 @@
+diff --git a/player_tracker_rb/__init__.py b/player_tracker_rb/__init__.py
+index da8e604..fff6691 100644
+--- a/player_tracker_rb/__init__.py
++++ b/player_tracker_rb/__init__.py
+@@ -9,6 +9,7 @@ the historical Pass-1 JSON contract (see output_schema) and adds clearly labelle
+ Allowed imports: Python standard library, numpy, cv2, onnxruntime, and this package. Never football_analysis,
+ player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ (D02, D21).
+ 
+-Stages so far: R1-A (config, output_schema) and R1-B (video_io, provenance). No tracking logic yet.
++Stages: R1-A (config, output_schema), R1-B (video_io, provenance), R1-C (detector), R1-D (appearance), R1-E
++(population, motion, camera), R1-F (target identity), R1-G (run_rb: the integrated Pass-1 pipeline).
+ """
+-__version__ = "0.2.0-r1b"
++__version__ = "0.7.0-r1g"
+diff --git a/player_tracker_rb/output_schema.py b/player_tracker_rb/output_schema.py
+index 75dec89..a81bb5d 100644
+--- a/player_tracker_rb/output_schema.py
++++ b/player_tracker_rb/output_schema.py
+@@ -763,7 +763,7 @@ def build_frame_record(cfg: TrackerConfig, *, frame: int, is_cut: bool, camera_s
+     pairs = [[str(a), str(b)] for a, b in overlap_contests]
+     rec: Dict[str, Any] = {
+         "frame": int(frame), "is_cut": bool(is_cut),
+-        "camera_shift": [round(float(camera_shift_px[0]), sdp), round(float(camera_shift_px[1]), sdp)],
++        "camera_shift": [round(float(camera_shift_px[0]), sdp) + 0.0, round(float(camera_shift_px[1]), sdp) + 0.0],
+         "n_detections": int(n_detections), "n_live_tracks": len(tracks),
+         "overlap_contests": pairs, "tracks": tracks,
+     }
+@@ -772,7 +772,7 @@ def build_frame_record(cfg: TrackerConfig, *, frame: int, is_cut: bool, camera_s
+         if fv.get("timestamp_s") is not None:
+             fv["timestamp_s"] = round(float(fv["timestamp_s"]), cfg.get("timestamp_round_dp"))
+         if fv.get("camera_shift_h") is not None:
+-            fv["camera_shift_h"] = [round(float(e), cfg.get("confidence_round_dp")) for e in fv["camera_shift_h"]]
++            fv["camera_shift_h"] = [round(float(e), cfg.get("confidence_round_dp")) + 0.0 for e in fv["camera_shift_h"]]
+         if fv.get("target_height_px") is not None:
+             fv["target_height_px"] = round(float(fv["target_height_px"]), cfg.get("box_round_dp"))
+         rec[V2_KEY] = fv
+diff --git a/player_tracker_rb/population.py b/player_tracker_rb/population.py
+index 1cafd45..2895e20 100644
+--- a/player_tracker_rb/population.py
++++ b/player_tracker_rb/population.py
+@@ -454,6 +454,13 @@ class Population:
+         iy = max(0.0, min(float(self._h), b[3]) - max(0.0, b[1]))
+         return ix * iy / (w * h)
+ 
++    def state_sizes(self) -> Dict[str, int]:
++        """Sizes of everything the population keeps between frames (diagnostics: long-run memory checks)."""
++        return {"population_live": len(self._live), "population_regions": len(self._regions),
++                "population_closed_memory": len(self._memory),
++                "population_live_bank_samples": sum(len(tr.bank) for tr in self._live),
++                "population_closed_bank_samples": sum(len(m.bank) for m in self._memory)}
++
+     def inside_fraction(self, box: Sequence[float]) -> float:
+         """Fraction of a box's area inside the image."""
+         return self._inside_fraction(_box(box))
+diff --git a/player_tracker_rb/provenance.py b/player_tracker_rb/provenance.py
+index ff9c6e1..292dbe7 100644
+--- a/player_tracker_rb/provenance.py
++++ b/player_tracker_rb/provenance.py
+@@ -35,7 +35,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+ from . import __version__ as TRACKER_VERSION
+ from . import output_schema as S
+ from .config import TrackerConfig
+-from .video_io import SequentialVideoReader, fingerprint_method
++from .video_io import SequentialVideoReader, ThumbsDigest, fingerprint_method
+ 
+ SIDECAR_KIND = "spana_rb_video_provenance"
+ SIDECAR_SUFFIX = "_rb_video_provenance.json"
+@@ -120,15 +120,23 @@ def contract_provenance(reader: SequentialVideoReader, seed_bbox: Sequence[float
+ 
+ 
+ def video_provenance_sidecar(reader: SequentialVideoReader, contract: Dict[str, Any], cfg: TrackerConfig,
+-                             frame_thumbs: Optional[List[str]] = None) -> Dict[str, Any]:
+-    """The fuller R1-B provenance record. Call after the frames have been read and the reader closed (verified)."""
++                             frame_thumbs: Optional[List[str]] = None,
++                             thumbs: Optional["ThumbsDigest"] = None) -> Dict[str, Any]:
++    """The fuller R1-B provenance record. Call after the frames have been read and the reader closed (verified).
++    The per-frame fingerprints are given either as a list (frame_thumbs) or as an incremental ThumbsDigest."""
+     from .video_io import thumbs_digest
+     info = reader.info
+     if reader.source_verified_at_close is not True:
+         raise ProvenanceError("source was not re-verified at close; refusing to write provenance")
+     align = reader.alignment_summary()
++    if frame_thumbs is not None and thumbs is not None:
++        raise ProvenanceError("give frame_thumbs or thumbs, not both")
+     if frame_thumbs is not None and len(frame_thumbs) != align["processed_frames"]:
+         raise ProvenanceError("frame_thumbs length does not match processed_frames")
++    if thumbs is not None and thumbs.count != align["processed_frames"]:
++        raise ProvenanceError("thumbs digest count does not match processed_frames")
++    digest = thumbs_digest(frame_thumbs) if frame_thumbs is not None else \
++        (thumbs.hexdigest() if thumbs is not None else None)
+     return {
+         "kind": SIDECAR_KIND,
+         "tracker": S.TRACKER_NAME,
+@@ -140,7 +148,7 @@ def video_provenance_sidecar(reader: SequentialVideoReader, contract: Dict[str,
+         "video": info.as_record(),
+         "frame_alignment": dict(align, **{
+             "fingerprint_method": fingerprint_method(cfg),
+-            "frame_thumbs_sha256": thumbs_digest(frame_thumbs) if frame_thumbs is not None else None,
++            "frame_thumbs_sha256": digest,
+         }),
+         "source_reverified_at_close": True,
+         "resume_supported": False,
+diff --git a/player_tracker_rb/run_rb.py b/player_tracker_rb/run_rb.py
+new file mode 100644
+index 0000000..1e6bdad
+--- /dev/null
++++ b/player_tracker_rb/run_rb.py
+@@ -0,0 +1,764 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R0/R0_R1_TRACKER_REBUILD_PLAN.md item 10 (run_rb.run: the historical run_mo signature minus
++#                 resume); R0/R0_TRACKER_INTERFACE_MAP.md §1-§5 (Pass-1 JSON contract, event_adapter and
++#                 actor_attribution consumption); R1/R1_DESIGN_DECISIONS.md D01, D05-D07, D16, D18-D20;
++#                 R1-G instruction (Nathan, 2026-10-25)
++"""
++player_tracker_rb.run_rb: the integrated R1 Pass-1 tracker.
++
++    run(video_path, start_frame, init_box, jersey_number=None, max_frames=None, out_dir=..., debug=False,
++        config_overrides=None) -> summary dict
++
++Pipeline per frame (no event logic; nothing here knows about teams, numbers, clips or benchmarks):
++
++    SequentialVideoReader (video_io)          one positioning, then strictly sequential decode, fail closed
++      -> DetectorBackend.detect               generic PersonCandidates
++      -> CameraMotionEstimator.update         global image motion, hard-cut detection
++      -> Population.update                    generic tracklets, merges, contacts, competitors
++      -> TargetTracker.seed / update          contrastive identity of the ONE seeded target
++      -> records (output_schema builders)     TARGET record (T001) + POPULATION records + frame v2 block
++      -> streamed canonical JSON              `{video_basename}_mo_tracking_results.json`
++    plus the provenance sidecar `{video_basename}_rb_video_provenance.json` and, with debug=True, the per-frame
++    decision log `{video_basename}_rb_decision_log.jsonl`.
++
++The seed frame (relative frame 0) is the initialization frame, not a frame_log step: frame_log frame f is video
++frame start_frame + f, f = 1, 2, ... (contract). The run is REFUSED (RunRefusedError, nothing written) when the
++seed cannot start a trustworthy target (D18).
++
++Record rules (the TARGET record follows output_schema.target_invariant_errors; NEW semantics are listed in the
++summary v2 notes and in R1/R1G/R1G_OUTPUT_MAPPING.md):
++  * Target: track_id = identity_id = online_track_id = target_track_id (T001) for the whole run (D07). Historical
++    `bbox` is the LAST CONFIRMED (observed) box; `observed_position_box` is this frame's observed, predicted or
++    held box (D06; frame 86 of the frozen historical exemplar HE1). identity_confidence = identity_confidence_rb
++    when trusted, else at most untrusted_identity_confidence_ceiling (D19). overall_track_confidence (which
++    event_adapter turns into the snapshot tracking_confidence) = identity_confidence.
++  * PHYSICAL-ENTITY EXCLUSION (project rule 28): a population tracklet that is, or may physically be, the target
++    this frame (possibly_target) is NOT written as a separate person; in overlap_contests it is written as the
++    target id. A rejected look-alike is another person and is written.
++  * Population: every other live tracklet, with the historical non-selected triple (detected -> ACTIVE/NONE/
++    CONFIRMED_DETECTION, coasting -> TEMPORARILY_LOST/FULL/PREDICTED). No identity claim: identity_confidence 0.
++  * overlap_contests: every overlapping pair of bodies (population overlap context), as written track ids.
++  * identity_conflict_counts: 'T001|Txxx' -> number of frames in which that tracked person was the competing
++    hypothesis that kept the target from being confirmed (F9: conflicts were invisible in the historical log).
++    Surviving actor_attribution halves its actor confidence when any conflict involves the target.
++  * final_tracks: the last written record of every track (no v2 block); a track absent from the last frame is
++    TERMINATED.
++
++Streaming and memory: frame records are serialised as they are produced into a temporary file next to the output
++and the final document is assembled at the end (byte-identical to output_schema.dumps_canonical of the whole
++document). Nothing grows with the clip except what is bounded by the number of distinct tracks (final_tracks)
++and of reacquisition events. Every frame record is validated against the R1 contract before it is written; the
++summary, final_tracks and the document-level rules are validated at the end. Any violation raises
++ContractViolationError and leaves no output file (fail closed).
++
++Determinism: identical inputs, code and config give a byte-identical document except the wall-clock fields
++listed in WALL_CLOCK_FIELDS, which compare_documents() reports separately.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++import os
++import statistics
++import time
++from collections import Counter
++from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
++
++import numpy as np
++
++from . import __version__ as TRACKER_VERSION
++from . import output_schema as S
++from . import population as P
++from . import provenance as PV
++from . import target as T
++from .appearance import AppearanceExtractor, EmbeddingBackend
++from .camera import CUT, CameraMotionEstimator
++from .config import ConfigError, TrackerConfig
++from .detector import DetectorBackend, box_iou_matrix
++from .video_io import SequentialVideoReader, ThumbsDigest
++
++RESULTS_SUFFIX = "_mo_tracking_results.json"
++DECISION_LOG_SUFFIX = "_rb_decision_log.jsonl"
++PARTIAL_SUFFIX = ".rb_partial"
++# Fields that hold wall-clock facts; everything else must be byte-identical between runs on the same inputs.
++WALL_CLOCK_FIELDS: Tuple[Tuple[str, ...], ...] = (("summary", "processing_time_s"),
++                                                  ("summary", "v2", "provenance", "run_started_utc"))
++APPEARANCE_EMBEDDER_FOR = {"composite_lab_dinov2": "dinov2_onnx"}
++# backend provenance key -> config parameter it must equal (a backend built with other settings is refused)
++DETECTOR_SETTINGS = {"min_score": "detector_min_score", "nms_iou": "detector_nms_iou",
++                     "tiling": "detector_tiling", "tile_grid": "detector_tile_grid",
++                     "tile_overlap_fraction": "detector_tile_overlap_fraction",
++                     "tile_include_full_frame": "detector_tile_include_full_frame",
++                     "input_size": "detector_input_size", "model_sha256": "detector_model_sha256"}
++EMBEDDING_SETTINGS = {"model_sha256": "embedding_model_sha256", "input_hw": "embedding_input_hw",
++                      "pooling": "embedding_pooling"}
++PRODUCTION_DETECTORS = ("yolox_onnx",)
++
++
++class RunRefusedError(RuntimeError):
++    """The run cannot start (bad arguments, backends, seed or provenance). Nothing is written."""
++
++
++class ContractViolationError(RuntimeError):
++    """An output record broke the R1 contract. The run stops and nothing is written (fail closed)."""
++
++
++# ---------------------------------------------------------------------------------------------
++# Backends
++# ---------------------------------------------------------------------------------------------
++def build_backends(cfg: TrackerConfig, detector: Optional[DetectorBackend] = None,
++                   embedder: Optional[EmbeddingBackend] = None) -> Tuple[DetectorBackend, EmbeddingBackend]:
++    """The configured detector and embedding backends. A backend may be passed in (tests, or to reuse a loaded
++    model), but it must be the one the config names: a production config never runs a substitute model, and a
++    'scripted' config never runs without its scripted backend (fail closed; project rules 20-21)."""
++    db = cfg.get("detector_backend")
++    if detector is None:
++        if db != "yolox_onnx":
++            raise RunRefusedError(f"detector_backend {db!r} needs a detector to be passed in")
++        from .detector_yolox import YoloxOnnxDetector
++        detector = YoloxOnnxDetector(cfg)
++    name = detector.provenance().get("backend")
++    if db == "yolox_onnx" and name != "yolox_onnx":
++        raise RunRefusedError(f"config detector_backend yolox_onnx but the detector passed in is {name!r}")
++    if db == "scripted" and name == "yolox_onnx":
++        raise RunRefusedError("config detector_backend scripted but a yolox_onnx detector was passed in")
++    ab = cfg.get("appearance_backend")
++    want = APPEARANCE_EMBEDDER_FOR.get(ab)
++    if embedder is None:
++        if want is None:
++            raise RunRefusedError(f"appearance_backend {ab!r} needs an embedding backend to be passed in")
++        from .embedding_dinov2 import Dinov2OnnxEmbedding
++        embedder = Dinov2OnnxEmbedding(cfg)
++    ename = embedder.provenance().get("backend")
++    if want is not None and ename != want:
++        raise RunRefusedError(f"config appearance_backend {ab} needs embedding backend {want}, got {ename!r}")
++    if want is None and ename in APPEARANCE_EMBEDDER_FOR.values():
++        raise RunRefusedError(f"config appearance_backend {ab!r} but a production embedder ({ename}) was passed in")
++    _check_settings("detector", detector.provenance(), DETECTOR_SETTINGS, cfg)
++    _check_settings("embedding", embedder.provenance(), EMBEDDING_SETTINGS, cfg)
++    if name in PRODUCTION_DETECTORS and not detector.model_record():
++        raise RunRefusedError("the production detector reports no model record")
++    if want is not None and not embedder.model_record():
++        raise RunRefusedError("the production embedding backend reports no model record")
++    return detector, embedder
++
++
++def _same(a: Any, b: Any) -> bool:
++    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
++        return len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
++    return a == b
++
++
++def _check_settings(role: str, prov: Mapping[str, Any], keys: Mapping[str, str], cfg: TrackerConfig) -> None:
++    """Every setting a backend reports must equal the run config: otherwise the document's config_hash would
++    describe settings that were not used (R1-G review L3). Settings a backend does not report are not checked;
++    a model hash reported as None (no model file) is only allowed for non-production backends."""
++    for pkey, ckey in keys.items():
++        if pkey not in prov or (pkey == "model_sha256" and prov[pkey] is None):
++            continue
++        if not _same(prov[pkey], cfg.get(ckey)):
++            raise RunRefusedError(f"{role} backend setting {pkey}={prov[pkey]!r} differs from the run config "
++                                  f"{ckey}={cfg.get(ckey)!r}")
++
++
++# ---------------------------------------------------------------------------------------------
++# Record building
++# ---------------------------------------------------------------------------------------------
++def _clip01(x: Optional[float]) -> float:
++    return 0.0 if x is None else float(min(1.0, max(0.0, x)))
++
++
++def _dumps(obj: Any) -> str:
++    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
++
++
++class _RecordBuilder:
++    """Turns one frame's population result and target decision into contract records. Keeps only per-track state
++    whose size is bounded by the number of live tracks (last observed boxes), plus the last written record of every
++    track ever written (final_tracks)."""
++
++    def __init__(self, cfg: TrackerConfig, seed_box: Sequence[float]):
++        self._cfg = cfg
++        self._tid = cfg.get("target_track_id")
++        self._last_confirmed_box: Tuple[float, ...] = tuple(float(v) for v in seed_box)
++        self._pop_last_observed: Dict[str, Tuple[float, ...]] = {}
++        self.final_records: Dict[str, Dict[str, Any]] = {}
++        self.population_ids_seen: Set[str] = set()
++        self.population_ids_written: Set[str] = set()
++        self.conflicts: Dict[str, int] = {}
++        self.conflict_frames = 0
++        self.lifetimes: Dict[str, Tuple[int, int]] = {}      # written population id -> (first, last) frame
++        self.provisional_ids: Set[str] = set()
++
++    # -- target ------------------------------------------------------------------------------------
++    def target_record(self, f: int, tf: T.TargetFrame, excluded: Set[str]) -> Dict[str, Any]:
++        c = self._cfg
++        hist, occ, pos = S.TARGET_TRIPLE_BY_RB_STATE[(tf.rb_state, tf.predicted_inside_image
++                                                      if tf.rb_state == T.LOST else True)]
++        observed = tf.rb_state == T.TRACKING
++        if observed:
++            self._last_confirmed_box = tuple(tf.bbox)
++        lc = tf.last_confirmed_frame if tf.last_confirmed_frame is not None else 0
++        fso = 0 if observed else f - lc
++        idc = tf.identity_confidence_rb if tf.identity_trusted else \
++            min(tf.identity_confidence_rb, c.get("untrusted_identity_confidence_ceiling"))
++        conf = {"team_confidence": 0.0,
++                "motion_confidence": 1.0 if tf.position_valid else 0.0,
++                "appearance_confidence": _clip01(tf.target_similarity),
++                "reid_confidence": _clip01(tf.target_similarity),
++                "overall_track_confidence": idc,
++                "visibility_confidence": 1.0 if observed else 0.0,
++                "position_confidence": 1.0 if observed else 0.0,
++                "track_continuity_confidence": 1.0 if observed else 0.0,
++                "identity_confidence": idc}
++        rec = S.build_track_record(
++            c, track_id=self._tid, state=hist, age=f, last_seen_frame=lc, bbox=self._last_confirmed_box,
++            observed_position_box=tf.bbox, occlusion_status=occ, position_source=pos, selected_player=True,
++            confidences=conf, frames_since_observed_position=fso, frames_since_confirmed_identity=fso,
++            v2=dict(tf.v2_fields(), occluder_track_ids=[o for o in tf.occluder_track_ids if o not in excluded]))
++        self.final_records[self._tid] = rec
++        return rec
++
++    # -- population --------------------------------------------------------------------------------
++    def population_records(self, f: int, res: P.FrameResult, excluded: Set[str]) -> List[Dict[str, Any]]:
++        c = self._cfg
++        out = []
++        live = {v.tracklet_id for v in res.tracklets}
++        for v in res.tracklets:
++            self.population_ids_seen.add(v.tracklet_id)
++            if v.observed_box is not None:
++                self._pop_last_observed[v.tracklet_id] = tuple(v.observed_box)
++            if v.tracklet_id in excluded:
++                continue
++            detected = v.observed
++            score = None
++            if detected and v.detection_index is not None:
++                score = float(res.observations[v.detection_index].score)
++            hist, occ, pos = S.POPULATION_TRIPLE_DETECTED if detected else S.POPULATION_TRIPLE_COASTING
++            last_obs = self._pop_last_observed.get(v.tracklet_id, tuple(v.box))
++            fso = f - v.last_observed_frame
++            conf = {"team_confidence": 0.0, "motion_confidence": 1.0 if detected else 0.0,
++                    "appearance_confidence": 0.0, "reid_confidence": 0.0,
++                    "overall_track_confidence": _clip01(score) if detected else 0.0,
++                    "visibility_confidence": 1.0 if detected else 0.0,
++                    "position_confidence": 1.0 if detected else 0.0,
++                    "track_continuity_confidence": 1.0 if detected else 0.0, "identity_confidence": 0.0}
++            v2 = {"record_kind": "POPULATION", "detected_this_frame": detected, "raw_detection_conf": score,
++                  "is_competitor": bool(v.is_competitor), "first_frame": int(v.first_frame)}
++            rec = S.build_track_record(
++                c, track_id=v.tracklet_id, state=hist, age=f - v.first_frame, last_seen_frame=v.last_observed_frame,
++                bbox=last_obs, observed_position_box=v.box, occlusion_status=occ, position_source=pos,
++                selected_player=False, confidences=conf, frames_since_observed_position=fso,
++                frames_since_confirmed_identity=fso, v2=v2)
++            out.append(rec)
++            self.final_records[v.tracklet_id] = rec
++            self.population_ids_written.add(v.tracklet_id)
++            first, _ = self.lifetimes.get(v.tracklet_id, (f, f))
++            self.lifetimes[v.tracklet_id] = (first, f)
++            if v.provisional:
++                self.provisional_ids.add(v.tracklet_id)
++            else:
++                self.provisional_ids.discard(v.tracklet_id)
++        for gone in [k for k in self._pop_last_observed if k not in live]:
++            del self._pop_last_observed[gone]                # bounded by the live tracks
++        return out
++
++    def state_sizes(self) -> Dict[str, int]:
++        """Per-track state kept by the writer: bounded by live tracks, or by distinct tracks ever written."""
++        return {"writer_live_last_observed": len(self._pop_last_observed),
++                "writer_final_records": len(self.final_records), "writer_lifetimes": len(self.lifetimes),
++                "writer_provisional_ids": len(self.provisional_ids), "writer_conflict_pairs": len(self.conflicts),
++                "writer_population_ids_seen": len(self.population_ids_seen)}
++
++    # -- frame context -----------------------------------------------------------------------------
++    def written_ids(self, ref: str, res: P.FrameResult, excluded: Set[str]) -> Set[str]:
++        """A population ref ('D<i>' detection ref or a tracklet id) as the track ids written for it this frame. A
++        detection without a tracklet (a merged or alternative box) stands for the tracked bodies it claims, if any."""
++        tids: List[Optional[str]] = [ref]
++        if ref.startswith("D") and ref[1:].isdigit():
++            i = int(ref[1:])
++            if not 0 <= i < len(res.observations):
++                return set()
++            o = res.observations[i]
++            tids = [o.tracklet_id] if o.tracklet_id is not None else list(o.claimants)
++        return {self._tid if t in excluded else t for t in tids if t is not None}
++
++    def overlap_contests(self, res: P.FrameResult, excluded: Set[str], written: Set[str]) -> List[List[str]]:
++        pairs = set()
++        for op in res.overlap_pairs:
++            for a in self.written_ids(op.a, res, excluded) & written:
++                for b in self.written_ids(op.b, res, excluded) & written:
++                    if a != b:
++                        pairs.add(tuple(sorted((a, b))))
++        return [list(p) for p in sorted(pairs)]
++
++    def record_conflicts(self, tf: T.TargetFrame, res: P.FrameResult, excluded: Set[str],
++                         written: Set[str]) -> None:
++        """Count the competing hypotheses that kept the target from being confirmed this frame (F9): the
++        competitor that beat (or could not be contrasted with) the target's own continuing box, unverifiable
++        contacts touching it, and rival boxes that blocked it (continuation or reacquisition rivals). Competitors
++        of OTHER boxes are not about the target and are not counted."""
++        if tf.identity_trusted:
++            return
++        names: Set[str] = set()
++        refs: List[str] = []
++        for cand in tf.decision.get("candidates", []):
++            if cand.get("role") == T.CONTINUATION and not cand.get("passed"):
++                if cand.get("best_competitor"):
++                    refs.append(str(cand["best_competitor"]))
++                refs += [str(r) for r in cand.get("unknown_contacts") or []]
++        rivals = list(tf.decision.get("continuation_rivals") or [])
++        rivals += list(tf.decision.get("reacquisition", {}).get("rivals") or [])
++        refs += [P.det_ref(int(i)) for i in rivals]
++        for r in refs:
++            names |= (self.written_ids(r, res, excluded) & written) - {self._tid}
++        if names:
++            self.conflict_frames += 1
++            for n in sorted(names):
++                key = f"{self._tid}|{n}"
++                self.conflicts[key] = self.conflicts.get(key, 0) + 1
++
++
++# ---------------------------------------------------------------------------------------------
++# Streaming document writer and incremental document checks
++# ---------------------------------------------------------------------------------------------
++class _CreatedFiles:
++    """Every path this run created. Files are written under a temporary name and PUBLISHED with an exclusive hard
++    link (never a rename, which could silently replace a file created meanwhile); cleanup after a failure removes
++    only paths this run created (R1-G review M3, L2)."""
++
++    def __init__(self) -> None:
++        self.paths: List[str] = []
++
++    def open_new(self, path: str):
++        fh = open(path, "x", encoding="ascii")
++        self.paths.append(path)
++        return fh
++
++    def publish(self, tmp: str, final: str) -> None:
++        try:
++            os.link(tmp, final)
++        except FileExistsError as e:
++            raise RunRefusedError(f"refusing to overwrite existing output {final}") from e
++        except OSError as e:                                   # fail closed: no non-exclusive fallback
++            raise RunRefusedError(f"cannot publish {final} exclusively (hard link failed: {e})") from e
++        self.paths.append(final)
++        os.remove(tmp)
++        self.paths.remove(tmp)
++
++    def cleanup(self) -> None:
++        for p in reversed(self.paths):
++            if os.path.exists(p):
++                os.remove(p)
++        self.paths = []
++
++
++class _StreamingDocument:
++    """Writes frame records as they are produced; assembles the canonical document at the end."""
++
++    def __init__(self, out_path: str, chunk_bytes: int, files: _CreatedFiles):
++        self._chunk = chunk_bytes
++        self._files = files
++        self.out_path = out_path
++        self._partial = out_path + PARTIAL_SUFFIX
++        self._doc_tmp = out_path + PARTIAL_SUFFIX + ".doc"
++        for p in (out_path, self._partial, self._doc_tmp):
++            if os.path.exists(p):
++                raise RunRefusedError(f"refusing to overwrite existing file {p}")
++        self._fh = files.open_new(self._partial)
++        self.n = 0
++
++    def add_frame(self, rec: Dict[str, Any]) -> None:
++        if self.n:
++            self._fh.write(",")
++        self._fh.write(_dumps(rec))
++        self.n += 1
++
++    def finish(self, summary: Dict[str, Any], final_tracks: List[Dict[str, Any]]) -> str:
++        """Assemble, publish exclusively, and return the SHA-256 of the written document."""
++        self._fh.close()
++        h = hashlib.sha256()
++        with self._files.open_new(self._doc_tmp) as out, open(self._partial, "r", encoding="ascii") as frames:
++            def w(text: str) -> None:
++                out.write(text)
++                h.update(text.encode("ascii"))
++            # canonical key order: final_tracks < frame_log < summary
++            w('{"final_tracks":' + _dumps(final_tracks) + ',"frame_log":[')
++            for block in iter(lambda: frames.read(self._chunk), ""):
++                w(block)
++            w('],"summary":' + _dumps(summary) + "}\n")
++        self._files.publish(self._doc_tmp, self.out_path)
++        os.remove(self._partial)
++        self._files.paths.remove(self._partial)
++        return h.hexdigest()
++
++    def close(self) -> None:
++        if not self._fh.closed:
++            self._fh.close()
++
++
++class _DocumentChecks:
++    """The document-level rules of output_schema.validate_document(require_v2=True), applied incrementally so the
++    whole frame_log never has to be held in memory. Per-frame records are validated with output_schema itself."""
++
++    def __init__(self, cfg: TrackerConfig, start_frame: int):
++        self._cfg = cfg
++        self._start = start_frame
++        self.next_frame = 1
++        self.episodes_first: Optional[int] = None
++        self.last_episode: Optional[int] = None
++        self.increments = 0
++
++    def frame(self, fr: Dict[str, Any]) -> None:
++        where = f"frame_log[{fr.get('frame')}]"
++        errs = S.validate_frame_record(fr, where, require_v2=True, cfg=self._cfg)
++        if fr.get("frame") != self.next_frame:
++            errs.append(f"{where}: frames must run 1, 2, ... (expected {self.next_frame})")
++        if fr[S.V2_KEY]["video_frame_index"] != self._start + fr["frame"]:
++            errs.append(f"{where}: v2.video_frame_index must equal start_frame + frame")
++        sel = [t for t in fr["tracks"] if t.get("selected_player")]
++        if len(sel) == 1:
++            ep = sel[0][S.V2_KEY]["target_episode"]
++            if self.last_episode is None:
++                if ep != 1:
++                    errs.append("target_episode must start at 1")
++            elif ep not in (self.last_episode, self.last_episode + 1):
++                errs.append("target_episode may only stay the same or increase by 1")
++            elif ep == self.last_episode + 1:
++                self.increments += 1
++            self.last_episode = ep
++        if errs:
++            raise ContractViolationError("; ".join(errs))
++        self.next_frame += 1
++
++    def finish(self, summary: Dict[str, Any], final_tracks: List[Dict[str, Any]]) -> None:
++        errs = S.validate_summary(summary, require_v2=True)
++        for i, t in enumerate(final_tracks):
++            errs.extend(S.validate_track_record(t, f"final_tracks[{i}]", cfg=self._cfg, context="final_tracks"))
++        if sum(1 for t in final_tracks if t.get("selected_player") is True) > 1:
++            errs.append("final_tracks: more than one selected_player record")
++        if summary["processed_frames"] != self.next_frame - 1:
++            errs.append("summary.processed_frames != number of frame records")
++        v2 = summary[S.V2_KEY]
++        if len(v2["reacquisition_events"]) != self.increments:
++            errs.append(f"{self.increments} episode increments but {len(v2['reacquisition_events'])} events")
++        prov = v2["provenance"]
++        if float(prov["fps"]) != float(summary["fps"]):
++            errs.append("summary.v2.provenance.fps must equal summary.fps")
++        if prov["seed_frame"] != summary["start_frame"]:
++            errs.append("summary.v2.provenance.seed_frame must equal summary.start_frame")
++        if errs:
++            raise ContractViolationError("; ".join(errs))
++
++
++# ---------------------------------------------------------------------------------------------
++# The run
++# ---------------------------------------------------------------------------------------------
++def possibly_target(tracker: T.TargetTracker, tf: T.TargetFrame, res: P.FrameResult,
++                    cfg: TrackerConfig) -> Set[str]:
++    """Population tracklets that are, or may physically be, the target this frame (project rule 28):
++      * the tracklet of an observed (TRACKING) target box, and the target's own tracklets that are not observed;
++      * while the target is not TRACKING: every tracklet the target was confirmed on, observed or not (each is one
++        physical body chain of the target: a tracklet never survives contact with another body);
++      * the target's continuing tracklet (contested or hidden) and the candidate under reacquisition verification;
++      * while the target is not TRACKING and its position is valid: a tracklet BORN AFTER the target's last
++        confirmation whose box lies on the target's reported (predicted / held) box (IoU >=
++        population_match_iou_min). It cannot be a body that was seen as a separate person beside the confirmed
++        target, and it is where the target would re-emerge (test audit C1). An occluder that existed before is
++        another person and stays written.
++    A tracklet the tracker has rejected elsewhere, and (while the target is TRACKING on another box) a former target
++    tracklet observed elsewhere as a separate box, are other people and are written as such (review M1)."""
++    observed = {v.tracklet_id for v in res.tracklets if v.observed}
++    if tf.rb_state == T.TRACKING:
++        # the target is THIS observed box; another observed tracklet the target was once confirmed on is a separate
++        # body in this frame (two boxes at once) and is written; unobserved ones are the target's coasting history
++        out = {tid for tid in tracker.target_tracklets if tid not in observed}
++        if tf.observation_tracklet_id is not None:
++            out.add(tf.observation_tracklet_id)
++    else:
++        # not TRACKING: every tracklet the target was confirmed on is still one physical body chain of the target
++        # (a tracklet never survives contact with another body), whether observed or not
++        out = set(tracker.target_tracklets)
++    for tid in (tracker.current_tracklet, tracker.verifying_tracklet):
++        if tid is not None:
++            out.add(tid)
++    if tf.rb_state != T.TRACKING and tf.position_valid:
++        born_after = -1 if tf.last_confirmed_frame is None else tf.last_confirmed_frame
++        fresh = [v for v in res.tracklets if v.first_frame > born_after and v.tracklet_id not in out]
++        if fresh:
++            ious = box_iou_matrix(np.asarray([tf.bbox]), np.asarray([v.box for v in fresh]))[0]
++            out |= {v.tracklet_id for v, o in zip(fresh, ious) if o >= cfg.get("population_match_iou_min")}
++    return out
++
++
++def output_paths(out_dir: str, video_path: str) -> Dict[str, str]:
++    base = os.path.splitext(os.path.basename(video_path))[0]
++    return {"results": os.path.join(out_dir, base + RESULTS_SUFFIX),
++            "provenance": PV.sidecar_path(out_dir, video_path),
++            "decision_log": os.path.join(out_dir, base + DECISION_LOG_SUFFIX)}
++
++
++def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_number: Optional[str] = None,
++        max_frames: Optional[int] = None, out_dir: Optional[str] = None, debug: bool = False,
++        config_overrides: Optional[Mapping[str, Any]] = None, *, detector: Optional[DetectorBackend] = None,
++        embedder: Optional[EmbeddingBackend] = None, expected_sha256: Optional[str] = None,
++        git: Callable[[], Tuple[str, bool]] = PV.git_state, clock: Callable[[], str] = PV.utc_now_iso,
++        timer: Callable[[], float] = time.perf_counter,
++        on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None) -> Dict[str, Any]:
++    """Run the R1 Pass-1 tracker on one clip and write its outputs into out_dir. Returns the summary dict.
++
++    The historical run_mo signature minus `resume` (no resume exists, F15). `jersey_number` must be None: the
++    generic tracker reads no numbers. `max_frames` caps the frames processed after the seed (None: to the end).
++    `detector`/`embedder` may be passed in only if they are the backends the config names (build_backends).
++    `expected_sha256` pins the source video (fixture hash); a mismatch refuses the run. `on_frame(frame, sizes)`
++    is a read-only diagnostics hook receiving the sizes of all state kept between frames (long-run checks)."""
++    if jersey_number is not None:
++        raise RunRefusedError("jersey_number is not supported: the R1 tracker is generic (no number reading)")
++    if out_dir is None or not os.path.isdir(out_dir):
++        raise RunRefusedError(f"out_dir must be an existing directory, got {out_dir!r}")
++    overrides = dict(config_overrides or {})
++    if max_frames is not None:
++        overrides["max_frames"] = max_frames
++    try:
++        cfg = TrackerConfig.with_overrides(overrides) if overrides else TrackerConfig.default()
++    except ConfigError as e:
++        raise RunRefusedError(f"config: {e}") from e
++    paths = output_paths(out_dir, video_path)
++    mine = [paths["results"], paths["provenance"]] + ([paths["decision_log"]] if debug else [])
++    for p in mine:
++        for q in (p, p + PARTIAL_SUFFIX, p + PARTIAL_SUFFIX + ".doc"):
++            if os.path.exists(q):
++                raise RunRefusedError(f"refusing to overwrite existing file {q}")
++    det, emb = build_backends(cfg, detector, embedder)
++    models = [m for m in (det.model_record(), emb.model_record()) if m]
++
++    t0 = timer()
++    files = _CreatedFiles()
++    doc: Optional[_StreamingDocument] = None
++    log_fh = None
++    log_tmp = paths["decision_log"] + PARTIAL_SUFFIX
++    ok = False
++    try:
++        with SequentialVideoReader(video_path, start_frame, cfg, expected_sha256=expected_sha256) as reader:
++            info = reader.info
++            try:
++                contract_prov = PV.contract_provenance(reader, init_box, cfg, models=models, git=git, clock=clock)
++            except PV.ProvenanceError as e:
++                raise RunRefusedError(f"provenance: {e}") from e
++            fps = info.fps
++            est = CameraMotionEstimator(cfg)
++            pop = P.Population(cfg, info.frame_width, info.frame_height)
++            tracker = T.TargetTracker(cfg, pop, AppearanceExtractor(cfg, emb))
++            seed = reader.seed
++            cands = det.detect(seed.image)
++            cam = est.update(seed.image, [d.bbox for d in cands], 1.0 / fps)
++            res = pop.update(0, 0.0, cands, cam)
++            try:
++                seed_frame = tracker.seed(res, seed.image, init_box)
++            except T.SeedError as e:
++                raise RunRefusedError(f"seed refused: {e}") from e
++            builder = _RecordBuilder(cfg, seed_frame.bbox)
++            checks = _DocumentChecks(cfg, start_frame)
++            doc = _StreamingDocument(paths["results"], cfg.get("hash_chunk_bytes"), files)
++            if debug:
++                if os.path.exists(log_tmp):
++                    raise RunRefusedError(f"refusing to overwrite existing file {log_tmp}")
++                log_fh = files.open_new(log_tmp)
++                log_fh.write(_dumps({"frame": 0, "target": seed_frame.as_record(), "population": res.as_record()})
++                             + "\n")
++            thumbs = ThumbsDigest()
++            last_frame_ids: Set[str] = set()
++            hist_states: Counter = Counter()                  # counts only: nothing kept per frame (review L1)
++            rb_states: Counter = Counter()
++            for fr in reader:
++                f = fr.rel_frame
++                cands = det.detect(fr.image)
++                cam = est.update(fr.image, [d.bbox for d in cands], 1.0 / fps)
++                res = pop.update(f, f / fps, cands, cam)
++                tf = tracker.update(res, fr.image)
++                excluded = possibly_target(tracker, tf, res, cfg)
++                trec = builder.target_record(f, tf, excluded)
++                precs = builder.population_records(f, res, excluded)
++                written = {builder._tid} | {r["track_id"] for r in precs}
++                builder.record_conflicts(tf, res, excluded, written)
++                h = tf.target_height_px
++                shift = (cam.shift_px[0] + 0.0, cam.shift_px[1] + 0.0)          # no negative zero in the JSON
++                frec = S.build_frame_record(
++                    cfg, frame=f, is_cut=cam.status == CUT, camera_shift_px=shift, n_detections=len(cands),
++                    overlap_contests=builder.overlap_contests(res, excluded, written), tracks=[trec] + precs,
++                    v2={"video_frame_index": fr.video_frame_index, "timestamp_s": fr.video_time_s,
++                        "frame_thumb_sha1": fr.thumb_sha1, "cut_detected": cam.status == CUT,
++                        "camera_shift_h": [shift[0] / h, shift[1] / h] if h else None, "target_height_px": h})
++                checks.frame(frec)
++                doc.add_frame(frec)
++                last_frame_ids = written
++                if log_fh is not None:
++                    log_fh.write(_dumps({"frame": f, "target": tf.as_record(), "camera": cam.as_record(),
++                                         "population": res.as_record()}) + "\n")
++                thumbs.update(fr.thumb_sha1)
++                hist_states[trec["state"]] += 1
++                rb_states[tf.rb_state] += 1
++                if on_frame is not None:
++                    sizes = dict(pop.state_sizes(), **tracker.state_sizes(), **builder.state_sizes())
++                    on_frame(f, sizes)
++        # the reader is closed here and the source re-hashed (raises SourceChangedError on any change)
++        if checks.next_frame == 1:
++            raise RunRefusedError("no frame after the seed frame: nothing to track (the seed is not a frame_log step)")
++        summary, finals = _summary(cfg, info, start_frame, contract_prov, builder, tracker, hist_states, rb_states,
++                                   timer() - t0, last_frame_ids)
++        checks.finish(summary, finals)
++        sidecar = PV.video_provenance_sidecar(reader, contract_prov, cfg, thumbs=thumbs)
++        sidecar["backends"] = {"detector": det.provenance(), "embedding": emb.provenance()}
++        # publish: decision log, then results, then the provenance sidecar LAST (its presence marks a complete run
++        # and it carries the results file's SHA-256)
++        if log_fh is not None:
++            log_fh.close()
++            files.publish(log_tmp, paths["decision_log"])
++        sidecar["results_file"] = os.path.basename(paths["results"])
++        sidecar["results_sha256"] = doc.finish(summary, finals)
++        side_tmp = paths["provenance"] + PARTIAL_SUFFIX
++        if os.path.exists(side_tmp):
++            raise RunRefusedError(f"refusing to overwrite existing file {side_tmp}")
++        with files.open_new(side_tmp) as fh:
++            fh.write(S.dumps_canonical(sidecar))
++        files.publish(side_tmp, paths["provenance"])
++        ok = True
++        return summary
++    finally:
++        if doc is not None:
++            doc.close()
++        if log_fh is not None and not log_fh.closed:
++            log_fh.close()
++        if not ok:                         # fail closed: remove everything THIS run created, nothing else (M3)
++            files.cleanup()
++
++
++SUMMARY_NOTES: Tuple[str, ...] = (
++    "R1 (player_tracker_rb) output; historical keys keep their historical meaning; NEW information is under v2.",
++    "Target T001 is one logical target for the whole run (D07); target_episode and reacquisition_events record "
++    "every loss and reacquisition. Only rb_state TRACKING (historical ACTIVE/CONFIRMED_DETECTION) is a trusted, "
++    "observed identity.",
++    "Target bbox = last confirmed (observed) box; observed_position_box = this frame's observed, predicted or held "
++    "box (D06). v2.observation_source / bbox_is_observed / bbox_is_held / bbox_is_predicted say which.",
++    "identity_confidence: v2.identity_confidence_rb when trusted, else <= untrusted_identity_confidence_ceiling "
++    "(D19). overall_track_confidence = identity_confidence. identity_confidence_rb is UNCALIBRATED.",
++    "A reacquisition accepted without beating a confusable competitor (reacquisition_events[].evidence."
++    "contrast_verified = false; contrast_available says whether any banked competitor was contrasted) opens an "
++    "UNVERIFIED episode: its observed boxes are rb_state TRACKING (ACTIVE / CONFIRMED_DETECTION) but identity_trusted "
++    "= false, reason INSUFFICIENT_CONTRAST, confidence <= 0.49, until a TRACKING frame beats a confusable competitor "
++    "by the contrast margin. Such an episode never updates the appearance bank.",
++    "NEW semantics (not the historical formulas, which are UNKNOWN): appearance_confidence and reid_confidence = "
++    "composite appearance similarity of the reported box to the target bank (0 if none); motion_confidence = 1 "
++    "while positional continuity is valid; visibility/position/track_continuity_confidence = 1 only when observed. "
++    "Population records carry no identity claim (identity_confidence 0; overall_track_confidence = detector score "
++    "when detected). team = UNKNOWN and team_confidence = 0 everywhere: the generic tracker has no team logic.",
++    "Physical-entity exclusion: a population tracklet that is or may be the target this frame is not written as a "
++    "separate person, and is written as T001 in overlap_contests.",
++    "overlap_contests = every overlapping pair of bodies this frame. identity_conflict_counts['T001|Txxx'] = frames in "
++    "which Txxx was the competing hypothesis that kept the target from being confirmed; identity_conflicts_logged = "
++    "number of such frames.",
++    "spawn_guard_stats is empty and health_metrics provisional_to_confirmed_ratio, duplicate_likelihood, "
++    "live_association_eligible_dormant_count and pruned_from_live_association_count are null: R1 has no such "
++    "mechanisms. total_tracks_spawned counts population tracklets (the target's own included).",
++    "Wall-clock fields (excluded from the determinism comparison): summary.processing_time_s, "
++    "summary.v2.provenance.run_started_utc.",
++)
++
++
++def _pct(counts: Counter, dp: int) -> Dict[str, float]:
++    """output_schema.selected_state_pct computed from counts (same formula and rounding)."""
++    n = sum(counts.values())
++    return {k: round(100.0 * v / n, dp) for k, v in sorted(counts.items())} if n else {}
++
++
++def _summary(cfg: TrackerConfig, info: Any, start_frame: int, prov: Dict[str, Any], b: _RecordBuilder,
++             tracker: T.TargetTracker, hist_states: Counter, rb_states: Counter, elapsed_s: float,
++             last_frame_ids: Set[str]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
++    n = sum(hist_states.values())
++    tid = cfg.get("target_track_id")
++    finals = []
++    active = confirmed = provisional = 0
++    for k in [tid] + sorted(k for k in b.final_records if k != tid):
++        rec = {kk: vv for kk, vv in b.final_records[k].items() if kk != S.V2_KEY}
++        if k in last_frame_ids:
++            active += 1
++            if k in b.provisional_ids:
++                provisional += 1
++            else:
++                confirmed += 1
++        else:
++            rec["state"] = "TERMINATED"
++        finals.append(rec)
++    spawned = len(b.population_ids_seen)
++    lifetimes = [last - first + 1 for first, last in b.lifetimes.values()]
++    summary = {
++        "video": info.path, "start_frame": start_frame, "fps": info.fps, "processed_frames": n,
++        "processing_time_s": round(float(elapsed_s), 3),
++        "selected_state_pct": _pct(hist_states, cfg.get("state_pct_round_dp")),
++        "n_tracks_ever_created": 1 + len(b.population_ids_written),
++        "n_tracks_final_active": active, "clip_output": None,
++        "final_confirmed_count": confirmed, "final_provisional_count": provisional,
++        "spawn_guard_stats": {},
++        "identity_conflicts_logged": b.conflict_frames,
++        "identity_conflict_counts": dict(sorted(b.conflicts.items())),
++        "health_metrics": {
++            "frames_processed": n, "total_tracks_spawned": spawned,
++            "new_tracks_per_frame": round(spawned / n, 4) if n else 0.0,
++            "tracks_per_100_frames": round(100.0 * spawned / n, 2) if n else 0.0,
++            "provisional_to_confirmed_ratio": None,
++            "median_track_lifetime_frames": statistics.median(lifetimes) if lifetimes else None,
++            "duplicate_likelihood": None, "live_association_eligible_dormant_count": None,
++            "pruned_from_live_association_count": None},
++        S.V2_KEY: {
++            "schema": S.SCHEMA_NAME, "schema_version": S.V2_SCHEMA_VERSION, "tracker": S.TRACKER_NAME,
++            "tracker_version": TRACKER_VERSION, "provenance": prov, "config_hash": cfg.config_hash(),
++            "reacquisition_events": [e.as_record() for e in tracker.reacquisition_events],
++            "rb_state_pct": _pct(rb_states, cfg.get("state_pct_round_dp")),
++            "notes": list(SUMMARY_NOTES)},
++    }
++    return summary, finals
++
++
++# ---------------------------------------------------------------------------------------------
++# Determinism comparison
++# ---------------------------------------------------------------------------------------------
++def _without(doc: Dict[str, Any], path: Tuple[str, ...]) -> Any:
++    node = doc
++    for k in path[:-1]:
++        node = node.get(k, {})
++    return node.pop(path[-1], None)
++
++
++def compare_documents(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
++    """Compare two run documents. Returns {"identical_except_wall_clock": bool, "wall_clock": {...},
++    "first_difference": path or None}. Every field other than WALL_CLOCK_FIELDS must be identical."""
++    import copy
++    a2, b2 = copy.deepcopy(a), copy.deepcopy(b)
++    wall = {}
++    for path in WALL_CLOCK_FIELDS:
++        wall[".".join(path)] = (_without(a2, path), _without(b2, path))
++    first = _first_difference(a2, b2, "")
++    return {"identical_except_wall_clock": first is None, "wall_clock": wall, "first_difference": first}
++
++
++def _first_difference(a: Any, b: Any, path: str) -> Optional[str]:
++    if type(a) is not type(b):
++        return path or "/"
++    if isinstance(a, dict):
++        for k in sorted(set(a) | set(b)):
++            if k not in a or k not in b:
++                return f"{path}.{k}"
++            d = _first_difference(a[k], b[k], f"{path}.{k}")
++            if d:
++                return d
++        return None
++    if isinstance(a, list):
++        if len(a) != len(b):
++            return f"{path}[len]"
++        for i, (x, y) in enumerate(zip(a, b)):
++            d = _first_difference(x, y, f"{path}[{i}]")
++            if d:
++                return d
++        return None
++    return None if a == b else (path or "/")
+diff --git a/player_tracker_rb/target.py b/player_tracker_rb/target.py
+index fae5c98..5d7998d 100644
+--- a/player_tracker_rb/target.py
++++ b/player_tracker_rb/target.py
+@@ -85,7 +85,7 @@ SEARCH GATE (D13): radius = min(gate_base_h + gate_growth_h_per_s * u, gate_max_
+ predicted centre, u = seconds since the last confirmation; frozen while AMBIGUOUS (gate_grows_while_ambiguous).
+ h = median height of the target's non-partial observed boxes in the last target_height_window_s (camera-scaled).
+ 
+-APPEARANCE BANK (D12): updated only on a TRACKING frame (trusted), from a box that the population also considers
++APPEARANCE BANK (D12): updated only on a TRACKING frame of a VERIFIED episode (trusted), from a box that the population also considers
+ clean (not CONTESTED / PARTIAL / TOUCHES_IMAGE_EDGE / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGE_LINEAGE /
+ merged, containing no other body's box), isolated from every other body outside its own nested group (IoU <=
+ bank_contact_iou, covered <= bank_max_covered_fraction), in a camera-verified frame, outside the post-reacquisition
+@@ -96,10 +96,16 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
+   * seed frame: 1.0 (human-provided identity);
+   * TRACKING: 0.5 + 0.5 * min(a, k), with
+         a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
+-        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation (the
+-            tracklet itself is geometric evidence of one body) but k = 0 for an accepted REACQUISITION (appearance
+-            alone, nothing to contrast: confidence 0.5, evidence contrast_available = False)
++        k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation of a
++            VERIFIED episode (the tracklet itself is geometric evidence of one body), k = 0 otherwise
+     so a trusted frame is in [0.5, 1] and the weakest piece of evidence decides;
++  * UNVERIFIED EPISODE (R1-G; review H1, L4): an episode is contrast-VERIFIED from the seed (human identification),
++    or once a TRACKING frame (or the accepting reacquisition frame) beats a CONFUSABLE competitor by the margin: one
++    whose bank similarity to the crop reaches appearance_floor. A reacquisition accepted otherwise opens an
++    UNVERIFIED episode: its observed frames stay rb_state TRACKING but identity_trusted = False, reason
++    INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
++    updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
++    banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
+   * every untrusted frame: min(untrusted_identity_confidence_ceiling,
+         last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
+ Separate quantities are reported, never folded into this one: raw detector score, target similarity, best
+@@ -135,6 +141,7 @@ MERGED_DETECTION_SUSPECTED = "MERGED_DETECTION_SUSPECTED"
+ REACQUISITION_UNVERIFIED = "REACQUISITION_UNVERIFIED"
+ BELOW_APPEARANCE_FLOOR = "BELOW_APPEARANCE_FLOOR"
+ INSUFFICIENT_CONTRAST = "INSUFFICIENT_CONTRAST"
++EPISODE_UNVERIFIED = "EPISODE_UNVERIFIED"          # bank refusal: the episode's identity is not contrast-verified
+ MOTION_VETO = "MOTION_VETO"
+ NO_CANDIDATE_IN_GATE = "NO_CANDIDATE_IN_GATE"
+ TARGET_OUT_OF_FRAME = "TARGET_OUT_OF_FRAME"
+@@ -327,6 +334,10 @@ class TargetTracker:
+         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
+         self._base_reasons: Tuple[str, ...] = ()
+         self._episode = 1
++        # the current episode's identity has been CONTRAST-VERIFIED (beat a confusable competitor; the seed is a human
++        # identification and counts as verified). An episode opened by an unverified reacquisition reports observed
++        # boxes as untrusted until a TRACKING frame passes that contrast (see the module docstring)
++        self._contrast_verified = True
+         self._tracklet: Optional[str] = None                 # the target's current population tracklet
+         self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
+         self._known_others: Set[str] = set()                 # tracklets seen as separate bodies beside the target
+@@ -356,6 +367,23 @@ class TargetTracker:
+     def reacquisition_events(self) -> Tuple[ReacquisitionEvent, ...]:
+         return tuple(self._events)
+ 
++    def state_sizes(self) -> Dict[str, int]:
++        """Sizes of everything the target tracker keeps between frames (diagnostics: long-run memory checks)."""
++        return {"target_size_history": len(self._sizes), "target_tracklets": len(self._target_tracklets),
++                "target_known_others": len(self._known_others), "target_bank_samples": len(self._bank),
++                "target_verification_history": len(self._verif.history) if self._verif is not None else 0,
++                "target_reacquisition_events": len(self._events)}
++
++    @property
++    def current_tracklet(self) -> Optional[str]:
++        """The population tracklet the target is following (its own geometric chain), or None once released."""
++        return self._tracklet
++
++    @property
++    def verifying_tracklet(self) -> Optional[str]:
++        """The tracklet under reacquisition verification, or None."""
++        return self._verif.tracklet_id if self._verif is not None else None
++
+     @property
+     def target_tracklets(self) -> Tuple[str, ...]:
+         return tuple(sorted(self._target_tracklets))
+@@ -571,13 +599,21 @@ class TargetTracker:
+         floor = c.get("reacq_appearance_floor") if ev.role == REACQUISITION else c.get("appearance_floor")
+         a = min(1.0, max(0.0, (ev.composite - floor) / (1.0 - floor)))
+         if ev.contrast is None:
+-            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain), but for a
+-            # REACQUISITION nothing positive separates the candidate from an unseen look-alike -> minimal trust
+-            k = 1.0 if ev.role == CONTINUATION else 0.0
++            # no banked competitor: nothing to confuse with for a CONTINUATION (geometric chain) of a verified
++            # episode; but for a REACQUISITION, or any frame of an episode that a reacquisition opened without
++            # contrast, nothing positive separates the target from an unseen look-alike -> minimal trust
++            k = 1.0 if ev.role == CONTINUATION and self._contrast_verified else 0.0
+         else:
+             k = min(1.0, max(0.0, (ev.contrast - ev.margin) / (1.0 - ev.margin)))
+         return 1.0 / 2 + min(a, k) / 2
+ 
++    def _confusable_contrast(self, ev: CandidateEvaluation) -> bool:
++        """A passed contrast VERIFIES identity only if the competitor could be confused with the target: its bank's
++        similarity to this crop reaches appearance_floor. Beating an obviously different person says nothing about
++        an unseen look-alike (R1-G review L4)."""
++        return ev.contrast is not None and ev.best_competitor_similarity is not None and \
++            ev.best_competitor_similarity >= self._cfg.get("appearance_floor")
++
+     def _confidence_untrusted(self, t: float) -> float:
+         c = self._cfg
+         if self._last_confirm_t is None:
+@@ -625,6 +661,8 @@ class TargetTracker:
+         """Bookkeeping for a TRACKING frame on detection ev.detection_index."""
+         t = res.time_s
+         o = res.observations[ev.detection_index]
++        if self._confusable_contrast(ev):                    # the episode's identity is now contrast-verified
++            self._contrast_verified = True
+         partial = P.PARTIAL in o.flags or P.TOUCHES_IMAGE_EDGE in o.flags
+         if self._motion is None or not self._position_valid:
+             self._motion = self._mm.start(o.bbox, t, partial=partial)
+@@ -645,7 +683,7 @@ class TargetTracker:
+         # whole tracklet)
+         grp = self._group(res, ev.detection_index)
+         seeding = self._last_confirm_t is None              # the seed box is the human's own identification
+-        settled = seeding or (ev.role == CONTINUATION and
++        settled = seeding or (self._contrast_verified and ev.role == CONTINUATION and
+                               t - self._tracklet_since_t >= self._cfg.get("target_known_other_min_s"))
+         for other in (res.observations if settled else ()):
+             if other.is_body and other.index not in grp and other.tracklet_id and \
+@@ -659,6 +697,8 @@ class TargetTracker:
+         self._lost_from_frame = None
+         self._ambiguous_since_t = None
+         self._verif = None
++        if not self._contrast_verified:                      # an unverified identity never shapes the bank
++            return {"status": "REFUSED", "refusals": [EPISODE_UNVERIFIED]}
+         return self._bank_update(res, image, ev.detection_index, cache)
+ 
+     def _enter_uncertain(self, res: P.FrameResult, state: str) -> None:
+@@ -790,8 +830,10 @@ class TargetTracker:
+                                                      pred_box=pred_box, gate_h=gate_h, h=h, absence_s=absence))
+                 evals.extend(others)
+                 details = list(ev.details)
+-                if ev.passed and self._rivals(others, ev):
++                rivals = self._rivals(others, ev) if ev.passed else []
++                if rivals:
+                     details.append(RIVAL_CANDIDATE)
++                    log["continuation_rivals"] = [e.detection_index for e in rivals]
+                 if not details:
+                     state, chosen = TRACKING, ev
+                     conf_trusted = self._confidence_trusted(ev)
+@@ -847,6 +889,7 @@ class TargetTracker:
+             if acc["accepted"] is not None:
+                 ev = acc["accepted"]
+                 chosen, state, reidentified = ev, TRACKING, True
++                self._contrast_verified = self._confusable_contrast(ev)
+                 conf_trusted = self._confidence_trusted(ev)
+                 self._episode += 1
+                 uf_frame, uf_t = self._uncertain_from
+@@ -873,10 +916,14 @@ class TargetTracker:
+                     contested_box, det_idx = bf.box, bf.detection_index
+ 
+         # ---- write ---------------------------------------------------------------------------------------------
++        trusted = True
+         if state == TRACKING:
+             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
++            log["episode_contrast_verified"] = self._contrast_verified
+             det_idx = chosen.detection_index
+-            conf = conf_trusted
++            trusted = self._contrast_verified
++            conf = conf_trusted if trusted else min(conf_trusted, c.get("untrusted_identity_confidence_ceiling"))
++            self._last_trusted_conf = conf
+         else:
+             conf = self._confidence_untrusted(t)
+             if not reasons:
+@@ -886,6 +933,7 @@ class TargetTracker:
+         self._state = state
+         self._last_frame = res.rel_frame
+         frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
++                            trusted=trusted,
+                             contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)
+         self._prev_t = t
+         return frame
+@@ -984,6 +1032,7 @@ class TargetTracker:
+             out["accepted"] = cur
+             out["evidence"] = {"tracklet_id": v.tracklet_id, "window_s": win, "hit_fraction": frac,
+                                "contrast_available": cur.contrast is not None,
++                               "contrast_verified": self._confusable_contrast(cur),
+                                "frames_in_window": len(window), "absence_s": absence,
+                                "positional_prior": pred_box is not None, "margin": cur.margin,
+                                "target_similarity": cur.composite, "best_competitor": cur.best_competitor,
+@@ -1001,7 +1050,7 @@ class TargetTracker:
+     def _frame(self, res: P.FrameResult, state: str, reasons: Tuple[str, ...], det_idx: Optional[int],
+                ev: Optional[CandidateEvaluation], conf: float, reidentified: bool, log: Dict[str, Any], *,
+                contested_box: Optional[Box] = None, occluders: Tuple[str, ...] = (), merged: bool = False,
+-               pred: Any = None) -> TargetFrame:
++               pred: Any = None, trusted: bool = True) -> TargetFrame:
+         t = res.time_s
+         if state == TRACKING:
+             o = res.observations[det_idx]
+@@ -1034,8 +1083,9 @@ class TargetTracker:
+             bbox_is_predicted=src == PREDICTED, held_age_s=held_age, last_confirmed_frame=self._last_confirm_frame,
+             time_since_confirmed_s=None if self._last_confirm_t is None else t - self._last_confirm_t,
+             observed_or_contested_box=contested_box if state != TRACKING else box,
+-            observation_tracklet_id=tracklet, target_episode=self._episode, identity_trusted=state == TRACKING,
+-            identity_confidence_rb=float(conf), identity_uncertainty_reasons=() if state == TRACKING else reasons,
++            observation_tracklet_id=tracklet, target_episode=self._episode,
++            identity_trusted=state == TRACKING and trusted, identity_confidence_rb=float(conf),
++            identity_uncertainty_reasons=(() if trusted else (INSUFFICIENT_CONTRAST,)) if state == TRACKING else reasons,
+             occluder_track_ids=tuple(occluders), merged_suspected=bool(merged), raw_detection_conf=raw,
+             reidentified_this_frame=reidentified, target_similarity=tsim, best_competitor_similarity=csim,
+             rel_frame=res.rel_frame, time_s=t, bbox=tuple(float(v) for v in box), detection_index=det_idx,
+diff --git a/player_tracker_rb/video_io.py b/player_tracker_rb/video_io.py
+index f1e55cb..abc2ddc 100644
+--- a/player_tracker_rb/video_io.py
++++ b/player_tracker_rb/video_io.py
+@@ -377,8 +377,23 @@ class SequentialVideoReader:
+ 
+ def thumbs_digest(thumbs: List[str]) -> str:
+     """One SHA-256 over the ordered list of per-frame fingerprints (compact alignment summary)."""
+-    h = hashlib.sha256()
++    d = ThumbsDigest()
+     for t in thumbs:
+-        h.update(t.encode("ascii"))
+-        h.update(b"\n")
+-    return h.hexdigest()
++        d.update(t)
++    return d.hexdigest()
++
++
++class ThumbsDigest:
++    """thumbs_digest computed incrementally, so a long run need not keep every fingerprint in memory."""
++
++    def __init__(self) -> None:
++        self._h = hashlib.sha256()
++        self.count = 0
++
++    def update(self, thumb: str) -> None:
++        self._h.update(thumb.encode("ascii"))
++        self._h.update(b"\n")
++        self.count += 1
++
++    def hexdigest(self) -> str:
++        return self._h.hexdigest()
+diff --git a/tests_rb/_synth_pipeline.py b/tests_rb/_synth_pipeline.py
+new file mode 100644
+index 0000000..c544d6c
+--- /dev/null
++++ b/tests_rb/_synth_pipeline.py
+@@ -0,0 +1,261 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25: synthetic full-pipeline tests); test helper only
++"""Test helper: synthetic END-TO-END clips for the integrated pipeline (player_tracker_rb.run_rb.run).
++
++A clip is a real video file (FFV1, lossless, so rendered appearance survives encoding exactly) of people drawn by
++_synth_scene on a textured pitch that the REAL camera estimator can measure:
++  * the pitch has lines and blobs (background features); a camera pan shifts the whole pitch and every person;
++  * each "shot" has its own pitch geometry; consecutive shots alternate brightness, so a shot change is a real hard
++    cut (histogram change + flow failure) for the camera estimator.
++Everything after the video file is the production pipeline: video_io -> detector backend -> camera -> population
++-> target -> output records. The only test seams are the backends the config names "scripted":
++  * a ScriptedDetector whose script is the scene's ideal detector output for each frame (one call per frame,
++    starting at the seed frame), and
++  * the SignatureEmbedding (identity signatures rendered into each person; see _synth_scene).
++Ground truth (which person owns each detection) stays in this helper and is used only to score the output.
++"""
++from __future__ import annotations
++
++import functools
++import json
++import os
++from dataclasses import dataclass
++from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
++
++import cv2
++import numpy as np
++
++from player_tracker_rb import run_rb as R
++from player_tracker_rb.config import TrackerConfig
++from player_tracker_rb.detector import ScriptedDetector
++from tests_rb._synth_scene import Detection, Person, SceneFrame, SignatureEmbedding, detect, iou, render
++
++W, H = 640, 360
++FPS = 30.0
++PW, PH = 28, 70            # person box size in px
++SCRIPTED = {"detector_backend": "scripted", "appearance_backend": "scripted"}
++PAN_MARGIN = 2000          # widest pan supported (px)
++
++
++def pitch(shot: int, offset_x: int, width: int = W, height: int = H) -> np.ndarray:
++    """Background for one frame of `shot`, seen through a camera panned by offset_x px."""
++    if not 0 <= offset_x <= PAN_MARGIN:
++        raise ValueError("pan offset outside the rendered pitch")
++    return np.ascontiguousarray(_pitch_full(shot, width, height)[:, offset_x:offset_x + width])
++
++
++@functools.lru_cache(maxsize=8)
++def _pitch_full(shot: int, width: int, height: int) -> np.ndarray:
++    rng = np.random.default_rng(1000 + shot)
++    g = np.empty((height, width + PAN_MARGIN, 3), np.uint8)
++    g[:] = (40, 130, 40) if shot % 2 == 0 else (30, 95, 35)
++    sx, sy = 53 + 17 * (shot % 5), 47 + 11 * (shot % 5)
++    for x in range(int(rng.integers(0, 40)), width + PAN_MARGIN, sx):
++        cv2.line(g, (x, 0), (x + 30 - 25 * (shot % 2), height), (220, 230, 220), 2)
++    for y in range(int(rng.integers(5, 30)), height, sy):
++        cv2.line(g, (0, y), (width + PAN_MARGIN, y + 9 - 14 * (shot % 2)), (200, 210, 200), 2)
++    for _ in range(60 + PAN_MARGIN // 10):
++        x, y = rng.integers(0, width + PAN_MARGIN), rng.integers(0, height)
++        cv2.circle(g, (int(x), int(y)), int(rng.integers(3, 9)),
++                   (int(rng.integers(0, 80)), int(rng.integers(100, 200)), int(rng.integers(0, 80))), -1)
++    g.setflags(write=False)
++    return g
++
++
++@dataclass
++class ClipFrame:
++    scene: SceneFrame          # people boxes in IMAGE coordinates (already panned)
++    shot: int = 0
++    pan_x: int = 0
++
++
++@dataclass
++class E2E:
++    doc: Dict[str, Any]
++    summary: Dict[str, Any]
++    dets: List[List[Detection]]              # ground-truth detections per relative frame (0 = seed)
++    owners: List[List[Tuple[str, ...]]]      # owner of each candidate the detector returned, per relative frame
++    decision_log: List[Dict[str, Any]]
++    paths: Dict[str, str]
++    sizes: List[Tuple[int, Dict[str, int]]]
++
++    # -- per frame accessors (f = frame_log frame, 1..N) ------------------------------------------------
++    def target(self, f: int) -> Dict[str, Any]:
++        return [t for t in self.doc["frame_log"][f - 1]["tracks"] if t["selected_player"]][0]
++
++    def population(self, f: int) -> List[Dict[str, Any]]:
++        return [t for t in self.doc["frame_log"][f - 1]["tracks"] if not t["selected_player"]]
++
++    @property
++    def n(self) -> int:
++        return len(self.doc["frame_log"])
++
++    def target_det_box(self, f: int, name: str = "TARGET") -> Optional[Tuple[float, ...]]:
++        own = [d.box for d in self.dets[f] if d.owners == (name,)]
++        return own[0] if own else None
++
++    # -- scores ------------------------------------------------------------------------------------
++    def swaps(self, name: str = "TARGET") -> List[int]:
++        """Frames where the target record is trusted (ACTIVE) but its box is not the target's own detection."""
++        out = []
++        for f in range(1, self.n + 1):
++            t = self.target(f)
++            if t["state"] == "ACTIVE":
++                own = self.target_det_box(f, name)
++                if own is None or iou(own, t["observed_position_box"]) < 0.95:
++                    out.append(f)
++        return out
++
++    def trusted_frames(self) -> List[int]:
++        return [f for f in range(1, self.n + 1) if self.target(f)["v2"]["identity_trusted"]]
++
++    def target_duplicated(self, name: str = "TARGET") -> List[int]:
++        """Trusted frames where a population record sits on the target's own detection (target written twice)."""
++        out = []
++        for f in self.trusted_frames():
++            own = self.target_det_box(f, name)
++            if own is not None and any(iou(own, p["observed_position_box"]) > 0.5 for p in self.population(f)
++                                       if p["v2"]["detected_this_frame"]):
++                out.append(f)
++        return out
++
++    def body_written_twice(self, name: str = "TARGET") -> List[Tuple[int, str, str]]:
++        """Rule 28 in EVERY frame: frames where T001's reported box is on the target's own body and a population
++        record (detected or coasting) is also on that body."""
++        out = []
++        for f in range(1, self.n + 1):
++            own = self.target_det_box(f, name)
++            if own is None:
++                continue
++            t = self.target(f)
++            if iou(own, t["observed_position_box"]) <= 0.5:
++                continue
++            for p in self.population(f):
++                if iou(own, p["observed_position_box"]) > 0.5:
++                    out.append((f, p["track_id"], t["v2"]["rb_state"]))
++        return out
++
++    def accepted_bank_frames(self) -> List[int]:
++        return [line["frame"] for line in self.decision_log
++                if ((line["target"].get("decision") or {}).get("bank") or {}).get("status") == "ACCEPTED"]
++
++    def bank_violations(self, name: str = "TARGET") -> List[int]:
++        """Frames whose accepted target bank sample was not a clean crop of the target alone: the sampled
++        detection must be owned only by the target and no other person's TRUE box may touch the target's."""
++        out = []
++        for line in self.decision_log:
++            f = line["frame"]
++            t = line["target"]
++            bank = (t.get("decision") or {}).get("bank") or {}
++            if bank.get("status") != "ACCEPTED":
++                continue
++            di = t["detection_index"]
++            if di is None or self.owners[f][di] != (name,):
++                out.append(f)
++                continue
++            truth = self.scene_boxes[f]
++            mine = truth[name]
++            if any(iou(mine, b) > 0 for k, b in truth.items() if k != name):
++                out.append(f)
++        return out
++
++
++def write_clip(path: str, frames: Sequence[ClipFrame], people: Dict[str, Person], fps: float = FPS,
++               width: int = W, height: int = H) -> str:
++    wr = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"FFV1"), fps, (width, height))
++    if not wr.isOpened():
++        raise RuntimeError("cannot open an FFV1 writer")
++    for cf in frames:
++        wr.write(render(cf.scene, people, width, height, background=pitch(cf.shot, cf.pan_x, width, height)))
++    wr.release()
++    return path
++
++
++def detector_script(frames: Sequence[ClipFrame], start_frame: int, visible_min: float, width: int = W,
++                    height: int = H) -> Tuple[List[List[List[float]]], List[List[Detection]]]:
++    script, dets = [], []
++    for cf in frames[start_frame:]:
++        ds = detect(cf.scene, visible_min, width, height)
++        dets.append(ds)
++        script.append([[*d.box, 0.9] for d in ds])
++    return script, dets
++
++
++def run_clip(frames: Sequence[ClipFrame], people: Dict[str, Person], work_dir: str, *, start_frame: int = 0,
++             seed_name: str = "TARGET", overrides: Optional[Dict[str, Any]] = None, visible_min: float = 0.35,
++             debug: bool = True, name: str = "clip", fps: float = FPS,
++             on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None,
++             video_path: Optional[str] = None, pose_gain: float = 0.0) -> E2E:
++    """Write the clip, run the production pipeline on it, and load everything it wrote."""
++    os.makedirs(work_dir, exist_ok=True)
++    video = video_path or write_clip(os.path.join(work_dir, name + ".avi"), frames, people, fps)
++    out_dir = os.path.join(work_dir, "out_" + name)
++    os.makedirs(out_dir, exist_ok=False)
++    ov = dict(SCRIPTED, **(overrides or {}))
++    cfg = TrackerConfig.with_overrides(ov)
++    script, dets = detector_script(frames, start_frame, visible_min)
++    detector = ScriptedDetector(script, cfg)
++    seed_box = list(frames[start_frame].scene.boxes[seed_name])
++    sizes: List[Tuple[int, Dict[str, int]]] = []
++    summary = R.run(video, start_frame, seed_box, out_dir=out_dir, debug=debug, config_overrides=ov,
++                    detector=detector, embedder=SignatureEmbedding(people, pose_gain),
++                    on_frame=(lambda f, s: sizes.append((f, s))) if on_frame is None else on_frame)
++    paths = R.output_paths(out_dir, video)
++    with open(paths["results"], encoding="ascii") as fh:
++        doc = json.load(fh)
++    log = []
++    if debug:
++        with open(paths["decision_log"], encoding="ascii") as fh:
++            log = [json.loads(line) for line in fh]
++    # owners of the candidates the detector actually returned (same NMS/clip path as the pipeline saw)
++    owners = []
++    replay = ScriptedDetector(script, cfg)
++    blank = np.zeros((H, W, 3), np.uint8)
++    for ds in dets:
++        out = []
++        for c in replay.detect(blank):
++            best = max(ds, key=lambda d: iou(d.box, c.bbox)) if ds else None
++            out.append(best.owners if best is not None and iou(best.box, c.bbox) > 0.5 else ())
++        owners.append(out)
++    e = E2E(doc, summary, dets, owners, log, paths, sizes)
++    e.scene_boxes = [dict(cf.scene.boxes) for cf in frames[start_frame:]]
++    return e
++
++
++# ---- scene builders (image coordinates, frames at FPS) --------------------------------------------
++def box(cx: float, cy: float) -> Tuple[float, float, float, float]:
++    return (cx - PW / 2, cy - PH / 2, cx + PW / 2, cy + PH / 2)
++
++
++def walk(n: int, start: Tuple[float, float], v: Tuple[float, float]) -> List[Tuple[float, float, float, float]]:
++    return [box(start[0] + v[0] * k, start[1] + v[1] * k) for k in range(n)]
++
++
++def gait_walk(n: int, start: Tuple[float, float], v: Tuple[float, float]) -> List[Tuple[float, float, float, float]]:
++    """A walk whose box width cycles with the stride (pose variation for the pose-aware synthetic embedding)."""
++    out = []
++    for k in range(n):
++        cx, cy = start[0] + v[0] * k, start[1] + v[1] * k
++        w = PW - 8 + 8 * abs((k // 4) % 5 - 2)
++        out.append((cx - w / 2, cy - PH / 2, cx + w / 2, cy + PH / 2))
++    return out
++
++
++def clip(positions: Dict[str, Sequence[Optional[Tuple[float, float, float, float]]]], *,
++         shots: Optional[Sequence[int]] = None, pans: Optional[Sequence[int]] = None,
++         drop: Optional[Callable[[int], Sequence[str]]] = None,
++         merge: Optional[Callable[[int], Sequence[Tuple[str, str]]]] = None) -> List[ClipFrame]:
++    """Frames from per-person box sequences (None = not in the scene). Pans shift every box by -pan_x."""
++    n = max(len(v) for v in positions.values())
++    out = []
++    for k in range(n):
++        px = pans[k] if pans else 0
++        boxes = {}
++        for name, seq in positions.items():
++            b = seq[k] if k < len(seq) else None
++            if b is not None:
++                boxes[name] = (b[0] - px, b[1], b[2] - px, b[3])
++        sf = SceneFrame(boxes, drop=list(drop(k)) if drop else [], merge=list(merge(k)) if merge else [])
++        out.append(ClipFrame(sf, shots[k] if shots else 0, px))
++    return out
+diff --git a/tests_rb/_synth_scene.py b/tests_rb/_synth_scene.py
+index 2764894..1b27915 100644
+--- a/tests_rb/_synth_scene.py
++++ b/tests_rb/_synth_scene.py
+@@ -120,9 +120,15 @@ class Detection:
+     owners: Tuple[str, ...]
+ 
+ 
+-def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H) -> np.ndarray:
++def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H,
++           background: Optional[np.ndarray] = None) -> np.ndarray:
+     img = np.empty((height, width, 3), np.uint8)
+-    img[:] = BACKGROUND
++    if background is None:
++        img[:] = BACKGROUND
++    else:
++        if background.shape != (height, width, 3):
++            raise ValueError(f"background must be {height}x{width}x3")
++        img[:] = background
+     order = list(fr.order) or sorted(fr.boxes, key=lambda n: fr.boxes[n][3])
+     for name in order:
+         if name not in fr.boxes:
+diff --git a/tests_rb/test_package_hygiene.py b/tests_rb/test_package_hygiene.py
+index ae32aa9..e69c3ea 100644
+--- a/tests_rb/test_package_hygiene.py
++++ b/tests_rb/test_package_hygiene.py
+@@ -95,8 +95,10 @@ class TestNoMagicNumbers(unittest.TestCase):
+ 
+ class TestFingerprintIsNotAnIdentityFeature(unittest.TestCase):
+     """R1-B: the frame-content fingerprint is for alignment debugging only. Only the video layer, provenance and the
+-    output schema may refer to it; detection, appearance and state code must never read it."""
+-    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py"}
++    output schema may refer to it; detection, appearance and state code must never read it. run_rb.py (R1-G) is the
++    output writer: it copies the fingerprint into the contract's frame v2 field and the provenance sidecar and never
++    passes it to a decision layer."""
++    ALLOWED = {"video_io.py", "provenance.py", "output_schema.py", "config.py", "__init__.py", "run_rb.py"}
+     TOKENS = ("thumb_sha1", "frame_fingerprint", "frame_thumb", "thumbs_digest")
+ 
+     def test_fingerprint_confined_to_video_layer(self):
+diff --git a/tests_rb/test_pipeline_audit.py b/tests_rb/test_pipeline_audit.py
+new file mode 100644
+index 0000000..7d51874
+--- /dev/null
++++ b/tests_rb/test_pipeline_audit.py
+@@ -0,0 +1,384 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G independent code review + test audit (2026-10-25) of commit c6d118b; R1-G instruction
++"""R1-G audit tests: regressions for the defects the independent review and test audit found, and the tests the
++audit showed were missing (mutants that survived the first suite). Neutral TARGET / PERSON_A / TWIN names only."""
++import copy
++import json
++import os
++import shutil
++import tempfile
++import unittest
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb import run_rb as R
++from player_tracker_rb import target as T
++from player_tracker_rb.config import TrackerConfig
++from player_tracker_rb.detector import ScriptedDetector
++from tests_rb._synth_pipeline import (PW, SCRIPTED, box, clip, detector_script, iou, run_clip, walk, write_clip)
++from tests_rb._synth_scene import SceneFrame, SignatureEmbedding, box_at, linear, make_people
++from tests_rb.test_target import run as run_target
++
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++CFG = TrackerConfig.default()
++
++
++def _people(*others):
++    return make_people([("TARGET", KIT_A, 1.0)] + list(others))
++
++
++def _universal(tc, e):
++    tc.assertEqual(S.validate_document(e.doc, require_v2=True, cfg=CFG), [])
++    tc.assertEqual(S.validate_document(S.strip_v2(e.doc)), [])
++    tc.assertEqual(e.swaps(), [])
++    tc.assertEqual(e.body_written_twice(), [])
++    for f in range(1, e.n + 1):
++        if e.target_det_box(f) is None:
++            tc.assertFalse(e.target(f)["v2"]["identity_trusted"], f)
++
++
++class Base(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.mkdtemp(prefix="r1g_aud_")
++
++    def tearDown(self):
++        shutil.rmtree(self.tmp, ignore_errors=True)
++
++    def d(self, tag):
++        p = os.path.join(self.tmp, tag)
++        os.makedirs(p)
++        return p
++
++    def inputs(self, frames, ppl, start=2, ov=None):
++        video = write_clip(os.path.join(self.tmp, "v.avi"), frames, ppl)
++        cfg = TrackerConfig.with_overrides(dict(SCRIPTED, **(ov or {})))
++        script, _ = detector_script(frames, start, 0.35)
++        return video, cfg, script
++
++    def run_direct(self, frames, ppl, out, start=2, ov=None, **kw):
++        video, cfg, script = self.inputs(frames, ppl, start, ov)
++        return video, R.run(video, start, list(frames[start].scene.boxes["TARGET"]), out_dir=out,
++                            config_overrides=dict(SCRIPTED, **(ov or {})), detector=ScriptedDetector(script, cfg),
++                            embedder=SignatureEmbedding(ppl), **kw)
++
++
++class Rule28(Base):
++    """Test audit C1: the target's re-emerging body is never written as another person while T001 is on it."""
++
++    def test_crossings_and_occlusion_never_write_the_target_body_twice(self):
++        n = 120
++        scenes = {
++            "xing": clip({"TARGET": walk(n, (150, 200), (3, 0)), "PERSON_A": walk(n, (150 + 3 * n, 206), (-3, 0))}),
++            "occ": clip({"TARGET": [box(320, 180)] * n, "PERSON_A": walk(n, (120, 186), (4, 0))}),
++        }
++        for name, fr in scenes.items():
++            with self.subTest(scene=name):
++                e = run_clip(fr, _people(("PERSON_A", KIT_B, 0.2)), self.tmp, name=name, start_frame=2)
++                _universal(self, e)
++
++    def test_lone_target_after_a_gap_has_no_ghost(self):
++        """Only the target exists: any population record would be the target written twice (coasting ghost)."""
++        fr = clip({"TARGET": [box(320, 180)] * 90}, drop=lambda k: ["TARGET"] if 20 <= k < 28 else [])
++        e = run_clip(fr, _people(), self.tmp, name="ghost", start_frame=2)
++        for f in range(1, e.n + 1):
++            self.assertEqual(e.population(f), [], f"frame {f}: a population record exists with only the target")
++
++
++class TargetRecordContract(Base):
++    def test_overlap_contest_names_the_target(self):
++        n = 120
++        fr = clip({"TARGET": walk(n, (150, 200), (3, 0)), "PERSON_A": walk(n, (150 + 3 * n, 206), (-3, 0))})
++        e = run_clip(fr, _people(("PERSON_A", KIT_B, 0.2)), self.tmp, name="ov", start_frame=2)
++        with_t = [r["frame"] for r in e.doc["frame_log"] if any("T001" in p for p in r["overlap_contests"])]
++        self.assertTrue(with_t, "no frame names T001 in overlap_contests despite a body crossing")
++
++    def test_population_coasting_record_semantics(self):
++        n = 60
++        fr = clip({"TARGET": [box(150, 200)] * n, "PERSON_A": walk(n, (420, 200), (1, 0))},
++                  drop=lambda k: ["PERSON_A"] if 30 <= k < 36 else [])
++        e = run_clip(fr, _people(("PERSON_A", KIT_B, 0.2)), self.tmp, name="coast", start_frame=2)
++        coasting = [(f, p) for f in range(1, e.n + 1) for p in e.population(f) if not p["v2"]["detected_this_frame"]]
++        self.assertTrue(coasting, "the scene must make a population record coast")
++        for f, p in coasting:
++            self.assertEqual((p["state"], p["occlusion_status"], p["position_source"]),
++                             ("TEMPORARILY_LOST", "FULL", "PREDICTED"))
++            self.assertEqual(p["frames_since_observed_position"], f - p["last_seen_frame"])
++            self.assertGreater(p["frames_since_observed_position"], 0)
++            last = [q for q in e.population(p["last_seen_frame"]) if q["track_id"] == p["track_id"]]
++            self.assertEqual(p["bbox"], last[0]["observed_position_box"], f"frame {f}: bbox = last observed box")
++            self.assertEqual(p["identity_confidence"], 0.0)
++
++
++class EpisodeVerification(unittest.TestCase):
++    def test_verified_episode_stays_trusted_after_the_competitor_leaves(self):
++        """Test audit A9 / M22: once verified, later uncontrasted continuation frames stay trusted (> 0.5)."""
++        ppl = _people(("PERSON_A", KIT_A, 0.75))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(30)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(580, 400, 40, 100)})
++                   for _ in range(30)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(30)]
++        r = run_target(frames, ppl)
++        trusted = [k for k, f in enumerate(r.frames) if k >= 50 and f.identity_trusted]
++        self.assertTrue(trusted)
++        first = min(trusted)
++        self.assertLess(first, 110)
++        for f in r.frames[first:]:
++            self.assertEqual(f.rb_state, T.TRACKING)
++            self.assertTrue(f.identity_trusted, f.rel_frame)
++            self.assertGreater(f.identity_confidence_rb, 0.5)
++
++
++class Conflicts(Base):
++    def test_a_lone_returning_target_logs_no_conflict(self):
++        fr = clip({"TARGET": [box(320, 180)] * 100}, drop=lambda k: ["TARGET"] if 10 <= k < 50 else [])
++        e = run_clip(fr, _people(), self.tmp, name="lone", start_frame=2)
++        self.assertEqual(e.summary["identity_conflict_counts"], {})
++        self.assertEqual(e.summary["identity_conflicts_logged"], 0)
++
++    def test_conflict_counts_are_frame_counts(self):
++        ppl = _people(("TWIN", KIT_A, 1.0))
++        n = 90
++        fr = clip({"TARGET": [box(320, 180)] * n, "TWIN": [None] * 20 + [box(320 + PW * 2.5, 180)] * (n - 20)})
++        e = run_clip(fr, ppl, self.tmp, name="cc", start_frame=2)
++        logged = e.summary["identity_conflicts_logged"]
++        counts = e.summary["identity_conflict_counts"]
++        untrusted = sum(1 for f in range(1, e.n + 1) if not e.target(f)["v2"]["identity_trusted"])
++        self.assertGreater(logged, 0)
++        self.assertLessEqual(logged, untrusted)
++        self.assertEqual(max(counts.values()), logged)          # one rival: every conflict frame names it
++        self.assertTrue(all(k.startswith("T001|") for k in counts))
++
++    def test_reacquisition_rival_is_logged(self):
++        """An identical person (edge crop, no bank) appears during the target's verification and blocks it."""
++        ppl = _people(("TWIN", KIT_A, 0.97))
++        tgt = [box(110, 180)] * 10 + [None] * 40 + [box(170, 180)] * 45
++        twin = [None] * 55 + [box(PW / 2, 180)] * 40
++        e = run_clip(clip({"TARGET": tgt, "TWIN": twin}), ppl, self.tmp, name="rival", start_frame=2)
++        twin_ids = {p["track_id"] for f in range(1, e.n + 1) for p in e.population(f)
++                    if e.target_det_box(f, "TWIN") is not None
++                    and iou(e.target_det_box(f, "TWIN"), p["observed_position_box"]) > 0.5}
++        self.assertTrue(twin_ids)
++        self.assertTrue(any(k.split("|")[1] in twin_ids for k in e.summary["identity_conflict_counts"]))
++
++
++class ConflictScope(unittest.TestCase):
++    """Unit level: which decision entries count as identity conflicts (post-fix mutants K15 / K16)."""
++
++    class _Obs:
++        def __init__(self, tracklet_id, claimants=()):
++            self.tracklet_id, self.claimants = tracklet_id, tuple(claimants)
++
++    class _Res:
++        def __init__(self, obs):
++            self.observations = obs
++
++    class _TF:
++        def __init__(self, decision, trusted=False):
++            self.decision, self.identity_trusted = decision, trusted
++
++    def _builder(self):
++        return R._RecordBuilder(CFG, [0.0, 0.0, 10.0, 20.0])
++
++    def test_merged_box_stands_for_its_written_claimants(self):
++        b = self._builder()
++        res = self._Res([self._Obs(None, ("T005", "T006")), self._Obs("T007")])
++        self.assertEqual(b.written_ids("D0", res, set()), {"T005", "T006"})
++        self.assertEqual(b.written_ids("D0", res, {"T006"}), {"T005", CFG.get("target_track_id")})
++        tf = self._TF({"candidates": [{"role": T.CONTINUATION, "passed": False, "best_competitor": "D0",
++                                       "unknown_contacts": []}]})
++        b.record_conflicts(tf, res, set(), {"T005", "T006", "T007"})
++        self.assertEqual(b.conflicts, {"T001|T005": 1, "T001|T006": 1})
++
++    def test_only_the_targets_own_competitors_and_rivals_count(self):
++        b = self._builder()
++        res = self._Res([self._Obs("T002"), self._Obs("T003"), self._Obs("T004")])
++        written = {"T002", "T003", "T004", "T009"}
++        tf = self._TF({"candidates": [
++            # a rival box judged against its own competitor: not about the target
++            {"role": T.RIVAL, "passed": False, "best_competitor": "T009", "unknown_contacts": ["T009"]},
++            # the continuing box passed: its competitor was beaten, not a conflict
++            {"role": T.CONTINUATION, "passed": True, "best_competitor": "T002", "unknown_contacts": []}],
++            "continuation_rivals": [1]})
++        b.record_conflicts(tf, res, set(), written)
++        self.assertEqual(b.conflicts, {"T001|T003": 1})
++        tf2 = self._TF({"candidates": [], "reacquisition": {"rivals": [2]}})
++        b.record_conflicts(tf2, res, set(), written)
++        self.assertEqual(b.conflicts, {"T001|T003": 1, "T001|T004": 1})
++        self.assertEqual(b.conflict_frames, 2)
++        b.record_conflicts(self._TF({"candidates": [], "continuation_rivals": [1]}, trusted=True), res, set(), written)
++        self.assertEqual(b.conflict_frames, 2)                  # a trusted frame has no conflict
++
++
++class RunArguments(Base):
++    def test_max_frames_argument(self):
++        frames = clip({"TARGET": walk(40, (150, 200), (3, 0))})
++        _, s = self.run_direct(frames, _people(), self.d("mf"), max_frames=7)
++        self.assertEqual(s["processed_frames"], 7)
++
++    def test_bad_max_frames_is_refused_and_nothing_written(self):
++        frames = clip({"TARGET": walk(20, (150, 200), (3, 0))})
++        for bad in (0, -3):
++            with self.subTest(max_frames=bad):
++                out = self.d(f"mf{bad}")
++                with self.assertRaises(R.RunRefusedError):
++                    self.run_direct(frames, _people(), out, max_frames=bad)
++                self.assertEqual(os.listdir(out), [])
++
++    def test_seed_on_the_last_frame_is_refused(self):
++        frames = clip({"TARGET": walk(6, (150, 200), (3, 0))})
++        out = self.d("last")
++        with self.assertRaises(R.RunRefusedError):
++            self.run_direct(frames, _people(), out, start=5)
++        self.assertEqual(os.listdir(out), [])
++
++    def test_start_frame_zero_and_other_frame_rates(self):
++        for fps in (25.0, 50.0):
++            with self.subTest(fps=fps):
++                n = 120
++                fr = clip({"TARGET": walk(n, (150, 200), (3, 0)), "PERSON_A": walk(n, (150 + 3 * n, 206), (-3, 0))})
++                e = run_clip(fr, _people(("PERSON_A", KIT_A, 0.75)), self.tmp, name=f"fps{int(fps)}",
++                             start_frame=0, fps=fps)
++                _universal(self, e)
++                self.assertEqual(e.doc["summary"]["fps"], fps)
++                self.assertEqual(e.doc["frame_log"][0]["v2"]["video_frame_index"], 1)
++                for r in e.doc["frame_log"]:
++                    self.assertAlmostEqual(r["v2"]["timestamp_s"], round(r["v2"]["video_frame_index"] / fps, 4))
++
++    def test_existing_decision_log_does_not_block_a_run_without_debug(self):
++        frames = clip({"TARGET": walk(20, (150, 200), (3, 0))})
++        out = self.d("nodebug")
++        video = write_clip(os.path.join(self.tmp, "v.avi"), frames, _people())
++        log = R.output_paths(out, video)["decision_log"]
++        with open(log, "w") as fh:
++            fh.write("an earlier debug run\n")
++        self.run_direct(frames, _people(), out, debug=False)
++        with open(log) as fh:
++            self.assertEqual(fh.read(), "an earlier debug run\n")
++
++
++class BackendRefusals(unittest.TestCase):
++    """Test audit A11: each substitution refused on its own (no other wrong backend masking it)."""
++
++    @classmethod
++    def setUpClass(cls):
++        cls.ppl = _people()
++
++    def _script_det(self, cfg, name=None):
++        class Named(ScriptedDetector):
++            def provenance(self_):
++                p = super().provenance()
++                return dict(p, backend=name) if name else p
++
++            def model_record(self_):
++                return {"role": "person_detector", "filename": "x.onnx", "sha256": "0" * 64, "status": "TEST"} \
++                    if name else None
++        return Named([[]], cfg)
++
++    def _emb(self, name=None):
++        class Named(SignatureEmbedding):
++            def provenance(self_):
++                return {"backend": name} if name else super().provenance()
++
++            def model_record(self_):
++                return {"role": "appearance_embedding", "filename": "e.onnx", "sha256": "0" * 64,
++                        "status": "TEST"} if name else None
++        return Named(self.ppl)
++
++    def test_each_wrong_backend_alone_is_refused(self):
++        prod = TrackerConfig.default()
++        scripted = TrackerConfig.with_overrides(SCRIPTED)
++        cases = {
++            "production config, scripted detector": (prod, self._script_det(prod), self._emb("dinov2_onnx")),
++            "production config, scripted embedder": (prod, self._script_det(prod, "yolox_onnx"), self._emb()),
++            "scripted config, yolox detector": (scripted, self._script_det(scripted, "yolox_onnx"), self._emb()),
++            "scripted config, dinov2 embedder": (scripted, self._script_det(scripted), self._emb("dinov2_onnx")),
++        }
++        for name, (cfg, det, emb) in cases.items():
++            with self.subTest(case=name):
++                with self.assertRaises(R.RunRefusedError):
++                    R.build_backends(cfg, det, emb)
++
++
++class DeterminismTooling(unittest.TestCase):
++    def test_compare_documents_reports_any_non_wall_clock_difference(self):
++        e = None
++        doc = {"summary": {"processing_time_s": 1.0, "v2": {"provenance": {"run_started_utc": "a"}}, "fps": 30.0},
++               "frame_log": [{"frame": 1, "tracks": [{"bbox": [1.0, 2.0, 3.0, 4.0]}]}], "final_tracks": []}
++        other = copy.deepcopy(doc)
++        other["summary"]["processing_time_s"] = 9.0
++        other["summary"]["v2"]["provenance"]["run_started_utc"] = "b"
++        self.assertTrue(R.compare_documents(doc, other)["identical_except_wall_clock"])
++        other["frame_log"][0]["tracks"][0]["bbox"][2] = 3.1
++        cmp = R.compare_documents(doc, other)
++        self.assertFalse(cmp["identical_except_wall_clock"])
++        self.assertEqual(cmp["first_difference"], ".frame_log[0].tracks[0].bbox[2]")
++
++
++class FailClosedEdges(Base):
++    def test_stale_partial_files_are_refused_up_front_and_preserved(self):
++        frames = clip({"TARGET": walk(30, (150, 200), (3, 0))})
++        for suffix in (R.PARTIAL_SUFFIX, R.PARTIAL_SUFFIX + ".doc"):
++            with self.subTest(suffix=suffix):
++                out = self.d("stale" + str(len(suffix)))
++                video = write_clip(os.path.join(self.tmp, "v.avi"), frames, _people())
++                stale = R.output_paths(out, video)["results"] + suffix
++                with open(stale, "w") as fh:
++                    fh.write("earlier run")
++                calls = []
++                with self.assertRaises(R.RunRefusedError):
++                    self.run_direct(frames, _people(), out, on_frame=lambda f, s: calls.append(f))
++                self.assertEqual(calls, [], "must refuse before processing any frame")
++                with open(stale) as fh:
++                    self.assertEqual(fh.read(), "earlier run")
++
++    def test_document_level_violation_stops_the_run(self):
++        frames = clip({"TARGET": walk(30, (150, 200), (3, 0))})
++        out = self.d("finish")
++        orig = R._summary
++
++        def bad(*a, **k):
++            s, finals = orig(*a, **k)
++            s["processed_frames"] += 1
++            return s, finals
++        R._summary = bad
++        try:
++            with self.assertRaises(R.ContractViolationError):
++                self.run_direct(frames, _people(), out, debug=True)
++        finally:
++            R._summary = orig
++        self.assertEqual(os.listdir(out), [])
++
++    def test_decision_log_starts_with_the_seed(self):
++        frames = clip({"TARGET": walk(30, (150, 200), (3, 0))})
++        out = self.d("seedline")
++        video, _ = self.run_direct(frames, _people(), out, debug=True)
++        with open(R.output_paths(out, video)["decision_log"]) as fh:
++            first = json.loads(fh.readline())
++        self.assertEqual(first["frame"], 0)
++        self.assertTrue(first["target"]["decision"]["seed"])
++        self.assertEqual(first["target"]["rb_state"], "TRACKING")
++
++
++class ImpostorAfterCut(Base):
++    def test_above_floor_impostor_at_the_old_place_is_never_trusted(self):
++        """After a cut, a look-alike above the reacquisition floor stands where the target was and the target is
++        elsewhere; whatever the tracker accepts, the impostor is never a trusted target."""
++        ppl = _people(("PERSON_A", KIT_A, 0.9))
++        n1, n2 = 40, 90
++        tgt = [box(300, 180)] * n1 + [box(520, 200)] * n2
++        imp = [None] * n1 + [box(300, 180)] * n2
++        e = run_clip(clip({"TARGET": tgt, "PERSON_A": imp}, shots=[0] * n1 + [1] * n2), ppl, self.tmp, name="imp",
++                     start_frame=2)
++        _universal(self, e)
++        for f in range(1, e.n + 1):
++            t = e.target(f)
++            imp_box = e.target_det_box(f, "PERSON_A")
++            if t["v2"]["identity_trusted"] and imp_box is not None:
++                self.assertLess(iou(imp_box, t["observed_position_box"]), 0.5, f"frame {f}: impostor trusted")
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_pipeline_e2e.py b/tests_rb/test_pipeline_e2e.py
+new file mode 100644
+index 0000000..0172be4
+--- /dev/null
++++ b/tests_rb/test_pipeline_e2e.py
+@@ -0,0 +1,351 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25): full Pass-1 tracker end to end; output matches the approved
++#                 R1 contract; zero silent swaps across synthetic identity scenarios; wrong reacquisition rejected;
++#                 camera cuts reset continuity; the target never competes with itself; uncontaminated bank; no
++#                 hidden/merged frame reported as trusted TRACKING. R1/R1_DESIGN_DECISIONS.md D05-D07, D16, D19
++"""R1-G synthetic END-TO-END tests: real video files through the production pipeline (run_rb.run).
++
++Each scenario is rendered to a lossless video (see _synth_pipeline), run once, and checked for the invariants that
++must hold in EVERY scenario (UniversalChecks) plus its own expectations. Names are neutral (TARGET / PERSON_A /
++TWIN); nothing here is benchmark knowledge.
++"""
++import os
++import shutil
++import tempfile
++import unittest
++from collections import Counter
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb.config import TrackerConfig
++from tests_rb._synth_pipeline import PH, PW, ClipFrame, box, clip, gait_walk, iou, run_clip, walk
++from tests_rb._synth_scene import SceneFrame, covered, make_people
++
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++SAME_KIT_COS = 0.75
++CFG = TrackerConfig.default()
++_TMP = None
++_CACHE = {}
++
++
++def setUpModule():
++    global _TMP
++    _TMP = tempfile.mkdtemp(prefix="r1g_e2e_")
++
++
++def tearDownModule():
++    shutil.rmtree(_TMP, ignore_errors=True)
++
++
++def people(*others):
++    return make_people([("TARGET", KIT_A, 1.0)] + list(others))
++
++
++def hide_far(frames, a="TARGET", b="PERSON_A"):
++    """Drop whichever of a/b is behind the other while it is at least half covered (a real detector misses it)."""
++    for cf in frames:
++        bx = cf.scene.boxes
++        if a in bx and b in bx:
++            far = a if bx[a][3] < bx[b][3] else b
++            near = b if far == a else a
++            if covered(bx[far], bx[near]) >= 1.0 / 2:
++                cf.scene.drop = [far]
++    return frames
++
++
++def merge_when_close(frames, a="TARGET", b="PERSON_A", min_overlap_px=8):
++    for cf in frames:
++        bx = cf.scene.boxes
++        if a in bx and b in bx:
++            ov = min(bx[a][2], bx[b][2]) - max(bx[a][0], bx[b][0])
++            if ov > min_overlap_px:
++                cf.scene.merge = [(a, b)]
++    return frames
++
++
++# ---- scenarios (name -> (frames, people, kwargs)) ---------------------------------------------------
++def _crossing(kit, cos, n=120, dy=6, mode="visible", pans=None):
++    ppl = people(("PERSON_A", kit, cos))
++    fr = clip({"TARGET": walk(n, (150, 200), (3, 0)), "PERSON_A": walk(n, (150 + 3 * n, 200 + dy), (-3, 0))},
++              pans=pans)
++    if mode == "hide":
++        hide_far(fr)
++    if mode == "merge":
++        merge_when_close(fr)
++    return fr, ppl, {}
++
++
++def _occlusion():
++    ppl = people(("PERSON_A", KIT_B, 0.2))
++    n = 120
++    return clip({"TARGET": [box(320, 180)] * n, "PERSON_A": walk(n, (120, 186), (4, 0))}), ppl, {}
++
++
++def _leave_and_return():
++    ppl = people()
++    out = walk(40, (560, 200), (4, 0)) + [None] * 30 + walk(60, (640, 200), (-3, 0))
++    return clip({"TARGET": out}), ppl, {}
++
++
++def _wrong_reacquisition():
++    ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++    tgt = walk(40, (560, 200), (4, 0)) + [None] * 120
++    imp = [None] * 50 + walk(110, (650, 200), (-3, 0))
++    return clip({"TARGET": tgt, "PERSON_A": imp}), ppl, {}
++
++
++def _hard_cut():
++    ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++    n1, n2 = 40, 90
++    tgt = [box(300, 180)] * n1 + [box(500, 200)] * n2
++    imp = [None] * n1 + [box(300, 180)] * n2               # an impostor exactly where the target was
++    shots = [0] * n1 + [1] * n2
++    return clip({"TARGET": tgt, "PERSON_A": imp}, shots=shots), ppl, {}
++
++
++def _pan_crossing():
++    n = 120
++    return _crossing(KIT_A, SAME_KIT_COS, n=n, pans=[4 * k for k in range(n)])
++
++
++def _gap_self_competition():
++    ppl = people()
++    fr = clip({"TARGET": [box(320, 180)] * 90}, drop=lambda k: ["TARGET"] if 20 <= k < 28 else [])
++    return fr, ppl, {}
++
++
++def _newcomer_in_contact():
++    ppl = people(("PERSON_A", KIT_A, 0.9))
++    n = 90
++    return clip({"TARGET": [box(320, 180)] * n,
++                 "PERSON_A": [None] * 20 + [box(320 + PW * 0.85, 180)] * (n - 20)}), ppl, {}
++
++
++def _twin_appears():
++    ppl = people(("TWIN", KIT_A, 1.0))
++    n = 90
++    return clip({"TARGET": [box(320, 180)] * n, "TWIN": [None] * 20 + [box(320 + PW * 2.5, 180)] * (n - 20)}), \
++        ppl, {}
++
++
++def _uncontrasted_return():
++    ppl = people()
++    return clip({"TARGET": [box(320, 180)] * 100}, drop=lambda k: ["TARGET"] if 10 <= k < 50 else []), ppl, {}
++
++
++def _posed_crossing():
++    """Same-kit crossing with stride-varying boxes and a pose-aware embedding: clean non-seed samples are novel, so
++    the bank really accepts samples and bank_violations() is exercised beyond the seed (test audit A1)."""
++    ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++    n = 160
++    fr = clip({"TARGET": gait_walk(n, (120, 200), (2.5, 0)), "PERSON_A": gait_walk(n, (120 + 2.5 * n, 205), (-2.5, 0))})
++    return fr, ppl, {"pose_gain": 0.5}
++
++
++SCENARIOS = {
++    "same_kit_crossing": lambda: _crossing(KIT_A, SAME_KIT_COS),
++    "same_kit_crossing_hidden": lambda: _crossing(KIT_A, SAME_KIT_COS, mode="hide"),
++    "same_kit_crossing_merged": lambda: _crossing(KIT_A, SAME_KIT_COS, mode="merge"),
++    "opponent_crossing": lambda: _crossing(KIT_B, 0.2),
++    "opponent_crossing_hidden": lambda: _crossing(KIT_B, 0.2, mode="hide"),
++    "full_occlusion": _occlusion,
++    "leave_and_return": _leave_and_return,
++    "wrong_reacquisition": _wrong_reacquisition,
++    "hard_cut_impostor": _hard_cut,
++    "pan_crossing": _pan_crossing,
++    "gap_self_competition": _gap_self_competition,
++    "newcomer_in_contact": _newcomer_in_contact,
++    "twin_appears": _twin_appears,
++    "uncontrasted_return": _uncontrasted_return,
++    "posed_crossing": _posed_crossing,
++}
++
++
++def result(name):
++    if name not in _CACHE:
++        frames, ppl, kw = SCENARIOS[name]()
++        _CACHE[name] = run_clip(frames, ppl, os.path.join(_TMP, name), name=name, start_frame=kw.get("start", 2),
++                                pose_gain=kw.get("pose_gain", 0.0))
++    return _CACHE[name]
++
++
++class UniversalChecks(unittest.TestCase):
++    """Invariants that must hold in every synthetic scenario."""
++
++    def test_every_scenario(self):
++        for name in SCENARIOS:
++            with self.subTest(scenario=name):
++                e = result(name)
++                self.assertEqual(S.validate_document(e.doc, require_v2=True, cfg=CFG), [], "R1 contract")
++                self.assertEqual(S.validate_document(S.strip_v2(e.doc)), [], "historical contract after strip_v2")
++                self.assertEqual(e.swaps(), [], "silent identity swap")
++                self.assertEqual(e.target_duplicated(), [], "target written twice (rule 28)")
++                self.assertEqual(e.body_written_twice(), [], "target body also written as another person (rule 28)")
++                self.assertEqual(e.bank_violations(), [], "target bank contaminated")
++                for f in range(1, e.n + 1):
++                    t = e.target(f)
++                    trusted = t["v2"]["identity_trusted"]
++                    if e.target_det_box(f) is None:      # hidden, merged, dropped or absent: never trusted
++                        self.assertFalse(trusted, f"frame {f}: trusted without the target's own detection")
++                    if trusted:
++                        self.assertEqual((t["state"], t["position_source"]), ("ACTIVE", "CONFIRMED_DETECTION"))
++                    else:
++                        self.assertLess(t["identity_confidence"], CFG.get("legacy_identity_trust_threshold"))
++                        self.assertLess(t["overall_track_confidence"], CFG.get("legacy_identity_trust_threshold"))
++                    # observed vs predicted/held stays explicit
++                    v2 = t["v2"]
++                    self.assertEqual(v2["bbox_is_observed"], v2["rb_state"] == "TRACKING")
++                    self.assertEqual(v2["observation_source"] == "DETECTION", v2["bbox_is_observed"])
++                    # the target's tracklet is never its own competitor, and never written as another person
++                    for p in e.population(f):
++                        self.assertNotEqual(p["track_id"], CFG.get("target_track_id"))
++                    for pair in e.doc["frame_log"][f - 1]["overlap_contests"]:
++                        self.assertNotEqual(pair[0], pair[1])
++                    ids = {x["track_id"] for x in e.doc["frame_log"][f - 1]["tracks"]}
++                    self.assertTrue(set(t["v2"]["occluder_track_ids"]) <= ids, f"frame {f}: occluder not written")
++                # D06: historical bbox = last confirmed (observed) box; last_seen_frame = last confirmation
++                last_box = e.target(1)["bbox"] if e.target(1)["v2"]["rb_state"] != "TRACKING" else None
++                for f in range(1, e.n + 1):
++                    t = e.target(f)
++                    self.assertEqual(t["last_seen_frame"], t["v2"]["last_confirmed_frame"], f)
++                    if t["v2"]["rb_state"] == "TRACKING":
++                        self.assertEqual(t["bbox"], t["observed_position_box"], f)
++                        last_box = t["bbox"]
++                    elif last_box is not None:
++                        self.assertEqual(t["bbox"], last_box, f"frame {f}: bbox must be the last confirmed box")
++
++
++class Scenarios(unittest.TestCase):
++    def _states(self, e, lo=1, hi=None):
++        return [e.target(f)["v2"]["rb_state"] for f in range(lo, (hi or e.n) + 1)]
++
++    def test_crossings_end_tracking(self):
++        for name in ("same_kit_crossing", "same_kit_crossing_hidden", "same_kit_crossing_merged",
++                     "opponent_crossing", "opponent_crossing_hidden", "pan_crossing"):
++            with self.subTest(scenario=name):
++                e = result(name)
++                self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
++
++    def test_merged_frames_are_never_trusted(self):
++        e = result("same_kit_crossing_merged")
++        merged = [f for f in range(1, e.n + 1) if any(len(d.owners) == 2 and "TARGET" in d.owners
++                                                       for d in e.dets[f])]
++        self.assertTrue(merged)
++        for f in merged:
++            self.assertFalse(e.target(f)["v2"]["identity_trusted"], f)
++
++    def test_occluder_never_inherits_identity(self):
++        e = result("full_occlusion")
++        hidden = [f for f in range(1, e.n + 1) if e.target_det_box(f) is None]
++        self.assertTrue(hidden)
++        for f in hidden:
++            t = e.target(f)
++            self.assertIn(t["v2"]["rb_state"], ("OCCLUDED", "AMBIGUOUS", "LOST", "REACQUIRING"))
++            self.assertFalse(t["v2"]["bbox_is_observed"])
++        self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
++
++    def test_leaving_frame_is_lost_out_of_frame_then_reacquired(self):
++        e = result("leave_and_return")
++        states = Counter(e.target(f)["state"] for f in range(1, e.n + 1))
++        self.assertIn("OUT_OF_FRAME", states)
++        self.assertEqual(len(e.summary["v2"]["reacquisition_events"]), 1)
++        self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
++
++    def test_wrong_reacquisition_rejected(self):
++        e = result("wrong_reacquisition")
++        gone = [f for f in range(1, e.n + 1) if e.target_det_box(f) is None]
++        self.assertTrue(gone)
++        self.assertEqual([f for f in gone if e.target(f)["v2"]["identity_trusted"]], [])
++        self.assertEqual(e.summary["v2"]["reacquisition_events"], [])
++
++    def test_rejected_lookalike_is_still_written_as_a_person(self):
++        """R1-G review M1: a person the tracker has rejected (not the target, not under verification) is a real
++        body and must appear as a population record; only what may physically be the target is withheld."""
++        e = result("wrong_reacquisition")
++        checked = 0
++        for f in range(1, e.n + 1):
++            other = e.target_det_box(f, "PERSON_A")
++            if other is None:
++                continue
++            t = e.target(f)
++            v2 = t["v2"]
++            if v2["rb_state"] == "REACQUIRING":
++                continue                                  # the verifying candidate may be withheld
++            if iou(other, t["observed_position_box"]) >= 0.3:
++                continue                                  # standing where the target would re-emerge (rule 28)
++            written = [p for p in e.population(f) if iou(other, p["observed_position_box"]) > 0.9]
++            self.assertEqual(len(written), 1, f"frame {f}: rejected look-alike missing from the output")
++            checked += 1
++        self.assertGreater(checked, 20)
++
++    def test_hard_cut_resets_continuity(self):
++        e = result("hard_cut_impostor")
++        cut = [fr["frame"] for fr in e.doc["frame_log"] if fr["is_cut"]]
++        self.assertEqual(len(cut), 1, "exactly one hard cut")
++        c = cut[0]
++        t = e.target(c)
++        # continuity is gone: LOST, or already verifying a candidate (appearance only) in the same frame
++        self.assertIn(t["v2"]["rb_state"], ("LOST", "REACQUIRING"))
++        self.assertFalse(t["v2"]["identity_trusted"])
++        self.assertIn("CAMERA_CUT", t["v2"]["identity_uncertainty_reasons"])
++        self.assertTrue(e.doc["frame_log"][c - 1]["v2"]["cut_detected"])
++        # position means nothing after the cut: the impostor standing exactly at the old place is never accepted
++        imp = [f for f in range(c, e.n + 1) if e.target(f)["v2"]["identity_trusted"]
++               and iou(e.target(f)["observed_position_box"], e.target_det_box(f, "PERSON_A") or (0, 0, 1, 1)) > 0.5]
++        self.assertEqual(imp, [])
++        # the true target is reacquired by appearance, as a new episode
++        self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
++        self.assertGreaterEqual(e.target(e.n)["v2"]["target_episode"], 2)
++
++    def test_bank_check_sees_real_non_seed_samples(self):
++        e = result("posed_crossing")
++        accepted = [f for f in e.accepted_bank_frames() if f > 0]
++        self.assertGreaterEqual(len(accepted), 2, f"only {accepted}: bank_violations() would be vacuous")
++        self.assertEqual(e.bank_violations(), [])
++
++    def test_pan_is_measured(self):
++        e = result("pan_crossing")
++        shifts = [fr["camera_shift"][0] for fr in e.doc["frame_log"][2:]]
++        self.assertTrue(all(abs(s - (-4.0)) <= 1.0 for s in shifts), shifts[:10])
++
++    def test_gap_does_not_make_the_target_its_own_competitor(self):
++        e = result("gap_self_competition")
++        self.assertEqual(e.target(e.n)["v2"]["rb_state"], "TRACKING")
++        for f in range(1, e.n + 1):
++            own = e.target_det_box(f)
++            for p in e.population(f):
++                if own is not None and p["v2"]["detected_this_frame"]:
++                    self.assertLess(iou(own, p["observed_position_box"]), 0.5, f"frame {f}: target also a person")
++
++    def test_newcomer_in_contact_and_twin_block_without_swap(self):
++        for name in ("newcomer_in_contact", "twin_appears"):
++            with self.subTest(scenario=name):
++                e = result(name)
++                after = self._states(e, 20)
++                self.assertNotIn("TRACKING", after[2:], "an unverifiable rival must block trust")
++                self.assertTrue(any(k.startswith("T001|") for k in e.summary["identity_conflict_counts"]))
++                self.assertGreater(e.summary["identity_conflicts_logged"], 0)
++
++    def test_uncontrasted_reacquisition_stays_capped_and_flagged(self):
++        """Nobody else is ever banked: the returning target cannot be contrast-verified. Its box is reported as
++        observed (rb TRACKING) but untrusted, flagged INSUFFICIENT_CONTRAST, below the consumers' threshold."""
++        e = result("uncontrasted_return")
++        ev = e.summary["v2"]["reacquisition_events"]
++        self.assertEqual(len(ev), 1)
++        self.assertFalse(ev[0]["evidence"]["contrast_available"])
++        self.assertFalse(ev[0]["evidence"]["contrast_verified"])
++        acc = ev[0]["reacq_accepted_frame"]
++        observed = [f for f in range(acc, e.n + 1) if e.target(f)["v2"]["rb_state"] == "TRACKING"]
++        self.assertTrue(observed)
++        for f in observed:
++            t = e.target(f)
++            self.assertFalse(t["v2"]["identity_trusted"], f)
++            self.assertEqual(t["v2"]["identity_uncertainty_reasons"], ["INSUFFICIENT_CONTRAST"])
++            self.assertLess(t["identity_confidence"], 0.5)
++            self.assertLess(t["overall_track_confidence"], 0.5)
++            self.assertEqual(t["position_source"], "CONFIRMED_DETECTION")       # the box itself is observed
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_pipeline_longrun.py b/tests_rb/test_pipeline_longrun.py
+new file mode 100644
+index 0000000..ff6e1ca
+--- /dev/null
++++ b/tests_rb/test_pipeline_longrun.py
+@@ -0,0 +1,171 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25: long-run stability/memory test); project rule 32 (design for
++#                 long matches: identity drift, repeated exits/re-entry, camera cuts, memory growth, stale state)
++"""Long-run stability of the integrated pipeline on a synthetic 'match' (default 1800 frames = 60 s at 30 fps, three cuts; set
++SPANA_LONG_RUN_FRAMES for a longer one-off run).
++
++The clip has hard cuts (new shot every 600 frames, everyone repositioned), a slow camera pan, people entering and
++leaving on schedules, crossings that arise naturally, and the target leaving the frame and coming back. Checked:
++  * the whole document validates (R1 contract and historical contract after strip_v2);
++  * identity safety over the whole run: zero silent swaps, the target never written twice, no contaminated bank
++    sample, never trusted without the target's own detection;
++  * no state kept between frames grows with time: every population / target state size in the last third of the run
++    is within what the first two thirds already reached; writer state is bounded by the number of distinct tracks;
++  * Python heap growth (tracemalloc) over the second half of the run stays small.
++"""
++import math
++import os
++import shutil
++import tempfile
++import tracemalloc
++import unittest
++
++import numpy as np
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb.config import TrackerConfig
++from tests_rb._synth_pipeline import H, PH, PW, W, ClipFrame, box, run_clip
++from tests_rb._synth_scene import SceneFrame, make_people
++
++N_FRAMES = int(os.environ.get("SPANA_LONG_RUN_FRAMES", "1800"))
++SHOT_LEN = 600
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++HEAP_GROWTH_MAX_MB = 10.0
++
++
++def _match(n):
++    rng = np.random.default_rng(7)
++    spec = [("TARGET", KIT_A, 1.0)]
++    for k in range(3):
++        spec.append((f"SAME_{k}", KIT_A, (0.6, 0.7, 0.75)[k]))      # same kit, below the reacquisition floor
++    for k in range(4):
++        spec.append((f"OPP_{k}", KIT_B, 0.2))
++    people = make_people(spec)
++    lo_x, hi_x, lo_y, hi_y = PW, W - PW, PH, H - PH / 2
++    pos = {}
++    frames = []
++    shot = -1
++    for f in range(n):
++        if f % SHOT_LEN == 0:                                         # a new shot: everyone repositioned
++            shot += 1
++            for name, _, _ in spec:
++                pos[name] = [rng.uniform(lo_x, hi_x), rng.uniform(lo_y, hi_y), *rng.uniform(-2.5, 2.5, 2)]
++        pan = (f % SHOT_LEN) // 2 if shot % 3 == 1 else 0             # slow pan in every third shot
++        boxes = {}
++        for i, (name, _, _) in enumerate(spec):
++            p = pos[name]
++            if f % 90 == i * 7 % 90:                                  # new heading now and then
++                p[2], p[3] = rng.uniform(-2.5, 2.5, 2)
++            p[0] += p[2]
++            p[1] += p[3]
++            if not lo_y <= p[1] <= hi_y:
++                p[3] = -p[3]
++                p[1] = min(max(p[1], lo_y), hi_y)
++            in_scene = True
++            if name == "TARGET":
++                t = f % SHOT_LEN
++                if 300 <= t < 360:                                    # walks out of view and back
++                    in_scene = False
++                if t == 360:
++                    p[0], p[2] = W - PW, -2.0
++            else:
++                period = 240 + 40 * i
++                in_scene = (f + 37 * i) % period < period * 2 // 3
++            if not lo_x <= p[0] <= hi_x:
++                p[2] = -p[2]
++                p[0] = min(max(p[0], lo_x), hi_x)
++            if in_scene:
++                boxes[name] = box(p[0], p[1])     # image coordinates (any image motion is a valid world motion
++                #                                   under the pan, which moves only the static background)
++        frames.append(ClipFrame(SceneFrame(boxes), shot, pan))
++    return frames, people
++
++
++class LongRun(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.tmp = tempfile.mkdtemp(prefix="r1g_long_")
++        frames, people = _match(N_FRAMES)
++        cls.sizes = []
++        cls.heap = {}
++
++        def on_frame(f, sizes):
++            cls.sizes.append((f, sizes))
++            if f == N_FRAMES // 4:
++                tracemalloc.start()
++            if f in (N_FRAMES // 2, N_FRAMES - 2):
++                cls.heap[f] = tracemalloc.get_traced_memory()[0]
++        try:
++            cls.e = run_clip(frames, people, cls.tmp, name="long", start_frame=1, on_frame=on_frame)
++        finally:
++            if tracemalloc.is_tracing():
++                tracemalloc.stop()
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def test_document_validates(self):
++        self.assertEqual(S.validate_document(self.e.doc, require_v2=True), [])
++        self.assertEqual(S.validate_document(S.strip_v2(self.e.doc)), [])
++        self.assertEqual(self.e.doc["summary"]["processed_frames"], N_FRAMES - 2)
++        cuts = sum(1 for fr in self.e.doc["frame_log"] if fr["is_cut"])
++        self.assertEqual(cuts, (N_FRAMES - 1) // SHOT_LEN)
++
++    def test_identity_safety_over_the_whole_run(self):
++        e = self.e
++        self.assertEqual(e.swaps(), [])
++        self.assertEqual(e.target_duplicated(), [])
++        self.assertEqual(e.bank_violations(), [])
++        for f in range(1, e.n + 1):
++            if e.target_det_box(f) is None:
++                self.assertFalse(e.target(f)["v2"]["identity_trusted"], f)
++        visible = [f for f in range(1, e.n + 1) if e.target_det_box(f) is not None]
++        followed = [f for f in visible if e.target(f)["v2"]["rb_state"] == "TRACKING"]
++        trusted = e.trusted_frames()
++        # not abandoned: the target's own box is followed for a substantial part of the run, and identity is
++        # re-verified at least once after a loss (trusted coverage is a reported metric, not a pass bar)
++        self.assertGreater(len(followed) / len(visible), 0.3, "the target must not be abandoned for the whole run")
++        self.assertTrue(trusted)
++        self.assertTrue(any(ev["evidence"].get("contrast_verified") for ev in e.summary["v2"]["reacquisition_events"]))
++        self.assertGreaterEqual(len(e.summary["v2"]["reacquisition_events"]), 2)
++
++    def test_no_state_grows_with_time(self):
++        """Structural bounds that hold on every frame, plus no upward trend in the last third of the run."""
++        cfg = TrackerConfig.default()
++        fps = self.e.doc["summary"]["fps"]
++        size_hist_max = math.ceil(cfg.get("target_height_window_s") * fps) + 1
++        verif_max = math.ceil(cfg.get("reacq_window_s") * fps) + 2
++        for f, s in self.sizes:
++            known_bodies = s["population_live"] + s["population_closed_memory"]
++            self.assertLessEqual(s["target_known_others"], known_bodies, f)
++            self.assertLessEqual(s["target_tracklets"], known_bodies + 1, f)
++            self.assertLessEqual(s["target_size_history"], size_hist_max, f)
++            self.assertLessEqual(s["target_verification_history"], verif_max, f)
++            self.assertLessEqual(s["writer_live_last_observed"], s["population_live"], f)
++            self.assertLessEqual(s["target_bank_samples"], cfg.get("bank_max_samples"), f)
++        n = len(self.sizes)
++        early, late = self.sizes[: 2 * n // 3], self.sizes[2 * n // 3:]
++        growing_ok = {"target_reacquisition_events", "writer_final_records", "writer_lifetimes",
++                      "writer_population_ids_seen", "writer_conflict_pairs", "writer_provisional_ids"}
++        for key in self.sizes[0][1]:
++            if key in growing_ok:
++                continue
++            with self.subTest(key=key):
++                e_mean = sum(s[key] for _, s in early) / len(early)
++                l_mean = sum(s[key] for _, s in late) / len(late)
++                self.assertLessEqual(l_mean, 1.5 * e_mean + 1, f"{key} trends upwards")
++        last = self.sizes[-1][1]
++        s = self.e.doc["summary"]
++        self.assertEqual(last["writer_final_records"], s["n_tracks_ever_created"])
++        self.assertLessEqual(last["writer_final_records"], last["writer_population_ids_seen"] + 1)
++
++    def test_heap_growth_is_small(self):
++        a, b = self.heap[N_FRAMES // 2], self.heap[N_FRAMES - 2]
++        self.assertLess((b - a) / 1e6, HEAP_GROWTH_MAX_MB, f"heap grew {(b - a) / 1e6:.1f} MB over half the run")
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_pipeline_run.py b/tests_rb/test_pipeline_run.py
+new file mode 100644
+index 0000000..31d5a2b
+--- /dev/null
++++ b/tests_rb/test_pipeline_run.py
+@@ -0,0 +1,310 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25: deterministic reruns, provenance/schema validation, fail
++#                 closed); R1/R1_DESIGN_DECISIONS.md D18, D20; R0/R0_R1_TRACKER_REBUILD_PLAN.md item 10 (run signature)
++"""R1-G pipeline mechanics: determinism, frame/time mapping, provenance and sidecar, streaming assembly, and every
++fail-closed refusal of run_rb.run (no output file may survive a refused or failed run)."""
++import hashlib
++import json
++import os
++import shutil
++import subprocess
++import tempfile
++import unittest
++
++import cv2
++
++from player_tracker_rb import output_schema as S
++from player_tracker_rb import provenance as PV
++from player_tracker_rb import run_rb as R
++from player_tracker_rb.config import TrackerConfig
++from player_tracker_rb.detector import ScriptedDetector
++from player_tracker_rb.video_io import SourceHashMismatchError, frame_fingerprint, sha256_file
++from tests_rb._synth_pipeline import SCRIPTED, box, clip, detector_script, run_clip, walk, write_clip
++from tests_rb._synth_scene import SignatureEmbedding, make_people
++
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++
++
++def _people():
++    return make_people([("TARGET", KIT_A, 1.0), ("PERSON_A", KIT_A, 0.75), ("PERSON_B", KIT_B, 0.1)])
++
++
++def _frames(n=70):
++    return clip({"TARGET": walk(n, (150, 200), (3, 0)), "PERSON_A": walk(n, (150 + 3 * n, 206), (-3, 0)),
++                 "PERSON_B": [None] * 10 + walk(n - 10, (500, 120), (-2, 1))},
++                drop=lambda k: ["TARGET"] if 40 <= k < 44 else [])
++
++
++def _sha(path):
++    with open(path, "rb") as f:
++        return hashlib.sha256(f.read()).hexdigest()
++
++
++class PipelineBase(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.tmp = tempfile.mkdtemp(prefix="r1g_run_")
++        cls.people = _people()
++        cls.frames = _frames()
++        cls.start = 3
++        cls.video = write_clip(os.path.join(cls.tmp, "clip.avi"), cls.frames, cls.people)
++
++    @classmethod
++    def tearDownClass(cls):
++        shutil.rmtree(cls.tmp, ignore_errors=True)
++
++    def run_once(self, tag, **kw):
++        return run_clip(self.frames, self.people, os.path.join(self.tmp, tag), start_frame=self.start, name=tag,
++                        video_path=self.video, **kw)
++
++    def scripted(self, ov=None):
++        cfg = TrackerConfig.with_overrides(dict(SCRIPTED, **(ov or {})))
++        script, _ = detector_script(self.frames, self.start, 0.35)
++        return ScriptedDetector(script, cfg), SignatureEmbedding(self.people)
++
++    def out_dir(self, tag):
++        d = os.path.join(self.tmp, tag)
++        os.makedirs(d)
++        return d
++
++
++class Determinism(PipelineBase):
++    def test_two_runs_are_identical_except_wall_clock(self):
++        a, b = self.run_once("det_a"), self.run_once("det_b")
++        cmp = R.compare_documents(a.doc, b.doc)
++        self.assertTrue(cmp["identical_except_wall_clock"], cmp["first_difference"])
++        self.assertEqual(_sha(a.paths["decision_log"]), _sha(b.paths["decision_log"]))
++        # byte level: with the wall-clock fields set equal, the files are byte-identical
++        texts = []
++        for e in (a, b):
++            with open(e.paths["results"], encoding="ascii") as fh:
++                d = json.load(fh)
++            d["summary"]["processing_time_s"] = 0.0
++            d["summary"]["v2"]["provenance"]["run_started_utc"] = "X"
++            texts.append(S.dumps_canonical(d))
++        self.assertEqual(texts[0], texts[1])
++        # sidecars agree on everything that is not wall-clock or the (wall-clock dependent) results hash
++        sides = []
++        for e in (a, b):
++            with open(e.paths["provenance"], encoding="ascii") as fh:
++                s = json.load(fh)
++            s.pop("results_sha256")
++            sides.append(PV.deterministic_digest(s))
++        self.assertEqual(sides[0], sides[1])
++
++    def test_streamed_file_is_the_canonical_serialisation(self):
++        e = self.run_once("canon")
++        with open(e.paths["results"], encoding="ascii") as fh:
++            text = fh.read()
++        self.assertEqual(text, S.dumps_canonical(json.loads(text)))
++        self.assertFalse([p for p in os.listdir(os.path.dirname(e.paths["results"])) if R.PARTIAL_SUFFIX in p])
++
++
++class FrameMappingAndProvenance(PipelineBase):
++    def test_frame_index_time_and_fingerprint(self):
++        e = self.run_once("map")
++        cfg = TrackerConfig.default()
++        s = e.doc["summary"]
++        self.assertEqual(s["start_frame"], self.start)
++        self.assertEqual(s["processed_frames"], len(self.frames) - self.start - 1)
++        cap = cv2.VideoCapture(self.video)
++        imgs = []
++        while True:
++            ok, img = cap.read()
++            if not ok:
++                break
++            imgs.append(img)
++        for fr in e.doc["frame_log"]:
++            vfi = fr["v2"]["video_frame_index"]
++            self.assertEqual(vfi, self.start + fr["frame"])
++            self.assertAlmostEqual(fr["v2"]["timestamp_s"], round(vfi / s["fps"], 4))
++            self.assertEqual(fr["v2"]["frame_thumb_sha1"], frame_fingerprint(imgs[vfi], cfg))
++
++    def test_provenance_and_sidecar(self):
++        e = self.run_once("prov")
++        v2 = e.doc["summary"]["v2"]
++        p = v2["provenance"]
++        self.assertEqual(p["video_sha256"], sha256_file(self.video, 1 << 20))
++        self.assertEqual(p["seed_frame"], self.start)
++        self.assertEqual(p["seed_bbox"], [round(v, 1) for v in self.frames[self.start].scene.boxes["TARGET"]])
++        self.assertEqual(p["config_hash"], v2["config_hash"])
++        self.assertEqual(p["config_hash"], TrackerConfig.with_overrides(SCRIPTED).config_hash())
++        head = subprocess.run(["git", "-C", PV.PACKAGE_ROOT, "rev-parse", "HEAD"], capture_output=True,
++                              text=True).stdout.strip()
++        self.assertEqual(p["git_commit"], head)
++        self.assertIsInstance(p["git_dirty"], bool)
++        self.assertEqual(p["models"], [])                      # scripted backends use no model file
++        self.assertEqual(p["decode_mode"], S.DECODE_MODE)
++        self.assertEqual(v2["schema_version"], S.V2_SCHEMA_VERSION)
++        with open(e.paths["provenance"], encoding="ascii") as fh:
++            side = json.load(fh)
++        self.assertEqual(side["results_sha256"], _sha(e.paths["results"]))
++        self.assertTrue(side["source_reverified_at_close"])
++        self.assertFalse(side["resume_supported"])
++        self.assertEqual(side["backends"]["detector"]["backend"], "scripted")
++        self.assertEqual(side["backends"]["embedding"]["backend"], "test_signature")
++        self.assertEqual(side["frame_alignment"]["processed_frames"], e.doc["summary"]["processed_frames"])
++        self.assertTrue(any("contrast_available" in n for n in v2["notes"]))
++
++    def test_max_frames_caps_the_run(self):
++        e = self.run_once("cap", overrides={"max_frames": 20})
++        self.assertEqual(e.doc["summary"]["processed_frames"], 20)
++        self.assertEqual(S.validate_document(e.doc, require_v2=True), [])
++
++    def test_no_decision_log_without_debug(self):
++        e = self.run_once("nodebug", debug=False)
++        self.assertFalse(os.path.exists(e.paths["decision_log"]))
++
++    def test_final_tracks(self):
++        e = self.run_once("finals")
++        ft = e.doc["final_tracks"]
++        self.assertEqual(ft[0]["track_id"], "T001")
++        self.assertTrue(ft[0]["selected_player"])
++        last_ids = {t["track_id"] for t in e.doc["frame_log"][-1]["tracks"]}
++        written = {t["track_id"] for fr in e.doc["frame_log"] for t in fr["tracks"]}
++        self.assertEqual({t["track_id"] for t in ft}, written)
++        for t in ft:
++            self.assertNotIn("v2", t)
++            self.assertEqual(t["state"] == "TERMINATED", t["track_id"] not in last_ids)
++        s = e.doc["summary"]
++        self.assertEqual(s["n_tracks_ever_created"], len(written))
++        self.assertEqual(s["n_tracks_final_active"], len(last_ids))
++        self.assertEqual(s["final_confirmed_count"] + s["final_provisional_count"], len(last_ids))
++
++
++class FailClosed(PipelineBase):
++    def assertNothingWritten(self, d):
++        self.assertEqual(os.listdir(d), [], "a refused or failed run must leave no output")
++
++    def test_seed_without_detection_is_refused(self):
++        d = self.out_dir("refuse_seed")
++        det, emb = self.scripted()
++        with self.assertRaises(R.RunRefusedError):
++            R.run(self.video, self.start, [10.0, 10.0, 40.0, 80.0], out_dir=d, config_overrides=SCRIPTED,
++                  detector=det, embedder=emb)
++        self.assertNothingWritten(d)
++
++    def test_jersey_number_and_missing_out_dir_are_refused(self):
++        det, emb = self.scripted()
++        seed = list(self.frames[self.start].scene.boxes["TARGET"])
++        d = self.out_dir("refuse_jersey")
++        with self.assertRaises(R.RunRefusedError):
++            R.run(self.video, self.start, seed, jersey_number="23", out_dir=d, config_overrides=SCRIPTED,
++                  detector=det, embedder=emb)
++        with self.assertRaises(R.RunRefusedError):
++            R.run(self.video, self.start, seed, out_dir=None, config_overrides=SCRIPTED, detector=det, embedder=emb)
++        self.assertNothingWritten(d)
++
++    def test_source_hash_mismatch_is_refused(self):
++        d = self.out_dir("refuse_hash")
++        det, emb = self.scripted()
++        with self.assertRaises(SourceHashMismatchError):
++            R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
++                  config_overrides=SCRIPTED, detector=det, embedder=emb, expected_sha256="0" * 64)
++        self.assertNothingWritten(d)
++
++    def test_existing_output_is_never_overwritten(self):
++        e = self.run_once("exists")
++        before = _sha(e.paths["results"])
++        det, emb = self.scripted()
++        with self.assertRaises(R.RunRefusedError):
++            R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]),
++                  out_dir=os.path.dirname(e.paths["results"]), config_overrides=SCRIPTED, detector=det, embedder=emb)
++        self.assertEqual(_sha(e.paths["results"]), before)
++
++    def test_backend_substitution_is_refused(self):
++        d = self.out_dir("refuse_backend")
++        det, emb = self.scripted()
++        seed = list(self.frames[self.start].scene.boxes["TARGET"])
++        with self.assertRaises(R.RunRefusedError):     # production config, scripted detector passed in
++            R.run(self.video, self.start, seed, out_dir=d, detector=det, embedder=emb)
++        with self.assertRaises(R.RunRefusedError):     # scripted config but no detector
++            R.run(self.video, self.start, seed, out_dir=d, config_overrides=SCRIPTED, embedder=emb)
++        with self.assertRaises(R.RunRefusedError):     # scripted config but no embedder
++            R.run(self.video, self.start, seed, out_dir=d, config_overrides=SCRIPTED, detector=det)
++        self.assertNothingWritten(d)
++
++    def test_contract_violation_stops_the_run_and_leaves_nothing(self):
++        d = self.out_dir("violation")
++        det, emb = self.scripted()
++        orig = R._RecordBuilder.target_record
++
++        def broken(self_, f, tf, excluded):
++            rec = orig(self_, f, tf, excluded)
++            if f == 10:
++                rec["state"] = "ACTIVE" if rec["state"] != "ACTIVE" else "OCCLUDED"   # state/v2 disagree
++            return rec
++        R._RecordBuilder.target_record = broken
++        try:
++            with self.assertRaises(R.ContractViolationError):
++                R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
++                      debug=True, config_overrides=SCRIPTED, detector=det, embedder=emb)
++        finally:
++            R._RecordBuilder.target_record = orig
++        self.assertNothingWritten(d)
++
++
++class FileSafety(PipelineBase):
++    """R1-G review M3 / L2 / L3."""
++
++    def test_a_file_appearing_mid_run_is_never_deleted_or_replaced(self):
++        for which in ("results", "decision_log", "provenance"):
++            with self.subTest(which=which):
++                d = self.out_dir("race_" + which)
++                planted = R.output_paths(d, self.video)[which]
++
++                def hook(f, sizes, planted=planted):
++                    if f == 5 and not os.path.exists(planted):
++                        with open(planted, "w") as fh:
++                            fh.write("SOMEONE ELSE'S FILE\n")
++                det, emb = self.scripted()
++                with self.assertRaises(R.RunRefusedError):
++                    R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
++                          debug=True, config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
++                with open(planted) as fh:
++                    self.assertEqual(fh.read(), "SOMEONE ELSE'S FILE\n")
++                self.assertEqual(os.listdir(d), [os.path.basename(planted)], "only the foreign file may remain")
++
++    def test_outputs_appear_under_final_names_only_when_complete(self):
++        d = self.out_dir("publish")
++        paths = R.output_paths(d, self.video)
++        seen = []
++
++        def hook(f, sizes):
++            seen.append(sorted(os.listdir(d)))
++        det, emb = self.scripted()
++        R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d, debug=True,
++              config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
++        finals = {os.path.basename(p) for p in paths.values()}
++        for listing in seen:
++            self.assertFalse(set(listing) & finals, f"a final name existed mid-run: {listing}")
++            self.assertTrue(all(name.endswith(R.PARTIAL_SUFFIX) for name in listing))
++        self.assertEqual(set(os.listdir(d)), finals)
++
++    def test_backend_built_with_other_settings_is_refused(self):
++        d = self.out_dir("refuse_settings")
++        other = TrackerConfig.with_overrides(dict(SCRIPTED, detector_min_score=0.9))
++        script, _ = detector_script(self.frames, self.start, 0.35)
++        det = ScriptedDetector(script, other)
++        with self.assertRaises(R.RunRefusedError):
++            R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d,
++                  config_overrides=SCRIPTED, detector=det, embedder=SignatureEmbedding(self.people))
++        self.assertNothingWritten(d)
++
++    def test_production_named_backend_without_a_model_record_is_refused(self):
++        class FakeYolox(ScriptedDetector):
++            def provenance(self):
++                return dict(super().provenance(), backend="yolox_onnx")
++        cfg = TrackerConfig.with_overrides({"appearance_backend": "scripted"})
++        script, _ = detector_script(self.frames, self.start, 0.35)
++        with self.assertRaises(R.RunRefusedError):
++            R.build_backends(cfg, FakeYolox(script, cfg), SignatureEmbedding(self.people))
++
++    def assertNothingWritten(self, d):
++        self.assertEqual(os.listdir(d), [])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_surviving_consumers.py b/tests_rb/test_surviving_consumers.py
+new file mode 100644
+index 0000000..13e155f
+--- /dev/null
++++ b/tests_rb/test_surviving_consumers.py
+@@ -0,0 +1,203 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R0/R0_R1_TRACKER_REBUILD_PLAN.md item 14 (run the UNMODIFIED surviving consumers on R1 output with
++#                 test-only stubs for their missing imports); R0/R0_TRACKER_INTERFACE_MAP.md §5; R1/R1_DESIGN_DECISIONS.md
++#                 D05, D19; R1-G instruction (Nathan, 2026-10-25)
++"""The surviving Pass-2 consumers read R1 output safely.
++
++Loaded read-only from recovered/ (hash-pinned, never modified, never imported by player_tracker_rb):
++  * player_tracker_mo/event_adapter.py   build_integrated_event_snapshots (frame_log -> TrackingSnapshot list)
++  * event_engine_v1/actor_attribution.py frame_identity, selected_ids, conflicts_involve
++  * football_analysis/confidence.py      (3N version) HIGH_THRESH / MEDIUM_THRESH, imported by actor_attribution
++Their other missing imports are TEST-ONLY STUBS defined here (NEW, never written to a historical path):
++  * football_analysis.adapter: TrackingSnapshot / TrackingAdapter (plain records);
++  * new_tracker_snapshots.NEW_TO_LEGACY_STATE: exactly the evidenced mapping rows of output_schema
++    (LEGACY_STATE_EVIDENCE); unknown states fall to the adapter's own .get(..., "LOST") default.
++
++Safety properties checked on full-pipeline R1 output (synthetic scenarios with crossings, merges, cuts and rivals):
++  * a snapshot is TRACKING only on an R1 TRACKING frame, and every non-TRACKING R1 frame is non-TRACKING downstream;
++  * the snapshot tracking_confidence of every untrusted frame is below the consumers' 0.5 threshold;
++  * an episode opened by an uncontrasted reacquisition (possibly a look-alike) never yields actor TARGET_PLAYER
++    (R1-G review H1);
++  * actor_attribution.frame_identity trusts a frame only if R1 trusted it;
++  * logged identity conflicts reach actor_attribution (conflicts_involve) when R1 recorded a competing hypothesis.
++"""
++import dataclasses
++import hashlib
++import importlib.util
++import os
++import shutil
++import sys
++import tempfile
++import types
++import unittest
++
++from player_tracker_rb import output_schema as S
++from tests_rb._synth_pipeline import PW, box, clip, run_clip, walk
++from tests_rb._synth_scene import make_people
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++REC = os.path.join(ROOT, "recovered", "SPANA_recovered_originals")
++CONSUMERS = {
++    "event_adapter": ("engine_current_3Q_state_exact/player_tracker_mo/event_adapter.py",
++                      "418d54219ff18bb62b87502fbe14c9beff1ae1fc4a8d9c4de80ec4f948ca90dd"),
++    "actor_attribution": ("engine_current_3Q_state_exact/event_engine_v1/actor_attribution.py",
++                          "ac2003830a664790d91d3bea770b0acd42777503cb438ca4e58965ba28c65793"),
++    "confidence": ("engine_3N_versions_of_files_changed_in_3P_3Q/football_analysis/confidence.py",
++                   "41a94f8e628de1d9cc2c7821573a637ae7fda0148208d626a5f21fd03845b431"),
++}
++KIT_A = (200, 60, 40)
++KIT_B = (40, 40, 210)
++
++
++@dataclasses.dataclass
++class TrackingSnapshot:                     # TEST-ONLY STUB of football_analysis.adapter.TrackingSnapshot
++    player_id: str
++    frame_number: int
++    timestamp: float
++    bbox: list
++    centre_x: float
++    centre_y: float
++    tracking_confidence: float
++    tracking_state: str
++
++
++class TrackingAdapter:                      # TEST-ONLY STUB (never used by the functions under test)
++    pass
++
++
++def _load(name, rel, sha):
++    path = os.path.join(REC, rel)
++    with open(path, "rb") as f:
++        got = hashlib.sha256(f.read()).hexdigest()
++    if got != sha:
++        raise AssertionError(f"recovered consumer {rel} hash {got} != pinned {sha}")
++    spec = importlib.util.spec_from_file_location(name, path)
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++_SAVED = {}
++_MODS = {}
++
++
++def setUpModule():
++    stubs = {
++        "football_analysis": types.ModuleType("football_analysis"),
++        "football_analysis.adapter": types.ModuleType("football_analysis.adapter"),
++        "new_tracker_snapshots": types.ModuleType("new_tracker_snapshots"),
++    }
++    stubs["football_analysis.adapter"].TrackingSnapshot = TrackingSnapshot
++    stubs["football_analysis.adapter"].TrackingAdapter = TrackingAdapter
++    stubs["new_tracker_snapshots"].NEW_TO_LEGACY_STATE = {k: v[0] for k, v in S.LEGACY_STATE_EVIDENCE.items()}
++    for k in list(stubs) + ["football_analysis.confidence"]:
++        _SAVED[k] = sys.modules.get(k)
++    sys.modules.update(stubs)
++    conf = _load("football_analysis.confidence", *CONSUMERS["confidence"])
++    sys.modules["football_analysis.confidence"] = conf
++    stubs["football_analysis"].confidence = conf
++    stubs["football_analysis"].adapter = stubs["football_analysis.adapter"]
++    _MODS["event_adapter"] = _load("rb_test_event_adapter", *CONSUMERS["event_adapter"])
++    _MODS["actor_attribution"] = _load("rb_test_actor_attribution", *CONSUMERS["actor_attribution"])
++    _MODS["tmp"] = tempfile.mkdtemp(prefix="r1g_consumers_")
++
++
++def tearDownModule():
++    for k, v in _SAVED.items():
++        if v is None:
++            sys.modules.pop(k, None)
++        else:
++            sys.modules[k] = v
++    shutil.rmtree(_MODS["tmp"], ignore_errors=True)
++
++
++def _scenarios():
++    people = make_people([("TARGET", KIT_A, 1.0), ("PERSON_A", KIT_A, 0.75), ("TWIN", KIT_A, 1.0)])
++    n = 150
++    tgt = walk(70, (150, 200), (3, 0)) + [box(360, 200)] * (n - 70)
++    other = walk(70, (150 + 3 * 70, 204), (-3, 0)) + [None] * (n - 70)
++    twin = [None] * 100 + [box(360 + PW * 2.5, 200)] * (n - 100)
++    shots = [0] * 85 + [1] * (n - 85)
++    fr = clip({"TARGET": tgt, "PERSON_A": other, "TWIN": twin}, shots=shots,
++              merge=lambda k: [("TARGET", "PERSON_A")] if 62 <= k < 68 else [])
++    return run_clip(fr, people, os.path.join(_MODS["tmp"], "mix"), name="mix", start_frame=2)
++
++
++class SurvivingConsumers(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.e = _scenarios()
++        cls.ea = _MODS["event_adapter"]
++        cls.aa = _MODS["actor_attribution"]
++
++    def test_scenario_exercises_untrusted_states(self):
++        rb = {self.e.target(f)["v2"]["rb_state"] for f in range(1, self.e.n + 1)}
++        self.assertIn("TRACKING", rb)
++        self.assertTrue(rb & {"OCCLUDED", "AMBIGUOUS", "LOST", "REACQUIRING"}, rb)
++
++    def test_event_adapter_never_promotes_an_untrusted_frame(self):
++        fl = self.e.doc["frame_log"]
++        snaps = self.ea.build_integrated_event_snapshots(fl, self.e.doc["summary"]["fps"])
++        self.assertEqual(len(snaps), len(fl) + 1)            # frame-0 bootstrap + one per frame
++        for snap, fr in zip(snaps[1:], fl):
++            t = [x for x in fr["tracks"] if x["selected_player"]][0]
++            self.assertEqual(snap.frame_number, fr["frame"])
++            trusted = t["v2"]["identity_trusted"]
++            # the adapter sees TRACKING exactly when R1 observed the target's box (rb TRACKING); every frame that is
++            # not R1-trusted (including an observed box of an unverified episode) carries confidence < 0.5
++            self.assertEqual(snap.tracking_state == "TRACKING", t["v2"]["rb_state"] == "TRACKING",
++                             f"frame {fr['frame']}")
++            if trusted:
++                self.assertEqual(snap.tracking_state, "TRACKING")
++            else:
++                self.assertLess(snap.tracking_confidence, 0.5)
++            self.assertEqual(snap.bbox, t["bbox"])
++
++    def test_actor_attribution_trusts_only_r1_trusted_frames(self):
++        for fr in self.e.doc["frame_log"]:
++            t = [x for x in fr["tracks"] if x["selected_player"]][0]
++            verdict = self.aa.frame_identity(fr)
++            if verdict["trusted"]:
++                self.assertTrue(t["v2"]["identity_trusted"], f"frame {fr['frame']}: {verdict}")
++            if not t["v2"]["identity_trusted"]:
++                self.assertFalse(verdict["trusted"])
++
++    def test_identity_conflicts_reach_actor_attribution(self):
++        s = self.e.doc["summary"]
++        self.assertTrue(s["identity_conflict_counts"], "the twin must be logged as a competing hypothesis")
++        ids = self.aa.selected_ids(self.e.doc["frame_log"])
++        self.assertEqual(ids, ["T001"])
++        self.assertTrue(self.aa.conflicts_involve(ids, s["identity_conflict_counts"]))
++
++
++class UncontrastedEpisodeDownstream(unittest.TestCase):
++    """R1-G review H1: the target leaves for good; a near-identical person enters later with nobody else around, so
++    the reacquisition has nothing to contrast. Whatever happens next must never be attributed to the target."""
++
++    def test_lookalike_after_uncontrasted_reacquisition_is_never_the_actor(self):
++        aa = _MODS["actor_attribution"]
++        people = make_people([("TARGET", KIT_A, 1.0), ("TWIN", KIT_A, 0.97)])
++        tgt = walk(40, (560, 200), (4, 0)) + [None] * 140
++        twin = [None] * 70 + walk(110, (650, 200), (-3, 0))
++        e = run_clip(clip({"TARGET": tgt, "TWIN": twin}), people, os.path.join(_MODS["tmp"], "unc"), name="unc",
++                     start_frame=2)
++        ev = e.summary["v2"]["reacquisition_events"]
++        self.assertTrue(ev, "the scene must produce an uncontrasted reacquisition of the look-alike")
++        self.assertFalse(ev[-1]["evidence"]["contrast_verified"])
++        acc = ev[-1]["reacq_accepted_frame"]
++        idx = aa.build_frame_index(e.doc["frame_log"])
++        for start in range(acc, e.n - 5, 5):
++            raw = {"type": "CARRY", "start_frame": start, "end_frame": min(start + 15, e.n)}
++            sel = aa.selected_ids(e.doc["frame_log"])
++            a = aa.assess_actor(raw, [raw], idx, "RESOLVED",
++                                aa.conflicts_involve(sel, e.summary["identity_conflict_counts"]))
++            self.assertNotEqual(a["actor"], "TARGET_PLAYER", f"window from {start}: {a['actor_evidence']}")
++        for f in range(acc, e.n + 1):
++            t = e.target(f)
++            self.assertFalse(t["v2"]["identity_trusted"], f)
++            self.assertLess(t["identity_confidence"], 0.5)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests_rb/test_target.py b/tests_rb/test_target.py
+index 0318647..ecff59f 100644
+--- a/tests_rb/test_target.py
++++ b/tests_rb/test_target.py
+@@ -43,15 +43,20 @@ def frame_invariants(tc, r):
+         tc.assertIn(f.rb_state, S.RB_STATES)
+         observed = f.rb_state == T.TRACKING
+         tc.assertEqual(f.bbox_is_observed, observed, where)
+-        tc.assertEqual(f.identity_trusted, observed, where)
++        if f.identity_trusted:                       # trusted => observed (TRACKING); an observed box of an episode
++            tc.assertTrue(observed, where)           # opened without contrast may be untrusted (R1-G)
+         tc.assertEqual(sum((f.bbox_is_observed, f.bbox_is_held, f.bbox_is_predicted)), 1, where)
+         tc.assertEqual({"DETECTION": f.bbox_is_observed, "HELD": f.bbox_is_held,
+                         "PREDICTED": f.bbox_is_predicted}[f.observation_source], True, where)
+         if observed:
+             tc.assertEqual(f.held_age_s, 0.0)
+-            tc.assertEqual(f.identity_uncertainty_reasons, ())
+             tc.assertFalse(f.merged_suspected)
+-            tc.assertGreaterEqual(f.identity_confidence_rb, CFG.get("legacy_identity_trust_threshold"))
++            if f.identity_trusted:
++                tc.assertEqual(f.identity_uncertainty_reasons, ())
++                tc.assertGreaterEqual(f.identity_confidence_rb, CFG.get("legacy_identity_trust_threshold"))
++            else:                                    # observed, identity not contrast-verified (R1-G)
++                tc.assertEqual(f.identity_uncertainty_reasons, (T.INSUFFICIENT_CONTRAST,), where)
++                tc.assertLessEqual(f.identity_confidence_rb, CFG.get("untrusted_identity_confidence_ceiling"))
+             det = r.pops[k].observations[f.detection_index]
+             tc.assertNotIn(P.MERGED_SUSPECTED, det.flags, where)
+             tc.assertEqual(tuple(f.bbox), tuple(det.bbox))
+@@ -508,10 +513,14 @@ class TestBankAndConfidence(Base):
+             self.assertNotIn(P.CONTESTED, o.flags)
+ 
+     def test_post_reacquisition_quarantine(self):
+-        ppl = people()
+-        frames = [SceneFrame({"TARGET": b}, drop=["TARGET"] if 10 <= k < 50 else [])
++        # a same-kit person stands nearby (not in contact), so the reacquisition beats a confusable competitor and
++        # the episode is verified: the bank rules that apply are the quarantine ones, not EPISODE_UNVERIFIED
++        ppl = people(("PERSON_A", KIT_A, SAME_KIT_COS))
++        frames = [SceneFrame({"TARGET": b, "PERSON_A": box_at(600, 400, 40, 100)},
++                             drop=["TARGET"] if 10 <= k < 50 else [])
+                   for k, b in enumerate(still(120, (500, 400)))]
+         r = run(frames, ppl)
++        self.assertTrue(r.tracker.reacquisition_events[0].evidence["contrast_verified"])
+         acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
+         t_acc = r.frames[acc].time_s
+         offered = 0
+diff --git a/tests_rb/test_target_audit.py b/tests_rb/test_target_audit.py
+index d749074..0070beb 100644
+--- a/tests_rb/test_target_audit.py
++++ b/tests_rb/test_target_audit.py
+@@ -502,6 +502,85 @@ class DocumentedLimitations(unittest.TestCase):
+                                              1.0 / 2 + 1e-9)
+ 
+ 
++class UncontrastedEpisodeCap(unittest.TestCase):
++    """R1-G rule (Nathan, 2026-10-25: 'keep uncontrasted reacquisition capped/flagged, not treated as
++    high-confidence identity'; independent review H1: a 0.5 cap equals full trust for the surviving consumers).
++    An episode opened by a reacquisition that had nothing to contrast against reports its observed box as TRACKING
++    but UNTRUSTED (reason INSUFFICIENT_CONTRAST, confidence <= untrusted ceiling), never updates the target bank and
++    never rules out a body as a known other, until a TRACKING frame passes a real contrast against a competitor that
++    could be confused with the target (its similarity to the crop >= appearance_floor; review L4)."""
++
++    def _return_alone_then(self, other):
++        ppl = people(("PERSON_A",) + other)
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(580, 400, 40, 100)})
++                   for _ in range(40)]
++        return run(frames, ppl)
++
++    def _unverified_frames_ok(self, r, frames):
++        ceiling = CFG.get("untrusted_identity_confidence_ceiling")
++        for k in frames:
++            f = r.frames[k]
++            if f.rb_state == T.TRACKING:
++                self.assertFalse(f.identity_trusted, f"rel {k}")
++                self.assertEqual(f.identity_uncertainty_reasons, (T.INSUFFICIENT_CONTRAST,), f"rel {k}")
++                self.assertLessEqual(f.identity_confidence_rb, ceiling, f"rel {k}")
++                bank = f.decision.get("bank") or {}
++                self.assertNotEqual(bank.get("status"), "ACCEPTED", f"rel {k}: bank updated from unverified identity")
++
++    def test_same_kit_contrast_verifies_the_episode(self):
++        r = self._return_alone_then((KIT_A, SAME_KIT_COS))
++        ev = r.tracker.reacquisition_events[0]
++        self.assertFalse(ev.evidence["contrast_available"])
++        acc = ev.reacq_accepted_frame
++        verified = [k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted]
++        self.assertTrue(verified, "a same-kit competitor the target beats by the margin must verify the episode")
++        first = min(verified)
++        self.assertTrue(r.frames[first].decision.get("episode_contrast_verified"))
++        self._unverified_frames_ok(r, range(acc, first))
++        self.assertGreater(r.frames[first].identity_confidence_rb, 1.0 / 2)
++        self.assertTrue(all(r.frames[k].identity_trusted for k in range(first, len(r.frames))
++                            if r.frames[k].rb_state == T.TRACKING))
++
++    def test_contrast_against_an_obviously_different_person_does_not_verify(self):
++        r = self._return_alone_then((KIT_B, 0.0))
++        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++        self.assertEqual([k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted], [])
++        self._unverified_frames_ok(r, range(acc, len(r.frames)))
++
++    def test_wrong_lookalike_is_never_trusted(self):
++        for cos in (0.78, 0.8):
++            with self.subTest(cos=cos):
++                ppl = people(("PERSON_A", KIT_A, cos))
++                frames = [SceneFrame({"TARGET": b}) for b in linear(40, (1150, 400), (8, 0))]
++                frames += [SceneFrame({"PERSON_A": b}) for b in linear(120, (1250, 400), (-4, 0))]
++                r = run(frames, ppl)
++                self.assertTrue(r.tracker.reacquisition_events)
++                acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++                self.assertEqual([k for k in range(acc, len(r.frames)) if r.frames[k].identity_trusted], [])
++                self._unverified_frames_ok(r, range(acc, len(r.frames)))
++                self.assertTrue(r.bank_is_pure())
++
++    def test_unverified_episode_rules_nobody_out(self):
++        """A body seen beside an unverified identity is not recorded as a known other: if the identity is wrong,
++        that body may be the real target and must stay reacquirable."""
++        ppl = people(("PERSON_A", KIT_B, 0.0))
++        frames = [SceneFrame({"TARGET": box_at(500, 400, 40, 100)}) for _ in range(10)]
++        frames += [SceneFrame({}) for _ in range(40)]
++        frames += [SceneFrame({"TARGET": box_at(500, 400, 40, 100), "PERSON_A": box_at(620, 400, 40, 100)})
++                   for _ in range(60)]
++        r = run(frames, ppl)
++        acc = r.tracker.reacquisition_events[0].reacq_accepted_frame
++        self.assertFalse(any(r.frames[k].identity_trusted for k in range(acc, len(r.frames))))
++        self.assertEqual(r.tracker.state_sizes()["target_known_others"], 0)
++
++    def test_seed_episode_is_trusted(self):
++        r = run([SceneFrame({"TARGET": b}) for b in linear(20, (300, 400), (3, 0))], people())
++        self.assertTrue(all(f.identity_trusted and f.identity_confidence_rb > 1.0 / 2 for f in r.frames[1:]))
++
++
+ def _bank_logs(r):
+     return [(f, f.decision.get("bank")) for f in r.frames[1:] if f.decision.get("bank")]
+ 
+diff --git a/tools_rb/gold_pipeline_run.py b/tools_rb/gold_pipeline_run.py
+new file mode 100644
+index 0000000..1ec1116
+--- /dev/null
++++ b/tools_rb/gold_pipeline_run.py
+@@ -0,0 +1,167 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25: GOLD only as development footage, not final benchmark
++#                 scoring); R1/gold_label_sheet (frozen human tracking labels v1, identity/visibility only)
++"""Integrated Pass-1 pipeline on a development clip (no events, no benchmark scoring).
++
++    run      VIDEO FIXTURE_JSON LABELS_CSV OUT_DIR
++             Runs player_tracker_rb.run_rb.run with the configured (production) backends, debug decision log on.
++             From the fixture only video_sha256, seed_frame and seed_bbox are read. The frozen human labels are read
++             only AFTER the run, to summarise the tracker's states per labelled frame. Writes OUT_DIR/
++             gold_pipeline_report.json and OUT_DIR/gold_pipeline_contact_sheet.jpg next to the pipeline outputs.
++    compare  OUT_DIR_A OUT_DIR_B VIDEO
++             Determinism: compares two runs' documents (everything except the documented wall-clock fields must be
++             identical) and their decision logs (byte-identical).
++"""
++import hashlib
++import json
++import os
++import sys
++
++import cv2
++import numpy as np
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from player_tracker_rb import output_schema as S  # noqa: E402
++from player_tracker_rb import run_rb as R  # noqa: E402
++from tools_rb.target_eval import label_class, read_fixture, read_labels  # noqa: E402
++
++STATE_COLOUR = {"TRACKING": (0, 255, 0), "OCCLUDED": (0, 165, 255), "AMBIGUOUS": (0, 255, 255),
++                "LOST": (0, 0, 255), "REACQUIRING": (255, 0, 255)}
++SHEET_FROM_BEFORE_LABELS = 10
++SHEET_STEP = 2
++SHEET_COLS = 4
++SHEET_TILE_W = 480
++SHEET_JPEG_QUALITY = 80
++
++
++def _sha(path):
++    h = hashlib.sha256()
++    with open(path, "rb") as f:
++        for b in iter(lambda: f.read(1 << 20), b""):
++            h.update(b)
++    return h.hexdigest()
++
++
++def run(video, fx_json, labels_csv, out_dir):
++    fx = read_fixture(fx_json)
++    summary = R.run(video, fx["seed_frame"], fx["seed_bbox"], out_dir=out_dir, debug=True,
++                    expected_sha256=fx["video_sha256"])
++    paths = R.output_paths(out_dir, video)
++    with open(paths["results"], encoding="ascii") as fh:
++        doc = json.load(fh)
++    errors = S.validate_document(doc, require_v2=True)
++    errors_hist = S.validate_document(S.strip_v2(doc))
++    # labels: read only now, after the tracker has finished
++    labels = read_labels(labels_csv, fx["seed_frame"])
++    sel = {fr["frame"]: [t for t in fr["tracks"] if t["selected_player"]][0] for fr in doc["frame_log"]}
++    outside = [rel for rel in labels if rel not in sel]
++    if outside:
++        raise SystemExit(f"label frames outside the run: {sorted(outside)[:5]} (fail closed)")
++    by_class = {}
++    for rel, row in sorted(labels.items()):
++        cl = label_class(row)
++        d = by_class.setdefault(cl, {"frames": 0, "trusted": 0, "states": {}, "trusted_frames": []})
++        d["frames"] += 1
++        st = sel[rel]["v2"]["rb_state"]
++        d["states"][st] = d["states"].get(st, 0) + 1
++        if sel[rel]["v2"]["identity_trusted"]:
++            d["trusted"] += 1
++            d["trusted_frames"].append(rel)
++    states = {}
++    for t in sel.values():
++        states[t["v2"]["rb_state"]] = states.get(t["v2"]["rb_state"], 0) + 1
++    transitions = []
++    prev = None
++    for f in sorted(sel):
++        v2 = sel[f]["v2"]
++        key = (v2["rb_state"], tuple(v2["identity_uncertainty_reasons"]))
++        if key != prev:
++            transitions.append({"frame": f, "rb_state": v2["rb_state"],
++                                "reasons": v2["identity_uncertainty_reasons"], "episode": v2["target_episode"],
++                                "identity_confidence_rb": v2["identity_confidence_rb"]})
++            prev = key
++    lo, hi = min(labels), max(labels)
++    trusted_conf = [sel[f]["v2"]["identity_confidence_rb"] for f in sorted(sel) if sel[f]["v2"]["identity_trusted"]]
++    report = {
++        "tool": "tools_rb/gold_pipeline_run.py", "development_only": True, "events_evaluated": False,
++        "labels_used_by_tracker": False, "labels_file_sha256": _sha(labels_csv),
++        "results_file": os.path.basename(paths["results"]), "results_sha256": _sha(paths["results"]),
++        "contract_errors_r1": errors, "contract_errors_historical_after_strip": errors_hist,
++        "processed_frames": summary["processed_frames"], "processing_time_s": summary["processing_time_s"],
++        "fps": summary["fps"], "state_counts": states, "selected_state_pct": summary["selected_state_pct"],
++        "rb_state_pct": summary["v2"]["rb_state_pct"], "transitions": transitions,
++        "reacquisition_events": summary["v2"]["reacquisition_events"],
++        "identity_conflict_counts": summary["identity_conflict_counts"],
++        "identity_conflicts_logged": summary["identity_conflicts_logged"],
++        "n_tracks_ever_created": summary["n_tracks_ever_created"],
++        "trusted_identity_confidence_rb": {"min": min(trusted_conf) if trusted_conf else None,
++                                           "max": max(trusted_conf) if trusted_conf else None},
++        "label_window": [lo, hi], "by_label_class": by_class,
++        "provenance": summary["v2"]["provenance"],
++    }
++    # contact sheet of the label window from the written records (what Pass 2 would read)
++    tiles = []
++    cap = cv2.VideoCapture(video)
++    for i in range(fx["seed_frame"] + 1):
++        cap.grab()
++    for f in range(1, max(sel) + 1):
++        ok, img = cap.read()
++        if not ok:
++            break
++        if lo - SHEET_FROM_BEFORE_LABELS <= f <= hi and (f - lo) % SHEET_STEP == 0:
++            fr = doc["frame_log"][f - 1]
++            out = img.copy()
++            for t in fr["tracks"]:
++                if not t["selected_player"]:
++                    x1, y1, x2, y2 = (int(round(v)) for v in t["observed_position_box"])
++                    cv2.rectangle(out, (x1, y1), (x2, y2), (160, 160, 160), 1)
++            t = sel[f]
++            v2 = t["v2"]
++            col = STATE_COLOUR[v2["rb_state"]]
++            x1, y1, x2, y2 = (int(round(v)) for v in t["observed_position_box"])
++            cv2.rectangle(out, (x1, y1), (x2, y2), col, 3 if v2["identity_trusted"] else 1)
++            if v2["observed_or_contested_box"] is not None and not v2["identity_trusted"]:
++                x1, y1, x2, y2 = (int(round(v)) for v in v2["observed_or_contested_box"])
++                cv2.rectangle(out, (x1, y1), (x2, y2), col, 2)
++            cv2.putText(out, f"f {f} {v2['rb_state']} ep{v2['target_episode']} c{v2['identity_confidence_rb']:.2f}",
++                        (8, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
++            cv2.putText(out, ",".join(v2["identity_uncertainty_reasons"])[:60], (8, 54), cv2.FONT_HERSHEY_SIMPLEX,
++                        0.6, (255, 255, 255), 2, cv2.LINE_AA)
++            tiles.append(cv2.resize(out, (SHEET_TILE_W, int(round(out.shape[0] * SHEET_TILE_W / out.shape[1])))))
++    cap.release()
++    if tiles:
++        while len(tiles) % SHEET_COLS:
++            tiles.append(np.zeros_like(tiles[0]))
++        sheet = np.vstack([np.hstack(tiles[k:k + SHEET_COLS]) for k in range(0, len(tiles), SHEET_COLS)])
++        cv2.imwrite(os.path.join(out_dir, "gold_pipeline_contact_sheet.jpg"), sheet,
++                    [cv2.IMWRITE_JPEG_QUALITY, SHEET_JPEG_QUALITY])
++    with open(os.path.join(out_dir, "gold_pipeline_report.json"), "x", encoding="ascii") as fh:
++        json.dump(report, fh, indent=1, sort_keys=True)
++    print(json.dumps({k: report[k] for k in ("contract_errors_r1", "contract_errors_historical_after_strip",
++                                             "state_counts", "by_label_class", "reacquisition_events",
++                                             "identity_conflict_counts", "processing_time_s")}, indent=1))
++
++
++def compare(dir_a, dir_b, video):
++    pa, pb = R.output_paths(dir_a, video), R.output_paths(dir_b, video)
++    with open(pa["results"], encoding="ascii") as fa, open(pb["results"], encoding="ascii") as fb:
++        a, b = json.load(fa), json.load(fb)
++    cmp = R.compare_documents(a, b)
++    logs_identical = _sha(pa["decision_log"]) == _sha(pb["decision_log"])
++    out = {"documents_identical_except_wall_clock": cmp["identical_except_wall_clock"],
++           "first_difference": cmp["first_difference"], "wall_clock": cmp["wall_clock"],
++           "decision_logs_byte_identical": logs_identical}
++    print(json.dumps(out, indent=1))
++    with open(os.path.join(dir_b, "determinism_vs_" + os.path.basename(dir_a.rstrip("/")) + ".json"), "x",
++              encoding="ascii") as fh:
++        json.dump(out, fh, indent=1, sort_keys=True)
++
++
++if __name__ == "__main__":
++    if len(sys.argv) == 6 and sys.argv[1] == "run":
++        run(*sys.argv[2:6])
++    elif len(sys.argv) == 5 and sys.argv[1] == "compare":
++        compare(*sys.argv[2:5])
++    else:
++        raise SystemExit(__doc__)
+diff --git a/tools_rb/synth_scenario_summary.py b/tools_rb/synth_scenario_summary.py
+new file mode 100644
+index 0000000..a633bc7
+--- /dev/null
++++ b/tools_rb/synth_scenario_summary.py
+@@ -0,0 +1,65 @@
++# SPANA engine v2-rebuild
++# REBUILT 2026-10 — NOT ORIGINAL SOURCE
++# Evidence basis: R1-G instruction (Nathan, 2026-10-25: report synthetic identity results)
++"""Per-scenario summary of the R1-G synthetic end-to-end scenarios (tests_rb/test_pipeline_e2e.SCENARIOS), for the
++stage record. Reports error measures AND coverage (project rule 26). The pass/fail assertions live in the tests; this
++tool only tabulates.
++
++    python3 tools_rb/synth_scenario_summary.py OUT.json
++"""
++import json
++import os
++import sys
++from collections import Counter
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from tests_rb import test_pipeline_e2e as E  # noqa: E402
++
++
++def summarise(name):
++    e = E.result(name)
++    states = Counter()
++    visible = trusted = trusted_visible = untrusted_observed = 0
++    trusted_without_own_detection = 0
++    for f in range(1, e.n + 1):
++        v2 = e.target(f)["v2"]
++        states[v2["rb_state"]] += 1
++        own = e.target_det_box(f) is not None
++        visible += own
++        if v2["identity_trusted"]:
++            trusted += 1
++            trusted_visible += own
++            trusted_without_own_detection += not own
++        elif v2["rb_state"] == "TRACKING":
++            untrusted_observed += 1
++    events = e.summary["v2"]["reacquisition_events"]
++    return {"frames": e.n, "target_visible_frames": visible, "rb_states": dict(sorted(states.items())),
++            "trusted_frames": trusted,
++            "trusted_coverage_of_visible": round(trusted_visible / visible, 3) if visible else None,
++            "observed_but_unverified_frames": untrusted_observed,
++            "silent_swaps": len(e.swaps()), "trusted_without_own_detection": trusted_without_own_detection,
++            "target_written_twice": len(e.target_duplicated()), "body_written_twice": len(e.body_written_twice()),
++            "bank_violations": len(e.bank_violations()), "bank_accepted_frames": len(e.accepted_bank_frames()),
++            "reacquisitions": len(events),
++            "reacquisitions_contrast_verified": sum(1 for r in events if r["evidence"].get("contrast_verified")),
++            "identity_conflicts_logged": e.summary["identity_conflicts_logged"]}
++
++
++def main(out):
++    E.setUpModule()
++    try:
++        rows = {name: summarise(name) for name in E.SCENARIOS}
++    finally:
++        E.tearDownModule()
++    with open(out, "w") as f:
++        json.dump(rows, f, indent=1, sort_keys=True)
++        f.write("\n")
++    for name, r in rows.items():
++        print(f"{name:26s} vis={r['target_visible_frames']:4d} trusted={r['trusted_frames']:4d} "
++              f"cov={r['trusted_coverage_of_visible']} unverified={r['observed_but_unverified_frames']:3d} "
++              f"swaps={r['silent_swaps']} dup={r['target_written_twice']}/{r['body_written_twice']} "
++              f"bank_bad={r['bank_violations']} reacq={r['reacquisitions']}({r['reacquisitions_contrast_verified']}v)")
++
++
++if __name__ == "__main__":
++    main(sys.argv[1])

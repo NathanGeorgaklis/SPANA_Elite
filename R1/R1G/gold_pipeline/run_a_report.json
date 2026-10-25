@@ -1,0 +1,465 @@
+{
+ "by_label_class": {
+  "HIDDEN_OR_NOT_RESOLVABLE": {
+   "frames": 5,
+   "states": {
+    "OCCLUDED": 5
+   },
+   "trusted": 0,
+   "trusted_frames": []
+  },
+  "MERGED_WITH_OPPONENT": {
+   "frames": 6,
+   "states": {
+    "AMBIGUOUS": 2,
+    "OCCLUDED": 4
+   },
+   "trusted": 0,
+   "trusted_frames": []
+  },
+  "PARTIAL": {
+   "frames": 4,
+   "states": {
+    "AMBIGUOUS": 2,
+    "TRACKING": 2
+   },
+   "trusted": 2,
+   "trusted_frames": [
+    78,
+    79
+   ]
+  },
+  "VISIBLE": {
+   "frames": 26,
+   "states": {
+    "OCCLUDED": 2,
+    "REACQUIRING": 16,
+    "TRACKING": 8
+   },
+   "trusted": 8,
+   "trusted_frames": [
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77
+   ]
+  }
+ },
+ "contract_errors_historical_after_strip": [],
+ "contract_errors_r1": [],
+ "development_only": true,
+ "events_evaluated": false,
+ "fps": 30.0,
+ "identity_conflict_counts": {
+  "T001|T012": 1
+ },
+ "identity_conflicts_logged": 1,
+ "label_window": [
+  70,
+  110
+ ],
+ "labels_file_sha256": "490a8af14005b09e2302fea81b9831b0e702958620a4508f33cdaae7bcb0d428",
+ "labels_used_by_tracker": false,
+ "n_tracks_ever_created": 104,
+ "processed_frames": 179,
+ "processing_time_s": 251.229,
+ "provenance": {
+  "config_hash": "8e3b9d6781c0f5b6bd4ddf5dd3afa051061972f567fc2c70a70f187a73c9c62c",
+  "decode_mode": "SEQUENTIAL_NO_RESUME",
+  "fps": 30.0,
+  "frame_count": 360,
+  "git_commit": "30f2e397b268204fec0280fedfb9f4839f958ce3",
+  "git_dirty": false,
+  "models": [
+   {
+    "filename": "yolox_s.onnx",
+    "role": "person_detector",
+    "sha256": "c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063",
+    "status": "LICENCE_UNCLEAR"
+   },
+   {
+    "filename": "dinov2_vits14_cls_patchmean_224x112.onnx",
+    "role": "appearance_embedding",
+    "sha256": "0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea",
+    "status": "LICENCE_UNCLEAR"
+   }
+  ],
+  "run_started_utc": "2026-10-25T18:01:53Z",
+  "schema_version": "2.0.0-r1a",
+  "seed_bbox": [
+   635.3,
+   304.1,
+   757.8,
+   438.3
+  ],
+  "seed_frame": 180,
+  "tracker_version": "0.7.0-r1g",
+  "video_path": "/mnt/user-data/uploads/Downloads/_spana_task3j_work/gold/GOLD_DUEL_01_syo_mar_3036_3048.mp4",
+  "video_sha256": "164541108ca719f574b54533686cee1f662607930a35bdd5a58df9e5257fd3e9"
+ },
+ "rb_state_pct": {
+  "AMBIGUOUS": 19.0,
+  "LOST": 2.2,
+  "OCCLUDED": 6.1,
+  "REACQUIRING": 14.0,
+  "TRACKING": 58.7
+ },
+ "reacquisition_events": [
+  {
+   "episode": 2,
+   "evidence": {
+    "absence_s": 1.3666666666666667,
+    "best_competitor": "T012",
+    "best_competitor_similarity": 0.7522910232694745,
+    "contrast": 0.17288913164597475,
+    "contrast_available": true,
+    "contrast_verified": false,
+    "frames_in_window": 16,
+    "hit_fraction": 0.625,
+    "margin": 0.14733333333333332,
+    "positional_prior": true,
+    "target_similarity": 0.9251801549154492,
+    "tracklet_id": "T040",
+    "window_s": 0.5
+   },
+   "lost_from_frame": 110,
+   "reacq_accepted_frame": 120,
+   "reacq_started_frame": 95,
+   "uncertain_duration_s": 1.3333333333333335,
+   "uncertain_from_frame": 80
+  }
+ ],
+ "results_file": "GOLD_DUEL_01_syo_mar_3036_3048_mo_tracking_results.json",
+ "results_sha256": "9dde1440288d178cc2198b58028b5e408ee61b89e96d1cd8cbafc325bf1491e7",
+ "selected_state_pct": {
+  "ACTIVE": 58.7,
+  "AMBIGUOUS": 19.0,
+  "OCCLUDED": 6.1,
+  "REIDENTIFYING": 14.0,
+  "TEMPORARILY_LOST": 2.2
+ },
+ "state_counts": {
+  "AMBIGUOUS": 34,
+  "LOST": 4,
+  "OCCLUDED": 11,
+  "REACQUIRING": 25,
+  "TRACKING": 105
+ },
+ "tool": "tools_rb/gold_pipeline_run.py",
+ "transitions": [
+  {
+   "episode": 1,
+   "frame": 1,
+   "identity_confidence_rb": 0.797,
+   "rb_state": "TRACKING",
+   "reasons": []
+  },
+  {
+   "episode": 1,
+   "frame": 80,
+   "identity_confidence_rb": 0.49,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 81,
+   "identity_confidence_rb": 0.469,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 82,
+   "identity_confidence_rb": 0.448,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 83,
+   "identity_confidence_rb": 0.428,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 84,
+   "identity_confidence_rb": 0.409,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 85,
+   "identity_confidence_rb": 0.39,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 88,
+   "identity_confidence_rb": 0.34,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 89,
+   "identity_confidence_rb": 0.324,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 91,
+   "identity_confidence_rb": 0.296,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "INSUFFICIENT_CONTRAST",
+    "MERGED_DETECTION_SUSPECTED",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 92,
+   "identity_confidence_rb": 0.282,
+   "rb_state": "OCCLUDED",
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 95,
+   "identity_confidence_rb": 0.246,
+   "rb_state": "REACQUIRING",
+   "reasons": [
+    "OCCLUDER_OVERLAP",
+    "REACQUISITION_UNVERIFIED"
+   ]
+  },
+  {
+   "episode": 1,
+   "frame": 110,
+   "identity_confidence_rb": 0.123,
+   "rb_state": "REACQUIRING",
+   "reasons": [
+    "AGED_OUT",
+    "OCCLUDER_OVERLAP",
+    "REACQUISITION_UNVERIFIED"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 120,
+   "identity_confidence_rb": 0.49,
+   "rb_state": "TRACKING",
+   "reasons": [
+    "INSUFFICIENT_CONTRAST"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 146,
+   "identity_confidence_rb": 0.468,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 151,
+   "identity_confidence_rb": 0.371,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 152,
+   "identity_confidence_rb": 0.355,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 153,
+   "identity_confidence_rb": 0.339,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 154,
+   "identity_confidence_rb": 0.323,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 155,
+   "identity_confidence_rb": 0.309,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 161,
+   "identity_confidence_rb": 0.234,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE",
+    "OCCLUDER_OVERLAP"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 163,
+   "identity_confidence_rb": 0.213,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "COMPETING_CANDIDATE",
+    "MERGED_DETECTION_SUSPECTED"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 164,
+   "identity_confidence_rb": 0.204,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 169,
+   "identity_confidence_rb": 0.162,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 170,
+   "identity_confidence_rb": 0.154,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 172,
+   "identity_confidence_rb": 0.141,
+   "rb_state": "AMBIGUOUS",
+   "reasons": [
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 176,
+   "identity_confidence_rb": 0.117,
+   "rb_state": "LOST",
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 177,
+   "identity_confidence_rb": 0.112,
+   "rb_state": "LOST",
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 178,
+   "identity_confidence_rb": 0.107,
+   "rb_state": "LOST",
+   "reasons": [
+    "AGED_OUT",
+    "BELOW_APPEARANCE_FLOOR",
+    "COMPETING_CANDIDATE"
+   ]
+  },
+  {
+   "episode": 2,
+   "frame": 179,
+   "identity_confidence_rb": 0.102,
+   "rb_state": "LOST",
+   "reasons": [
+    "AGED_OUT",
+    "COMPETING_CANDIDATE"
+   ]
+  }
+ ],
+ "trusted_identity_confidence_rb": {
+  "max": 0.906,
+  "min": 0.514
+ }
+}
