@@ -97,6 +97,8 @@ class EventPadding(unittest.TestCase):
         self.assertEqual(L.box_frames(lab)[:3], [2, 4, 6])
         lab["fps"] = 25.0                                            # pad 0.5 * 25 = 12.5 -> 12
         self.assertEqual(L.pad_frames(25.0), 12)
+        lab["fps"] = 29.97                                           # 29.97 / 5 = 5.994 -> 6 (round, not truncate)
+        self.assertEqual(L.box_frames(lab)[:3], [2, 8, 14])
 
 
 class ValidatorGaps(unittest.TestCase):
@@ -150,6 +152,15 @@ class AdapterAndReacquisition(unittest.TestCase):
         lab["first_clean_reappearance"] = [11]
         r = E.evaluate(_doc([BOX] * 27), self._truth(lab))
         self.assertEqual(r["priority_4_trusted_on_hidden_merged_unresolvable"]["frames"], [8])
+
+    def test_human_clean_reappearance_is_carried_into_the_report(self):
+        lab = base()
+        lab["per_frame"][9] = frame("HIDDEN", occ="FULL_BY_OTHER")
+        del lab["target_boxes"]["9"]
+        lab["first_clean_reappearance"] = [10]
+        tr = [True] * 6 + [False] + [True] * 20                     # rel 7 = clip frame 9 untrusted
+        r = E.evaluate(_doc([BOX] * 27, tr), self._truth(lab))
+        self.assertEqual(r["reacquisition"][0]["human_clean_reappearance"], 8)
 
     def test_fps_mismatch_is_refused(self):
         with self.assertRaises(E.EvalRefused):

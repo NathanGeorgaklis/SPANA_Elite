@@ -108,22 +108,30 @@ class AnnotatorPage(_Pack, unittest.TestCase):
         self.assertEqual(L.validate(lab, {"clip_id": "R2_FAKE", "clip_sha256": "a" * 64, "frames": N, "fps": FPS}), [])
 
 
-def _random_label(rng, n, fps):
-    """A random label document (valid or not) exercising every rule the page re-implements."""
+def _random_label(rng, n, fps, calm=False):
+    """A random label document (valid or not) exercising every rule the page re-implements. `calm` documents have rare
+    events, so the 5 Hz grid step and the event padding are not masked by event windows covering every frame."""
+    pc, pk, pu, pm, pcut = (0.03, 0.04, 0.05, 0.03, 0.01) if calm else (0.15, 0.2, 0.05, 0.1, 0.02)
     vis = ["VISIBLE", "PARTIAL", "HIDDEN", "OUT_OF_FRAME", "UNLABELLED"]
     occ = ["NONE", "PARTIAL_BY_PERSON", "FULL_BY_PERSON", "PARTIAL_BY_OTHER", "FULL_BY_OTHER", "UNLABELLED"]
     seed = int(rng.integers(0, n - 1))
     pf, cur = [], None
     for i in range(n):
-        if cur is None or rng.random() < 0.15:
+        if cur is None or rng.random() < pc:
             v = vis[int(rng.integers(0, 4 if rng.random() < 0.95 else 5))]
             o = ("NONE" if v in ("VISIBLE", "PARTIAL") and rng.random() < 0.7 else occ[int(rng.integers(0, 5))])
             if v == "OUT_OF_FRAME" and rng.random() < 0.8:
                 o = "NONE"
             cur = {"visibility": v, "resolvable": "YES" if rng.random() < 0.8 else "NO", "occlusion": o,
-                   "merged": bool(rng.random() < 0.1), "contact_with": ["P1"] if rng.random() < 0.2 else [],
-                   "camera_cut": False, "human_uncertain": bool(rng.random() < 0.05), "note": ""}
-        f = dict(cur, contact_with=list(cur["contact_with"]), camera_cut=bool(rng.random() < 0.02))
+                   "merged": bool(rng.random() < pm), "contact_with": ["P1"] if rng.random() < pk else [],
+                   "camera_cut": False, "human_uncertain": bool(rng.random() < pu), "note": ""}
+            if calm and rng.random() < 0.6:
+                cur.update(visibility="VISIBLE", resolvable="YES", occlusion="NONE", merged=False, contact_with=[])
+        f = dict(cur, contact_with=list(cur["contact_with"]), camera_cut=bool(rng.random() < pcut))
+        if calm and rng.random() < 0.03:
+            f["contact_with"] = ["P1"]                                  # isolated single-frame contacts
+        if calm and rng.random() < 0.03:
+            f["human_uncertain"] = True
         pf.append(f)
     pf[seed] = {"visibility": "VISIBLE", "resolvable": "YES", "occlusion": "NONE", "merged": False,
                 "contact_with": [], "camera_cut": False, "human_uncertain": False, "note": ""}
@@ -233,10 +241,10 @@ class JsPythonParity(_Pack, unittest.TestCase):
             p = b.new_page()
             p.goto("file://" + os.path.join(self.tmp, "index.html"))
             p.wait_for_timeout(200)
-            for k in range(120):
+            for k in range(240):
                 fps = [25.0, 30.0, 60.0][k % 3]
-                n = int(rng.integers(20, 90))
-                lab = _random_label(rng, n, fps)
+                n = int(rng.integers(20, 150))
+                lab = _random_label(rng, n, fps, calm=k % 2 == 1)
                 js = p.evaluate("""(d) => { lab = d; const pfm = partnerFrames(); const out = {};
                     for (const [k, v] of Object.entries(pfm)) out[k] = [...v].sort((a, b) => a - b);
                     return {grid: boxFrames(), partners: out, problems: pageProblems()}; }""", lab)
@@ -248,6 +256,41 @@ class JsPythonParity(_Pack, unittest.TestCase):
                                        js["problems"][:2], L.validate(lab)[:2]))
             b.close()
         self.assertEqual(mismatches, [])
+
+    def test_pinned_grid_case_matches_python_at_30_and_60_fps(self):
+        """Seed at frame 7, contacts at frame 9 and at the last frame, nothing else: grid = step from the seed plus
+        exact padding, identical in the page and in Python."""
+        with sync_playwright() as pw:
+            b = pw.chromium.launch()
+            p = b.new_page()
+            p.goto("file://" + os.path.join(self.tmp, "index.html"))
+            p.wait_for_timeout(200)
+            for fps, n in ((30.0, 120), (60.0, 240)):
+                lab = _random_label(np.random.default_rng(0), n, fps, calm=True)
+                for f in lab["per_frame"]:
+                    f.update(visibility="VISIBLE", resolvable="YES", occlusion="NONE", merged=False, contact_with=[],
+                             camera_cut=False, human_uncertain=False)
+                lab["seed"]["frame"] = 7
+                lab["per_frame"][9]["contact_with"] = ["P1"]
+                lab["per_frame"][n - 1]["contact_with"] = ["P1"]
+                lab["people"]["P1"]["absent_frames"] = []
+                js = p.evaluate("(d) => { lab = d; return boxFrames(); }", lab)
+                step, pad = int(fps // 5), int(fps // 2)
+                expect = sorted(set(range(7, n, step)) | set(range(7, 9 + pad + 1)) | set(range(n - 1 - pad, n)))
+                with self.subTest(fps=fps):
+                    self.assertEqual(L.box_frames(lab), expect)
+                    self.assertEqual(js, expect)
+                # a HUMAN_UNCERTAIN grid frame without a target box is not "missing" (page = Python)
+                lab["target_boxes"] = {str(i): [100.0, 100.0, 140.0, 200.0] for i in range(n)}
+                lab["people"]["P1"]["boxes"] = {str(i): [300.0, 100.0, 340.0, 200.0] for i in range(n)}
+                lab["per_frame"][7 + step]["human_uncertain"] = True
+                lab["first_clean_reappearance"] = [8 + step]
+                del lab["target_boxes"][str(7 + step)]
+                probs = p.evaluate("(d) => { lab = d; return pageProblems(); }", lab)
+                with self.subTest(fps=fps, case="uncertain"):
+                    self.assertEqual(L.validate(lab), [])
+                    self.assertEqual(probs, [])
+            b.close()
 
 
 if __name__ == "__main__":
