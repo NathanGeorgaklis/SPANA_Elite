@@ -11,7 +11,7 @@ import unittest
 
 from tools_rb import r2_labels as L
 
-N, FPS, W, H = 30, 10.0, 640, 360
+N, FPS, W, H = 30, 10.0, 1280, 720
 BOX = [100.0, 100.0, 140.0, 200.0]
 OTHER = [150.0, 100.0, 190.0, 200.0]
 
@@ -33,7 +33,8 @@ def base():
     return lab
 
 
-CLIP = {"clip_id": "R2_TEST", "clip_sha256": "a" * 64, "frames": N, "fps": FPS, "split": "DEV"}
+CLIP = {"clip_id": "R2_TEST", "clip_sha256": "a" * 64, "frames": N, "fps": FPS, "split": "DEV",
+        "source": "SYO_MAR", "start_s": 1482.5, "end_s": 1492.5}          # a protocol-valid DEV window
 
 
 class Validate(unittest.TestCase):
@@ -66,6 +67,7 @@ class Validate(unittest.TestCase):
     def test_hidden_or_out_of_frame_forbids_a_target_box(self):
         lab = base()
         lab["per_frame"][10] = frame("HIDDEN", occ="FULL_BY_PERSON")
+        lab["per_frame"][10]["contact_with"] = ["P1"]
         self.assertTrue(any("target box given while target is HIDDEN" in e for e in L.validate(lab)))
         lab = base()
         lab["per_frame"][10] = frame("OUT_OF_FRAME")
@@ -74,7 +76,7 @@ class Validate(unittest.TestCase):
     def test_contact_person_needs_boxes_on_required_frames(self):
         lab = base()
         lab["per_frame"][15] = frame(contact=["P1"])
-        self.assertIn("frame 15: box required for contact person P1", L.validate(lab))
+        self.assertTrue(any(e.startswith("frame 15: box required for contact person P1") for e in L.validate(lab)))
         lab["per_frame"][15] = frame(contact=["NOBODY"])
         self.assertIn("frame 15: contact_with must list known people", L.validate(lab))
 
@@ -94,7 +96,8 @@ class Validate(unittest.TestCase):
         lab["seed"]["box"] = [1.0, 1.0, 2.0, 2.0]
         self.assertIn("seed box must equal the target box on the seed frame", L.validate(lab))
         lab = base()
-        lab["per_frame"][2] = frame(merged=True)
+        lab["per_frame"][2] = frame(merged=True, contact=["P1"])
+        lab["people"]["P1"]["boxes"] = {str(i): list(OTHER) for i in range(N)}
         self.assertTrue(any("seed frame must be" in e for e in L.validate(lab)))
         lab = base()
         lab["seed"]["frame"] = N - 1
@@ -105,14 +108,16 @@ class Validate(unittest.TestCase):
         lab["first_clean_reappearance"] = [12]
         self.assertTrue(any("previous frame already clean" in e for e in L.validate(lab)))
         lab = base()
-        lab["per_frame"][11] = frame("HIDDEN", occ="FULL_BY_PERSON")
+        lab["per_frame"][11] = frame("HIDDEN", occ="FULL_BY_OTHER")
         del lab["target_boxes"]["11"]
         lab["first_clean_reappearance"] = [12]
         self.assertEqual(L.validate(lab), [])
+        lab["first_clean_reappearance"] = []                              # every return must be marked
+        self.assertTrue(any("first_clean_reappearance missing at [12]" in e for e in L.validate(lab)))
 
     def test_boxes_must_lie_inside_the_image(self):
         lab = base()
-        lab["target_boxes"]["8"] = [600.0, 100.0, 700.0, 200.0]
+        lab["target_boxes"]["8"] = [1200.0, 100.0, 1300.0, 200.0]
         self.assertTrue(any("target box at 8 invalid" in e for e in L.validate(lab)))
 
     def test_clip_record_mismatch_and_wrong_frame_count(self):
@@ -173,10 +178,6 @@ class Freeze(unittest.TestCase):
         self.assertFalse(os.path.exists(out) and os.listdir(out))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class R2Adapter(unittest.TestCase):
     """tracker_eval's pre-registered r2_v1 mapping (box grid, uncertain frames, seed offset)."""
 
@@ -200,7 +201,8 @@ class R2Adapter(unittest.TestCase):
         self.assertEqual([t.rel_frame for t in truth if t.box_annotated], [2 * k for k in range(1, 14)])
         r = E.evaluate(self._doc([BOX] * (N - 3)), truth)
         fci = r["priority_1_false_confident_identity"]
-        self.assertEqual((fci["count"], fci["status"]), (0, "COMPLETE"))       # off-grid frames are not "unverifiable"
+        self.assertEqual((fci["count"], fci["status"]), (0, "COMPLETE_ON_GRID"))   # off-grid: sampled, not "unverifiable"
+        self.assertEqual(fci["box_checked_fraction_of_confident_available"], round(13 / 27, 3))
         self.assertEqual(fci["confident_frames_between_box_samples"], 14)
 
     def test_wrong_box_on_a_grid_frame_is_caught_and_off_grid_is_not_judged(self):
@@ -226,8 +228,9 @@ class R2Adapter(unittest.TestCase):
 
     def test_uncertain_frames_are_excluded_and_reported(self):
         lab = base()
-        lab["per_frame"][8] = frame("HIDDEN", occ="FULL_BY_PERSON", unc=True)
+        lab["per_frame"][8] = frame("HIDDEN", occ="FULL_BY_OTHER", unc=True)
         del lab["target_boxes"]["8"]
+        lab["first_clean_reappearance"] = [9]
         E, truth = self._truth(lab)
         r = E.evaluate(self._doc([BOX] * (N - 3)), truth)
         self.assertEqual(r["priority_4_trusted_on_hidden_merged_unresolvable"]["count"], 0)
@@ -246,3 +249,81 @@ class R2Adapter(unittest.TestCase):
             self._truth(bad)
         with self.assertRaises(E.EvalRefused):
             E.parse_truth(json.dumps(base()).encode(), "r2_v1", 3, FPS)      # seed mismatch
+
+
+class ReviewRegressions(unittest.TestCase):
+    """R2 independent code review findings (2026-10-26): one test per validated finding."""
+
+    def test_h1_contact_partner_must_be_boxed_across_the_padded_window(self):
+        lab = base()
+        lab["per_frame"][15] = frame(contact=["P1"])
+        lab["people"]["P1"]["boxes"] = {"15": list(OTHER)}
+        errs = L.validate(lab)
+        self.assertTrue(any(e.startswith("frame 10: box required for contact person P1") for e in errs))
+        self.assertTrue(any(e.startswith("frame 20: box required for contact person P1") for e in errs))
+        lab["people"]["P1"]["boxes"] = {str(i): list(OTHER) for i in range(10, 21) if i != 12}
+        lab["people"]["P1"]["absent_frames"] = [12]                     # marked not visible: allowed
+        self.assertEqual(L.validate(lab), [])
+
+    def test_h1_b5_is_unknown_when_a_partner_is_not_boxed_on_a_trusted_window_frame(self):
+        from tools_rb import tracker_eval as E
+        t = [E.TruthFrame(rel_frame=i, visibility=E.VISIBLE, identity_resolvable=True, merged=False,
+                          target_box=tuple(BOX), other_boxes=({"P1": tuple(OTHER)} if i == 5 else {}),
+                          contact=i == 5, contact_people=("P1",) if i == 5 else ()) for i in range(1, 9)]
+        doc = R2Adapter()._doc([BOX] * 8)
+        self.assertEqual(E.evaluate(doc, t)["b5_contact_integrity"]["status"], E.UNKNOWN)
+
+    def test_m4_merge_or_person_occlusion_needs_the_person(self):
+        for f in (frame(merged=True), frame("PARTIAL", occ="PARTIAL_BY_PERSON")):
+            lab = base()
+            lab["per_frame"][14] = f
+            self.assertTrue(any("needs that person in contact_with" in e for e in L.validate(lab)))
+
+    def test_m5_unlabelled_frames_from_the_seed_are_refused(self):
+        lab = base()
+        lab["per_frame"][0] = dict(frame(), visibility=L.UNLABELLED, resolvable=L.UNLABELLED, occlusion=L.UNLABELLED)
+        self.assertEqual(L.validate(lab), [])                            # before the seed: allowed
+        lab["per_frame"][9] = dict(frame(), visibility=L.UNLABELLED)
+        self.assertIn("frame 9: not labelled (visibility / resolvable / occlusion)", L.validate(lab))
+
+    def test_l8_visible_with_full_occlusion_and_uncertain_reappearance_are_refused(self):
+        lab = base()
+        lab["per_frame"][14] = frame(occ="FULL_BY_OTHER")
+        self.assertTrue(any("cannot have a FULL_* occlusion" in e for e in L.validate(lab)))
+        lab = base()
+        lab["per_frame"][11] = frame("HIDDEN", occ="FULL_BY_OTHER")
+        del lab["target_boxes"]["11"]
+        lab["per_frame"][12] = frame(unc=True)
+        lab["first_clean_reappearance"] = [12]
+        self.assertTrue(any("first_clean_reappearance 12: target not cleanly" in e for e in L.validate(lab)))
+
+    def test_l10_freeze_recomputes_the_split_and_survives_a_rejected_clip(self):
+        tmp = tempfile.mkdtemp(prefix="r2_rev_")
+        try:
+            lab_p, clip_p = os.path.join(tmp, "l.json"), os.path.join(tmp, "c.json")
+            with open(lab_p, "w") as f:
+                json.dump(base(), f)
+            with open(clip_p, "w") as f:
+                json.dump(dict(CLIP, split="EVAL"), f)                 # tampered record
+            with self.assertRaises(L.LabelError):
+                L.freeze(lab_p, clip_p, os.path.join(tmp, "a"))
+            self.assertFalse(os.path.exists(os.path.join(tmp, "a")))
+            rej = dict(base(), clip_rejected="no identifiable target", seed=None, per_frame=[])
+            with open(lab_p, "w") as f:
+                json.dump(rej, f)
+            with open(clip_p, "w") as f:
+                json.dump(CLIP, f)
+            rec = L.freeze(lab_p, clip_p, os.path.join(tmp, "b"))
+            self.assertEqual((rec["clip_rejected"], rec["seed_frame"]), ("no identifiable target", None))
+            self.assertFalse(os.path.exists(os.path.join(tmp, "b", "R2_TEST.fixture.json")))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_l10_width_height_must_match_the_source(self):
+        lab = base()
+        lab["width"] = 640
+        self.assertTrue(any("width" in e for e in L.validate(lab, dict(CLIP, width=1280, height=720))))
+
+
+if __name__ == "__main__":
+    unittest.main()

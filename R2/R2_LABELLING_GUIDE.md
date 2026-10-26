@@ -18,10 +18,10 @@ The right-hand panel shows Claude's **proposed target**: a description and a sug
 | Item | How |
 |---|---|
 | **Seed** | Go to a frame where the target is clearly visible, identifiable, not merged and not in contact. Draw the target box, then press **Seed = this frame + target box**. |
-| **Per-frame state** (every frame) | Visibility (VISIBLE / PARTIAL / HIDDEN / OUT OF FRAME), Identity resolvable (YES / NO), Occlusion, Merged blob, Contact with, Camera cut here, HUMAN_UNCERTAIN. To fill a stretch, set the state on one frame, press **Range start**, move to the other end, then press **Apply this frame's state to range**. |
+| **Per-frame state** (every frame from the seed on; frames start UNLABELLED, shown grey) | Visibility (VISIBLE / PARTIAL / HIDDEN / OUT OF FRAME), Identity resolvable (YES / NO), Occlusion, Merged blob, Contact with, Camera cut here, HUMAN_UNCERTAIN. To fill a stretch, set the state on one frame, press **Range start**, move to the other end, then press **Apply this frame's state to range**. |
 | **Target box** | Drag on the frame on every *required* frame where the target is VISIBLE / PARTIAL and identifiable. Never box a HIDDEN or OUT-OF-FRAME target. |
-| **Other people** | Add each person who touches or overlaps the target (description and relation: OPPONENT / SAME_TEAM / OTHER, where OTHER is a referee, coach or spectator). Tick them in **Contact with** on contact frames, select their layer, and box them on the required frames. |
-| **First clean reappearance** | Tick it on the first frame where the target is clearly identifiable again after being hidden, merged, unresolvable or out of frame. |
+| **Other people** | Add each person who touches, overlaps, merges with or hides the target (description and relation: OPPONENT / SAME_TEAM / OTHER, where OTHER is a referee, coach or spectator). Tick them in **Contact with** on every contact frame. A merged target, or one occluded by a person, must name that person. Then select their layer and box them on **every frame within 0.5 s of each contact**. If they are not visible on one of those frames, press <kbd>A</kbd> to mark them absent. |
+| **First clean reappearance** | Tick it on **every** first frame where the target is clearly identifiable again (visible or partial, resolvable, not merged, not uncertain) after being hidden, merged, unresolvable, uncertain or out of frame. The check lists any you missed. |
 | **HUMAN_UNCERTAIN** | Tick it whenever you are not sure. Those frames are excluded from error counts. Never guess. |
 
 **Required box frames:**
@@ -35,6 +35,15 @@ The timeline shows them: a red tick means a box is still missing, green means do
 - <kbd>C</kbd>: copy the previous box of the current layer (then adjust by redrawing).
 - <kbd>Del</kbd>: delete the box.
 - <kbd>T</kbd>: switch to the target layer.
+- <kbd>A</kbd>: mark the selected person absent (not visible) on this frame.
+
+Boxes made with <kbd>C</kbd> are recorded as copied (in `box_copied`) until you redraw them.
+
+**State rules the check enforces:**
+- HIDDEN needs a FULL_* occlusion.
+- VISIBLE / PARTIAL cannot have a FULL_* occlusion.
+- OUT OF FRAME has no occlusion, merge or contact.
+- The seed is on a VISIBLE, identifiable frame with no contact, before the last frame.
 
 ## Saving and freezing
 

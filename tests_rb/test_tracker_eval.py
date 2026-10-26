@@ -368,6 +368,40 @@ class FailClosedMain(unittest.TestCase):
                 with self.assertRaises(E.EvalRefused):
                     self._main(results=p)
 
+    def _fixture(self, **kw):
+        with open(GOLD_FIXTURE) as f:
+            fx = dict(json.load(f), **kw)
+        path = os.path.join(self.tmp, f"fx_{len(os.listdir(self.tmp))}.json")
+        with open(path, "w") as f:
+            json.dump(fx, f)
+        return path
+
+    def test_h2_labels_and_fixture_from_different_clips_are_refused(self):
+        with self.assertRaisesRegex(E.EvalRefused, "different clips"):
+            self._main(fixture=self._fixture(labels_sha256="0" * 64))
+
+    def test_m7_eval_needs_an_approval_naming_the_clean_tracker_commit(self):
+        fx = self._fixture(split="EVAL")
+        with self.assertRaisesRegex(E.EvalRefused, "approval"):
+            self._main(fixture=fx)
+        with open(GOLD_RESULTS, encoding="ascii") as f:
+            commit = json.load(f)["summary"]["v2"]["provenance"]["git_commit"]
+        for appr, ok in (({"status": "APPROVED", "approved_by": "Nathan", "tracker_git_commit": "0" * 40}, False),
+                         ({"status": "DRAFT", "approved_by": "Nathan", "tracker_git_commit": commit}, False),
+                         ({"status": "APPROVED", "approved_by": "", "tracker_git_commit": commit}, False),
+                         ({"status": "APPROVED", "approved_by": "Nathan", "tracker_git_commit": commit}, True)):
+            with self.subTest(appr=appr):
+                ap = os.path.join(self.tmp, f"appr_{len(os.listdir(self.tmp))}.json")
+                with open(ap, "w") as f:
+                    json.dump(appr, f)
+                out = os.path.join(self.tmp, f"out_{len(os.listdir(self.tmp))}.json")
+                call = lambda: E.main(GOLD_RESULTS, fx, GOLD_LABELS, GOLD_FREEZE, "gold_v1", out, ap)  # noqa: E731
+                if ok:
+                    self.assertEqual(call()["eval_approval_sha256"], E._sha(ap))
+                else:
+                    with self.assertRaises(E.EvalRefused):
+                        call()
+
     def test_contract_violation_is_refused(self):
         with open(GOLD_RESULTS, encoding="ascii") as f:
             d = json.load(f)

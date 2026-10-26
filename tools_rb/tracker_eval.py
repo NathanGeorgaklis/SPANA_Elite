@@ -12,7 +12,10 @@ Truth is mapped into a generic per-frame model (``TruthFrame``). A label file fo
 (``ADAPTERS``); the metrics never see benchmark column names. Where the truth cannot support a metric (for example no
 human boxes), the metric is reported as UNKNOWN with the reason, never estimated.
 
-    python3 tools_rb/tracker_eval.py RESULTS_JSON FIXTURE_JSON LABELS_CSV FREEZE_RECORD_JSON FORMAT OUT_JSON
+    python3 tools_rb/tracker_eval.py RESULTS_JSON FIXTURE_JSON LABELS FREEZE_RECORD_JSON FORMAT OUT_JSON [EVAL_APPROVAL]
+
+EVAL clips (fixture / freeze split EVAL) are refused unless EVAL_APPROVAL is a record with status APPROVED, approved_by
+and tracker_git_commit equal to the (clean) commit that produced the results.
 
 Fails closed when:
 - the freeze record is not FROZEN / valid, names another labels file, or its sha256 differs from the labels;
@@ -63,6 +66,8 @@ class TruthFrame:
     contact: Optional[bool] = None          # target overlapping / in contact with another person; None = not annotated
     box_annotated: bool = True              # boxes are part of the truth on this frame (False: between box samples)
     uncertain: bool = False                 # HUMAN_UNCERTAIN: excluded from error counts and coverage, reported
+    contact_people: Tuple[str, ...] = ()    # who the target is in contact with (ids into other_boxes)
+    people_absent: Tuple[str, ...] = ()     # annotated people the annotator marked not visible on this frame
 
     @property
     def available(self) -> bool:
@@ -133,6 +138,8 @@ def _r2_v1(data: bytes, seed_frame: int, fps: float) -> List[TruthFrame]:
             identity_resolvable=f["resolvable"] == "YES", merged=bool(f["merged"]),
             target_box=tuple(tb) if tb else None, other_boxes=others,
             clean_reappearance=i in lab["first_clean_reappearance"], contact=bool(f["contact_with"]),
+            contact_people=tuple(f["contact_with"]),
+            people_absent=tuple(pid for pid, p in lab["people"].items() if i in p.get("absent_frames", [])),
             box_annotated=(i in grid or tb is not None), uncertain=bool(f["human_uncertain"])))
     return out
 
@@ -259,7 +266,12 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
            "frames": fci_frames, "on_unavailable_target": on_unavailable, "on_wrong_box": wrong_box,
            "confident_frames_without_box_truth": unverifiable,
            "confident_frames_between_box_samples": len(off_grid),
-           "status": "COMPLETE" if not unverifiable else "PARTIAL_NO_BOX_TRUTH"}
+           "box_checked_fraction_of_confident_available": (round(len(ious) / (len(ious) + len(off_grid)
+                                                                              + len(unverifiable)), 3)
+                                                           if (ious or off_grid or unverifiable) else None),
+           # COMPLETE: every trusted available frame box-checked; COMPLETE_ON_GRID: every frame on the human box
+           # grid checked, trusted frames between grid samples not box-checked (pre-registered, Addendum A)
+           "status": ("PARTIAL_NO_BOX_TRUTH" if unverifiable else "COMPLETE_ON_GRID" if off_grid else "COMPLETE")}
 
     # B1 swaps: maximal runs of confident frames on a DIFFERENT annotated person (needs other people's boxes)
     boxed_conf = [t for t in confident if t.box_annotated]
@@ -268,7 +280,10 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
     else:
         on_other = [t.rel_frame for t in boxed_conf
                     if any(iou(box[t.rel_frame], ob) >= MATCH_IOU_MIN for ob in t.other_boxes.values())]
-        swaps = {"count": len(_runs(on_other)), "runs": _runs(on_other)}
+        swaps = {"count": len(_runs(on_other)), "runs": _runs(on_other),
+                 "scope": "trusted grid frames vs every ANNOTATED other person; a trusted box on an unannotated "
+                          "person is caught as a wrong box under priority 1",
+                 "people_annotated_on_trusted_grid_frames": len({p for t in boxed_conf for p in t.other_boxes})}
 
     # B3 reacquisition: one item per span where the target is not available. A confident frame INSIDE the span is a
     # premature (wrong) reacquisition. After the span, only the available run up to the next span is searched.
@@ -336,9 +351,19 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
         window = sorted({f for c in contact for f in range(c - half, c + half + 1) if first <= f <= last})
         conf_in = [f for f in window if claims[f] == "CONFIDENT" and not by_frame[f].uncertain
                    and by_frame[f].box_annotated]
+        # partners whose contact window covers each frame; a frame is checkable only if each such partner is boxed
+        # there or marked absent (review finding H1: never PASS on frames that could not be checked)
+        partners: Dict[int, set] = {}
+        for t in truth:
+            for pid in t.contact_people:
+                for g in range(t.rel_frame - half, t.rel_frame + half + 1):
+                    partners.setdefault(g, set()).add(pid)
+        unchecked = [f for f in conf_in if by_frame[f].other_boxes is None or any(
+            pid not in by_frame[f].other_boxes and pid not in by_frame[f].people_absent
+            for pid in partners.get(f, ()))]
         if not conf_in:
             status, on_partner = "PASS_NO_CONFIDENT_CLAIM", []
-        elif all(by_frame[f].other_boxes is not None for f in conf_in):
+        elif not unchecked:
             on_partner = [f for f in conf_in
                           if any(iou(box[f], ob) >= MATCH_IOU_MIN for ob in by_frame[f].other_boxes.values())]
             status = "FAIL" if on_partner else "PASS"
@@ -346,6 +371,7 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
             status, on_partner = UNKNOWN, []
         b5 = {"status": status, "contact_frames": contact, "window_frames": [window[0], window[-1]] if window else None,
               "confident_frames_in_window": conf_in, "confident_on_partner": on_partner,
+              "confident_frames_without_partner_boxes": unchecked if conf_in else [],
               "window_clipped_to_truth": True}
 
     # coverage and abstention (B1 correct-when-visible, B2)
@@ -408,7 +434,7 @@ def _sha(path: str) -> str:
     return h.hexdigest()
 
 
-def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, git=None):
+def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, eval_approval_json=None, *, git=None):
     with open(freeze_json) as f:
         frozen = json.load(f)
     if frozen.get("status") != "FROZEN" or frozen.get("valid") is not True:
@@ -434,12 +460,33 @@ def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, 
         raise EvalRefused("results start_frame differs from the fixture seed frame (fail closed)")
     if [round(v, 3) for v in prov.get("seed_bbox") or []] != [round(v, 3) for v in fx["seed_bbox"]]:
         raise EvalRefused("results seed box differs from the fixture seed box (fail closed)")
+    # labels, freeze record, fixture and results must all describe the same clip (review finding H2)
+    for what, a, b in (("fixture labels_sha256", fx.get("labels_sha256", labels_sha), labels_sha),
+                       ("freeze clip_sha256", frozen.get("clip_sha256", fx["video_sha256"]), fx["video_sha256"]),
+                       ("freeze clip_id", frozen.get("clip_id", fx.get("clip_id")), fx.get("clip_id")),
+                       ("freeze seed_frame", frozen.get("seed_frame", fx["seed_frame"]), fx["seed_frame"])):
+        if a != b:
+            raise EvalRefused(f"{what} {a!r} != {b!r}: labels / fixture / results describe different clips")
+    if fmt == "r2_v1":
+        lab = json.loads(label_bytes.decode("utf-8"))
+        if lab.get("clip_sha256") != fx["video_sha256"] or lab.get("clip_id") != fx.get("clip_id"):
+            raise EvalRefused("labels belong to another clip than the fixture (fail closed)")
+    # EVAL gate (review finding M7): EVAL is scored only for a tracker commit Nathan approved in advance
+    if fx.get("split") == "EVAL" or frozen.get("split") == "EVAL":
+        if not eval_approval_json:
+            raise EvalRefused("EVAL clip: an approval record naming the tracker commit is required (fail closed)")
+        with open(eval_approval_json) as f:
+            appr = json.load(f)
+        if not (appr.get("status") == "APPROVED" and str(appr.get("approved_by", "")).strip()
+                and appr.get("tracker_git_commit") == prov.get("git_commit") and prov.get("git_dirty") is False):
+            raise EvalRefused("EVAL approval does not cover this clean tracker commit (fail closed)")
     fps = float(doc["summary"]["fps"])
     for name, other in (("fixture", fx.get("fps")), ("freeze record", frozen.get("fps"))):
         if other is None or abs(float(other) - fps) > 1e-6:
             raise EvalRefused(f"fps {fps} of the results differs from the {name}'s {other} (fail closed)")
     rep = evaluate(doc, parse_truth(label_bytes, fmt, fx["seed_frame"], fps))
     head, dirty = (git or P.git_state)()
+    rep["eval_approval_sha256"] = _sha(eval_approval_json) if eval_approval_json else None
     rep.update({"tool": "tools_rb/tracker_eval.py", "tool_sha256": _sha(os.path.abspath(__file__)),
                 "evaluator_git_commit": head, "evaluator_git_dirty": dirty,
                 "command": ["python3", "tools_rb/tracker_eval.py", results_json, fixture_json, labels_csv,
@@ -456,9 +503,9 @@ def main(results_json, fixture_json, labels_csv, freeze_json, fmt, out_json, *, 
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 7:
+    if len(sys.argv) not in (7, 8):
         raise SystemExit(__doc__)
-    r = main(*sys.argv[1:7])
+    r = main(*sys.argv[1:8])
     print(json.dumps({k: r[k] for k in r if k.startswith("priority") or k in ("coverage_and_abstention",
                                                                               "reacquisition", "box_quality",
                                                                               "b5_contact_integrity")},

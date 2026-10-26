@@ -60,7 +60,7 @@ kbd{font:11px ui-monospace,Menlo,monospace;background:#262a31;border:1px solid v
     <button id="bNext">1 ›</button><button id="bNext10">10 »</button>
     <button id="bNextReq" title="next required box frame still missing a box (N)">next missing ⟶</button>
     <span style="flex:1"></span>
-    <span class="hint">Draw: drag on the frame. <kbd>←</kbd><kbd>→</kbd> frame · <kbd>⇧</kbd>+arrow 10 · <kbd>C</kbd> copy previous box · <kbd>Del</kbd> delete box · <kbd>N</kbd> next missing · <kbd>T</kbd> target layer</span>
+    <span class="hint">Draw: drag on the frame. <kbd>←</kbd><kbd>→</kbd> frame · <kbd>⇧</kbd>+arrow 10 · <kbd>C</kbd> copy previous box · <kbd>Del</kbd> delete box · <kbd>N</kbd> next missing · <kbd>T</kbd> target layer · <kbd>A</kbd> mark person absent</span>
   </div>
 </section>
 <aside>
@@ -72,6 +72,7 @@ kbd{font:11px ui-monospace,Menlo,monospace;background:#262a31;border:1px solid v
 
   <h2>This frame</h2>
   <div class="row"><label>Visibility</label><div class="seg" id="visSeg"></div></div>
+  <div class="hint">Frames start UNLABELLED (grey on the timeline). Label every frame from the seed on; use the range tool.</div>
   <div class="row"><label>Identity resolvable</label><div class="seg" id="resSeg"></div></div>
   <div class="row"><label>Occlusion</label><select id="occSel"></select></div>
   <div class="row"><label>Merged blob</label><input type="checkbox" id="merged"></div>
@@ -104,32 +105,41 @@ kbd{font:11px ui-monospace,Menlo,monospace;background:#262a31;border:1px solid v
 <script src="r2_clips_manifest.js"></script>
 <script>
 "use strict";
-const SCHEMA="r2_labels_v1", TOOL="tools_rb/r2_annotator.html v1", BOX_HZ=5, EVENT_PAD_S=0.5;
+const SCHEMA="r2_labels_v1", TOOL="tools_rb/r2_annotator.html v2", BOX_HZ=5, EVENT_PAD_S=0.5, UNL="UNLABELLED";
+// Python round(): half to even (r2_labels._round_half_even)
+function pyRound(x){const r=Math.round(x);return (Math.abs(x%1)===0.5&&r%2!==0)?r-1:r;}
 const VIS=["VISIBLE","PARTIAL","HIDDEN","OUT_OF_FRAME"], RES=["YES","NO"];
 const OCC=["NONE","PARTIAL_BY_PERSON","FULL_BY_PERSON","PARTIAL_BY_OTHER","FULL_BY_OTHER"];
 const $=id=>document.getElementById(id);
 const clips=(window.R2_CLIPS||[]);
 let clip=null, lab=null, f=0, layer="TARGET", rangeStart=null, img=new Image(), cache=new Map(), drag=null;
 
-function blankFrame(){return {visibility:"VISIBLE",resolvable:"YES",occlusion:"NONE",merged:false,contact_with:[],camera_cut:false,human_uncertain:false,note:""};}
+// every frame starts UNLABELLED: nothing is silently assumed visible (review finding M5)
+function blankFrame(){return {visibility:UNL,resolvable:UNL,occlusion:UNL,merged:false,contact_with:[],camera_cut:false,human_uncertain:false,note:""};}
 function newLabels(c){return {schema:SCHEMA,clip_id:c.clip_id,clip_sha256:c.clip_sha256,fps:c.fps,frames:c.frames,width:c.width,height:c.height,
   annotator:$("annotator").value||"",tool:TOOL,saved_utc:"",clip_rejected:null,seed:{frame:null,box:null},
-  per_frame:Array.from({length:c.frames},blankFrame),target_boxes:{},people:{},first_clean_reappearance:[]};}
+  per_frame:Array.from({length:c.frames},blankFrame),target_boxes:{},people:{},first_clean_reappearance:[],box_copied:{}};}
 function key(c){return "r2lab:"+c.clip_id+":"+c.clip_sha256;}
 function persist(){try{lab.annotator=$("annotator").value;localStorage.setItem(key(clip),JSON.stringify(lab));localStorage.setItem("r2:annotator",lab.annotator);}catch(e){}}
 function frameUrl(i){return "frames/"+clip.clip_id+"/f_"+String(i).padStart(6,"0")+".jpg";}
 function preload(i){for(const j of [i+1,i+2,i-1]){if(j>=0&&j<clip.frames&&!cache.has(j)){const im=new Image();im.src=frameUrl(j);cache.set(j,im);if(cache.size>40){cache.delete(cache.keys().next().value);}}}}
 
 function eventFrames(){const pf=lab.per_frame,out=[];for(let i=0;i<pf.length;i++){const x=pf[i],p=i?pf[i-1]:null;
-  if(x.contact_with.length||x.occlusion!=="NONE"||x.merged||x.camera_cut||x.visibility==="OUT_OF_FRAME"||(p&&(p.visibility!==x.visibility||p.resolvable!==x.resolvable)))out.push(i);}return out;}
-function boxFrames(){const s=lab.seed.frame;if(s===null)return [];const n=lab.frames,step=Math.max(1,Math.round(lab.fps/BOX_HZ)),pad=Math.round(EVENT_PAD_S*lab.fps),req=new Set();
+  if(x.contact_with.length||(x.occlusion!=="NONE"&&x.occlusion!==UNL)||x.merged||x.camera_cut||x.visibility==="OUT_OF_FRAME"||(p&&(p.visibility!==x.visibility||p.resolvable!==x.resolvable)))out.push(i);}return out;}
+function boxFrames(){const s=lab.seed.frame;if(s===null)return [];const n=lab.frames,step=Math.max(1,pyRound(lab.fps/BOX_HZ)),pad=pyRound(EVENT_PAD_S*lab.fps),req=new Set();
   for(let i=s;i<n;i+=step)req.add(i);for(const e of eventFrames())for(let i=Math.max(s,e-pad);i<=Math.min(n-1,e+pad);i++)req.add(i);return [...req].sort((a,b)=>a-b);}
-function missingAt(i){const x=lab.per_frame[i],m=[];if((x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.human_uncertain&&!lab.target_boxes[i])m.push("target");
-  for(const p of x.contact_with)if(!(lab.people[p]&&lab.people[p].boxes[i]))m.push(p);return m;}
+// person -> frames needing a box: within EVENT_PAD_S of any contact, from the seed, minus absent frames (= r2_labels.partner_frames)
+function partnerFrames(){const out={},s=lab.seed.frame,n=lab.frames,pad=pyRound(EVENT_PAD_S*lab.fps);for(const pid of Object.keys(lab.people))out[pid]=new Set();if(s===null)return out;
+  lab.per_frame.forEach((x,i)=>{for(const pid of x.contact_with)for(let j=Math.max(s,i-pad);j<=Math.min(n-1,i+pad);j++)out[pid].add(j);});
+  for(const [pid,p] of Object.entries(lab.people))for(const a of (p.absent_frames||[]))out[pid].delete(a);return out;}
+let _pf=null;
+function missingAt(i,req){req=req||new Set(boxFrames());const x=lab.per_frame[i],m=[];if(req.has(i)&&(x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.human_uncertain&&!lab.target_boxes[i])m.push("target");
+  const pf=_pf||partnerFrames();for(const [pid,fr] of Object.entries(pf))if(fr.has(i)&&!lab.people[pid].boxes[i])m.push(pid);
+  if(lab.seed.frame!==null&&i>=lab.seed.frame&&(x.visibility===UNL||x.resolvable===UNL||x.occlusion===UNL))m.push("state");return m;}
 
 function seg(el,vals,get,set){el.innerHTML="";for(const v of vals){const b=document.createElement("button");b.textContent=v.replace(/_/g," ");b.onclick=()=>{set(v);refresh();};if(get()===v)b.className="on";el.appendChild(b);}}
 function refresh(){if(!lab)return;const x=lab.per_frame[f];
-  seg($("visSeg"),VIS,()=>x.visibility,v=>{x.visibility=v;if(v==="HIDDEN"&&!x.occlusion.startsWith("FULL"))x.occlusion="FULL_BY_PERSON";if(v==="OUT_OF_FRAME"){x.occlusion="NONE";x.merged=false;x.contact_with=[];}if(v==="HIDDEN"||v==="OUT_OF_FRAME")delete lab.target_boxes[f];persist();});
+  seg($("visSeg"),VIS,()=>x.visibility,v=>{x.visibility=v;if(v==="HIDDEN"&&!x.occlusion.startsWith("FULL"))x.occlusion=UNL;if((v==="VISIBLE"||v==="PARTIAL")&&x.occlusion.startsWith("FULL"))x.occlusion=UNL;if(v==="OUT_OF_FRAME"){x.occlusion="NONE";x.merged=false;x.contact_with=[];}if(v==="HIDDEN"||v==="OUT_OF_FRAME")delete lab.target_boxes[f];persist();});
   seg($("resSeg"),RES,()=>x.resolvable,v=>{x.resolvable=v;persist();});
   seg($("layerSeg"),["TARGET",...Object.keys(lab.people)],()=>layer,v=>{layer=v;});
   $("occSel").value=x.occlusion;$("merged").checked=x.merged;$("cut").checked=x.camera_cut;$("unc").checked=x.human_uncertain;$("note").value=x.note;
@@ -139,8 +149,8 @@ function refresh(){if(!lab)return;const x=lab.per_frame[f];
   if(!Object.keys(lab.people).length)cb.innerHTML='<span class="hint">add people below first</span>';
   const pe=$("people");pe.innerHTML="";for(const [pid,p] of Object.entries(lab.people)){const d=document.createElement("div");d.className="p"+(layer===pid?" active":"");
     d.innerHTML=`<b>${pid}</b><span class="pill">${p.relation}</span><span style="flex:1">${p.description.replace(/</g,"&lt;")}</span><span class="hint">${Object.keys(p.boxes).length} boxes</span>`;pe.appendChild(d);}
-  const req=new Set(boxFrames()),miss=missingAt(f);
-  $("fnum").innerHTML=`frame <b>${f}</b> / ${clip.frames-1} · t=${(f/clip.fps).toFixed(3)} s `+(req.has(f)?(miss.length?`<span class="pill bad">needs: ${miss.join(", ")}</span>`:'<span class="pill ok">required ✓</span>'):'<span class="pill">optional</span>');
+  const req=new Set(boxFrames());_pf=partnerFrames();const miss=missingAt(f,req);_pf=null;
+  $("fnum").innerHTML=`frame <b>${f}</b> / ${clip.frames-1} · t=${(f/clip.fps).toFixed(3)} s `+((req.has(f)||miss.length)?(miss.length?`<span class="pill bad">needs: ${miss.join(", ")}</span>`:'<span class="pill ok">required ✓</span>'):'<span class="pill">optional</span>');
   $("seedInfo").textContent=lab.seed.frame===null?"not set":`frame ${lab.seed.frame}`;
   $("rejInfo").textContent=lab.clip_rejected?("REJECTED: "+lab.clip_rejected):"";
   $("rangeInfo").textContent=rangeStart===null?"":`range start: frame ${rangeStart}`;
@@ -156,15 +166,16 @@ function draw(){const cv=$("cv"),g=cv.getContext("2d");cv.width=clip.width;cv.he
   if(lab.seed.frame===f&&lab.seed.box)dbox(lab.seed.box,"#3fb950","SEED",1);
   if(drag&&drag.b)dbox(drag.b,"#4fa3ff","",2);}
 function drawTimeline(){const tl=$("timeline"),g=tl.getContext("2d");tl.width=tl.clientWidth||800;const n=clip.frames,W=tl.width,col={VISIBLE:"#2f6f3e",PARTIAL:"#7a6a22",HIDDEN:"#6b2b2b",OUT_OF_FRAME:"#3a3f4a"};
-  const req=new Set(boxFrames());for(let i=0;i<n;i++){const x=Math.floor(i*W/n),w=Math.max(1,Math.ceil(W/n));const fr=lab.per_frame[i];g.fillStyle=col[fr.visibility];g.fillRect(x,0,w,16);
+  const req=new Set(boxFrames());_pf=partnerFrames();for(let i=0;i<n;i++){const x=Math.floor(i*W/n),w=Math.max(1,Math.ceil(W/n));const fr=lab.per_frame[i];g.fillStyle=col[fr.visibility]||"#111";g.fillRect(x,0,w,16);
     if(fr.human_uncertain){g.fillStyle="#d29922";g.fillRect(x,0,w,4);}if(fr.camera_cut){g.fillStyle="#4fa3ff";g.fillRect(x,0,w,16);}
-    if(req.has(i)){g.fillStyle=missingAt(i).length?"#f85149":"#3fb950";g.fillRect(x,18,w,7);}if(lab.target_boxes[i]){g.fillStyle="#ffd23f";g.fillRect(x,27,w,5);}}
+    const mi=missingAt(i,req);if(req.has(i)||mi.length){g.fillStyle=mi.length?"#f85149":"#3fb950";g.fillRect(x,18,w,7);}if(lab.target_boxes[i]){g.fillStyle="#ffd23f";g.fillRect(x,27,w,5);}}_pf=null;
   g.fillStyle="#fff";g.fillRect(Math.floor(f*W/n),0,2,34);}
 
 function toImg(e){const cv=$("cv"),r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];}
 function clampBox(b){const [x1,y1,x2,y2]=[Math.min(b[0],b[2]),Math.min(b[1],b[3]),Math.max(b[0],b[2]),Math.max(b[1],b[3])];
   return [Math.max(0,x1),Math.max(0,y1),Math.min(clip.width,x2),Math.min(clip.height,y2)].map(v=>Math.round(v*10)/10);}
-function setBox(b){if(layer==="TARGET"){const v=lab.per_frame[f].visibility;if(v==="HIDDEN"||v==="OUT_OF_FRAME"){msg("Target is "+v+" on this frame: no target box.");return;}lab.target_boxes[f]=b;if(lab.seed.frame===f)lab.seed.box=b;}
+function markCopied(copied){const k=layer;lab.box_copied=lab.box_copied||{};const s=new Set(lab.box_copied[k]||[]);copied?s.add(f):s.delete(f);lab.box_copied[k]=[...s].sort((a,b)=>a-b);}
+function setBox(b,copied){if(layer!=="TARGET"&&(lab.people[layer].absent_frames||[]).includes(f)){msg(layer+" is marked absent on this frame (A to toggle).");return;}markCopied(!!copied);if(layer==="TARGET"){const v=lab.per_frame[f].visibility;if(v==="HIDDEN"||v==="OUT_OF_FRAME"){msg("Target is "+v+" on this frame: no target box.");return;}lab.target_boxes[f]=b;if(lab.seed.frame===f)lab.seed.box=b;}
   else lab.people[layer].boxes[f]=b;persist();refresh();}
 $("cv").onmousedown=e=>{const p=toImg(e);drag={p,b:null};};
 window.onmousemove=e=>{if(!drag)return;const q=toImg(e);drag.b=clampBox([drag.p[0],drag.p[1],q[0],q[1]]);draw();};
@@ -174,13 +185,14 @@ function prevBoxed(){const src=layer==="TARGET"?lab.target_boxes:lab.people[laye
 function nextMissing(){const req=boxFrames();const nx=req.find(i=>i>f&&missingAt(i).length);if(nx!==undefined)load(nx);else msg("No missing required boxes after this frame.");}
 document.addEventListener("keydown",e=>{if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
   if(e.key==="ArrowRight"){load(f+(e.shiftKey?10:1));e.preventDefault();}else if(e.key==="ArrowLeft"){load(f-(e.shiftKey?10:1));e.preventDefault();}
-  else if(e.key==="c"||e.key==="C"){const b=prevBoxed();if(b)setBox([...b]);}
-  else if(e.key==="Delete"||e.key==="Backspace"){if(layer==="TARGET"){delete lab.target_boxes[f];}else delete lab.people[layer].boxes[f];persist();refresh();}
+  else if(e.key==="c"||e.key==="C"){const b=prevBoxed();if(b)setBox([...b],true);}
+  else if(e.key==="a"||e.key==="A"){if(layer==="TARGET")return;const p=lab.people[layer],s=new Set(p.absent_frames||[]);if(s.has(f))s.delete(f);else{s.add(f);delete p.boxes[f];}p.absent_frames=[...s].sort((a,b)=>a-b);persist();refresh();}
+  else if(e.key==="Delete"||e.key==="Backspace"){markCopied(false);if(layer==="TARGET"){delete lab.target_boxes[f];}else delete lab.people[layer].boxes[f];persist();refresh();}
   else if(e.key==="n"||e.key==="N")nextMissing();else if(e.key==="t"||e.key==="T"){layer="TARGET";refresh();}});
 $("timeline").onclick=e=>{const r=e.target.getBoundingClientRect();load(Math.floor((e.clientX-r.left)/r.width*clip.frames));};
 $("bPrev").onclick=()=>load(f-1);$("bNext").onclick=()=>load(f+1);$("bPrev10").onclick=()=>load(f-10);$("bNext10").onclick=()=>load(f+10);$("bNextReq").onclick=nextMissing;
 
-$("occSel").innerHTML=OCC.map(o=>`<option>${o}</option>`).join("");
+$("occSel").innerHTML=[UNL,...OCC].map(o=>`<option>${o}</option>`).join("");
 $("occSel").onchange=e=>{lab.per_frame[f].occlusion=e.target.value;persist();refresh();};
 $("merged").onchange=e=>{lab.per_frame[f].merged=e.target.checked;persist();refresh();};
 $("cut").onchange=e=>{lab.per_frame[f].camera_cut=e.target.checked;persist();refresh();};
@@ -189,9 +201,9 @@ $("note").onchange=e=>{lab.per_frame[f].note=e.target.value;persist();};
 $("fcr").onchange=e=>{const s=new Set(lab.first_clean_reappearance);e.target.checked?s.add(f):s.delete(f);lab.first_clean_reappearance=[...s].sort((a,b)=>a-b);persist();};
 $("bRangeStart").onclick=()=>{rangeStart=f;refresh();};
 $("bRangeApply").onclick=()=>{if(rangeStart===null){msg("Set a range start first.");return;}const a=Math.min(rangeStart,f),b=Math.max(rangeStart,f),src=lab.per_frame[f];
-  for(let i=a;i<=b;i++){const t=JSON.parse(JSON.stringify(src));t.camera_cut=(i===f)?src.camera_cut:false;t.note=lab.per_frame[i].note;lab.per_frame[i]=t;
+  for(let i=a;i<=b;i++){const t=JSON.parse(JSON.stringify(src));t.camera_cut=lab.per_frame[i].camera_cut;t.note=lab.per_frame[i].note;lab.per_frame[i]=t;
     if(t.visibility==="HIDDEN"||t.visibility==="OUT_OF_FRAME")delete lab.target_boxes[i];}
-  msg(`Applied frame ${f}'s state to frames ${a}–${b} (camera-cut flag not copied).`);rangeStart=null;persist();refresh();};
+  msg(`Applied frame ${f}'s state to frames ${a}–${b} (each frame keeps its own camera-cut flag and note).`);rangeStart=null;persist();refresh();};
 $("bAddP").onclick=()=>{const d=$("pDesc").value.trim();if(!d){msg("Describe the person (kit / number / role).");return;}let k=1;while(lab.people["P"+k])k++;
   lab.people["P"+k]={description:d,relation:$("pRel").value,boxes:{}};$("pDesc").value="";layer="P"+k;persist();refresh();};
 $("bSeed").onclick=()=>{const b=lab.target_boxes[f];if(!b){msg("Draw the target box on this frame first.");return;}lab.seed={frame:f,box:b};persist();refresh();};
@@ -202,13 +214,23 @@ $("btnLoad").onclick=()=>$("fileIn").click();
 $("fileIn").onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const l=JSON.parse(await file.text());
   if(l.schema!==SCHEMA||l.clip_id!==clip.clip_id||l.clip_sha256!==clip.clip_sha256||l.frames!==clip.frames){msg("That file is for another clip / schema; not loaded.");return;}
   lab=l;persist();msg("Loaded "+file.name);refresh();}catch(err){msg("Could not read: "+err);}e.target.value="";};
-$("bCheck").onclick=()=>{const p=[];if(!lab.annotator&&!$("annotator").value)p.push("annotator name missing");
-  if(lab.clip_rejected){p.length?0:0;}else{if(lab.seed.frame===null)p.push("seed not set");else{const s=lab.per_frame[lab.seed.frame];
-    if(!(s.visibility==="VISIBLE"&&s.resolvable==="YES"&&!s.merged&&!s.human_uncertain&&!s.contact_with.length))p.push("seed frame must be VISIBLE, resolvable, not merged/uncertain, no contact");}
-   for(const i of boxFrames()){const m=missingAt(i);if(m.length)p.push(`frame ${i}: missing ${m.join(", ")}`);}
-   lab.per_frame.forEach((x,i)=>{if(x.visibility==="HIDDEN"&&!x.occlusion.startsWith("FULL"))p.push(`frame ${i}: HIDDEN needs FULL_* occlusion`);});
-   for(const c of lab.first_clean_reappearance){const x=lab.per_frame[c],q=lab.per_frame[c-1];if(!q||((q.visibility==="VISIBLE"||q.visibility==="PARTIAL")&&q.resolvable==="YES"&&!q.merged))p.push(`first clean reappearance ${c}: previous frame already clean`);
-     if(!((x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.merged))p.push(`first clean reappearance ${c}: not clean`);}}
+// page check: same rules as r2_labels.validate (final validation is still the Python validator at freeze)
+function pageProblems(){const p=[],pf=lab.per_frame,n=lab.frames,s=lab.seed.frame;if(!($("annotator").value||lab.annotator))p.push("annotator name missing");
+  if(lab.clip_rejected)return p;
+  if(s===null||s>=n-1||!lab.seed.box){p.push("seed must be set on a frame before the last frame");return p;}
+  const clean=x=>(x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.resolvable==="YES"&&!x.merged&&!x.human_uncertain;
+  pf.forEach((x,i)=>{if(x.visibility===UNL||x.resolvable===UNL||x.occlusion===UNL){if(i>=s)p.push(`frame ${i}: not labelled (visibility / resolvable / occlusion)`);return;}
+    if(x.visibility==="OUT_OF_FRAME"&&(x.occlusion!=="NONE"||x.merged||x.contact_with.length))p.push(`frame ${i}: OUT_OF_FRAME cannot be occluded / merged / in contact`);
+    if(x.visibility==="HIDDEN"&&!x.occlusion.startsWith("FULL"))p.push(`frame ${i}: HIDDEN needs a FULL_* occlusion`);
+    if((x.visibility==="VISIBLE"||x.visibility==="PARTIAL")&&x.occlusion.startsWith("FULL"))p.push(`frame ${i}: ${x.visibility} cannot have a FULL_* occlusion`);
+    if((x.merged||x.occlusion.endsWith("_BY_PERSON"))&&!x.contact_with.length&&i>=s)p.push(`frame ${i}: merged / occluded by a person needs that person in contact_with`);});
+  if(p.length)return p;
+  const sf=pf[s];if(!(sf.visibility==="VISIBLE"&&clean(sf)&&!sf.contact_with.length))p.push("seed frame must be VISIBLE, resolvable, not merged, not uncertain, no contact");
+  const req=new Set(boxFrames());_pf=partnerFrames();for(let i=0;i<n;i++){const m=missingAt(i,req).filter(q=>q!=="state");if(m.length)p.push(`frame ${i}: missing box: ${m.join(", ")}`);}_pf=null;
+  const fcr=new Set(lab.first_clean_reappearance);for(const c of fcr){if(c<=s||!clean(pf[c]))p.push(`first clean reappearance ${c}: target not cleanly identifiable there`);else if(clean(pf[c-1]))p.push(`first clean reappearance ${c}: previous frame already clean`);}
+  for(let i=s+1;i<n;i++)if(clean(pf[i])&&!clean(pf[i-1])&&!fcr.has(i))p.push(`first clean reappearance missing at frame ${i}`);
+  return p;}
+$("bCheck").onclick=()=>{const p=pageProblems();
   $("checkPill").innerHTML=p.length?`<span class="pill bad">${p.length} problems</span>`:'<span class="pill ok">looks complete</span>';msg(p.slice(0,200).join("\n")||"No problems found by the page (final validation: r2_labels.py).");};
 function msg(t){$("msgs").textContent=t;}
 

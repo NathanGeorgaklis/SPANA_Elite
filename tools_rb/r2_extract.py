@@ -5,7 +5,7 @@
 """Extract the selected R2 clips losslessly and verify them. No tracker, detector or model is involved.
 
     python3 tools_rb/r2_extract.py SELECTION_JSON SOURCE_DIR OUT_DIR [CLIP_ID ...]
-    python3 tools_rb/r2_extract.py registry SELECTION_JSON OUT_DIR > R2/R2_CLIP_REGISTRY.json
+    python3 tools_rb/r2_extract.py registry SELECTION_JSON OUT_DIR [SOURCE_DIR] > R2/R2_CLIP_REGISTRY.json
         (re-hashes every clip and assembles the extract records; fails closed on any mismatch)
 
 For each clip (all, or the ids given): validates the window with r2_protocol.check_window (and that its split is the
@@ -50,6 +50,8 @@ def extract_one(clip, source_dir, out_dir, verified_sources):
     split = P.check_window(clip["source"], clip["start_s"], clip["end_s"])
     fps = src_meta["fps"]
     f0, f1 = round(clip["start_s"] * fps), round(clip["end_s"] * fps)
+    if abs(clip["start_s"] * fps - f0) > 1e-6 or abs(clip["end_s"] * fps - f1) > 1e-6:
+        raise SystemExit(f"{clip['clip_id']}: window is not frame-aligned at {fps} fps (fail closed)")
     n = f1 - f0
     src = os.path.join(source_dir, src_meta["file"])
     if clip["source"] not in verified_sources:
@@ -64,7 +66,7 @@ def extract_one(clip, source_dir, out_dir, verified_sources):
     ss = f"{f0 / fps:.6f}"
     tmp = out + ".partial.mp4"
     cmd = ["ffmpeg", "-v", "error", "-ss", ss, "-i", src, "-frames:v", str(n), "-an", "-c:v", "libx264", "-qp", "0",
-           "-preset", "veryfast", "-pix_fmt", "yuv420p", "-r", str(int(fps)), tmp]
+           "-preset", "veryfast", "-pix_fmt", "yuv420p", "-r", f"{fps:g}", tmp]
     subprocess.run(cmd, check=True)
     src_md5 = _framemd5(["-ss", ss, "-i", src, "-frames:v", str(n)])
     ext_md5 = _framemd5(["-i", tmp])
@@ -105,7 +107,18 @@ def main(selection_json, source_dir, out_dir, ids):
         print(r["clip_id"], r["split"], r["frames"], r["clip_sha256"][:16], r["clip_bytes"])
 
 
-def registry(selection_json, out_dir):
+def source_pts(src, f0, fps):
+    """Absolute timestamp of the first frame decoded at the clip's seek point (showinfo with -copyts): proves the clip
+    starts at source frame f0 = pts * fps, not merely that two seek paths agree (review finding L11)."""
+    out = subprocess.run(["ffmpeg", "-v", "info", "-copyts", "-ss", f"{f0 / fps:.6f}", "-i", src, "-frames:v", "1",
+                          "-vf", "showinfo", "-f", "null", "-"], capture_output=True, text=True, check=True).stderr
+    for line in out.splitlines():
+        if "pts_time:" in line:
+            return float(line.split("pts_time:")[1].split()[0])
+    raise SystemExit("showinfo produced no pts_time")
+
+
+def registry(selection_json, out_dir, source_dir=None):
     with open(selection_json) as f:
         sel = json.load(f)
     clips = []
@@ -118,9 +131,19 @@ def registry(selection_json, out_dir):
             raise SystemExit(f"{c['clip_id']}: extract record differs from the selection")
         if rec["split"] != P.split_of(c["source"], c["start_s"], c["end_s"]):
             raise SystemExit(f"{c['clip_id']}: split differs from the protocol")
+        extra = {}
+        if source_dir:
+            src = os.path.join(source_dir, P.SOURCES[c["source"]]["file"])
+            pts = source_pts(src, rec["source_start_frame"], rec["fps"])
+            if abs(pts * rec["fps"] - rec["source_start_frame"]) > 1e-3:
+                raise SystemExit(f"{c['clip_id']}: first frame pts {pts} is not source frame "
+                                 f"{rec['source_start_frame']} (fail closed)")
+            extra["source_first_frame_pts_s"] = pts
         clips.append(dict(rec, classes=c["classes"], proposed_target=c["proposed_target"],
-                          proposed_seed_s=c["proposed_seed_s"]))
+                          proposed_seed_s=c["proposed_seed_s"], **extra))
     return {"schema": "r2_clip_registry_v1", "protocol_version": P.PROTOCOL_VERSION,
+            "source_checks": {k: {"pix_fmt": v["pix_fmt"], "start_time_s": 0.0, "constant_fps": v["fps"]}
+                              for k, v in P.SOURCES.items()} if source_dir else None,
             "clips_location": "~/Downloads/_spana_r2_work/clips (not in Git: large binaries; archived separately)",
             "n_clips": len(clips), "n_dev": sum(c["split"] == "DEV" for c in clips),
             "n_eval": sum(c["split"] == "EVAL" for c in clips), "clips": clips}
@@ -128,7 +151,8 @@ def registry(selection_json, out_dir):
 
 if __name__ == "__main__":
     if sys.argv[1] == "registry":
-        json.dump(registry(sys.argv[2], sys.argv[3]), sys.stdout, indent=1, sort_keys=True)
+        json.dump(registry(sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None), sys.stdout,
+                  indent=1, sort_keys=True)
         print()
     else:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])

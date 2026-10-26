@@ -22,10 +22,10 @@ PROTOCOL_VERSION = "r2-protocol-1"
 SOURCES: Dict[str, Dict] = {
     "SYO_MAR": {"file": "videoplayback.mp4",
                 "sha256": "09aecc9b1ca2f64203864f25705618b03f35fa85cafd9610c51bdeecd585bfec",
-                "fps": 30.0, "duration_s": 8525.933333, "match": "SYO v MAR", "camera": "multi-camera broadcast"},
+                "fps": 30.0, "duration_s": 8525.933333, "width": 1280, "height": 720, "pix_fmt": "yuv420p", "match": "SYO v MAR", "camera": "multi-camera broadcast"},
     "MCFC_MIT": {"file": "videoplayback (1).mp4",
                  "sha256": "e8bd4d5fd8105a862ad8388f09473732b47481d6bda89ce10480ca18c810c519",
-                 "fps": 60.0, "duration_s": 8840.0, "match": "MCFC v MIT", "camera": "single low camera, floodlit"},
+                 "fps": 60.0, "duration_s": 8840.0, "width": 1280, "height": 720, "pix_fmt": "yuv420p", "match": "MCFC v MIT", "camera": "single low camera, floodlit"},
 }
 
 # Never opened, never a candidate (R0 Part C): videoplayback (2).mp4, anything v2_esfc_bcfc. Not in SOURCES.

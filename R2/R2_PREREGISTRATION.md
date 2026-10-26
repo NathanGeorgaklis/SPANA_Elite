@@ -91,3 +91,29 @@ Recorded once the label schema existed (`tools_rb/r2_labels.py`), before any lab
 - **HUMAN_UNCERTAIN frames** are excluded from error counts and coverage and reported separately (including trusted frames on them).
 - **Rejected clips** are never scored. An invalid label file, or a seed/fps mismatch, refuses the evaluation (fail closed).
 - **Annotation display:** the page shows every frame of the lossless clip as a JPEG (q2), with frame index = clip frame index (`tools_rb/r2_annotation_pack.py`). No model output is shown.
+
+## Addendum B (2026-10-26, after the independent code review; still before any label or result exists)
+
+**Disclosures**
+- **Clip splits were visible during selection.** The scan sheets showed each candidate's split, so Claude saw DEV/EVAL while choosing clips by eye. The split itself was decided by the hash rule (§2) and never chosen.
+  - The by-eye class balance is uneven. CAMERA_CUT: 3 DEV / 7 EVAL. OPPONENT_CROSSING: 1 DEV / 4 EVAL.
+  - Claude's class proposals are not labels. Nathan's frozen labels define what each clip contains.
+- **Addendum A was written after Claude had viewed EVAL footage** (thumbnails during selection). No label or result existed at the time.
+- **Source checks** (Mac, 2026-10-26): both sources are 8-bit yuv420p AV1, constant frame rate, start time 0. "Lossless" therefore means a bit-exact decode at 8-bit 4:2:0.
+  - Each clip's first frame is verified to be source frame `round(start_s × fps)` by its absolute decode timestamp (`r2_extract.py registry … SOURCE_DIR`).
+  - Every window must be frame-aligned.
+- **Other development windows** (blind_r2_001/009, SEG_A–E, pass_completed_01) have no locatable source time ranges in the surviving records. Whether any overlaps an R2 window is **UNKNOWN**. None is holdout or Task 3R.
+
+**Deviations from R0 Part C (recorded, not hidden)**
+- **Seed overlapping a raw detection.** R0 asks for this to be checked at registration. R2 does not run a detector before the truth is frozen (no model output before truth). The check happens at run time instead: `run_rb` refuses a seed that is not detection-backed (`RunRefusedError`), and such a clip is reported as REFUSED, never silently re-seeded.
+- **Box density.** R0 asks for every frame within ±1 s, and both players on every frame, for crossings. R2 uses 5 Hz plus every frame within ±0.5 s of events (Nathan's choice, 2026-10-26).
+  - Contact partners must be boxed on every frame within ±0.5 s of each contact, unless marked absent.
+  - A merged target, or one occluded by a person, must name that person.
+- **One annotator** (Nathan), not two with adjudication.
+
+**Scoring additions** (code-review findings H1, H2, M3, M7):
+- **Contact integrity (B5)** is UNKNOWN when a contact partner is neither boxed nor marked absent on a trusted window frame.
+- **Swaps** state their scope: trusted grid frames against annotated people only. A trusted box on an unannotated person is caught as a wrong box under priority 1.
+- **False trusted identity** reports `COMPLETE_ON_GRID` and the fraction of trusted frames that were box-checked, instead of `COMPLETE`, when trusted frames between grid samples exist.
+- **Consistency checks.** The scorer refuses labels, fixture, freeze record and results that do not describe the same clip (clip id, clip hash, labels hash, seed frame).
+- **EVAL gate.** An EVAL clip is scored only with an approval record (`status: APPROVED`, `approved_by`, `tracker_git_commit`) whose commit equals the clean commit that produced the results. Approval comes from Nathan, in advance.
