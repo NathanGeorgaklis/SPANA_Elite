@@ -283,7 +283,8 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
         swaps = {"count": len(_runs(on_other)), "runs": _runs(on_other),
                  "scope": "trusted grid frames vs every ANNOTATED other person; a trusted box on an unannotated "
                           "person is caught as a wrong box under priority 1",
-                 "people_annotated_on_trusted_grid_frames": len({p for t in boxed_conf for p in t.other_boxes})}
+                 "people_annotated_on_trusted_grid_frames": len({p for t in boxed_conf for p in t.other_boxes}),
+                 "count_is_lower_bound": True}
 
     # B3 reacquisition: one item per span where the target is not available. A confident frame INSIDE the span is a
     # premature (wrong) reacquisition. After the span, only the available run up to the next span is searched.
@@ -301,7 +302,9 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
             continue
         back = g1 + 1                                      # truth is contiguous: the next frame is available
         clean = next((t.rel_frame for t in truth if back <= t.rel_frame <= seg_end and t.clean_reappearance), None)
-        conf = next((f for f in range(back, seg_end + 1) if claims[f] == "CONFIDENT"), None)
+        # first trusted frame the truth can judge (a trusted HUMAN_UNCERTAIN frame is reported, not judged)
+        conf = next((f for f in range(back, seg_end + 1) if claims[f] == "CONFIDENT" and not by_frame[f].uncertain),
+                    None)
         item.update({"target_available_from": back, "target_available_until": seg_end,
                      "human_clean_reappearance": clean})
         if conf is None:
@@ -320,9 +323,11 @@ def evaluate(doc: Dict[str, Any], truth: Sequence[TruthFrame]) -> Dict[str, Any]
             item["delay_s"] = round((conf - back) / fps, 3)
             # judged on the first box-annotated frame of the confident run that starts at `conf`
             judge = conf
-            while judge <= seg_end and claims[judge] == "CONFIDENT" and not by_frame[judge].box_annotated:
+            while judge <= seg_end and claims[judge] == "CONFIDENT" and (not by_frame[judge].box_annotated
+                                                                          or by_frame[judge].uncertain):
                 judge += 1
-            if judge > seg_end or claims[judge] != "CONFIDENT" or not by_frame[judge].box_annotated:
+            if (judge > seg_end or claims[judge] != "CONFIDENT" or not by_frame[judge].box_annotated
+                    or by_frame[judge].uncertain):
                 judge = None
             item["judged_on_frame"] = judge
             ft = by_frame[judge] if judge is not None else None

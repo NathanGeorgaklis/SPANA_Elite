@@ -177,6 +177,50 @@ class RangeApply(_Pack, unittest.TestCase):
 
 
 @unittest.skipIf(sync_playwright is None, "playwright not installed")
+class UiBehaviours(_Pack, unittest.TestCase):
+    """Test-audit gaps: redrawing the seed-frame box updates the seed; HIDDEN removes the target box; boxes are
+    clamped to the image; a missing contact-partner box is reported by the page."""
+
+    def test_ui_behaviours(self):
+        with sync_playwright() as pw:
+            b = pw.chromium.launch()
+            p = b.new_page(viewport={"width": 1500, "height": 900})
+            p.goto("file://" + os.path.join(self.tmp, "index.html"))
+            p.wait_for_timeout(200)                                     # frame 2
+            bb = p.query_selector("#cv").bounding_box()
+            sx, sy = bb["width"] / W, bb["height"] / H
+
+            def drag(x1, y1, x2, y2):
+                p.mouse.move(bb["x"] + x1 * sx, bb["y"] + y1 * sy)
+                p.mouse.down()
+                p.mouse.move(bb["x"] + x2 * sx, bb["y"] + y2 * sy, steps=3)
+                p.mouse.up()
+
+            drag(110, 100, 150, 200)
+            p.click("#bSeed")
+            drag(120, 110, 160, 210)                                    # redraw on the seed frame
+            seed, tb = p.evaluate("[lab.seed.box, lab.target_boxes[2]]")
+            self.assertEqual(seed, tb)
+            self.assertNotEqual(seed[0], 110.0)
+            p.keyboard.press("ArrowRight")                              # frame 3: box past the right edge
+            drag(600, 100, 700, 200)
+            self.assertEqual(p.evaluate("lab.target_boxes[3][2]"), float(W))
+            p.click('#visSeg button:has-text("HIDDEN")')
+            self.assertIsNone(p.evaluate("lab.target_boxes[3] || null"))
+            occ = p.evaluate("lab.per_frame[3].occlusion")
+            self.assertEqual(occ, "UNLABELLED")                         # never auto-filled
+            p.fill("#annotator", "Tester")
+            p.evaluate("""() => { lab.people.P1 = {description: 'x', relation: 'OPPONENT', boxes: {}};
+                          for (let i = 0; i < lab.frames; i++) { lab.per_frame[i] = {visibility: 'VISIBLE',
+                          resolvable: 'YES', occlusion: 'NONE', merged: false, contact_with: [], camera_cut: false,
+                          human_uncertain: false, note: ''}; lab.target_boxes[i] = lab.seed.box; }
+                          lab.per_frame[10].contact_with = ['P1']; }""")
+            probs = p.evaluate("pageProblems()")
+            b.close()
+        self.assertTrue(any("missing box: P1" in x for x in probs), probs[:3])
+
+
+@unittest.skipIf(sync_playwright is None, "playwright not installed")
 class JsPythonParity(_Pack, unittest.TestCase):
     """The page's box grid, partner windows and completeness check agree with r2_labels on random documents
     (review finding L9), at 25, 30 and 60 fps (25 fps exercises half-to-even rounding: 0.5 * 25 = 12.5)."""

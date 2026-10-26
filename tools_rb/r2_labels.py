@@ -67,6 +67,11 @@ def _box_ok(b, w, h) -> bool:
             and 0 <= b[0] < b[2] <= w and 0 <= b[1] < b[3] <= h)
 
 
+def _key_ok(k, n) -> bool:
+    """Frame keys must be canonical ("5", never "05" or "+5"): the scorer looks boxes up by str(frame)."""
+    return isinstance(k, str) and k.isdigit() and k == str(int(k)) and int(k) < n
+
+
 def _round_half_even(x: float) -> int:
     return int(round(x))           # Python's round is half-to-even; the page implements the same rule
 
@@ -165,8 +170,8 @@ def validate(lab: Dict[str, Any], clip: Dict[str, Any] = None) -> List[str]:
             if not str(p.get("description", "")).strip():
                 err.append(f"person {pid}: description is empty")
             for fk, b in p.get("boxes", {}).items():
-                if not (fk.isdigit() and int(fk) < n and _box_ok(b, w, h)):
-                    err.append(f"person {pid}: bad box at {fk}")
+                if not (_key_ok(fk, n) and _box_ok(b, w, h)):
+                    err.append(f"person {pid}: bad box at {fk!r}")
             absent = p.get("absent_frames", [])
             if not (isinstance(absent, list) and all(isinstance(a, int) and 0 <= a < n for a in absent)):
                 err.append(f"person {pid}: absent_frames must be frame indices")
@@ -201,7 +206,7 @@ def validate(lab: Dict[str, Any], clip: Dict[str, Any] = None) -> List[str]:
             if (f["merged"] or f["occlusion"] in BY_PERSON) and not f["contact_with"] and i >= sf0:
                 err.append(f"frame {i}: merged / occluded by a person needs that person in contact_with")
         for fk, b in lab["target_boxes"].items():
-            if not (fk.isdigit() and int(fk) < n and _box_ok(b, w, h)):
+            if not (_key_ok(fk, n) and _box_ok(b, w, h)):
                 err.append(f"target box at {fk} invalid")
                 continue
             if pf[int(fk)]["visibility"] in ("HIDDEN", "OUT_OF_FRAME"):
@@ -224,6 +229,8 @@ def validate(lab: Dict[str, Any], clip: Dict[str, Any] = None) -> List[str]:
                 if str(i) not in people[pid].get("boxes", {}):
                     err.append(f"frame {i}: box required for contact person {pid} (or mark them absent)")
         fcr = lab["first_clean_reappearance"]
+        if len(set(map(str, fcr))) != len(fcr):
+            err.append("first_clean_reappearance has duplicates")
         for c in fcr:
             if not (isinstance(c, int) and sf0 < c < n):
                 err.append(f"first_clean_reappearance {c!r} out of range")

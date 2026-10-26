@@ -212,7 +212,7 @@ $("btnSave").onclick=()=>{lab.annotator=$("annotator").value.trim();if(!lab.anno
   const blob=new Blob([JSON.stringify(lab,null,1)+"\n"],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=clip.clip_id+".labels_v1.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);};
 $("btnLoad").onclick=()=>$("fileIn").click();
 $("fileIn").onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const l=JSON.parse(await file.text());
-  if(l.schema!==SCHEMA||l.clip_id!==clip.clip_id||l.clip_sha256!==clip.clip_sha256||l.frames!==clip.frames){msg("That file is for another clip / schema; not loaded.");return;}
+  if(l.schema!==SCHEMA||l.clip_id!==clip.clip_id||l.clip_sha256!==clip.clip_sha256||l.frames!==clip.frames||l.fps!==clip.fps){msg("That file is for another clip / schema; not loaded.");return;}
   lab=l;persist();msg("Loaded "+file.name);refresh();}catch(err){msg("Could not read: "+err);}e.target.value="";};
 // page check: same rules as r2_labels.validate (final validation is still the Python validator at freeze)
 function pageProblems(){const p=[],pf=lab.per_frame,n=lab.frames,s=lab.seed.frame;if(!($("annotator").value||lab.annotator))p.push("annotator name missing");
@@ -226,6 +226,7 @@ function pageProblems(){const p=[],pf=lab.per_frame,n=lab.frames,s=lab.seed.fram
     if((x.merged||x.occlusion.endsWith("_BY_PERSON"))&&!x.contact_with.length&&i>=s)p.push(`frame ${i}: merged / occluded by a person needs that person in contact_with`);});
   if(p.length)return p;
   const sf=pf[s];if(!(sf.visibility==="VISIBLE"&&clean(sf)&&!sf.contact_with.length))p.push("seed frame must be VISIBLE, resolvable, not merged, not uncertain, no contact");
+  if(JSON.stringify(lab.target_boxes[s])!==JSON.stringify(lab.seed.box))p.push("seed box must equal the target box on the seed frame");
   const req=new Set(boxFrames());_pf=partnerFrames();for(let i=0;i<n;i++){const m=missingAt(i,req).filter(q=>q!=="state");if(m.length)p.push(`frame ${i}: missing box: ${m.join(", ")}`);}_pf=null;
   const fcr=new Set(lab.first_clean_reappearance);for(const c of fcr){if(c<=s||!clean(pf[c]))p.push(`first clean reappearance ${c}: target not cleanly identifiable there`);else if(clean(pf[c-1]))p.push(`first clean reappearance ${c}: previous frame already clean`);}
   for(let i=s+1;i<n;i++)if(clean(pf[i])&&!clean(pf[i-1])&&!fcr.has(i))p.push(`first clean reappearance missing at frame ${i}`);
