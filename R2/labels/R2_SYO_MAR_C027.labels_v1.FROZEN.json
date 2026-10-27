@@ -1,0 +1,21 @@
+{
+ "annotator": "Nathan Georgaklis",
+ "box_frames_required": 0,
+ "bytes": 63806,
+ "clip_id": "R2_SYO_MAR_C027",
+ "clip_rejected": "celebration",
+ "clip_sha256": "18d135c2f9199eedd2e2ce5d31348989f1c49267ac650ff8d545dd60fab698c5",
+ "errors": [],
+ "fps": 30.0,
+ "frames": 300,
+ "frozen_at_utc": "2026-10-27T07:07:43Z",
+ "labels_file": "R2_SYO_MAR_C027.labels_v1.json",
+ "rule": "Do not modify this label file. Corrections require labels_v2 with the reason recorded.",
+ "schema": "r2_labels_v1",
+ "seed_bbox": null,
+ "seed_frame": null,
+ "sha256": "a0fa8ffbcbc55cb1e19d308d1161cc8ba665eb2b56d3ef874f39a0297e604565",
+ "split": "EVAL",
+ "status": "FROZEN",
+ "valid": true
+}

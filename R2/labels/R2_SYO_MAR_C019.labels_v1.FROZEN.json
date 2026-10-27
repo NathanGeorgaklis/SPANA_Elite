@@ -1,0 +1,21 @@
+{
+ "annotator": "Nathan Georgaklis",
+ "box_frames_required": 0,
+ "bytes": 63815,
+ "clip_id": "R2_SYO_MAR_C019",
+ "clip_rejected": "ball not in play yet",
+ "clip_sha256": "0acea6967624ded31df02539f95496440aa0797f0ff577bcc9134352976bcb6b",
+ "errors": [],
+ "fps": 30.0,
+ "frames": 300,
+ "frozen_at_utc": "2026-10-27T07:07:43Z",
+ "labels_file": "R2_SYO_MAR_C019.labels_v1.json",
+ "rule": "Do not modify this label file. Corrections require labels_v2 with the reason recorded.",
+ "schema": "r2_labels_v1",
+ "seed_bbox": null,
+ "seed_frame": null,
+ "sha256": "a7815c15b3bf1e1ba6ffc4af6197b2a6796b014520b9a85e486e5b15ab9edbf2",
+ "split": "DEV",
+ "status": "FROZEN",
+ "valid": true
+}
