@@ -1,0 +1,23 @@
+R2_MCFC_MIT_C006 start 23:06:33
+R2_MCFC_MIT_C006 done 488.1 s
+R2_MCFC_MIT_C016 start 23:14:41
+R2_MCFC_MIT_C016 done 384.5 s
+R2_MCFC_MIT_C020 start 23:21:06
+R2_MCFC_MIT_C020 done 885.3 s
+R2_MCFC_MIT_C033 start 23:35:51
+R2_MCFC_MIT_C033 done 1092.7 s
+R2_MCFC_MIT_C034 start 23:54:04
+R2_MCFC_MIT_C034 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']
+R2_MCFC_MIT_C038 start 23:54:10
+R2_MCFC_MIT_C038 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['ALTERNATIVE', 'NESTED', 'NOT_ISOLATED']
+R2_SYO_MAR_C004 start 23:54:23
+R2_SYO_MAR_C004 done 575.6 s
+R2_SYO_MAR_C012 start 00:03:59
+R2_SYO_MAR_C012 done 689.9 s
+R2_SYO_MAR_C016 start 00:15:29
+R2_SYO_MAR_C016 done 329.9 s
+R2_SYO_MAR_C021 start 00:20:59
+R2_SYO_MAR_C021 done 582.4 s
+R2_SYO_MAR_C032 start 00:30:41
+R2_SYO_MAR_C032 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']
+EXIT 0

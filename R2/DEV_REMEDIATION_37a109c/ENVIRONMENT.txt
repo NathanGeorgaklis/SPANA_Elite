@@ -1,0 +1,5 @@
+Linux x86_64, 2 cores, Python 3.13.17
+run from commit 37a109c (clean tree; results record git_dirty false)
+0ab62713cf7759dd820b53576b39010cb0fe8dcfbe22af444c945c519bf9efea  /home/claude/spana_push/models/dinov2_vits14_cls_patchmean_224x112.onnx
+21ff6cfdeb53b013bac2249599e55f00bff3cfdfdab37ed7a4620818c1d15b3f  /home/claude/spana_push/models/yolox_m.onnx
+c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063  /home/claude/spana_push/models/yolox_s.onnx

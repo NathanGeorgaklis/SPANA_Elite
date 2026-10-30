@@ -1,0 +1,10 @@
+{
+ "clip_id": "R2_MCFC_MIT_C034",
+ "split": "DEV",
+ "outcome": "RUN_REFUSED",
+ "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']",
+ "fixture": "R2/labels/R2_MCFC_MIT_C034.fixture.json",
+ "git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+ "git_dirty": false,
+ "seconds": 6.9
+}

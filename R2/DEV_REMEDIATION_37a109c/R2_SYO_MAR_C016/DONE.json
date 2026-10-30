@@ -1,0 +1,27 @@
+{
+ "clip_id": "R2_SYO_MAR_C016",
+ "split": "DEV",
+ "outcome": "COMPLETED",
+ "fixture": "R2/labels/R2_SYO_MAR_C016.fixture.json",
+ "git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+ "git_dirty": false,
+ "seconds": 329.9,
+ "summary_keys": [
+  "clip_output",
+  "final_confirmed_count",
+  "final_provisional_count",
+  "fps",
+  "health_metrics",
+  "identity_conflict_counts",
+  "identity_conflicts_logged",
+  "n_tracks_ever_created",
+  "n_tracks_final_active",
+  "processed_frames",
+  "processing_time_s",
+  "selected_state_pct",
+  "spawn_guard_stats",
+  "start_frame",
+  "v2",
+  "video"
+ ]
+}

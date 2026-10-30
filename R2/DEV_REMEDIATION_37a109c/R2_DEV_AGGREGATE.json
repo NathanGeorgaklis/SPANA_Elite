@@ -1,0 +1,540 @@
+{
+ "aggregate": {
+  "abstention_pooled": 0.611,
+  "available_frames": 2105,
+  "b5_contact_integrity": {
+   "R2_MCFC_MIT_C006": "PASS",
+   "R2_MCFC_MIT_C016": "PASS_NO_CONFIDENT_CLAIM",
+   "R2_MCFC_MIT_C020": "PASS_NO_CONFIDENT_CLAIM",
+   "R2_MCFC_MIT_C033": "PASS_NO_CONFIDENT_CLAIM",
+   "R2_SYO_MAR_C004": "PASS_NO_CONFIDENT_CLAIM",
+   "R2_SYO_MAR_C012": "PASS",
+   "R2_SYO_MAR_C016": "PASS_NO_CONFIDENT_CLAIM",
+   "R2_SYO_MAR_C021": "PASS_NO_CONFIDENT_CLAIM"
+  },
+  "box_quality_frames": 318,
+  "box_quality_mean_iou_pooled": 0.657,
+  "clips_run_refused": [
+   "R2_MCFC_MIT_C034",
+   "R2_MCFC_MIT_C038",
+   "R2_SYO_MAR_C032"
+  ],
+  "clips_scored": 8,
+  "false_confident_identity": 5,
+  "identity_swaps_lower_bound": 0,
+  "reacq_delay_s": "UNKNOWN",
+  "reacquisitions_correct": 0,
+  "reacquisitions_not_reacquired": 4,
+  "trusted_coverage_pooled": 0.389,
+  "trusted_on_available": 818,
+  "trusted_on_hidden_occluded_unresolvable_out": 1,
+  "trusted_on_unavailable": 1,
+  "unavailable_frames": 662,
+  "wrong_reacquisitions": 1
+ },
+ "per_clip": {
+  "R2_MCFC_MIT_C006": {
+   "abstention": 0.799,
+   "available_frames": 284,
+   "b5_contact_integrity": "PASS",
+   "box_quality_frames": 40,
+   "box_quality_mean_iou": 0.619,
+   "claims_on_available": {
+    "AMBIGUOUS": 82,
+    "CONFIDENT": 57,
+    "LOST": 131,
+    "OCCLUDED": 5,
+    "REACQUIRING": 9
+   },
+   "claims_on_unavailable": {
+    "LOST": 15
+   },
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.702,
+   "p1_false_confident_identity": 3,
+   "p1_flagged_frames_box_convention_diag": [
+    {
+     "clip_frame": 391,
+     "frame_rel_seed": 91,
+     "human_inside_tracker": 0.294,
+     "iou": 0.294,
+     "tracker_h_over_human_h": 0.707,
+     "tracker_inside_human": 1.0
+    },
+    {
+     "clip_frame": 392,
+     "frame_rel_seed": 92,
+     "human_inside_tracker": 0.283,
+     "iou": 0.283,
+     "tracker_h_over_human_h": 0.79,
+     "tracker_inside_human": 1.0
+    },
+    {
+     "clip_frame": 393,
+     "frame_rel_seed": 93,
+     "human_inside_tracker": 0.275,
+     "iou": 0.275,
+     "tracker_h_over_human_h": 0.643,
+     "tracker_inside_human": 1.0
+    }
+   ],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 1,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 1,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [
+    {
+     "censored_by": "window_end",
+     "delay_s_at_least": 1.617,
+     "gap": [
+      188,
+      202
+     ],
+     "gap_starts_at_window_start": false,
+     "human_clean_reappearance": 203,
+     "missed_reacquisition": "UNKNOWN",
+     "outcome": "NOT_REACQUIRED",
+     "post_gap_outcome": "NOT_REACQUIRED",
+     "target_available_from": 203,
+     "target_available_until": 299,
+     "trusted_inside_gap": []
+    }
+   ],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.201,
+   "unavailable_frames": 15,
+   "unresolvable_frames": 0,
+   "window": [
+    1,
+    299
+   ]
+  },
+  "R2_MCFC_MIT_C016": {
+   "abstention": 0.054,
+   "available_frames": 167,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 76,
+   "box_quality_mean_iou": 0.736,
+   "claims_on_available": {
+    "AMBIGUOUS": 9,
+    "CONFIDENT": 158
+   },
+   "claims_on_unavailable": {
+    "AMBIGUOUS": 6,
+    "LOST": 66
+   },
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.481,
+   "p1_false_confident_identity": 0,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [
+    {
+     "gap": [
+      168,
+      239
+     ],
+     "gap_starts_at_window_start": false,
+     "outcome": "NOT_AVAILABLE_IN_WINDOW",
+     "target_available_from": null,
+     "trusted_inside_gap": []
+    }
+   ],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.946,
+   "unavailable_frames": 72,
+   "unresolvable_frames": 2,
+   "window": [
+    1,
+    239
+   ]
+  },
+  "R2_MCFC_MIT_C020": {
+   "abstention": 0.624,
+   "available_frames": 569,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 57,
+   "box_quality_mean_iou": 0.71,
+   "claims_on_available": {
+    "AMBIGUOUS": 63,
+    "CONFIDENT": 214,
+    "OBSERVED_UNVERIFIED": 262,
+    "REACQUIRING": 30
+   },
+   "claims_on_unavailable": {},
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.266,
+   "p1_false_confident_identity": 0,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.376,
+   "unavailable_frames": 0,
+   "unresolvable_frames": 0,
+   "window": [
+    1,
+    569
+   ]
+  },
+  "R2_MCFC_MIT_C033": {
+   "abstention": 0.751,
+   "available_frames": 417,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 49,
+   "box_quality_mean_iou": 0.642,
+   "claims_on_available": {
+    "AMBIGUOUS": 8,
+    "CONFIDENT": 104,
+    "LOST": 235,
+    "REACQUIRING": 70
+   },
+   "claims_on_unavailable": {
+    "AMBIGUOUS": 52,
+    "CONFIDENT": 1,
+    "LOST": 129
+   },
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.471,
+   "p1_false_confident_identity": 1,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 3,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 1,
+   "p4_frames": [
+    105
+   ],
+   "p4_trusted_on_unavailable": 1,
+   "reacq_delays_s": [],
+   "reacquisition": [
+    {
+     "censored_by": "next_gap",
+     "delay_s_at_least": 0.033,
+     "gap": [
+      105,
+      105
+     ],
+     "gap_starts_at_window_start": false,
+     "human_clean_reappearance": 106,
+     "missed_reacquisition": false,
+     "outcome": "WRONG_PREMATURE",
+     "post_gap_outcome": "NOT_REACQUIRED",
+     "target_available_from": 106,
+     "target_available_until": 107,
+     "trusted_inside_gap": [
+      105
+     ]
+    },
+    {
+     "censored_by": "next_gap",
+     "delay_s_at_least": 0.083,
+     "gap": [
+      108,
+      108
+     ],
+     "gap_starts_at_window_start": false,
+     "human_clean_reappearance": 109,
+     "missed_reacquisition": false,
+     "outcome": "NOT_REACQUIRED",
+     "post_gap_outcome": "NOT_REACQUIRED",
+     "target_available_from": 109,
+     "target_available_until": 113,
+     "trusted_inside_gap": []
+    },
+    {
+     "censored_by": "next_gap",
+     "delay_s_at_least": 0.017,
+     "gap": [
+      114,
+      114
+     ],
+     "gap_starts_at_window_start": false,
+     "human_clean_reappearance": 115,
+     "missed_reacquisition": false,
+     "outcome": "NOT_REACQUIRED",
+     "post_gap_outcome": "NOT_REACQUIRED",
+     "target_available_from": 115,
+     "target_available_until": 115,
+     "trusted_inside_gap": []
+    },
+    {
+     "censored_by": "window_end",
+     "delay_s_at_least": 5.083,
+     "gap": [
+      116,
+      294
+     ],
+     "gap_starts_at_window_start": false,
+     "human_clean_reappearance": 295,
+     "missed_reacquisition": true,
+     "outcome": "NOT_REACQUIRED",
+     "post_gap_outcome": "NOT_REACQUIRED",
+     "target_available_from": 295,
+     "target_available_until": 599,
+     "trusted_inside_gap": []
+    }
+   ],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.249,
+   "unavailable_frames": 182,
+   "unresolvable_frames": 3,
+   "window": [
+    1,
+    599
+   ]
+  },
+  "R2_MCFC_MIT_C034": {
+   "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']",
+   "status": "RUN_REFUSED"
+  },
+  "R2_MCFC_MIT_C038": {
+   "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['ALTERNATIVE', 'NESTED', 'NOT_ISOLATED']",
+   "status": "RUN_REFUSED"
+  },
+  "R2_SYO_MAR_C004": {
+   "abstention": 0.236,
+   "available_frames": 127,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 24,
+   "box_quality_mean_iou": 0.539,
+   "claims_on_available": {
+    "AMBIGUOUS": 5,
+    "CONFIDENT": 97,
+    "OCCLUDED": 25
+   },
+   "claims_on_unavailable": {
+    "LOST": 152,
+    "OCCLUDED": 3,
+    "REACQUIRING": 17
+   },
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.247,
+   "p1_false_confident_identity": 0,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [
+    {
+     "gap": [
+      128,
+      299
+     ],
+     "gap_starts_at_window_start": false,
+     "outcome": "NOT_AVAILABLE_IN_WINDOW",
+     "target_available_from": null,
+     "trusted_inside_gap": []
+    }
+   ],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.764,
+   "unavailable_frames": 172,
+   "unresolvable_frames": 172,
+   "window": [
+    1,
+    299
+   ]
+  },
+  "R2_SYO_MAR_C012": {
+   "abstention": 0.996,
+   "available_frames": 254,
+   "b5_contact_integrity": "PASS",
+   "box_quality_frames": 1,
+   "box_quality_mean_iou": 0.485,
+   "claims_on_available": {
+    "AMBIGUOUS": 30,
+    "CONFIDENT": 1,
+    "LOST": 223
+   },
+   "claims_on_unavailable": {},
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 1.0,
+   "p1_false_confident_identity": 0,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 1,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.004,
+   "unavailable_frames": 0,
+   "unresolvable_frames": 0,
+   "window": [
+    1,
+    254
+   ]
+  },
+  "R2_SYO_MAR_C016": {
+   "abstention": 0.349,
+   "available_frames": 209,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 62,
+   "box_quality_mean_iou": 0.635,
+   "claims_on_available": {
+    "AMBIGUOUS": 30,
+    "CONFIDENT": 136,
+    "LOST": 43
+   },
+   "claims_on_unavailable": {},
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.456,
+   "p1_false_confident_identity": 0,
+   "p1_flagged_frames_box_convention_diag": [],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.651,
+   "unavailable_frames": 0,
+   "unresolvable_frames": 0,
+   "window": [
+    1,
+    209
+   ]
+  },
+  "R2_SYO_MAR_C021": {
+   "abstention": 0.346,
+   "available_frames": 78,
+   "b5_contact_integrity": "PASS_NO_CONFIDENT_CLAIM",
+   "box_quality_frames": 9,
+   "box_quality_mean_iou": 0.4,
+   "claims_on_available": {
+    "AMBIGUOUS": 27,
+    "CONFIDENT": 51
+   },
+   "claims_on_unavailable": {
+    "LOST": 185,
+    "REACQUIRING": 36
+   },
+   "confident_not_grounded_violations": [],
+   "human_uncertain_frames": 0,
+   "p1_box_checked_fraction": 0.176,
+   "p1_false_confident_identity": 1,
+   "p1_flagged_frames_box_convention_diag": [
+    {
+     "clip_frame": 36,
+     "frame_rel_seed": 36,
+     "human_inside_tracker": 0.269,
+     "iou": 0.269,
+     "tracker_h_over_human_h": 0.719,
+     "tracker_inside_human": 1.0
+    }
+   ],
+   "p1_status": "COMPLETE_ON_GRID",
+   "p2_lower_bound": true,
+   "p2_people_annotated_on_trusted_grid": 0,
+   "p2_swaps": 0,
+   "p3_correct": 0,
+   "p3_not_reacquired": 0,
+   "p3_unverified": 0,
+   "p3_wrong_reacq": 0,
+   "p4_frames": [],
+   "p4_trusted_on_unavailable": 0,
+   "reacq_delays_s": [],
+   "reacquisition": [
+    {
+     "gap": [
+      79,
+      299
+     ],
+     "gap_starts_at_window_start": false,
+     "outcome": "NOT_AVAILABLE_IN_WINDOW",
+     "target_available_from": null,
+     "trusted_inside_gap": []
+    }
+   ],
+   "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+   "results_git_dirty": false,
+   "status": "SCORED",
+   "trusted_coverage": 0.654,
+   "unavailable_frames": 221,
+   "unresolvable_frames": 221,
+   "window": [
+    1,
+    299
+   ]
+  },
+  "R2_SYO_MAR_C032": {
+   "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']",
+   "status": "RUN_REFUSED"
+  }
+ }
+}

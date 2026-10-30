@@ -1,0 +1,76 @@
+import subprocess, sys, pathlib, json
+ROOT = pathlib.Path("/tmp/mut5")
+T = "player_tracker_rb/target.py"
+P = "player_tracker_rb/population.py"
+TESTS = ["tests_rb/test_seed_association.py", "tests_rb/test_merge_guard.py", "tests_rb/test_population.py"]
+M = {
+ "S1_drop_competitor_check": [(T, "            if others:\n", "            if False:\n")],
+ "S2_drop_multi_ok_ambiguity": [(T, "            if len(ok) > 1:\n", "            if False:\n")],
+ "S3_drop_feet_line": [(T, '                  and abs(g["bottom_gap_h"]) <= c.get("seed_contain_max_bottom_gap")]',
+                        '                  ]')],
+ "S4_feet_line_one_sided": [(T, 'abs(g["bottom_gap_h"]) <=', 'g["bottom_gap_h"] <=')],
+ "S5_drop_width_ratio": [(T, '                  and g["w_ratio"] >= c.get("seed_contain_min_width_ratio")\n', '')],
+ "S6_drop_dy_centre": [(T, '                  and abs(g["dy_h"]) <= c.get("seed_contain_max_centre_offset")\n', '')],
+ "S7_drop_dx_centre": [(T, '                  and abs(g["dx_h"]) <= c.get("seed_contain_max_centre_offset")\n', '')],
+ "S8_drop_height_ratio": [(T, '                  and g["h_ratio"] >= c.get("seed_contain_min_height_ratio")\n', '')],
+ "S9_pick_iou_best_not_contained": [(T, "            k = ok[0]\n", "            k = k if k in ok else ok[0]\n            k = ok[-1]\n")],
+ "S10_contain_min_0.5": [(T, 'g["contain"] >= c.get("seed_contain_min")', 'g["contain"] >= 0.5')],
+ "S11_competitor_counts_self_only_when_ok": [(T, 'if i != k and g["contain"] >= c.get("seed_contain_competitor_max")', 'if i != k and i in ok')],
+ "T1_size_anomaly_not_abstained": [(T, "            merged = True       # an uncorroborated", "            merged = merged     # an uncorroborated")],
+ "T2_target_bank_accepts_anomaly": [(T, "P.NESTED, P.ALTERNATIVE, P.SIZE_ANOMALY)", "P.NESTED, P.ALTERNATIVE)")],
+ "T3_pop_bank_accepts_anomaly": [(P, "CONTAINS_OTHER, NESTED, MERGE_LINEAGE, SIZE_ANOMALY):", "CONTAINS_OTHER, NESTED, MERGE_LINEAGE):")],
+ "T4_bank_anomaly_both": [(T, "P.NESTED, P.ALTERNATIVE, P.SIZE_ANOMALY)", "P.NESTED, P.ALTERNATIVE)"),
+                          (P, "CONTAINS_OTHER, NESTED, MERGE_LINEAGE, SIZE_ANOMALY):", "CONTAINS_OTHER, NESTED, MERGE_LINEAGE):")],
+ "T5_no_continuity_broken": [(T, "                    continuity_broken = True\n", "                    continuity_broken = False\n")],
+ "T6_continuity_broken_keeps_tracklet": [(T, "                    self._tracklet, self._anomaly_tracklet = None, None\n", "                    self._anomaly_tracklet = None\n")],
+ "T7_continuity_state_tracking": [(T, "                state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]\n            elif tv", "                state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]\n                continuity_broken = False\n            if continuity_broken: pass\n            elif tv")],
+ "P1_partial_clears_anomaly": [(P, "                                   and hr >= c.get(\"population_partial_height_ratio\") and not edge[i])",
+                                "                                   )")],
+ "P2_edge_clears_anomaly": [(P, "and hr >= c.get(\"population_partial_height_ratio\") and not edge[i])", "and hr >= c.get(\"population_partial_height_ratio\"))")],
+ "P3_frames_not_seconds": [(P, "tr.anomaly_since, tr.frozen_ref, tr.clear_since = t, refs.get(tid), None", "tr.anomaly_since, tr.frozen_ref, tr.clear_since = rel_frame / 30.0, refs.get(tid), None"),
+                           (P, "elapsed = t - tr_i.anomaly_since if active else 0.0", "elapsed = rel_frame / 30.0 - tr_i.anomaly_since if active else 0.0")],
+ "P4_clear_frames_not_seconds": [(P, "                        tr.clear_since = t\n", "                        tr.clear_since = rel_frame / 30.0\n"),
+                                 (P, "held = t - tr.clear_since <", "held = rel_frame / 30.0 - tr.clear_since <")],
+ "P5_skip_time_escalation": [(P, "elif active and ((size_reasons and elapsed >= c.get(\"merged_anomaly_max_s\"))", "elif active and ((False)")],
+ "P6_skip_touch_escalation": [(P, "                                     or (second_body[i] and not near_single)):", "                                     ):")],
+ "P7_one_frame_clears": [(P, "held = t - tr.clear_since < c.get(\"merged_anomaly_clear_s\")", "held = False")],
+ "P8_ref_not_frozen": [(P, "        if tr.anomaly_since is not None and tr.frozen_ref is not None:\n            return tr.frozen_ref", "        if False:\n            return tr.frozen_ref")],
+ "P9_no_fallback_ref_after": [(P, "            return tr.frozen_ref                       # after an anomaly", "            return None                       # after an anomaly")],
+ "P10_memory_not_corroboration": [(P, "or any(m_.tracklet_id != own_tid[i] and m_.position_valid and _touch(bi, m_.last_box)\n                                     for m_ in self._memory))", ")")],
+ "R1_memory_across_cut": [(P, "and m_.position_valid and _touch(bi, m_.last_box)", "and _touch(bi, m_.last_box)")],
+ "R2_clear_ignores_gap": [(P, "if tr.clear_since is None or tr.last_obs_frame != self._last_frame:", "if tr.clear_since is None:")],
+ "R3_stale_anomaly_tracklet": [(T, "        if self._anomaly_tracklet != self._tracklet:\n", "        if False:\n")],
+ "P11_live_pred_not_corroboration": [(P, "                              or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) for tr in live)\n", "")],
+ "P12_detections_not_corroboration": [(P, "            second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) for j in bodies)", "            second_body[i] = (False")],
+ "P13_no_uncorroborated_cap": [(P, "(second_body[i] or area_rel >= c.get(\"merged_uncorroborated_area_ratio\"))", "(second_body[i])")],
+ "P14_nested_is_corroboration": [(P, "any(j != i and group[j] != group[i] and _touch", "any(j != i and _touch")],
+ "P15_frozen_ref_not_camera_scaled": [(P, "                        tr.frozen_ref = (tr.frozen_ref[0] * camera.scale, tr.frozen_ref[1] * camera.scale)\n", "                        pass\n")],
+ "P16_anomaly_motion_not_held": [(P, "                tr.motion = self._mm.update(tr.motion, boxes[i], t, partial=True)", "                tr.motion = self._mm.update(tr.motion, boxes[i], t, partial=partial[i])")],
+ "P17_anomaly_sizes_appended": [(P, "                size_anomaly.add(i)\n", "                size_anomaly.add(i)\n                tr.sizes.append((t,) + _wh(boxes[i]))\n")],
+ "P18_flag_not_emitted_on_obs": [(P, "                if i in size_anomaly:\n                    fl.append(SIZE_ANOMALY)\n", "")],
+ "P19_aspect_not_in_clear": [(P, "                                   and aspect_rel <= c.get(\"merged_anomaly_clear_area_ratio\")\n", "")],
+}
+only = sys.argv[1:] or list(M)
+extra = []
+res = {}
+for name in only:
+    edits = M[name]
+    orig = {}
+    ok = True
+    for f, a, b in edits:
+        p = ROOT / f
+        s = orig.setdefault(f, p.read_text()) if f not in orig else (ROOT / f).read_text()
+        if s.count(a) != 1:
+            print(name, "PATTERN MISS", f, s.count(a), repr(a[:60])); ok = False; break
+        p.write_text(s.replace(a, b))
+    if ok:
+        r = subprocess.run(["/home/claude/venv_r2dev/bin/python", "-m", "pytest", "-p", "no:cacheprovider", "-q",
+                            "-x" if False else "-q", *TESTS], cwd=ROOT, capture_output=True, text=True)
+        tail = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-300:]
+        failed = [l.split(" ")[1] for l in r.stdout.splitlines() if l.startswith("FAILED")]
+        res[name] = {"rc": r.returncode, "tail": tail, "failed": failed}
+        print(name, "KILLED" if r.returncode else "SURVIVED", "|", tail, "|", "; ".join(x.split("::", 1)[-1] for x in failed)[:400], flush=True)
+    for f, s in orig.items():
+        (ROOT / f).write_text(s)
+subprocess.run(["git", "diff", "--stat"], cwd=ROOT)
+json.dump(res, open("/tmp/claude-0/-home-claude/0b644c0a-0dc8-5731-8a67-6cc5b77d2333/scratchpad/mut5_results.json", "w"), indent=1)

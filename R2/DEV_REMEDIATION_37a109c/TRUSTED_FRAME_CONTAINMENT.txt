@@ -1,0 +1,8 @@
+R2_MCFC_MIT_C006 trusted boxed 41 contained&centred 37 outliers [(336, 0.7, -0.08), (346, 0.86, -0.03), (347, 0.76, -0.12), (352, 0.85, -0.07)] | untrusted TRACKING boxed 0 contained&centred 0
+R2_MCFC_MIT_C016 trusted boxed 77 contained&centred 72 outliers [(390, 0.52, 0.1), (444, 0.73, 0.06), (489, 0.87, 0.0), (494, 0.89, 0.06), (496, 0.89, 0.05)] | untrusted TRACKING boxed 0 contained&centred 0
+R2_MCFC_MIT_C020 trusted boxed 58 contained&centred 54 outliers [(33, 0.84, -0.01), (38, 0.87, -0.01), (49, 0.85, -0.03), (174, 0.76, -0.15)] | untrusted TRACKING boxed 56 contained&centred 54
+R2_MCFC_MIT_C033 trusted boxed 51 contained&centred 50 outliers [(24, 0.86, 0.01)] | untrusted TRACKING boxed 0 contained&centred 0
+R2_SYO_MAR_C004 trusted boxed 25 contained&centred 25 outliers [] | untrusted TRACKING boxed 0 contained&centred 0
+R2_SYO_MAR_C012 trusted boxed 2 contained&centred 1 outliers [(46, 0.64, 0.11)] | untrusted TRACKING boxed 0 contained&centred 0
+R2_SYO_MAR_C016 trusted boxed 63 contained&centred 58 outliers [(96, 0.89, -0.07), (211, 0.86, -0.12), (215, 1.0, -0.16), (218, 0.79, -0.15), (220, 0.86, 0.08)] | untrusted TRACKING boxed 0 contained&centred 0
+R2_SYO_MAR_C021 trusted boxed 10 contained&centred 10 outliers [] | untrusted TRACKING boxed 0 contained&centred 0

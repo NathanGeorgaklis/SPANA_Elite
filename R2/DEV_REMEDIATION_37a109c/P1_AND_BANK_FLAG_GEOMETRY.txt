@@ -1,0 +1,15 @@
+R2_MCFC_MIT_C006 P1 clip_f 391 vis VISIBLE contact [] | IoU 0.29 contain 1.00 dx -0.04 dy -0.06 h 0.71 w 0.42 feet +0.20 | best other det IoU 0.18 contain 1.00 | state TRACKING trusted True
+R2_MCFC_MIT_C006 P1 clip_f 392 vis VISIBLE contact [] | IoU 0.28 contain 1.00 dx -0.00 dy -0.03 h 0.79 w 0.36 feet +0.13 | best other det IoU 0.43 contain 1.00 | state TRACKING trusted True
+R2_MCFC_MIT_C006 P1 clip_f 393 vis VISIBLE contact [] | IoU 0.27 contain 1.00 dx -0.03 dy -0.09 h 0.64 w 0.43 feet +0.27 | best other det IoU 0.45 contain 1.00 | state TRACKING trusted True
+R2_MCFC_MIT_C006 BANK clip_f 300 vis VISIBLE contact [] | IoU 0.42 contain 1.00 dx -0.02 dy +0.04 h 0.62 w 0.68 feet +0.15 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_MCFC_MIT_C016 BANK clip_f 360 vis VISIBLE contact [] | IoU 0.45 contain 1.00 dx +0.05 dy +0.02 h 0.82 w 0.55 feet +0.07 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_MCFC_MIT_C016 BANK clip_f 390 vis VISIBLE contact [] | IoU 0.44 contain 0.52 dx +0.10 dy +0.25 h 1.36 w 1.04 feet -0.43 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_MCFC_MIT_C033 P1 clip_f 105 vis PARTIAL contact [] | IoU 0.28 contain 0.91 dx +0.14 dy +0.04 h 0.80 w 0.40 feet +0.06 | best other det IoU 0.09 contain 0.87 | state TRACKING trusted True
+R2_SYO_MAR_C004 BANK clip_f 0 vis VISIBLE contact [] | IoU 0.46 contain 1.00 dx +0.00 dy +0.01 h 0.74 w 0.62 feet +0.12 | best other det IoU 0.03 contain 0.06 | state TRACKING trusted True
+R2_SYO_MAR_C004 BANK clip_f 24 vis VISIBLE contact [] | IoU 0.45 contain 1.00 dx +0.01 dy -0.03 h 0.73 w 0.62 feet +0.16 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_SYO_MAR_C004 BANK clip_f 48 vis VISIBLE contact [] | IoU 0.38 contain 1.00 dx -0.06 dy -0.06 h 0.69 w 0.54 feet +0.21 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_SYO_MAR_C016 BANK clip_f 90 vis VISIBLE contact [] | IoU 0.42 contain 1.00 dx +0.05 dy +0.00 h 0.74 w 0.57 feet +0.13 | best other det IoU 0.03 contain 0.16 | state TRACKING trusted True
+R2_SYO_MAR_C016 BANK clip_f 206 vis VISIBLE contact [] | IoU 0.44 contain 1.00 dx +0.03 dy -0.02 h 0.83 w 0.52 feet +0.10 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_SYO_MAR_C021 P1 clip_f 36 vis VISIBLE contact [] | IoU 0.27 contain 1.00 dx -0.03 dy -0.01 h 0.72 w 0.37 feet +0.15 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_SYO_MAR_C021 BANK clip_f 24 vis VISIBLE contact [] | IoU 0.38 contain 1.00 dx -0.03 dy +0.00 h 0.82 w 0.47 feet +0.09 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
+R2_SYO_MAR_C021 BANK clip_f 42 vis VISIBLE contact [] | IoU 0.37 contain 1.00 dx +0.01 dy -0.02 h 0.75 w 0.49 feet +0.15 | best other det IoU 0.00 contain 0.00 | state TRACKING trusted True
