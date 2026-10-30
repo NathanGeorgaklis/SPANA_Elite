@@ -538,16 +538,20 @@ PARAMS: Tuple[Param, ...] = (
        "UNVALIDATED.", 0.0, 1.0),
     _p("population_part_birth_containment", "float", "fraction of the smaller box's area",
        "A tracklet born with at least this fraction of the smaller of (its box, the box of a body observed in the "
-       "same frame, older and at least 1/population_partial_height_ratio taller) inside the other has UNPROVEN "
+       "same frame, older, with an established reference height at least 1/population_partial_height_ratio of "
+       "its height) inside the other has UNPROVEN "
        "distinctness from that body: possibly its part box, or a farther person partly behind it. It is a tracklet "
-       "and a competitor; when the older body keeps its own detection the younger is not a second MULTI_CLAIM "
-       "claimant, and neither corroborates a size change of the other. Proven distinct once the two are observed "
-       "in one frame overlapping less than this, or the younger is observed as tall as a whole body.",
+       "and a competitor; only when the older body's detection is its own whole box at its established single "
+       "size and the younger's predicted box lies wholly inside that body's extent is the younger not a second "
+       "MULTI_CLAIM claimant (as a NESTED part box), and a partner wholly inside never corroborates a size change. "
+       "Proven distinct once the two are observed in one frame overlapping less than this, or the younger is "
+       "observed as tall as a whole body (established reference height).",
        0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
        "NEW_R2 (R2 DEV remediation F3b). DEV 37a109c: 95 of 223 MULTI_CLAIM merge frames had a claimant born "
        ">= 0.5 inside another observed body; visually checked same-body part boxes were born 0.55-0.77 inside. "
-       "R1-E measured side-by-side people in contact at 0.33-0.62 (these start unproven when first seen that "
-       "close and become proven once seen apart). Must be <= population_nested_containment.", 0.0, 1.0),
+       "R1-E measured side-by-side people in contact at 0.33-0.62; a whole-height box is never a part (review "
+       "round 1), and part tests use the established reference height (review round 2). Must be <= "
+       "population_nested_containment.", 0.0, 1.0),
     _p("population_size_ref_window_s", "float", "s",
        "A tracklet's size reference is the median width and height of its non-partial observed boxes in this "
        "recent window (camera-scaled).", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",

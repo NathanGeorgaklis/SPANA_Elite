@@ -446,13 +446,20 @@ class TargetTracker:
                     changed = True
         return members
 
-    @staticmethod
-    def _unproven_partners(res: P.FrameResult, i: int) -> Set[str]:
-        """Tracklets whose distinctness from observation i's own tracklet is unproven (born substantially inside one
-        another's box and never seen apart: possibly the same body; population F3b)."""
-        tid = res.observations[i].tracklet_id
-        v = res.tracklet(tid) if tid else None
-        return set(v.unproven_distinct_from) if v is not None else set()
+    def _unproven_partners(self, res: P.FrameResult, i: int) -> Set[str]:
+        """Tracklets whose distinctness from observation i's own tracklet is unproven (a part-sized box born inside
+        it, never seen apart: possibly the same body; population F3b) AND whose current box lies wholly inside
+        observation i's box (population_nested_containment), exactly like a NESTED part box (review round 2)."""
+        o = res.observations[i]
+        v = res.tracklet(o.tracklet_id) if o.tracklet_id else None
+        if v is None:
+            return set()
+        out = set()
+        for u in v.unproven_distinct_from:
+            pv = res.tracklet(u)
+            if pv is not None and _cover(pv.box, o.bbox) >= self._cfg.get("population_nested_containment"):
+                out.add(u)
+        return out
 
     def _other_boxes(self, res: P.FrameResult, i: int, *, for_bank: bool = False) -> List[Box]:
         """Every other body's box for crop contamination: other observations outside i's nested group, and hidden
