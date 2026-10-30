@@ -45,7 +45,13 @@ Per frame (update), in order:
        UNRESOLVED_MERGE it lies in a merged region that still holds more bodies than have come out of it.
      A size reference is ESTABLISHED only once the tracklet's non-partial sizes span population_size_ref_min_s
      (median over population_size_ref_window_s); a box that merely covers another body is never size-tested
-     against that body. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
+     against that body. CORROBORATION (NEW_R2): for a box continuing its own tracklet outside any
+     merged region, AREA_RATIO / ASPECT_WIDE count only if a second body could be in it (another detection outside its
+     nested group, another tracklet's predicted box or a recently closed tracklet's last box touches it), or the growth
+     is ABRUPT against the body's immediately previous size (within merged_abrupt_max_age_s; none recent counts as
+     abrupt), or the area reaches merged_uncorroborated_area_ratio. Otherwise the box is a SIZE_ANOMALY: one body's
+     pose (limbs, stride) changed its box; it is not merged, it continues its tracklet, and it is never an appearance
+     sample. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
      RESOLVED (removed) when at least n separate single bodies are seen: bodies in it that are not merge-sized
@@ -136,6 +142,8 @@ AREA_RATIO = "AREA_RATIO"
 ASPECT_WIDE = "ASPECT_WIDE"
 PERSISTENT_MERGE = "PERSISTENT_MERGE"
 UNRESOLVED_MERGE = "UNRESOLVED_MERGE"
+SIZE_ANOMALY = "SIZE_ANOMALY"                # a single body's size changed past the merge-size tests with no
+#                                            corroboration of a second body: not a merge, never an appearance sample
 
 # bank refusals decided by the population (the bank adds its own)
 NOT_OBSERVED = "NOT_OBSERVED"
@@ -198,6 +206,7 @@ class Observation:
     possible_predecessors: Tuple[str, ...]
     max_iou_other: float                      # largest IoU with any other body this frame
     covered_fraction: float                   # fraction of this box covered by other bodies
+    second_body_possible: bool = True         # another body could be inside this box (merge corroboration)
 
     @property
     def ref(self) -> str:
@@ -214,7 +223,7 @@ class Observation:
                 "flags": list(self.flags),
                 "merge_reasons": list(self.merge_reasons), "claimants": list(self.claimants),
                 "possible_predecessors": list(self.possible_predecessors), "max_iou_other": self.max_iou_other,
-                "covered_fraction": self.covered_fraction}
+                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible}
 
 
 @dataclass(frozen=True)
@@ -637,6 +646,20 @@ class Population:
             for a, tr in enumerate(live):
                 for b, i in enumerate(track):
                     cont_pd[(tr.tid, i)] = float(cm[a, b])
+        # A second body COULD be inside box i if another body's box touches it: another detection outside i's nested
+        # group, another live tracklet's predicted box, or a recently closed tracklet's last box (a body that just
+        # disappeared). Size-only merge evidence needs this, or an abrupt growth, or a size no single body explains.
+        def _touch(a: Box, b: Box) -> bool:
+            return min(a[2], b[2]) > max(a[0], b[0]) and min(a[3], b[3]) > max(a[1], b[1])
+
+        own_tid = {i: assigned_d.get(i) for i in bodies}
+        second_body: Dict[int, bool] = {}
+        for i in bodies:
+            bi = boxes[i]
+            second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) for j in bodies)
+                              or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) for tr in live)
+                              or any(m_.tracklet_id != own_tid[i] and _touch(bi, m_.last_box) for m_ in self._memory))
+        size_anomaly: Set[int] = set()
         merge_reasons: Dict[int, List[str]] = {i: [] for i in track}
         claimants: Dict[int, List[str]] = {i: [] for i in track}
         partial: Dict[int, bool] = {}
@@ -727,6 +750,22 @@ class Population:
                     size_reasons.append(AREA_RATIO)
                 if aspect_rel > hi and hr >= c.get("population_partial_height_ratio"):
                     size_reasons.append(ASPECT_WIDE)
+                if size_reasons and i in assigned_d and i not in region_of and not second_body[i] \
+                        and (w * h) / (rw * rh) < c.get("merged_uncorroborated_area_ratio"):
+                    # a single body continuing its own tracklet, no possible second body: a size change is pose
+                    # (limbs, stride) unless it is ABRUPT against the body's immediately previous size (an unseen
+                    # second body merging in appears between consecutive observations)
+                    tr_i = by_tid[assigned_d[i]]
+                    prev = tr_i.sizes[-1] if tr_i.sizes else None
+                    if prev is None or t - prev[0] > c.get("merged_abrupt_max_age_s"):
+                        abrupt = True                    # nothing recent to compare with: stay conservative
+                    else:
+                        pw, ph = prev[1], prev[2]
+                        abrupt = ((w * h) / (pw * ph) >= c.get("merged_area_ratio")
+                                  or ((w / h) / (pw / ph) > hi and h / ph >= c.get("population_partial_height_ratio")))
+                    if not abrupt:
+                        size_reasons = []
+                        size_anomaly.add(i)
                 if size_reasons and i in region_of and not cl and i not in assigned_d:
                     size_reasons.append(PERSISTENT_MERGE)
                 merge_reasons[i].extend(size_reasons)
@@ -974,6 +1013,8 @@ class Population:
                     fl.append(CONTESTED)
                 if i in region_of:
                     fl.append(IN_MERGED_REGION)
+                if i in size_anomaly:
+                    fl.append(SIZE_ANOMALY)
                 if max_iou > 0 or cov > 0:
                     fl.append(OVERLAPS_OTHER)
             if edge[i]:
@@ -985,7 +1026,8 @@ class Population:
                                    absorbed=tuple(absorbed[i]), nested_in=nested_in[i], flags=tuple(fl),
                                    merge_reasons=tuple(merge_reasons.get(i, ())),
                                    claimants=tuple(claimants.get(i, ())), possible_predecessors=preds_i,
-                                   max_iou_other=max_iou, covered_fraction=cov))
+                                   max_iou_other=max_iou, covered_fraction=cov,
+                                   second_body_possible=second_body.get(i, True)))
 
         # ---- 8. views and bank eligibility ---------------------------------------------------------------
         views: List[TrackletView] = []
@@ -1024,8 +1066,10 @@ class Population:
                     fl.add(NESTED)
                 if tr.merge_lineage:
                     fl.add(MERGE_LINEAGE)
+                if SIZE_ANOMALY in o.flags:
+                    fl.add(SIZE_ANOMALY)
                 for flag in (CONTESTED, PARTIAL, TOUCHES_IMAGE_EDGE, DUPLICATE_ABSORBED, IN_MERGED_REGION,
-                             CONTAINS_OTHER, NESTED, MERGE_LINEAGE):
+                             CONTAINS_OTHER, NESTED, MERGE_LINEAGE, SIZE_ANOMALY):
                     if flag in fl:
                         refusals.append(flag)
                 if not (o.max_iou_other <= c.get("bank_contact_iou")

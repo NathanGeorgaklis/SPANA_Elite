@@ -210,7 +210,8 @@ class Result:
 
 def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: str = "TARGET",
         cfg: Optional[TrackerConfig] = None, fps: float = FPS, width: int = W, height: int = H,
-        visible_min: float = 0.35, pose_gain: float = 0.0) -> Result:
+        visible_min: float = 0.35, pose_gain: float = 0.0, seed_box=None) -> Result:
+    """seed_box: the human seed box at frame 0 (default: the seed person's rendered box, i.e. a tight box)."""
     cfg = cfg or TrackerConfig.default()
     pop = P.Population(cfg, width, height)
     ext = AppearanceExtractor(cfg, SignatureEmbedding(people, pose_gain))
@@ -225,7 +226,10 @@ def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: s
         else:
             cam = fr.camera if fr.camera is not None else motion_from_matrix([[1, 0, 0], [0, 1, 0]], width, height)
         res = pop.update(k, k / fps, cands, cam)
-        tf = tt.seed(res, img, fr.boxes[seed_name]) if k == 0 else tt.update(res, img)
+        if k == 0:
+            tf = tt.seed(res, img, seed_box if seed_box is not None else fr.boxes[seed_name])
+        else:
+            tf = tt.update(res, img)
         out_frames.append(tf)
         out_dets.append(ds)
         out_pops.append(res)
