@@ -345,6 +345,7 @@ class TargetTracker:
         self._bank = AppearanceBank(cfg, require_trust=True)
         self._motion: Optional[MotionState] = None
         self._sizes: List[Tuple[float, float, float]] = []   # (t, w, h px) of non-partial confirmed boxes
+        self._anomaly_tracklet: Optional[str] = None   # the target's tracklet while it carries a SIZE_ANOMALY
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
@@ -863,7 +864,21 @@ class TargetTracker:
             views = {v.tracklet_id: v for v in res.tracklets}
             closed = {cl.tracklet_id: cl for cl in res.closed}
             tv = views.get(self._tracklet) if self._tracklet else None
+            continuity_broken = False
             if tv is not None and tv.observed:
+                if P.SIZE_ANOMALY in res.observations[tv.detection_index].flags:
+                    self._anomaly_tracklet = self._tracklet
+                elif self._anomaly_tracklet == self._tracklet:
+                    # NEW_R2: the target's own tracklet carried a size anomaly (possibly an unseen second body in
+                    # its box) that has now ended. Geometry cannot say which body the tracklet holds now, so its
+                    # continuity is not identity evidence: the target comes back only through reacquisition (a new
+                    # episode, untrusted and never banked until contrast-verified; R1-G)
+                    continuity_broken = True
+                    self._tracklet, self._anomaly_tracklet = None, None
+                    log["continuity_broken"] = "SIZE_ANOMALY_ENDED"
+            if continuity_broken:
+                state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]
+            elif tv is not None and tv.observed:
                 # ---- ordinary association: continuation of the target's tracklet ----------------------------
                 ev = self._evaluate(cache, res, image, tv.detection_index, role=CONTINUATION, pred_box=pred_box,
                                     gate_h=gate_h, h=h, absence_s=absence)

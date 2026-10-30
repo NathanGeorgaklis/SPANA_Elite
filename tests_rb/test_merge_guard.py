@@ -23,6 +23,7 @@ import math
 import unittest
 
 from player_tracker_rb import population as P
+from player_tracker_rb import target as T
 from player_tracker_rb.config import TrackerConfig
 from tests_rb import _synth_scene as SS
 from tests_rb._synth_people import Frame, box_at, cand, run
@@ -141,6 +142,22 @@ class TestIntermittentAnomaly(unittest.TestCase):
 
     def test_union_with_one_partial_frame_every_half_second(self):
         self.check(self._union_run(lambda k: "P" if k % 15 == 14 else 2.0))
+
+    def test_partial_frames_during_an_anomaly_neither_end_nor_escalate_it(self):
+        # review round 3 M1: a short pose anomaly, then the lower body hidden for 1.5 s, then normal again: a partial
+        # box is not evidence of a second body, so it never becomes a merge (and the anomaly does not end on it)
+        frames = [Frame([cand(b)], [("TARGET",)]) for b in widening(30, 15, n_hold=2)]
+        part = (363.0, 320.0, 437.0, 368.0)                      # the same wide box, lower body hidden (0.6 h)
+        frames += [Frame([cand(part)], [("TARGET",)]) for _ in range(45)]
+        frames += [Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]) for _ in range(30)]
+        rn = run(frames, fps=FPS)
+        codes = "".join(code(r.observations[0]) for r in rn.results)
+        self.assertNotIn("M", codes)
+        first = codes.index("A")
+        self.assertNotIn(".", codes[first:first + 17 + 45], "partial frames do not end the anomaly")
+        self.assertTrue(codes.endswith("." * 10))
+        v = rn.results[-1].tracklet(rn.results[-1].observations[0].tracklet_id)
+        self.assertNotIn(P.MERGE_LINEAGE, v.flags)
 
     def test_running_stride_returning_to_normal_width_never_escalates(self):
         # a single body's stride: width oscillates between x1.0 and x2.0 of its standing width, period 0.8 s; each
@@ -271,17 +288,41 @@ class TestTargetLevel(unittest.TestCase):
     PPL = SS.make_people([("TARGET", (200, 60, 40), 1.0), ("OTHER", (40, 60, 200), 1.0)])
 
     def test_target_abstains_on_its_pose_widening_and_recovers_without_poison(self):
-        boxes = widening(30, 15, w0=40.0, w1=92.0, h=100.0, cx=300.0, cy=400.0, n_hold=6, n_back=30)
+        boxes = widening(30, 15, w0=40.0, w1=92.0, h=100.0, cx=300.0, cy=400.0, n_hold=6, n_back=60)
         r = SS.run([SS.SceneFrame({"TARGET": b}) for b in boxes], self.PPL)
         anomalous = [k for k, p in enumerate(r.pops) if P.SIZE_ANOMALY in p.observations[0].flags]
         self.assertTrue(anomalous)
         for k in anomalous:
             self.assertFalse(r.frames[k].identity_trusted, f"frame {k}: never trusted on a size anomaly")
             self.assertNotEqual(r.frames[k].decision.get("bank", {}).get("status"), "ACCEPTED")
-        self.assertTrue(all(f.identity_trusted for f in r.frames[-10:]), "trusted again once the box is normal")
-        self.assertEqual(r.frames[-1].target_episode, 1, "recovered by continuation, not by reacquisition")
+        # review round 3 H1: after the anomaly the tracklet's continuity is not identity evidence; the target comes
+        # back through reacquisition as a new episode (here unverified: no confusable competitor to contrast)
+        self.assertEqual(r.states()[-10:], [T.TRACKING] * 10, "the body is followed again (not poisoned)")
+        self.assertGreaterEqual(r.frames[-1].target_episode, 2)
+        self.assertTrue(any(f.decision.get("continuity_broken") == "SIZE_ANOMALY_ENDED" for f in r.frames))
         self.assertTrue(r.bank_is_pure())
         self.assertEqual(r.swaps(), [])
+
+    def test_unseen_same_kit_body_after_a_union_is_never_trusted(self):
+        # review round 3 H1: an undetected same-kit person comes out from behind the target (a union for 0.5 s), then
+        # steps in front of it and hides it. The anomaly evidence must not be thrown away: nothing after the union
+        # phase may be trusted on the other person, and the bank stays pure.
+        same = SS.make_people([("TARGET", (200, 60, 40), 1.0), ("OTHER", (200, 60, 40), 0.95)])
+        tb = SS.box_at(300, 400, 40, 100)
+        fr = [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(300, 395, 38, 95)}, order=("OTHER", "TARGET"),
+                            drop=("OTHER",)) for _ in range(40)]
+        fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(300 + 40 * (k + 1) / 15, 395, 38, 95)},
+                             order=("OTHER", "TARGET"), merge=(("TARGET", "OTHER"),)) for k in range(15)]
+        fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(302, 401, 41, 101)}, order=("TARGET", "OTHER"),
+                             drop=("TARGET",)) for _ in range(30)]
+        fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(302 + 3 * (k + 1), 401, 41, 101)},
+                             order=("TARGET", "OTHER"), drop=("TARGET",)) for k in range(30)]
+        r = SS.run(fr, same)
+        first_a = next(k for k, p in enumerate(r.pops) if p.observations and P.SIZE_ANOMALY in p.observations[0].flags)
+        trusted_on_other = [k for k in range(first_a, len(fr)) if r.frames[k].identity_trusted
+                            and r.dets[k][r.frames[k].detection_index].owners != ("TARGET",)]
+        self.assertEqual(trusted_on_other, [])
+        self.assertTrue(r.bank_is_pure())
 
     def _emerging(self, n_after):
         fr = []

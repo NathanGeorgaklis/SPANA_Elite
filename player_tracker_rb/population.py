@@ -54,8 +54,8 @@ Per frame (update), in order:
      (no merged region, no lineage); its size reference and motion size/velocity are held. Once started, EVERY box
      of that tracklet is a SIZE_ANOMALY until it has been near its held single-body size (merged_anomaly_clear_area_
      ratio, not partial) for merged_anomaly_clear_s; the held reference then stays the fallback reference until a new
-     one is established. An active anomaly that a second body touches, or that lasts merged_anomaly_max_s without
-     ending, is a merge (SUSTAINED_SIZE_ANOMALY). Nested boxes (part or alternative boxes of one body, or a
+     one is established. An active anomaly that a second body touches, or whose box is still merge-sized after
+     merged_anomaly_max_s, is a merge (SUSTAINED_SIZE_ANOMALY); partial or edge boxes neither end nor escalate it. Nested boxes (part or alternative boxes of one body, or a
      second body hidden inside it) are not corroboration: real footage carries tall same-body alternative boxes about
      once per frame; a union with a second person's box inside stays wide, never ends, and becomes a merge. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
@@ -783,7 +783,10 @@ class Population:
                     elapsed = t - tr_i.anomaly_since if active else 0.0
                     if size_reasons and (second_body[i] or area_rel >= c.get("merged_uncorroborated_area_ratio")):
                         pass                                 # corroborated: a merge (D11, unchanged)
-                    elif active and not near_single and (second_body[i] or elapsed >= c.get("merged_anomaly_max_s")):
+                    elif active and ((size_reasons and elapsed >= c.get("merged_anomaly_max_s"))
+                                     or (second_body[i] and not near_single)):
+                        # escalation needs merge-sized evidence now (or a second body touching it): a partial or
+                        # edge box is not evidence of a second body and neither ends nor escalates the anomaly
                         size_reasons = size_reasons or [SUSTAINED_SIZE_ANOMALY]
                     else:
                         anomaly_hold[i] = (bool(size_reasons), near_single)
