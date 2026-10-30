@@ -119,6 +119,31 @@ class TestSeedRule(unittest.TestCase):
         with self.assertRaises(T.SeedError):
             run(frames(1, {"TARGET": b}), self.ppl(), seed_box=sb)
 
+    def test_box_drawn_over_several_people_with_one_detected_is_refused(self):
+        # review M1: only the middle person is detected; the human box spans three bodies side by side
+        t = box_at(300, 400, 40, 100)
+        sb = (t[0] - 50, t[1] - 6, t[2] + 50, t[3] + 6)          # ~3.5 bodies wide
+        with self.assertRaises(T.SeedError):
+            run(frames(1, {"TARGET": t}), self.ppl(), seed_box=sb)
+
+    def test_smaller_farther_person_centred_in_the_box_is_refused_by_the_feet_line(self):
+        # review M2: the boxed person is not detected; a farther person, ~0.55 of the box height, stands near its
+        # centre (passes centring and height ratio) but their feet line is well above the box bottom
+        sb = box_at(300, 400, 60, 140)
+        a = box_at(300, 400 - 10, 30, 78)                     # passes every other containment check
+        g = T._seed_geometry(sb, a)
+        self.assertGreaterEqual(g["w_ratio"], CFG.get("seed_contain_min_width_ratio"))
+        self.assertGreaterEqual(g["h_ratio"], CFG.get("seed_contain_min_height_ratio"))
+        self.assertGreater(g["bottom_gap_h"], CFG.get("seed_contain_max_bottom_gap"))
+        with self.assertRaises(T.SeedError):
+            run(frames(1, {"PERSON_A": a}), self.ppl(("PERSON_A", KIT_B, 0.0)), seed_name="PERSON_A", seed_box=sb)
+
+    def test_looser_box_with_a_standing_margin_under_the_feet_is_still_accepted(self):
+        b = box_at(300, 400, 40, 100)
+        sb = (b[0] - 12, b[1] - 20, b[2] + 12, b[3] + 14)        # IoU 0.36; feet 0.11 seed heights above bottom
+        r = run(frames(2, {"TARGET": b}), self.ppl(), seed_box=sb)
+        self.assertEqual(r.frames[0].decision["seed_rule"], "CONTAINMENT")
+
 
 if __name__ == "__main__":
     unittest.main()

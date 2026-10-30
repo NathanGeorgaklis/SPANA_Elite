@@ -21,17 +21,18 @@ import sys
 
 
 def geometry(sb, b):
+    """The tracker's own seed geometry (player_tracker_rb.target._seed_geometry, so the measurement cannot drift from
+    the rule) plus IoU and the fraction of the seed box covered by the detection."""
+    from player_tracker_rb.target import _seed_geometry
+    g = dict(_seed_geometry(sb, b))
     ix = max(0.0, min(sb[2], b[2]) - max(sb[0], b[0]))
     iy = max(0.0, min(sb[3], b[3]) - max(sb[1], b[1]))
     inter = ix * iy
     a_s = (sb[2] - sb[0]) * (sb[3] - sb[1])
     a_b = (b[2] - b[0]) * (b[3] - b[1])
-    sh = sb[3] - sb[1]
-    return {"iou": inter / (a_s + a_b - inter) if a_s + a_b - inter > 0 else 0.0,
-            "contain": inter / a_b if a_b > 0 else 0.0, "cover": inter / a_s if a_s > 0 else 0.0,
-            "dx_h": ((b[0] + b[2]) / 2 - (sb[0] + sb[2]) / 2) / sh,
-            "dy_h": ((b[1] + b[3]) / 2 - (sb[1] + sb[3]) / 2) / sh,
-            "h_ratio": (b[3] - b[1]) / sh, "w_ratio": (b[2] - b[0]) / (sb[2] - sb[0])}
+    g["iou"] = inter / (a_s + a_b - inter) if a_s + a_b - inter > 0 else 0.0
+    g["cover"] = inter / a_s if a_s > 0 else 0.0
+    return g
 
 
 def main(repo, clips_dir, out_json):
@@ -76,8 +77,9 @@ def main(repo, clips_dir, out_json):
     for cid, v in out.items():
         print(cid, "seed h", round(v["seed_bbox"][3] - v["seed_bbox"][1], 1))
         for b in v["overlapping_bodies"]:
-            print("    iou %.3f contain %.3f cover %.3f dx %+.3f dy %+.3f h %.3f w %.3f %s" % (
-                b["iou"], b["contain"], b["cover"], b["dx_h"], b["dy_h"], b["h_ratio"], b["w_ratio"], b["flags"]))
+            print("    iou %.3f contain %.3f cover %.3f dx %+.3f dy %+.3f h %.3f w %.3f feet %.3f %s" % (
+                b["iou"], b["contain"], b["cover"], b["dx_h"], b["dy_h"], b["h_ratio"], b["w_ratio"],
+                b["bottom_gap_h"], b["flags"]))
 
 
 if __name__ == "__main__":

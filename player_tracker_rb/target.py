@@ -323,7 +323,8 @@ class _Verification:
 
 def _seed_geometry(seed_box: Sequence[float], box: Sequence[float]) -> Dict[str, float]:
     """Scale-free geometry of a detection against the human seed box: the fraction of the detection inside the seed
-    box, the centre offset in seed-box heights (x, y), and the height ratio detection / seed box."""
+    box, the centre offset in seed-box heights (x, y), height and width ratios detection / seed box, and the gap
+    from the detection's bottom edge (feet line) up to the seed box's bottom edge, in seed heights."""
     sx0, sy0, sx1, sy1 = (float(v) for v in seed_box)
     bx0, by0, bx1, by1 = (float(v) for v in box)
     inter = max(0.0, min(sx1, bx1) - max(sx0, bx0)) * max(0.0, min(sy1, by1) - max(sy0, by0))
@@ -332,7 +333,8 @@ def _seed_geometry(seed_box: Sequence[float], box: Sequence[float]) -> Dict[str,
     return {"contain": inter / area if area > 0 else 0.0,
             "dx_h": ((bx0 + bx1) - (sx0 + sx1)) / 2.0 / sh,
             "dy_h": ((by0 + by1) - (sy0 + sy1)) / 2.0 / sh,
-            "h_ratio": (by1 - by0) / sh}
+            "h_ratio": (by1 - by0) / sh, "w_ratio": (bx1 - bx0) / (sx1 - sx0),
+            "bottom_gap_h": (sy1 - by1) / sh}
 
 class TargetTracker:
     def __init__(self, cfg: TrackerConfig, population: P.Population, extractor: AppearanceExtractor):
@@ -343,7 +345,6 @@ class TargetTracker:
         self._bank = AppearanceBank(cfg, require_trust=True)
         self._motion: Optional[MotionState] = None
         self._sizes: List[Tuple[float, float, float]] = []   # (t, w, h px) of non-partial confirmed boxes
-        self._size_anomalous: Set[int] = set()   # this frame: detections merge-sized only by pose (never banked)
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
@@ -502,27 +503,15 @@ class TargetTracker:
         # D11 at the target level: a box much larger or wider than the target's own established recent size may
         # hold two people (applied while position/scale continuity holds)
         ref = self._size_ref(t) if (self._position_valid and pred_box is not None) else None
+        if not merged and P.SIZE_ANOMALY in o.flags:
+            merged = True       # an uncorroborated size change may hold an unseen second body: abstain (NEW_R2)
         if not merged and ref is not None:
             w, hh = _wh(o.bbox)
             lo, hi = c.get("merged_aspect_band")
             aspect_rel = (w / hh) / (ref[0] / ref[1])
-            area_rel = (w * hh) / (ref[0] * ref[1])
-            if area_rel >= c.get("merged_area_ratio") or \
+            if (w * hh) / (ref[0] * ref[1]) >= c.get("merged_area_ratio") or \
                     (aspect_rel > hi and hh / ref[1] >= c.get("population_partial_height_ratio")):
-                # corroboration as in the population (NEW_R2): size-only evidence is a merge only if a second body
-                # could be in the box, or the growth is abrupt against the target's previous confirmed size, or no
-                # single body's pose explains it; otherwise it is a pose SIZE_ANOMALY (never banked)
-                prev = self._sizes[-1] if self._sizes else None
-                if prev is None or t - prev[0] > c.get("merged_abrupt_max_age_s"):
-                    abrupt = True
-                else:
-                    pw, ph = prev[1], prev[2]
-                    abrupt = ((w * hh) / (pw * ph) >= c.get("merged_area_ratio")
-                              or ((w / hh) / (pw / ph) > hi and hh / ph >= c.get("population_partial_height_ratio")))
-                if o.second_body_possible or abrupt or area_rel >= c.get("merged_uncorroborated_area_ratio"):
-                    merged = True
-                else:
-                    self._size_anomalous.add(i)
+                merged = True
         if merged:
             details.append("MERGED")
         # position (gate) and motion veto, only while positional continuity is valid
@@ -657,8 +646,6 @@ class TargetTracker:
         t = res.time_s
         o = res.observations[i]
         refusals: List[str] = [f for f in _BANK_REFUSE_FLAGS if f in o.flags]
-        if i in self._size_anomalous and P.SIZE_ANOMALY not in refusals:
-            refusals.append(P.SIZE_ANOMALY)
         v = res.tracklet(o.tracklet_id) if o.tracklet_id else None
         if v is not None and P.MERGE_LINEAGE in v.flags:
             refusals.append(P.MERGE_LINEAGE)
@@ -769,10 +756,13 @@ class TargetTracker:
                   if g["contain"] >= c.get("seed_contain_min")
                   and abs(g["dx_h"]) <= c.get("seed_contain_max_centre_offset")
                   and abs(g["dy_h"]) <= c.get("seed_contain_max_centre_offset")
-                  and g["h_ratio"] >= c.get("seed_contain_min_height_ratio")]
+                  and g["h_ratio"] >= c.get("seed_contain_min_height_ratio")
+                  and g["w_ratio"] >= c.get("seed_contain_min_width_ratio")
+                  and abs(g["bottom_gap_h"]) <= c.get("seed_contain_max_bottom_gap")]
             if not ok:
                 raise SeedError(f"no detection overlaps the seed box by IoU >= {c.get('seed_min_iou')} "
-                                f"(best {float(ious[k]):.3f}) and none is contained, centred and body-sized in it")
+                                f"(best {float(ious[k]):.3f}) and none is contained, centred, body-sized and on the "
+                                f"seed box's feet line")
             if len(ok) > 1:
                 raise SeedError(f"seed box is ambiguous: {len(ok)} detections are contained in it")
             k = ok[0]
@@ -825,7 +815,6 @@ class TargetTracker:
         self._known_others &= alive                          # bounded: only bodies the population still knows
         self._target_tracklets &= alive | ({self._tracklet} if self._tracklet else set())
         prev_state = self._state
-        self._size_anomalous = set()
         cache: Dict[int, AppearanceFeature] = {}
         log: Dict[str, Any] = {"from": prev_state}
 

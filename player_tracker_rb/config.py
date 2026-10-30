@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_abrupt_max_age_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -170,7 +170,8 @@ PARAMS: Tuple[Param, ...] = (
        "Containment seed path: the detection must lie at least this much inside the human seed box (the human box is "
        "taken as the outer bound of the boxed body; the margin allows limbs a tight detector box may include).",
        0.9, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
-       "NEW_R2 (R2 DEV remediation F1). DEV seeds: the matching detection measured 0.87-1.00 inside the seed box",
+       "NEW_R2 (R2 DEV remediation F1). DEV seeds refused by IoU: the matching detection measured 1.00 inside the "
+       "seed box (all four); seeds accepted by IoU measured 0.87-1.00",
        0.5, 1.0),
     _p("seed_contain_max_centre_offset", "float", "seed-box heights",
        "Containment seed path: the detection's centre must lie within this distance of the seed box centre, in each "
@@ -182,8 +183,18 @@ PARAMS: Tuple[Param, ...] = (
        "Containment seed path: the detection must be at least this tall relative to the seed box. A much smaller "
        "body inside the human box is more likely a farther person or a fragment than the boxed body.",
        0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
-       "NEW_R2 (R2 DEV remediation F1). DEV seeds: matching detections measured 0.62-0.94 of the seed height", 0.0,
-       1.0),
+       "NEW_R2 (R2 DEV remediation F1). DEV seeds: matching detections measured 0.62-0.94 of the seed height; a "
+       "farther, smaller person is also excluded by seed_contain_max_bottom_gap (feet line)", 0.0, 1.0),
+    _p("seed_contain_min_width_ratio", "float", "ratio to the seed box width",
+       "Containment seed path: the detection must be at least this wide relative to the seed box. A human box much "
+       "wider than one body (drawn over several people) is not a looser box around one body.", 0.45, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
+       "NEW_R2 (R2 DEV remediation F1, review M1). DEV seeds refused by IoU: 0.55-0.68 of the seed width", 0.0, 1.0),
+    _p("seed_contain_max_bottom_gap", "float", "seed-box heights",
+       "Containment seed path: the detection's bottom edge (feet line) must be within this distance of the seed box's "
+       "bottom edge. A smaller person standing farther away inside the human box has a higher feet line.", 0.2, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
+       "NEW_R2 (R2 DEV remediation F1, review M2). DEV seeds refused by IoU: 0.07-0.16 seed heights", 0.0, 1.0),
     _p("seed_contain_competitor_max", "float", "fraction of the other detection's area",
        "Containment seed path: if any other body detection lies at least this much inside the seed box, the box may "
        "hold two people and the seed is refused as ambiguous (fail closed). Applies only to the containment path; "
@@ -560,19 +571,18 @@ PARAMS: Tuple[Param, ...] = (
        1.0, 100.0),
     _p("merged_uncorroborated_area_ratio", "float", "ratio to a body's established recent median area",
        "Size-only merge evidence (AREA_RATIO / ASPECT_WIDE) on a single body continuing its own tracklet, with no "
-       "possible second body touching its box and no abrupt growth, is a SIZE_ANOMALY (pose: limbs, stride), not a "
-       "merge, unless the box is at least this multiple of the reference area: a growth no single body's pose explains "
+       "possible second body touching its box, is a SIZE_ANOMALY (abstained on, not closed; see merged_anomaly_max_s) "
+       "unless the box is at least this multiple of the reference area: a growth no single body's pose explains "
        "(two bodies side by side are about x2).", 2.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged",
        "NEW_R2 (R2 DEV remediation F3). Development footage: a single isolated body's pose widened its box up to x1.65 "
        "its 1 s median area at constant height; F2 historical merged box x3.1", 1.0, 100.0),
-    _p("merged_abrupt_max_age_s", "float", "s",
-       "For the corroboration of size-only merge evidence: a growth is ABRUPT (an unseen second body merging appears "
-       "between consecutive observations) when the box is merge-sized against the body's immediately previous size "
-       "(merged_area_ratio / merged_aspect_band). That previous size counts only if it is at most this old; an older "
-       "one cannot show continuity, so the growth is treated as abrupt (conservative).", 0.1, N, "DESIGN_CHOICE",
-       UNV, "BEHAVIOURAL", "merged",
-       "NEW_R2 (R2 DEV remediation F3). Development footage: consecutive observations of isolated bodies grew by "
-       ">= x1.6 area in 1 of 7,315 pairs (25-60 fps)", 0.0, 2.0),
+    _p("merged_anomaly_max_s", "float", "s",
+       "An uncorroborated SIZE_ANOMALY (single body, no possible second body, below merged_uncorroborated_area_ratio) "
+       "that lasts this long is treated as a merge (the tracklet closes; merged region and lineage as for any merge). "
+       "Shorter anomalies are abstained on (never trusted or banked) without closing the tracklet. Seconds, so the rule "
+       "is frame-rate free.", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged",
+       "NEW_R2 (R2 DEV remediation F3, review H1/H3): longer than a single limb extension or stride; an unseen second "
+       "body that stays merged is still merged after this long", 0.0, 10.0),
     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
        "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 100.0),
@@ -768,6 +778,8 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
             errs.append(f"{band} must be (low, high) with low < high")
     if v["merged_aspect_band"][0] >= 1.0 or v["merged_aspect_band"][1] <= 1.0:
         errs.append("merged_aspect_band must contain 1.0 (the target's own aspect)")
+    if v["merged_uncorroborated_area_ratio"] < v["merged_area_ratio"]:
+        errs.append("merged_uncorroborated_area_ratio must be >= merged_area_ratio")
     if v["population_merged_region_hold_s"] > v["population_closed_memory_s"]:
         errs.append("population_merged_region_hold_s must be <= population_closed_memory_s")
     if v["population_max_gap_s"] > v["population_max_unmatched_s"]:

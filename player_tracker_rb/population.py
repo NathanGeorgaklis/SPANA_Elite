@@ -46,12 +46,12 @@ Per frame (update), in order:
      A size reference is ESTABLISHED only once the tracklet's non-partial sizes span population_size_ref_min_s
      (median over population_size_ref_window_s); a box that merely covers another body is never size-tested
      against that body. CORROBORATION (NEW_R2): for a box continuing its own tracklet outside any
-     merged region, AREA_RATIO / ASPECT_WIDE count only if a second body could be in it (another detection outside its
-     nested group, another tracklet's predicted box or a recently closed tracklet's last box touches it), or the growth
-     is ABRUPT against the body's immediately previous size (within merged_abrupt_max_age_s; none recent counts as
-     abrupt), or the area reaches merged_uncorroborated_area_ratio. Otherwise the box is a SIZE_ANOMALY: one body's
-     pose (limbs, stride) changed its box; it is not merged, it continues its tracklet, and it is never an appearance
-     sample. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
+     merged region, AREA_RATIO / ASPECT_WIDE make it merged only if a second body could be in it (another detection
+     outside its nested group, a nested box as tall as a whole body, another tracklet's predicted box or a recently
+     closed tracklet's last box touches it), or its area reaches merged_uncorroborated_area_ratio, or the anomaly has
+     lasted merged_anomaly_max_s. Otherwise it is a SIZE_ANOMALY: one body's pose or an unseen second body (geometry
+     cannot tell). It is never an appearance sample and the target never confirms on it; the tracklet is NOT closed
+     (no merged region, no lineage); its size reference and motion size/velocity are held until the anomaly ends. A merged detection is never a tracklet: its claimants are closed (MERGED_CONTACT); it
      stays an observation (and a competitor) flagged MERGED_SUSPECTED. Its box becomes a merged region (camera-
      compensated) holding n >= 2 bodies, whose reference is its largest established claimant size. The region is
      RESOLVED (removed) when at least n separate single bodies are seen: bodies in it that are not merge-sized
@@ -377,6 +377,8 @@ class _Tracklet:
     last_obs_frame: int
     bank: AppearanceBank
     sizes: List[Tuple[float, float, float]]  # (t, w, h) of NON-partial observations (camera-scaled)
+    anomaly_since: Optional[float] = None    # start of the current uncorroborated size anomaly (NEW_R2)
+    frozen_ref: Optional[Tuple[float, float]] = None   # size reference held while the anomaly lasts (NEW_R2)
     contact_during_gap: bool = False
     last_sample_t: Optional[float] = None
     predecessors: Tuple[str, ...] = ()
@@ -481,6 +483,8 @@ class Population:
     def _size_ref(self, tr: _Tracklet, t: float) -> Optional[Tuple[float, float]]:
         """Median (w, h) of the tracklet's non-partial observations within population_size_ref_window_s, or None
         if they do not yet span population_size_ref_min_s (not ESTABLISHED)."""
+        if tr.anomaly_since is not None and tr.frozen_ref is not None:
+            return tr.frozen_ref                       # never adopt the anomalous (possibly two-body) size
         c = self._cfg
         tr.sizes = [x for x in tr.sizes if t - x[0] <= c.get("population_size_ref_window_s")]
         if len(tr.sizes) < 2 or tr.sizes[-1][0] - tr.sizes[0][0] < c.get("population_size_ref_min_s"):
@@ -538,6 +542,8 @@ class Population:
                 tr.motion = self._mm.apply_camera(tr.motion, camera)
                 if camera.compensated:
                     tr.sizes = [(ts, w * camera.scale, h * camera.scale) for ts, w, h in tr.sizes]
+                    if tr.frozen_ref is not None:
+                        tr.frozen_ref = (tr.frozen_ref[0] * camera.scale, tr.frozen_ref[1] * camera.scale)
             if camera.compensated:
                 for rg in self._regions:
                     rg.box = camera.warp_box(rg.box)
@@ -656,7 +662,12 @@ class Population:
         second_body: Dict[int, bool] = {}
         for i in bodies:
             bi = boxes[i]
+            hi_ = _wh(bi)[1]
             second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) for j in bodies)
+                              # a nested box as tall as a whole body is another person inside, not a part box
+                              or any(j != i and group[j] == group[i] and _touch(bi, boxes[j])
+                                     and _wh(boxes[j])[1] >= c.get("population_partial_height_ratio") * hi_
+                                     for j in bodies)
                               or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) for tr in live)
                               or any(m_.tracklet_id != own_tid[i] and _touch(bi, m_.last_box) for m_ in self._memory))
         size_anomaly: Set[int] = set()
@@ -752,18 +763,12 @@ class Population:
                     size_reasons.append(ASPECT_WIDE)
                 if size_reasons and i in assigned_d and i not in region_of and not second_body[i] \
                         and (w * h) / (rw * rh) < c.get("merged_uncorroborated_area_ratio"):
-                    # a single body continuing its own tracklet, no possible second body: a size change is pose
-                    # (limbs, stride) unless it is ABRUPT against the body's immediately previous size (an unseen
-                    # second body merging in appears between consecutive observations)
+                    # a single body continuing its own tracklet with no possible second body: pose (limbs, stride)
+                    # or an unseen second body; geometry cannot tell. It is a SIZE_ANOMALY: never trusted or banked
+                    # (identity abstains), the size reference is held, and the tracklet is not closed. If it lasts
+                    # merged_anomaly_max_s it is treated as a merge (conservative).
                     tr_i = by_tid[assigned_d[i]]
-                    prev = tr_i.sizes[-1] if tr_i.sizes else None
-                    if prev is None or t - prev[0] > c.get("merged_abrupt_max_age_s"):
-                        abrupt = True                    # nothing recent to compare with: stay conservative
-                    else:
-                        pw, ph = prev[1], prev[2]
-                        abrupt = ((w * h) / (pw * ph) >= c.get("merged_area_ratio")
-                                  or ((w / h) / (pw / ph) > hi and h / ph >= c.get("population_partial_height_ratio")))
-                    if not abrupt:
+                    if tr_i.anomaly_since is None or t - tr_i.anomaly_since < c.get("merged_anomaly_max_s"):
                         size_reasons = []
                         size_anomaly.add(i)
                 if size_reasons and i in region_of and not cl and i not in assigned_d:
@@ -879,9 +884,16 @@ class Population:
             fl: Set[str] = set()
             if tr.last_obs_frame != self._last_frame:
                 fl.add(REASSOCIATED_AFTER_GAP)
-            tr.motion = self._mm.update(tr.motion, boxes[i], t, partial=partial[i])
-            if not partial[i]:
-                tr.sizes.append((t,) + _wh(boxes[i]))
+            if i in size_anomaly:
+                # hold the reference and the motion size/velocity: the anomalous box may hold two bodies
+                if tr.anomaly_since is None:
+                    tr.anomaly_since, tr.frozen_ref = t, refs.get(tid)
+                tr.motion = self._mm.update(tr.motion, boxes[i], t, partial=True)
+            else:
+                tr.anomaly_since, tr.frozen_ref = None, None
+                tr.motion = self._mm.update(tr.motion, boxes[i], t, partial=partial[i])
+                if not partial[i]:
+                    tr.sizes.append((t,) + _wh(boxes[i]))
             tr.last_obs_frame = rel_frame
             tr.contact_during_gap = False
             observed_now[tid] = i

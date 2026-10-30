@@ -282,11 +282,20 @@ class TestMerged(Base):
         self.check_all(rn)
 
     def test_area_ratio_single_claimant(self):
+        # R2 DEV remediation F3 (NEW_R2): with no possible second body touching the box, size-only evidence is first a
+        # SIZE_ANOMALY (abstained on: not an appearance sample; the tracklet is not closed), and becomes a merge with
+        # its AREA_RATIO reason once it lasts merged_anomaly_max_s. Previously the merge was immediate.
         a = box_at(400, 360, 32, 80)
         frames = [Frame([cand(a)], [("TARGET",)]) for _ in range(12)]
         big = box_at(400, 360, 60, 90)                               # area x2.1 in one frame
-        frames.append(Frame([cand(big)], [("TARGET", "PERSON_A")]))
+        hold = int(math.ceil(TrackerConfig.default().get("merged_anomaly_max_s") * 30.0)) + 2
+        frames += [Frame([cand(big)], [("TARGET", "PERSON_A")]) for _ in range(hold)]
         rn = run(frames)
+        first = rn.results[12].observations[0]
+        self.assertIn(P.SIZE_ANOMALY, first.flags)
+        v = rn.results[12].tracklet(first.tracklet_id)
+        self.assertFalse(v.bank_eligible)
+        self.assertIn(P.SIZE_ANOMALY, v.bank_refusals)
         o = rn.results[-1].observations[0]
         self.assertIn(P.AREA_RATIO, o.merge_reasons)
         self.assertIsNone(o.tracklet_id)
@@ -295,8 +304,11 @@ class TestMerged(Base):
         a = box_at(400, 360, 32, 80)
         frames = [Frame([cand(a)], [("TARGET",)]) for _ in range(12)]
         wide = box_at(405, 360, 56, 80)                              # x1.75 wider, same height
-        frames.append(Frame([cand(wide)], [("TARGET", "PERSON_A")]))
-        rn = run(frames, cfg=TrackerConfig.with_overrides({"merged_area_ratio": 10.0}))
+        hold = int(math.ceil(TrackerConfig.default().get("merged_anomaly_max_s") * 30.0)) + 2
+        frames += [Frame([cand(wide)], [("TARGET", "PERSON_A")]) for _ in range(hold)]
+        rn = run(frames, cfg=TrackerConfig.with_overrides({"merged_area_ratio": 10.0,
+                                                           "merged_uncorroborated_area_ratio": 10.0}))
+        self.assertIn(P.SIZE_ANOMALY, rn.results[12].observations[0].flags)
         o = rn.results[-1].observations[0]
         self.assertEqual(o.merge_reasons, (P.ASPECT_WIDE,))
 
