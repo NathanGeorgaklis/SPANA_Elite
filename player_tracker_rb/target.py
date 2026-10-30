@@ -446,12 +446,25 @@ class TargetTracker:
                     changed = True
         return members
 
-    def _other_boxes(self, res: P.FrameResult, i: int) -> List[Box]:
+    @staticmethod
+    def _unproven_partners(res: P.FrameResult, i: int) -> Set[str]:
+        """Tracklets whose distinctness from observation i's own tracklet is unproven (born substantially inside one
+        another's box and never seen apart: possibly the same body; population F3b)."""
+        tid = res.observations[i].tracklet_id
+        v = res.tracklet(tid) if tid else None
+        return set(v.unproven_distinct_from) if v is not None else set()
+
+    def _other_boxes(self, res: P.FrameResult, i: int, *, for_bank: bool = False) -> List[Box]:
         """Every other body's box for crop contamination: other observations outside i's nested group, and hidden
-        tracklets' predicted boxes except the target's own tracklets."""
+        tracklets' predicted boxes except the target's own tracklets. Like a nested part box, a tracklet of unproven
+        distinctness from i's own tracklet may be the same body and is not counted (NEW_R2 F3b), except for the bank,
+        which never takes a crop that may touch a second person (for_bank=True keeps every other body)."""
         grp = self._group(res, i)
-        boxes = [o.bbox for o in res.observations if o.is_body and o.index not in grp]
-        boxes += [v.box for v in res.tracklets if not v.observed and v.tracklet_id not in self._target_tracklets]
+        same = set() if for_bank else self._unproven_partners(res, i)
+        boxes = [o.bbox for o in res.observations if o.is_body and o.index not in grp and
+                 (o.tracklet_id is None or o.tracklet_id not in same)]
+        boxes += [v.box for v in res.tracklets if not v.observed and v.tracklet_id not in self._target_tracklets
+                  and v.tracklet_id not in same]
         return boxes
 
     def _feature(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
@@ -555,12 +568,17 @@ class TargetTracker:
         excl_t = (set(self._target_tracklets) - seen_elsewhere) | ({o.tracklet_id} if o.tracklet_id else set())
         comps = self._pop.competitors(o.bbox, h, exclude_tracklet_ids=sorted(excl_t),
                                       exclude_detection_indices=sorted(grp))
+        same_body = self._unproven_partners(res, i)
         for cp in comps:
             if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
                     cp.closed_age_s > c.get("contact_memory_s"):
                 continue
             has_bank = cp.bank is not None and len(cp.bank) > 0
             if not has_bank:
+                # an unproven partner of this box's tracklet (possibly the same body) is not an unknown person in
+                # contact, as a nested part box is not (NEW_R2 F3b); with a bank it still competes below
+                if cp.tracklet_id is not None and cp.tracklet_id in same_body:
+                    continue
                 if cp.position_valid and cp.kind != P.RECENTLY_CLOSED and self._could_be_target(cp.box, h, t):
                     cm = c.get("identity_contact_cover_min")
                     if _cover(o.bbox, cp.box) >= cm or _cover(cp.box, o.bbox) >= cm:
@@ -651,7 +669,7 @@ class TargetTracker:
         if v is not None and P.MERGE_LINEAGE in v.flags:
             refusals.append(P.MERGE_LINEAGE)
         grp = self._group(res, i)
-        others = self._other_boxes(res, i)
+        others = self._other_boxes(res, i, for_bank=True)
         # another body's box inside this one (not a part of the same body)
         for other in res.observations:
             if other.is_body and other.index not in grp and \

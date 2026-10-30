@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2b-1"   # r2b-1: +population_part_birth_containment (R2 DEV F3b); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -536,6 +536,17 @@ PARAMS: Tuple[Param, ...] = (
        "boxes of one person (smaller box 0.75-0.9 inside the larger) still became separate tracklets and "
        "produced false MULTI_CLAIM merges; side-by-side people in contact measured 0.33-0.62. In-sample, "
        "UNVALIDATED.", 0.0, 1.0),
+    _p("population_part_birth_containment", "float", "fraction of the smaller box's area",
+       "A tracklet born with at least this fraction of the smaller of (its box, the box of a body observed in the "
+       "same frame) inside the other has UNPROVEN distinctness from that body: it may be a part or alternative box "
+       "of the same person, or a second person partly behind or in front. It is a tracklet and a competitor, but "
+       "the pair never counts as two bodies (no MULTI_CLAIM between them, no size corroboration of one by the "
+       "other) until the two are observed in one frame as boxes overlapping less than this (proven distinct).",
+       0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "NEW_R2 (R2 DEV remediation F3b). DEV 37a109c: 95 of 223 MULTI_CLAIM merge frames had a claimant born "
+       ">= 0.5 inside another observed body; visually checked same-body part boxes were born 0.55-0.77 inside. "
+       "R1-E measured side-by-side people in contact at 0.33-0.62 (these start unproven when first seen that "
+       "close and become proven once seen apart). Must be <= population_nested_containment.", 0.0, 1.0),
     _p("population_size_ref_window_s", "float", "s",
        "A tracklet's size reference is the median width and height of its non-partial observed boxes in this "
        "recent window (camera-scaled).", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
@@ -793,6 +804,8 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
         errs.append("merged_uncorroborated_area_ratio must be >= merged_area_ratio")
     if v["merged_anomaly_clear_area_ratio"] >= v["merged_area_ratio"]:
         errs.append("merged_anomaly_clear_area_ratio must be < merged_area_ratio (a merge-sized box never clears)")
+    if v["population_part_birth_containment"] > v["population_nested_containment"]:
+        errs.append("population_part_birth_containment must be <= population_nested_containment")
     if v["population_merged_region_hold_s"] > v["population_closed_memory_s"]:
         errs.append("population_merged_region_hold_s must be <= population_closed_memory_s")
     if v["population_max_gap_s"] > v["population_max_unmatched_s"]:

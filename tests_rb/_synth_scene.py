@@ -112,6 +112,7 @@ class SceneFrame:
     drop: Sequence[str] = ()                              # people present but not detected
     merge: Sequence[Tuple[str, str]] = ()                 # pairs detected as ONE box
     camera: Optional[CameraMotion] = None
+    parts: Sequence[Tuple[str, Tuple[float, float, float, float]]] = ()   # extra part-body boxes of a person
 
 
 @dataclass
@@ -172,6 +173,9 @@ def detect(fr: SceneFrame, visible_min: float = 0.35, width: int = W, height: in
             continue
         cb = (max(0.0, b[0]), max(0.0, b[1]), min(float(width), b[2]), min(float(height), b[3]))
         dets.append(Detection(cb, (name,)))
+    for name, pb in fr.parts:                             # a detector's extra part-body box of a present person
+        if name in fr.boxes:
+            dets.append(Detection(tuple(float(v) for v in pb), (name,)))
     return dets
 
 
