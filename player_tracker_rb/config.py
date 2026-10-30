@@ -538,10 +538,11 @@ PARAMS: Tuple[Param, ...] = (
        "UNVALIDATED.", 0.0, 1.0),
     _p("population_part_birth_containment", "float", "fraction of the smaller box's area",
        "A tracklet born with at least this fraction of the smaller of (its box, the box of a body observed in the "
-       "same frame) inside the other has UNPROVEN distinctness from that body: it may be a part or alternative box "
-       "of the same person, or a second person partly behind or in front. It is a tracklet and a competitor, but "
-       "the pair never counts as two bodies (no MULTI_CLAIM between them, no size corroboration of one by the "
-       "other) until the two are observed in one frame as boxes overlapping less than this (proven distinct).",
+       "same frame, older and at least 1/population_partial_height_ratio taller) inside the other has UNPROVEN "
+       "distinctness from that body: possibly its part box, or a farther person partly behind it. It is a tracklet "
+       "and a competitor; when the older body keeps its own detection the younger is not a second MULTI_CLAIM "
+       "claimant, and neither corroborates a size change of the other. Proven distinct once the two are observed "
+       "in one frame overlapping less than this, or the younger is observed as tall as a whole body.",
        0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
        "NEW_R2 (R2 DEV remediation F3b). DEV 37a109c: 95 of 223 MULTI_CLAIM merge frames had a claimant born "
        ">= 0.5 inside another observed body; visually checked same-body part boxes were born 0.55-0.77 inside. "

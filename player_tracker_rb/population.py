@@ -81,15 +81,19 @@ Per frame (update), in order:
      (>= population_contact_cover_min) are recorded as possible predecessors (and the new id as their possible
      successor). The hidden tracklet is NOT closed: it may be a different person still hidden behind someone.
      UNPROVEN DISTINCTNESS (NEW_R2, R2 DEV F3b): a tracklet born with >= population_part_birth_containment of the
-     smaller of its box and the box of a body observed in the same frame inside the other may be a part or
-     alternative box of that body (detectors return upper-body, lower-body and shifted boxes below the NESTED
-     containment) or a second person partly behind or in front: geometry cannot tell. It is a tracklet and a
+     smaller of its box and the box of an older body observed in the same frame inside the other, and SHORTER than
+     population_partial_height_ratio of that body's full height, may be a part box of that body (detectors return
+     upper-body and lower-body boxes below the NESTED containment) or a farther person partly behind it. A box as tall
+     as a whole body is always a person: a whole person can stand beside or in front of another, a part box cannot
+     (a same-height shifted alternative box therefore keeps the conservative handling). It is a tracklet and a
      competitor like any other. When the older one continues on its own detection, the younger one is not a second
      claimant of it (no MULTI_CLAIM); a younger one taking the detection, or two of the same age, is still a merge.
      Neither corroborates a size change of the other (as second detection, predicted or remembered box): the change
      is a SIZE_ANOMALY (abstain) and escalates as usual. The pair is
      PROVEN distinct as soon as both are observed in one frame as boxes (outside one nested group) overlapping less
-     than population_part_birth_containment. The pair is exposed on each TrackletView (unproven_distinct_from).
+     than population_part_birth_containment, or the younger one is observed as tall as a whole body. The pair is
+     exposed on each TrackletView (unproven_distinct_from); a multi-claim not treated as a merge records why on the
+     observation (multi_claim_exception).
   6. Unmatched tracklets become HIDDEN with a PREDICTED (then HELD) box, never an observed one. They close when
      the predicted box is mostly outside the image (LEFT_FRAME) or after population_max_unmatched_s
      (UNMATCHED_TIMEOUT). Contact with any other body during the gap is recorded and bars re-association.
@@ -226,6 +230,7 @@ class Observation:
     max_iou_other: float                      # largest IoU with any other body this frame
     covered_fraction: float                   # fraction of this box covered by other bodies
     second_body_possible: bool = True         # another body could be inside this box (merge corroboration)
+    multi_claim_exception: Optional[str] = None   # NEW_R2 F3b: why a multi-claim was not a merge (decision log)
 
     @property
     def ref(self) -> str:
@@ -242,7 +247,8 @@ class Observation:
                 "flags": list(self.flags),
                 "merge_reasons": list(self.merge_reasons), "claimants": list(self.claimants),
                 "possible_predecessors": list(self.possible_predecessors), "max_iou_other": self.max_iou_other,
-                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible}
+                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible,
+                "multi_claim_exception": self.multi_claim_exception}
 
 
 @dataclass(frozen=True)
@@ -670,12 +676,21 @@ class Population:
             assigned_t[tid], assigned_d[i] = i, tid
         # NEW_R2 (F3b): two tracklets of unproven distinctness are PROVEN distinct once both are observed in one frame
         # as separate boxes (not one nested group) overlapping less than population_part_birth_containment
+        # or as soon as the younger one is observed as tall as a whole body (population_partial_height_ratio of the
+        # older one's full height): a whole person can stand in front of another, a part box cannot (review round 1)
         part_min = c.get("population_part_birth_containment")
+        part_h = c.get("population_partial_height_ratio")
+        by_tid_now = {tr.tid: tr for tr in live}
         for pair in list(self._unproven):
             a_, b_ = tuple(pair)
             if a_ in assigned_t and b_ in assigned_t:
                 i_, j_ = assigned_t[a_], assigned_t[b_]
                 if group[i_] != group[j_] and _part_overlap(boxes[i_], boxes[j_]) < part_min:
+                    self._unproven.discard(pair)
+                    continue
+            if a_ in by_tid_now and b_ in by_tid_now:
+                old, young = sorted((a_, b_), key=lambda u: (by_tid_now[u].first_time, by_tid_now[u].order))
+                if young in assigned_t and _wh(boxes[assigned_t[young]])[1] >= part_h * full_h[old]:
                     self._unproven.discard(pair)
         unproven = frozenset(self._unproven)
 
@@ -786,6 +801,7 @@ class Population:
         expired = {k for k, rg in enumerate(self._regions) if t - rg.last_evidence_t > hold}
         lo, hi = c.get("merged_aspect_band")
         refs = {tr.tid: self._size_ref(tr, t) for tr in live}
+        mc_exception: Dict[int, str] = {}
         for i in track:
             cl = [tr.tid for tr in live
                   if cont_pd.get((tr.tid, i), 0.0) >= c.get("merged_overlap_min")
@@ -810,7 +826,9 @@ class Population:
                     for u in strong)
                 one_body_unclaimed = a_ is None and all(
                     frozenset((u, w)) in unproven for u in strong for w in strong if u < w)
-                if not (host_keeps or one_body_unclaimed):
+                if host_keeps or one_body_unclaimed:
+                    mc_exception[i] = "OLDER_BODY_KEEPS_ITS_BOX" if host_keeps else "UNCLAIMED_ONE_BODY"
+                else:
                     merge_reasons[i].append(MULTI_CLAIM)
             # size reference: only the body this box would continue, or an evidenced merged region. A box that
             # merely covers another (smaller, hidden) body is not compared with it: that is occlusion.
@@ -1022,10 +1040,12 @@ class Population:
             flags_now[tr.tid] = {CONTESTED} if i in contested_d else set()
         # NEW_R2 (F3b): a tracklet born substantially inside (or around) the box of a body observed in this same
         # frame may be a part or alternative box of that body: their distinctness is unproven until seen apart
-        det_of = {tid: i for tid, i in observed_now.items()}
+        # Only a box SHORTER than a whole body of the older one (population_partial_height_ratio of its full height)
+        # can be its part: a full-height box beside or in front of a body is treated as a person (review round 1)
         for i, b in births.items():
-            for tid, j in det_of.items():
-                if tid != b.tid and group.get(j) != group.get(i) and _part_overlap(boxes[i], boxes[j]) >= part_min:
+            for tid, j in observed_now.items():
+                if tid in full_h and tid not in closed_now and group.get(j) != group.get(i) \
+                        and _part_overlap(boxes[i], boxes[j]) >= part_min and _wh(boxes[i])[1] < part_h * full_h[tid]:
                     self._unproven.add(frozenset((b.tid, tid)))
         for tr in hidden_now:
             for i, b in births.items():
@@ -1145,7 +1165,8 @@ class Population:
                                    merge_reasons=tuple(merge_reasons.get(i, ())),
                                    claimants=tuple(claimants.get(i, ())), possible_predecessors=preds_i,
                                    max_iou_other=max_iou, covered_fraction=cov,
-                                   second_body_possible=second_body.get(i, True)))
+                                   second_body_possible=second_body.get(i, True),
+                                   multi_claim_exception=mc_exception.get(i)))
 
         # ---- 8. views and bank eligibility ---------------------------------------------------------------
         views: List[TrackletView] = []
