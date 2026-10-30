@@ -1,0 +1,22 @@
+R2_MCFC_MIT_C006 start 15:46:05
+R2_MCFC_MIT_C006 RUN_REFUSED seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.421)
+R2_MCFC_MIT_C016 start 15:46:10
+R2_MCFC_MIT_C016 RUN_REFUSED seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.454)
+R2_MCFC_MIT_C020 start 15:46:14
+R2_MCFC_MIT_C020 done 799.8 s
+R2_MCFC_MIT_C033 start 15:59:34
+R2_MCFC_MIT_C033 done 1015.3 s
+R2_MCFC_MIT_C034 start 16:16:29
+R2_MCFC_MIT_C034 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']
+R2_MCFC_MIT_C038 start 16:16:31
+R2_MCFC_MIT_C038 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['ALTERNATIVE', 'NESTED', 'NOT_ISOLATED']
+R2_SYO_MAR_C004 start 16:16:38
+R2_SYO_MAR_C004 RUN_REFUSED seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.458)
+R2_SYO_MAR_C012 start 16:16:40
+R2_SYO_MAR_C012 done 658.7 s
+R2_SYO_MAR_C016 start 16:27:39
+R2_SYO_MAR_C016 RUN_REFUSED seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.420)
+R2_SYO_MAR_C021 start 16:27:42
+R2_SYO_MAR_C021 done 525.2 s
+R2_SYO_MAR_C032 start 16:36:27
+R2_SYO_MAR_C032 RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']

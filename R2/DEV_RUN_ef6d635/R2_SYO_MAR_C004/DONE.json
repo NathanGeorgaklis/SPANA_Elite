@@ -1,0 +1,10 @@
+{
+ "clip_id": "R2_SYO_MAR_C004",
+ "split": "DEV",
+ "outcome": "RUN_REFUSED",
+ "reason": "seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.458)",
+ "fixture": "R2/labels/R2_SYO_MAR_C004.fixture.json",
+ "git_commit": "ef6d635ef6f7a13561e0324a76a4de7308fc6380",
+ "git_dirty": false,
+ "seconds": 2.0
+}

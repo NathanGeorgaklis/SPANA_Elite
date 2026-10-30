@@ -1,0 +1,116 @@
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/appearance.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/camera.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector_yolox.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/embedding_dinov2.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/motion.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/population.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:110: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/target.py' mode='r' encoding='utf-8'>
+  src = open(path, encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+../sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/appearance.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/camera.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/config.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector_yolox.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/embedding_dinov2.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/motion.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/population.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/provenance.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/run_rb.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/target.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:65: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/video_io.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.../sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/__init__.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/appearance.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/camera.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/detector_yolox.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/embedding_dinov2.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/motion.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/output_schema.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/population.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/provenance.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/run_rb.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/target.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/tests_rb/test_package_hygiene.py:88: ResourceWarning: unclosed file <_io.TextIOWrapper name='/sessions/rcw-01vxtagarmqz5tkpdcdxkl1q/mnt/Documents/SPANA_Engine_Rebuild/player_tracker_rb/video_io.py' mode='r' encoding='utf-8'>
+  tree = ast.parse(open(path, encoding="utf-8").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.............................................................................................................
+----------------------------------------------------------------------
+Ran 114 tests in 9.250s
+
+OK
+R2_A               DEV  VALID          problems=0 HU=0 id=INCLUDED
+R2_B               EVAL INVALID        problems=10 HU=0 id=NOT_ASSESSED
+R2_C               DEV  MISSING        problems=1 HU=- id=-
+R2_D               EVAL VALID          problems=0 HU=0 id=EXCLUDED
+R2_E               DEV  VALID          problems=0 HU=4 id=INCLUDED
+found 4/5  frozen 0  invalid 1  DEV 0/3  EVAL 0/2  unknown files []

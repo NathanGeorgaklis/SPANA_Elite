@@ -1,0 +1,77 @@
+{
+ "R2_MCFC_MIT_C006": {
+  "seed_frame": 300,
+  "seed_bbox": [
+   674.5,
+   269.4,
+   744.6,
+   399.6
+  ],
+  "seed_w_h": [
+   70.1,
+   130.2
+  ],
+  "detections_overlapping": [
+   {
+    "bbox": [
+     683.5,
+     298.9,
+     731.1,
+     379.5
+    ],
+    "score": 0.883,
+    "iou": 0.421,
+    "covers_seed": 0.421,
+    "inside_seed": 1.0,
+    "h_ratio_det_over_seed": 0.619,
+    "w_ratio_det_over_seed": 0.68,
+    "pass": "tile_c1_r0"
+   }
+  ]
+ },
+ "R2_MCFC_MIT_C016": {
+  "seed_frame": 360,
+  "seed_bbox": [
+   1038.5,
+   261.6,
+   1169.8,
+   537.6
+  ],
+  "seed_w_h": [
+   131.3,
+   276.0
+  ],
+  "detections_overlapping": [
+   {
+    "bbox": [
+     1080.8,
+     292.4,
+     1153.4,
+     518.9
+    ],
+    "score": 0.894,
+    "iou": 0.454,
+    "covers_seed": 0.454,
+    "inside_seed": 1.0,
+    "h_ratio_det_over_seed": 0.821,
+    "w_ratio_det_over_seed": 0.553,
+    "pass": "full_frame"
+   },
+   {
+    "bbox": [
+     1169.7,
+     253.4,
+     1207.2,
+     327.1
+    ],
+    "score": 0.883,
+    "iou": 0.0,
+    "covers_seed": 0.0,
+    "inside_seed": 0.002,
+    "h_ratio_det_over_seed": 0.267,
+    "w_ratio_det_over_seed": 0.286,
+    "pass": "tile_c1_r0"
+   }
+  ]
+ }
+}
