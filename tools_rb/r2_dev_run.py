@@ -54,10 +54,22 @@ def run(repo, clips_dir, out_root, only=None):
         video = os.path.join(clips_dir, fx["video_file"])
         t0 = time.time()
         print(cid, "start", time.strftime("%H:%M:%S"), flush=True)
-        summary = R.run(video, fx["seed_frame"], fx["seed_bbox"], out_dir=od, debug=True,
-                        expected_sha256=fx["video_sha256"])
-        done = {"clip_id": cid, "split": "DEV", "fixture": os.path.relpath(p, repo), "git_commit": head,
-                "git_dirty": dirty, "seconds": round(time.time() - t0, 1), "summary_keys": sorted(summary)}
+        try:
+            summary = R.run(video, fx["seed_frame"], fx["seed_bbox"], out_dir=od, debug=True,
+                            expected_sha256=fx["video_sha256"])
+        except R.RunRefusedError as e:
+            # the tracker failed closed (e.g. seed not backed by a detection): a result, recorded, never retried
+            # with different settings
+            ref = {"clip_id": cid, "split": "DEV", "outcome": "RUN_REFUSED", "reason": str(e),
+                   "fixture": os.path.relpath(p, repo), "git_commit": head, "git_dirty": dirty,
+                   "seconds": round(time.time() - t0, 1)}
+            with open(os.path.join(od, "DONE.json"), "x") as f:
+                json.dump(ref, f, indent=1)
+            print(cid, "RUN_REFUSED", e, flush=True)
+            continue
+        done = {"clip_id": cid, "split": "DEV", "outcome": "COMPLETED", "fixture": os.path.relpath(p, repo),
+                "git_commit": head, "git_dirty": dirty, "seconds": round(time.time() - t0, 1),
+                "summary_keys": sorted(summary)}
         with open(os.path.join(od, "DONE.json"), "x") as f:
             json.dump(done, f, indent=1)
         print(cid, "done", done["seconds"], "s", flush=True)
@@ -73,6 +85,11 @@ def score(repo, out_root):
         od = os.path.join(out_root, cid)
         if not os.path.exists(os.path.join(od, "DONE.json")):
             rows[cid] = {"status": "NOT_RUN"}
+            continue
+        with open(os.path.join(od, "DONE.json")) as f:
+            done = json.load(f)
+        if done.get("outcome") == "RUN_REFUSED":
+            rows[cid] = {"status": "RUN_REFUSED", "reason": done["reason"]}
             continue
         res = R.output_paths(od, fx["video_file"])["results"]
         lab = os.path.join(repo, "R2", "labels", fx["labels_file"])
