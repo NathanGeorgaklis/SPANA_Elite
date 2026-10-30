@@ -1,0 +1,17 @@
+{
+ "clip_id": "R2_MCFC_MIT_C033",
+ "fps": 60.0,
+ "labels_file": "R2_MCFC_MIT_C033.labels_v1.json",
+ "labels_sha256": "fb0f2f03f5b71ad1835dcd6c9b9d85f9e22776350c6d12590da0333d8d633ca4",
+ "seed_bbox": [
+  908.2,
+  306.1,
+  1015.1,
+  516.5
+ ],
+ "seed_frame": 0,
+ "seed_source": "HUMAN (frozen r2_labels_v1)",
+ "split": "DEV",
+ "video_file": "R2_MCFC_MIT_C033.mp4",
+ "video_sha256": "9747585a762dc714595a9837eb90c5a1f5ee1f30b4d4b01543eee097bb7d29d7"
+}

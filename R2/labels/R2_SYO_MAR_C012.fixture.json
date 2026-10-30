@@ -1,0 +1,17 @@
+{
+ "clip_id": "R2_SYO_MAR_C012",
+ "fps": 30.0,
+ "labels_file": "R2_SYO_MAR_C012.labels_v1.json",
+ "labels_sha256": "e1261fdcb2618a111d2050c5b8d8260d417e5a6e4edce18f972549d1a3ba94aa",
+ "seed_bbox": [
+  1126.4,
+  350.7,
+  1205.4,
+  490.9
+ ],
+ "seed_frame": 45,
+ "seed_source": "HUMAN (frozen r2_labels_v1)",
+ "split": "DEV",
+ "video_file": "R2_SYO_MAR_C012.mp4",
+ "video_sha256": "b917e4afa8e992c9dd453c388fe7f200ca7d450e9189eb8fd32e08a15a1ce77e"
+}

@@ -1,0 +1,26 @@
+{
+ "annotator": "Nathan Georgaklis",
+ "box_frames_required": 135,
+ "bytes": 86785,
+ "clip_id": "R2_SYO_MAR_C032",
+ "clip_rejected": null,
+ "clip_sha256": "902fe742b82f8ec80ca292e09a2ea371e78cf35b1bdc83a65aa8e8e478cebd56",
+ "errors": [],
+ "fps": 30.0,
+ "frames": 300,
+ "frozen_at_utc": "2026-10-30T04:25:05Z",
+ "labels_file": "R2_SYO_MAR_C032.labels_v1.json",
+ "rule": "Do not modify this label file. Corrections require labels_v2 with the reason recorded.",
+ "schema": "r2_labels_v1",
+ "seed_bbox": [
+  190.3,
+  349.5,
+  233.7,
+  431.9
+ ],
+ "seed_frame": 104,
+ "sha256": "eaec0a2d73a25624a445159ceec05be162745ca9da8b3e61f3d0c994f11d80f7",
+ "split": "DEV",
+ "status": "FROZEN",
+ "valid": true
+}

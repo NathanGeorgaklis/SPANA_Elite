@@ -1,0 +1,6570 @@
+{
+ "schema": "r2_labels_v1",
+ "clip_id": "R2_MCFC_MIT_C016",
+ "clip_sha256": "affa30ec915999f6ee3629cdec11a0284e3e4bd2c0fdff62b45c9a2199780a8c",
+ "fps": 60,
+ "frames": 600,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_annotator.html v2",
+ "saved_utc": "2026-10-30T03:05:28Z",
+ "clip_rejected": null,
+ "seed": {
+  "frame": 360,
+  "box": [
+   1038.5,
+   261.6,
+   1169.8,
+   537.6
+  ]
+ },
+ "per_frame": [
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "OUT_OF_FRAME",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  }
+ ],
+ "target_boxes": {
+  "360": [
+   1038.5,
+   261.6,
+   1169.8,
+   537.6
+  ],
+  "361": [
+   1066.3,
+   286.1,
+   1158.7,
+   533.2
+  ],
+  "362": [
+   1059.6,
+   286.1,
+   1158.7,
+   533.2
+  ],
+  "363": [
+   1059.6,
+   286.1,
+   1163.1,
+   535.4
+  ],
+  "364": [
+   1064.1,
+   282.8,
+   1163.1,
+   535.4
+  ],
+  "365": [
+   1064.1,
+   282.8,
+   1147.5,
+   531
+  ],
+  "366": [
+   1049.6,
+   285,
+   1147.5,
+   531
+  ],
+  "367": [
+   1049.6,
+   285,
+   1164.2,
+   529.9
+  ],
+  "368": [
+   1046.3,
+   280.5,
+   1164.2,
+   528.7
+  ],
+  "369": [
+   1046.3,
+   280.5,
+   1146.4,
+   533.2
+  ],
+  "370": [
+   1051.8,
+   280.5,
+   1146.4,
+   533.2
+  ],
+  "371": [
+   1051.8,
+   281.6,
+   1139.8,
+   527.6
+  ],
+  "372": [
+   1054.1,
+   285,
+   1139.8,
+   527.6
+  ],
+  "373": [
+   1054.1,
+   285,
+   1136.4,
+   537.6
+  ],
+  "374": [
+   1049.6,
+   277.2,
+   1136.4,
+   537.6
+  ],
+  "375": [
+   1049.6,
+   278.3,
+   1134.2,
+   535.4
+  ],
+  "376": [
+   1049.6,
+   280.5,
+   1134.2,
+   535.4
+  ],
+  "377": [
+   1049.6,
+   282.8,
+   1128.6,
+   534.3
+  ],
+  "378": [
+   1063,
+   287.2,
+   1128.6,
+   534.3
+  ],
+  "379": [
+   1063,
+   287.2,
+   1134.2,
+   536.5
+  ],
+  "380": [
+   1057.4,
+   289.4,
+   1134.2,
+   536.5
+  ],
+  "381": [
+   1057.4,
+   289.4,
+   1136.4,
+   534.3
+  ],
+  "382": [
+   1048.5,
+   288.3,
+   1136.4,
+   534.3
+  ],
+  "383": [
+   1048.5,
+   288.3,
+   1138.6,
+   536.5
+  ],
+  "384": [
+   1041.8,
+   285,
+   1138.6,
+   535.4
+  ],
+  "385": [
+   1041.8,
+   285,
+   1127.5,
+   536.5
+  ],
+  "386": [
+   1055.2,
+   289.4,
+   1136.4,
+   538.8
+  ],
+  "387": [
+   1049.6,
+   289.4,
+   1136.4,
+   538.8
+  ],
+  "388": [
+   1049.6,
+   289.4,
+   1142,
+   535.4
+  ],
+  "389": [
+   1036.2,
+   286.1,
+   1142,
+   535.4
+  ],
+  "390": [
+   1036.2,
+   286.1,
+   1110.8,
+   454.2
+  ],
+  "396": [
+   1037.4,
+   280.5,
+   1135.3,
+   535.4
+  ],
+  "408": [
+   1067.4,
+   277.2,
+   1148.7,
+   542.1
+  ],
+  "420": [
+   1058.5,
+   282.8,
+   1163.1,
+   542.1
+  ],
+  "432": [
+   1067.4,
+   292.8,
+   1175.4,
+   563.2
+  ],
+  "444": [
+   1099.7,
+   268.3,
+   1182.1,
+   555.5
+  ],
+  "456": [
+   1119.7,
+   270.5,
+   1207.7,
+   575.5
+  ],
+  "468": [
+   1113,
+   281.6,
+   1235.5,
+   564.4
+  ],
+  "480": [
+   1142,
+   269.4,
+   1257.7,
+   566.6
+  ],
+  "481": [
+   1160.9,
+   292.8,
+   1263.3,
+   571
+  ],
+  "482": [
+   1164.2,
+   291.7,
+   1264.4,
+   571
+  ],
+  "483": [
+   1158.7,
+   302.8,
+   1265.5,
+   571
+  ],
+  "484": [
+   1164.2,
+   310.6,
+   1274.4,
+   574.4
+  ],
+  "485": [
+   1143.1,
+   299.5,
+   1274.4,
+   574.4
+  ],
+  "486": [
+   1143.1,
+   299.5,
+   1264.4,
+   566.6
+  ],
+  "487": [
+   1156.5,
+   300.6,
+   1264.4,
+   567.7
+  ],
+  "488": [
+   1156.5,
+   300.6,
+   1280,
+   568.8
+  ],
+  "489": [
+   1168.7,
+   303.9,
+   1270,
+   564.4
+  ],
+  "490": [
+   1168.7,
+   303.9,
+   1276.7,
+   568.8
+  ],
+  "491": [
+   1166.5,
+   297.2,
+   1276.7,
+   568.8
+  ],
+  "492": [
+   1166.5,
+   297.2,
+   1276.7,
+   572.1
+  ],
+  "493": [
+   1154.2,
+   293.9,
+   1273.3,
+   567.7
+  ],
+  "494": [
+   1165.4,
+   291.7,
+   1267.8,
+   567.7
+  ],
+  "495": [
+   1169.8,
+   300.6,
+   1274.4,
+   571
+  ],
+  "496": [
+   1176.5,
+   290.5,
+   1268.9,
+   574.4
+  ],
+  "497": [
+   1175.4,
+   298.3,
+   1273.3,
+   562.1
+  ],
+  "498": [
+   1186.5,
+   299.5,
+   1274.4,
+   567.7
+  ],
+  "499": [
+   1191,
+   297.2,
+   1274.4,
+   567.7
+  ],
+  "500": [
+   1191,
+   297.2,
+   1275.5,
+   571
+  ],
+  "501": [
+   1193.2,
+   300.6,
+   1275.5,
+   571
+  ],
+  "502": [
+   1194.3,
+   300.6,
+   1278.9,
+   569.9
+  ],
+  "503": [
+   1198.7,
+   299.5,
+   1278.9,
+   569.9
+  ],
+  "504": [
+   1198.7,
+   300.6,
+   1280,
+   569.9
+  ],
+  "505": [
+   1201,
+   307.2,
+   1278.9,
+   569.9
+  ],
+  "506": [
+   1201,
+   307.2,
+   1274.4,
+   575.5
+  ],
+  "507": [
+   1205.4,
+   300.6,
+   1280,
+   579.9
+  ],
+  "508": [
+   1206.5,
+   303.9,
+   1280,
+   577.7
+  ],
+  "509": [
+   1196.5,
+   309.5,
+   1280,
+   571
+  ],
+  "510": [
+   1205.4,
+   295,
+   1280,
+   605.5
+  ],
+  "511": [
+   1217.7,
+   296.1,
+   1280,
+   586.6
+  ],
+  "512": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "513": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "514": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "515": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "516": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "517": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "518": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "519": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "520": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "521": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "522": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "523": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "524": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "525": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "526": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "527": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ],
+  "528": [
+   1197.6,
+   308.4,
+   1280,
+   572.1
+  ]
+ },
+ "people": {},
+ "first_clean_reappearance": [],
+ "box_copied": {
+  "TARGET": [
+   513,
+   514,
+   515,
+   516,
+   517,
+   518,
+   519,
+   520,
+   521,
+   522,
+   523,
+   524,
+   525,
+   526,
+   527,
+   528
+  ]
+ }
+}

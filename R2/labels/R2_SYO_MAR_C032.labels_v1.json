@@ -1,0 +1,5648 @@
+{
+ "schema": "r2_labels_v1",
+ "clip_id": "R2_SYO_MAR_C032",
+ "clip_sha256": "902fe742b82f8ec80ca292e09a2ea371e78cf35b1bdc83a65aa8e8e478cebd56",
+ "fps": 30,
+ "frames": 300,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_annotator.html v2",
+ "saved_utc": "2026-10-30T02:56:34Z",
+ "clip_rejected": null,
+ "seed": {
+  "frame": 104,
+  "box": [
+   190.3,
+   349.5,
+   233.7,
+   431.9
+  ]
+ },
+ "per_frame": [
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "UNLABELLED",
+   "resolvable": "UNLABELLED",
+   "occlusion": "UNLABELLED",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_OTHER",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "NO",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "PARTIAL",
+   "resolvable": "YES",
+   "occlusion": "PARTIAL_BY_PERSON",
+   "merged": false,
+   "contact_with": [
+    "P3"
+   ],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  },
+  {
+   "visibility": "VISIBLE",
+   "resolvable": "YES",
+   "occlusion": "NONE",
+   "merged": false,
+   "contact_with": [],
+   "camera_cut": false,
+   "human_uncertain": false,
+   "note": ""
+  }
+ ],
+ "target_boxes": {
+  "104": [
+   190.3,
+   349.5,
+   233.7,
+   431.9
+  ],
+  "105": [
+   198.1,
+   352.9,
+   241.5,
+   444.1
+  ],
+  "106": [
+   201.5,
+   358.4,
+   258.2,
+   439.7
+  ],
+  "107": [
+   218.2,
+   357.3,
+   269.4,
+   454.2
+  ],
+  "108": [
+   215.9,
+   359.6,
+   264.9,
+   449.7
+  ],
+  "109": [
+   229.3,
+   360.7,
+   279.4,
+   455.3
+  ],
+  "110": [
+   242.6,
+   360.7,
+   281.6,
+   467.5
+  ],
+  "111": [
+   251.5,
+   360.7,
+   310.5,
+   458.6
+  ],
+  "112": [
+   267.1,
+   367.3,
+   305,
+   467.5
+  ],
+  "113": [
+   286.1,
+   368.5,
+   327.2,
+   477.5
+  ],
+  "114": [
+   284.9,
+   371.8,
+   326.1,
+   465.3
+  ],
+  "115": [
+   305,
+   370.7,
+   340.6,
+   474.2
+  ],
+  "116": [
+   319.4,
+   375.1,
+   361.7,
+   474.2
+  ],
+  "117": [
+   331.7,
+   376.3,
+   379.5,
+   479.8
+  ],
+  "118": [
+   346.2,
+   371.8,
+   401.8,
+   479.8
+  ],
+  "119": [
+   365.1,
+   371.8,
+   418.5,
+   487.6
+  ],
+  "120": [
+   367.3,
+   376.3,
+   414.1,
+   483.1
+  ],
+  "121": [
+   386.2,
+   361.8,
+   436.3,
+   488.7
+  ],
+  "122": [
+   406.3,
+   354,
+   457.5,
+   493.1
+  ],
+  "123": [
+   424.1,
+   352.9,
+   481.9,
+   487.6
+  ],
+  "124": [
+   441.9,
+   346.2,
+   494.2,
+   472
+  ],
+  "125": [
+   457.5,
+   337.3,
+   520.9,
+   474.2
+  ],
+  "126": [
+   459.7,
+   332.8,
+   523.1,
+   477.5
+  ],
+  "127": [
+   478.6,
+   339.5,
+   539.8,
+   468.6
+  ],
+  "128": [
+   494.2,
+   331.7,
+   555.4,
+   464.2
+  ],
+  "129": [
+   509.8,
+   329.5,
+   583.2,
+   466.4
+  ],
+  "130": [
+   526.5,
+   327.3,
+   605.5,
+   463.1
+  ],
+  "131": [
+   545.4,
+   328.4,
+   627.8,
+   468.6
+  ],
+  "132": [
+   544.3,
+   331.7,
+   621.1,
+   468.6
+  ],
+  "133": [
+   567.7,
+   328.4,
+   648.9,
+   474.2
+  ],
+  "134": [
+   579.9,
+   330.6,
+   653.4,
+   473.1
+  ],
+  "135": [
+   591,
+   335.1,
+   677.8,
+   483.1
+  ],
+  "136": [
+   597.7,
+   338.4,
+   682.3,
+   488.7
+  ],
+  "137": [
+   599.9,
+   349.5,
+   694.5,
+   490.9
+  ],
+  "138": [
+   597.7,
+   350.7,
+   686.7,
+   490.9
+  ],
+  "139": [
+   605.5,
+   355.1,
+   704.6,
+   493.1
+  ],
+  "140": [
+   616.6,
+   361.8,
+   707.9,
+   486.4
+  ],
+  "141": [
+   609.9,
+   358.4,
+   716.8,
+   485.3
+  ],
+  "142": [
+   642.2,
+   359.6,
+   714.6,
+   484.2
+  ],
+  "143": [
+   651.1,
+   356.2,
+   711.2,
+   485.3
+  ],
+  "144": [
+   651.1,
+   355.1,
+   717.9,
+   483.1
+  ],
+  "145": [
+   664.5,
+   355.1,
+   715.7,
+   484.2
+  ],
+  "146": [
+   668.9,
+   349.5,
+   733.5,
+   489.8
+  ],
+  "147": [
+   665.6,
+   344,
+   734.6,
+   474.2
+  ],
+  "148": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "149": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "150": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "151": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "152": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "153": [
+   674.5,
+   346.2,
+   749.1,
+   470.9
+  ],
+  "154": [
+   702.3,
+   340.6,
+   782.5,
+   466.4
+  ],
+  "155": [
+   702.3,
+   340.6,
+   782.5,
+   466.4
+  ],
+  "156": [
+   702.3,
+   340.6,
+   782.5,
+   466.4
+  ],
+  "157": [
+   702.3,
+   340.6,
+   782.5,
+   466.4
+  ],
+  "158": [
+   702.3,
+   340.6,
+   782.5,
+   466.4
+  ],
+  "159": [
+   735.7,
+   326.2,
+   794.7,
+   466.4
+  ],
+  "160": [
+   735.7,
+   326.2,
+   794.7,
+   466.4
+  ],
+  "161": [
+   735.7,
+   326.2,
+   794.7,
+   466.4
+  ],
+  "162": [
+   750.2,
+   325.1,
+   815.9,
+   463.1
+  ],
+  "163": [
+   750.2,
+   325.1,
+   815.9,
+   463.1
+  ],
+  "164": [
+   764.7,
+   322.8,
+   839.2,
+   459.7
+  ],
+  "165": [
+   764.7,
+   322.8,
+   839.2,
+   459.7
+  ],
+  "166": [
+   764.7,
+   322.8,
+   839.2,
+   459.7
+  ],
+  "167": [
+   789.1,
+   331.7,
+   855.9,
+   460.8
+  ],
+  "168": [
+   789.1,
+   331.7,
+   855.9,
+   460.8
+  ],
+  "169": [
+   789.1,
+   331.7,
+   855.9,
+   460.8
+  ],
+  "170": [
+   805.8,
+   321.7,
+   877.1,
+   456.4
+  ],
+  "171": [
+   805.8,
+   321.7,
+   877.1,
+   456.4
+  ],
+  "172": [
+   828.1,
+   320.6,
+   897.1,
+   458.6
+  ],
+  "173": [
+   828.1,
+   320.6,
+   897.1,
+   458.6
+  ],
+  "174": [
+   843.7,
+   321.7,
+   899.3,
+   454.2
+  ],
+  "175": [
+   843.7,
+   321.7,
+   899.3,
+   454.2
+  ],
+  "176": [
+   870.4,
+   321.7,
+   922.7,
+   459.7
+  ],
+  "177": [
+   870.4,
+   321.7,
+   922.7,
+   459.7
+  ],
+  "178": [
+   883.8,
+   317.3,
+   942.7,
+   455.3
+  ],
+  "179": [
+   883.8,
+   317.3,
+   942.7,
+   455.3
+  ],
+  "180": [
+   888.2,
+   316.1,
+   951.7,
+   455.3
+  ],
+  "181": [
+   888.2,
+   316.1,
+   951.7,
+   455.3
+  ],
+  "182": [
+   910.5,
+   308.4,
+   962.8,
+   447.5
+  ],
+  "183": [
+   910.5,
+   308.4,
+   962.8,
+   447.5
+  ],
+  "184": [
+   920.5,
+   312.8,
+   976.1,
+   447.5
+  ],
+  "185": [
+   920.5,
+   312.8,
+   976.1,
+   447.5
+  ],
+  "186": [
+   920.5,
+   312.8,
+   976.1,
+   447.5
+  ],
+  "187": [
+   920.5,
+   312.8,
+   976.1,
+   447.5
+  ],
+  "188": [
+   937.2,
+   301.7,
+   992.8,
+   441.9
+  ],
+  "189": [
+   937.2,
+   301.7,
+   992.8,
+   441.9
+  ],
+  "190": [
+   937.2,
+   301.7,
+   992.8,
+   441.9
+  ],
+  "191": [
+   967.2,
+   298.3,
+   1004,
+   448.6
+  ],
+  "192": [
+   967.2,
+   298.3,
+   1004,
+   448.6
+  ],
+  "193": [
+   967.2,
+   298.3,
+   1004,
+   448.6
+  ],
+  "194": [
+   970.6,
+   302.8,
+   1022.9,
+   443
+  ],
+  "195": [
+   970.6,
+   302.8,
+   1022.9,
+   443
+  ],
+  "196": [
+   992.8,
+   300.6,
+   1044,
+   438.6
+  ],
+  "197": [
+   992.8,
+   300.6,
+   1044,
+   438.6
+  ],
+  "198": [
+   1004,
+   288.3,
+   1055.2,
+   441.9
+  ],
+  "199": [
+   1004,
+   288.3,
+   1055.2,
+   441.9
+  ],
+  "200": [
+   1001.7,
+   303.9,
+   1080.8,
+   441.9
+  ],
+  "201": [
+   1001.7,
+   303.9,
+   1080.8,
+   441.9
+  ],
+  "202": [
+   1001.7,
+   303.9,
+   1080.8,
+   441.9
+  ],
+  "203": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "204": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "205": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "206": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "207": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "208": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "209": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "210": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "211": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "212": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "213": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "214": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "215": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "216": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "217": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "218": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "219": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "220": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "221": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "222": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "223": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "224": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "225": [
+   1028.5,
+   295,
+   1081.9,
+   437.5
+  ],
+  "226": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "227": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "228": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "229": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "230": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "231": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "232": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "233": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "234": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "235": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "236": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "237": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "238": [
+   1020.7,
+   297.2,
+   1088.6,
+   441.9
+  ],
+  "239": [
+   997.3,
+   286.1,
+   1046.3,
+   448.6
+  ],
+  "240": [
+   997.3,
+   286.1,
+   1046.3,
+   448.6
+  ],
+  "241": [
+   997.3,
+   286.1,
+   1046.3,
+   448.6
+  ],
+  "242": [
+   997.3,
+   286.1,
+   1046.3,
+   448.6
+  ],
+  "243": [
+   997.3,
+   286.1,
+   1046.3,
+   448.6
+  ],
+  "244": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "245": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "246": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "247": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "248": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "249": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "250": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "251": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "252": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "253": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "254": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "255": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "256": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "257": [
+   969.5,
+   301.7,
+   1037.4,
+   445.3
+  ],
+  "258": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "259": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "260": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "261": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "262": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "263": [
+   968.3,
+   305,
+   1031.8,
+   465.3
+  ],
+  "264": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "265": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "266": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "267": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "268": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "269": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "270": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "271": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "272": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "273": [
+   948.3,
+   325.1,
+   1017.3,
+   463.1
+  ],
+  "274": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "275": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "276": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "277": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "278": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "279": [
+   935,
+   329.5,
+   1002.9,
+   467.5
+  ],
+  "280": [
+   902.7,
+   327.3,
+   1002.9,
+   485.3
+  ],
+  "281": [
+   902.7,
+   327.3,
+   1002.9,
+   485.3
+  ],
+  "282": [
+   902.7,
+   327.3,
+   1002.9,
+   485.3
+  ],
+  "283": [
+   902.7,
+   327.3,
+   1002.9,
+   485.3
+  ],
+  "284": [
+   913.8,
+   330.6,
+   973.9,
+   475.3
+  ],
+  "285": [
+   913.8,
+   330.6,
+   973.9,
+   475.3
+  ],
+  "286": [
+   913.8,
+   330.6,
+   973.9,
+   475.3
+  ],
+  "287": [
+   886,
+   329.5,
+   947.2,
+   479.8
+  ],
+  "288": [
+   886,
+   329.5,
+   947.2,
+   479.8
+  ],
+  "289": [
+   886,
+   329.5,
+   947.2,
+   479.8
+  ],
+  "290": [
+   870.4,
+   334,
+   930.5,
+   470.9
+  ],
+  "291": [
+   870.4,
+   334,
+   930.5,
+   470.9
+  ],
+  "292": [
+   855.9,
+   327.3,
+   913.8,
+   480.9
+  ],
+  "293": [
+   855.9,
+   327.3,
+   913.8,
+   480.9
+  ],
+  "294": [
+   855.9,
+   327.3,
+   913.8,
+   480.9
+  ],
+  "295": [
+   855.9,
+   327.3,
+   913.8,
+   480.9
+  ],
+  "296": [
+   831.4,
+   331.7,
+   899.3,
+   480.9
+  ],
+  "297": [
+   831.4,
+   331.7,
+   899.3,
+   480.9
+  ],
+  "298": [
+   831.4,
+   331.7,
+   899.3,
+   480.9
+  ],
+  "299": [
+   831.4,
+   331.7,
+   899.3,
+   480.9
+  ]
+ },
+ "people": {
+  "P1": {
+   "description": "SYO",
+   "relation": "SAME_TEAM",
+   "boxes": {}
+  },
+  "P2": {
+   "description": "MAR",
+   "relation": "OPPONENT",
+   "boxes": {}
+  },
+  "P3": {
+   "description": "SYO",
+   "relation": "OPPONENT",
+   "boxes": {
+    "104": [
+     167,
+     338.4,
+     200.3,
+     424.1
+    ],
+    "105": [
+     173.6,
+     342.9,
+     214.8,
+     431.9
+    ],
+    "106": [
+     180.3,
+     351.8,
+     223.7,
+     433
+    ],
+    "107": [
+     191.4,
+     351.8,
+     236,
+     445.3
+    ],
+    "108": [
+     181.4,
+     354,
+     237.1,
+     438.6
+    ],
+    "109": [
+     203.7,
+     355.1,
+     247.1,
+     440.8
+    ],
+    "110": [
+     203.7,
+     355.1,
+     264.9,
+     446.4
+    ],
+    "111": [
+     230.4,
+     350.7,
+     272.7,
+     458.6
+    ],
+    "112": [
+     223.7,
+     360.7,
+     291.6,
+     460.8
+    ],
+    "113": [
+     256,
+     365.1,
+     305,
+     469.7
+    ],
+    "114": [
+     244.9,
+     367.3,
+     302.7,
+     468.6
+    ],
+    "115": [
+     263.8,
+     366.2,
+     320.6,
+     465.3
+    ],
+    "116": [
+     283.8,
+     370.7,
+     338.4,
+     467.5
+    ],
+    "117": [
+     302.7,
+     377.4,
+     357.3,
+     483.1
+    ],
+    "118": [
+     308.3,
+     374,
+     367.3,
+     476.4
+    ],
+    "119": [
+     336.1,
+     371.8,
+     386.2,
+     482
+    ],
+    "120": [
+     339.5,
+     374,
+     382.9,
+     484.2
+    ],
+    "121": [
+     365.1,
+     368.5,
+     394,
+     484.2
+    ],
+    "122": [
+     378.4,
+     364,
+     417.4,
+     488.7
+    ],
+    "123": [
+     401.8,
+     365.1,
+     438.5,
+     488.7
+    ],
+    "124": [
+     416.3,
+     351.8,
+     456.3,
+     484.2
+    ],
+    "125": [
+     434.1,
+     349.5,
+     484.2,
+     482
+    ],
+    "126": [
+     431.9,
+     348.4,
+     477.5,
+     486.4
+    ],
+    "127": [
+     453,
+     340.6,
+     493.1,
+     479.8
+    ],
+    "128": [
+     468.6,
+     334,
+     508.7,
+     475.3
+    ],
+    "129": [
+     486.4,
+     330.6,
+     527.6,
+     474.2
+    ],
+    "130": [
+     503.1,
+     326.2,
+     540.9,
+     463.1
+    ],
+    "131": [
+     524.2,
+     328.4,
+     565.4,
+     463.1
+    ],
+    "132": [
+     525.4,
+     329.5,
+     566.5,
+     459.7
+    ],
+    "133": [
+     544.3,
+     318.4,
+     578.8,
+     456.4
+    ],
+    "134": [
+     556.5,
+     325.1,
+     598.8,
+     465.3
+    ],
+    "135": [
+     568.8,
+     326.2,
+     617.7,
+     478.7
+    ],
+    "136": [
+     583.2,
+     330.6,
+     626.6,
+     470.9
+    ],
+    "137": [
+     588.8,
+     331.7,
+     632.2,
+     480.9
+    ],
+    "138": [
+     588.8,
+     335.1,
+     633.3,
+     483.1
+    ],
+    "139": [
+     601,
+     338.4,
+     650,
+     486.4
+    ],
+    "140": [
+     605.5,
+     341.7,
+     650,
+     483.1
+    ],
+    "141": [
+     628.9,
+     346.2,
+     664.5,
+     475.3
+    ],
+    "142": [
+     634.4,
+     344,
+     680.1,
+     487.6
+    ],
+    "143": [
+     638.9,
+     351.8,
+     695.7,
+     479.8
+    ],
+    "144": [
+     646.7,
+     349.5,
+     685.6,
+     475.3
+    ],
+    "145": [
+     658.9,
+     346.2,
+     696.8,
+     474.2
+    ],
+    "146": [
+     670.1,
+     356.2,
+     706.8,
+     498.7
+    ],
+    "147": [
+     662.3,
+     338.4,
+     746.9,
+     476.4
+    ],
+    "148": [
+     674.5,
+     341.7,
+     746.9,
+     470.9
+    ],
+    "149": [
+     681.2,
+     345.1,
+     774.7,
+     472
+    ],
+    "150": [
+     682.3,
+     345.1,
+     766.9,
+     482
+    ],
+    "151": [
+     682.3,
+     345.1,
+     766.9,
+     482
+    ],
+    "152": [
+     682.3,
+     345.1,
+     766.9,
+     482
+    ],
+    "153": [
+     730.2,
+     338.4,
+     810.3,
+     460.8
+    ],
+    "154": [
+     736.8,
+     322.8,
+     813.6,
+     473.1
+    ],
+    "155": [
+     753.5,
+     335.1,
+     829.2,
+     462
+    ],
+    "156": [
+     754.6,
+     332.8,
+     824.8,
+     467.5
+    ],
+    "157": [
+     762.4,
+     331.7,
+     824.8,
+     462
+    ],
+    "158": [
+     762.4,
+     331.7,
+     851.5,
+     457.5
+    ],
+    "159": [
+     762.4,
+     331.7,
+     851.5,
+     457.5
+    ],
+    "160": [
+     793.6,
+     319.5,
+     870.4,
+     462
+    ],
+    "161": [
+     808.1,
+     327.3,
+     872.6,
+     462
+    ],
+    "162": [
+     808.1,
+     327.3,
+     878.2,
+     458.6
+    ],
+    "163": [
+     810.3,
+     321.7,
+     888.2,
+     458.6
+    ],
+    "164": [
+     810.3,
+     323.9,
+     893.8,
+     459.7
+    ],
+    "165": [
+     830.3,
+     320.6,
+     901.6,
+     455.3
+    ],
+    "166": [
+     830.3,
+     320.6,
+     901.6,
+     458.6
+    ],
+    "167": [
+     849.3,
+     323.9,
+     914.9,
+     458.6
+    ],
+    "168": [
+     849.3,
+     322.8,
+     908.2,
+     459.7
+    ],
+    "169": [
+     858.2,
+     320.6,
+     921.6,
+     455.3
+    ],
+    "170": [
+     865.9,
+     320.6,
+     928.3,
+     457.5
+    ],
+    "171": [
+     876,
+     318.4,
+     947.2,
+     455.3
+    ],
+    "172": [
+     890.4,
+     317.3,
+     949.4,
+     457.5
+    ],
+    "173": [
+     900.5,
+     313.9,
+     965,
+     455.3
+    ],
+    "174": [
+     900.5,
+     319.5,
+     960.6,
+     456.4
+    ],
+    "175": [
+     910.5,
+     313.9,
+     971.7,
+     454.2
+    ],
+    "176": [
+     910.5,
+     313.9,
+     981.7,
+     455.3
+    ],
+    "177": [
+     910.5,
+     313.9,
+     981.7,
+     455.3
+    ],
+    "178": [
+     910.5,
+     313.9,
+     981.7,
+     455.3
+    ],
+    "179": [
+     946.1,
+     312.8,
+     1002.9,
+     453.1
+    ],
+    "180": [
+     946.1,
+     312.8,
+     990.6,
+     455.3
+    ],
+    "181": [
+     948.3,
+     310.6,
+     998.4,
+     454.2
+    ],
+    "182": [
+     957.2,
+     317.3,
+     1009.5,
+     453.1
+    ],
+    "183": [
+     957.2,
+     317.3,
+     1017.3,
+     451.9
+    ],
+    "184": [
+     970.6,
+     307.2,
+     1031.8,
+     451.9
+    ],
+    "185": [
+     976.1,
+     309.5,
+     1024,
+     448.6
+    ],
+    "186": [
+     980.6,
+     312.8,
+     1027.3,
+     458.6
+    ],
+    "187": [
+     983.9,
+     308.4,
+     1032.9,
+     448.6
+    ],
+    "188": [
+     983.9,
+     308.4,
+     1032.9,
+     448.6
+    ],
+    "189": [
+     983.9,
+     308.4,
+     1032.9,
+     448.6
+    ],
+    "190": [
+     997.3,
+     300.6,
+     1042.9,
+     443
+    ],
+    "191": [
+     997.3,
+     300.6,
+     1042.9,
+     443
+    ],
+    "192": [
+     1009.5,
+     307.2,
+     1054.1,
+     443
+    ],
+    "193": [
+     1009.5,
+     307.2,
+     1054.1,
+     443
+    ],
+    "194": [
+     1009.5,
+     307.2,
+     1054.1,
+     443
+    ],
+    "195": [
+     1032.9,
+     302.8,
+     1068.5,
+     435.2
+    ],
+    "196": [
+     1032.9,
+     302.8,
+     1068.5,
+     435.2
+    ],
+    "197": [
+     1045.1,
+     303.9,
+     1088.6,
+     443
+    ],
+    "198": [
+     1047.4,
+     306.1,
+     1087.4,
+     443
+    ],
+    "199": [
+     1052.9,
+     303.9,
+     1096.3,
+     440.8
+    ],
+    "200": [
+     1060.7,
+     302.8,
+     1103,
+     446.4
+    ],
+    "201": [
+     1064.1,
+     297.2,
+     1103,
+     446.4
+    ],
+    "202": [
+     1064.1,
+     298.3,
+     1109.7,
+     441.9
+    ],
+    "203": [
+     1068.5,
+     302.8,
+     1114.2,
+     440.8
+    ],
+    "204": [
+     1069.6,
+     302.8,
+     1113,
+     444.1
+    ],
+    "205": [
+     1071.9,
+     297.2,
+     1114.2,
+     441.9
+    ],
+    "206": [
+     1078.5,
+     300.6,
+     1109.7,
+     440.8
+    ],
+    "207": [
+     1078.5,
+     301.7,
+     1109.7,
+     445.3
+    ],
+    "208": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "209": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "210": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "211": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "212": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "213": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "214": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "215": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "216": [
+     1071.9,
+     302.8,
+     1110.8,
+     444.1
+    ],
+    "217": [
+     1059.6,
+     300.6,
+     1095.2,
+     445.3
+    ],
+    "218": [
+     1059.6,
+     300.6,
+     1095.2,
+     445.3
+    ],
+    "219": [
+     1059.6,
+     300.6,
+     1095.2,
+     445.3
+    ],
+    "220": [
+     1059.6,
+     300.6,
+     1095.2,
+     445.3
+    ],
+    "221": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "222": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "223": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "224": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "225": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "226": [
+     1046.3,
+     305,
+     1089.7,
+     440.8
+    ],
+    "227": [
+     1022.9,
+     303.9,
+     1087.4,
+     450.8
+    ],
+    "228": [
+     1022.9,
+     303.9,
+     1087.4,
+     450.8
+    ],
+    "229": [
+     1022.9,
+     303.9,
+     1087.4,
+     450.8
+    ],
+    "230": [
+     1022.9,
+     303.9,
+     1087.4,
+     450.8
+    ],
+    "231": [
+     1022.9,
+     303.9,
+     1087.4,
+     450.8
+    ],
+    "232": [
+     1002.9,
+     301.7,
+     1066.3,
+     447.5
+    ],
+    "233": [
+     1002.9,
+     301.7,
+     1066.3,
+     447.5
+    ],
+    "234": [
+     1002.9,
+     301.7,
+     1066.3,
+     447.5
+    ],
+    "235": [
+     1002.9,
+     301.7,
+     1066.3,
+     447.5
+    ],
+    "236": [
+     1002.9,
+     301.7,
+     1066.3,
+     447.5
+    ],
+    "237": [
+     970.6,
+     300.6,
+     1032.9,
+     449.7
+    ],
+    "238": [
+     970.6,
+     300.6,
+     1032.9,
+     449.7
+    ],
+    "239": [
+     970.6,
+     300.6,
+     1032.9,
+     449.7
+    ],
+    "240": [
+     946.1,
+     300.6,
+     1009.5,
+     453.1
+    ],
+    "241": [
+     946.1,
+     300.6,
+     1009.5,
+     453.1
+    ],
+    "242": [
+     928.3,
+     300.6,
+     989.5,
+     448.6
+    ],
+    "243": [
+     928.3,
+     300.6,
+     989.5,
+     448.6
+    ],
+    "244": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "245": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "246": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "247": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "248": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "249": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "250": [
+     907.1,
+     302.8,
+     975,
+     451.9
+    ],
+    "251": [
+     884.9,
+     315,
+     960.6,
+     456.4
+    ],
+    "252": [
+     884.9,
+     315,
+     960.6,
+     456.4
+    ],
+    "253": [
+     884.9,
+     315,
+     960.6,
+     456.4
+    ],
+    "254": [
+     878.2,
+     313.9,
+     945,
+     458.6
+    ],
+    "255": [
+     878.2,
+     313.9,
+     945,
+     458.6
+    ],
+    "256": [
+     878.2,
+     313.9,
+     945,
+     458.6
+    ],
+    "257": [
+     852.6,
+     316.1,
+     930.5,
+     467.5
+    ],
+    "258": [
+     852.6,
+     316.1,
+     930.5,
+     467.5
+    ],
+    "259": [
+     852.6,
+     316.1,
+     930.5,
+     467.5
+    ],
+    "260": [
+     852.6,
+     316.1,
+     930.5,
+     467.5
+    ],
+    "261": [
+     840.3,
+     313.9,
+     901.6,
+     458.6
+    ],
+    "262": [
+     840.3,
+     313.9,
+     901.6,
+     458.6
+    ],
+    "263": [
+     825.9,
+     316.1,
+     880.4,
+     460.8
+    ],
+    "264": [
+     825.9,
+     316.1,
+     880.4,
+     460.8
+    ],
+    "265": [
+     825.9,
+     316.1,
+     880.4,
+     460.8
+    ],
+    "266": [
+     825.9,
+     316.1,
+     880.4,
+     460.8
+    ],
+    "267": [
+     808.1,
+     317.3,
+     863.7,
+     462
+    ],
+    "268": [
+     808.1,
+     317.3,
+     863.7,
+     462
+    ],
+    "269": [
+     808.1,
+     317.3,
+     863.7,
+     462
+    ],
+    "270": [
+     808.1,
+     317.3,
+     863.7,
+     462
+    ],
+    "271": [
+     792.5,
+     323.9,
+     849.3,
+     464.2
+    ],
+    "272": [
+     792.5,
+     323.9,
+     849.3,
+     464.2
+    ],
+    "273": [
+     769.1,
+     319.5,
+     828.1,
+     465.3
+    ],
+    "274": [
+     769.1,
+     319.5,
+     828.1,
+     465.3
+    ],
+    "275": [
+     753.5,
+     321.7,
+     804.7,
+     467.5
+    ],
+    "276": [
+     753.5,
+     321.7,
+     804.7,
+     467.5
+    ],
+    "277": [
+     753.5,
+     321.7,
+     804.7,
+     467.5
+    ],
+    "278": [
+     736.8,
+     319.5,
+     788,
+     465.3
+    ],
+    "279": [
+     736.8,
+     319.5,
+     788,
+     465.3
+    ],
+    "280": [
+     722.4,
+     312.8,
+     771.3,
+     470.9
+    ],
+    "281": [
+     722.4,
+     312.8,
+     771.3,
+     470.9
+    ],
+    "282": [
+     716.8,
+     315,
+     765.8,
+     468.6
+    ],
+    "283": [
+     716.8,
+     315,
+     765.8,
+     468.6
+    ]
+   }
+  }
+ },
+ "first_clean_reappearance": [
+  235
+ ],
+ "box_copied": {
+  "TARGET": [
+   149,
+   150,
+   151,
+   152,
+   153,
+   155,
+   156,
+   157,
+   158,
+   160,
+   161,
+   163,
+   165,
+   166,
+   168,
+   169,
+   171,
+   173,
+   175,
+   177,
+   179,
+   181,
+   183,
+   185,
+   186,
+   187,
+   189,
+   190,
+   192,
+   193,
+   195,
+   197,
+   199,
+   201,
+   202,
+   204,
+   205,
+   206,
+   207,
+   208,
+   209,
+   210,
+   211,
+   212,
+   213,
+   214,
+   215,
+   216,
+   217,
+   218,
+   219,
+   220,
+   221,
+   222,
+   223,
+   224,
+   226,
+   227,
+   228,
+   229,
+   230,
+   231,
+   232,
+   233,
+   234,
+   235,
+   236,
+   237,
+   238,
+   240,
+   241,
+   242,
+   243,
+   245,
+   246,
+   247,
+   248,
+   249,
+   250,
+   251,
+   252,
+   253,
+   254,
+   255,
+   256,
+   257,
+   259,
+   260,
+   261,
+   262,
+   263,
+   265,
+   266,
+   267,
+   268,
+   269,
+   270,
+   271,
+   272,
+   273,
+   275,
+   276,
+   277,
+   278,
+   279,
+   281,
+   282,
+   283,
+   285,
+   286,
+   288,
+   289,
+   291,
+   293,
+   294,
+   295,
+   297,
+   298,
+   299
+  ],
+  "P1": [],
+  "P2": [],
+  "P3": [
+   151,
+   152,
+   159,
+   177,
+   178,
+   188,
+   189,
+   191,
+   193,
+   194,
+   196,
+   209,
+   210,
+   211,
+   212,
+   213,
+   214,
+   215,
+   216,
+   218,
+   219,
+   220,
+   222,
+   223,
+   224,
+   225,
+   226,
+   228,
+   229,
+   230,
+   231,
+   233,
+   234,
+   235,
+   236,
+   238,
+   239,
+   241,
+   243,
+   245,
+   246,
+   247,
+   248,
+   249,
+   250,
+   252,
+   253,
+   255,
+   256,
+   258,
+   259,
+   260,
+   262,
+   264,
+   265,
+   266,
+   268,
+   269,
+   270,
+   272,
+   274,
+   276,
+   277,
+   279,
+   281,
+   283
+  ]
+ }
+}

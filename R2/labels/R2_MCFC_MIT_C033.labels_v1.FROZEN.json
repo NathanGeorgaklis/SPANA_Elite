@@ -1,0 +1,26 @@
+{
+ "annotator": "Nathan Georgaklis",
+ "box_frames_required": 288,
+ "bytes": 125835,
+ "clip_id": "R2_MCFC_MIT_C033",
+ "clip_rejected": null,
+ "clip_sha256": "9747585a762dc714595a9837eb90c5a1f5ee1f30b4d4b01543eee097bb7d29d7",
+ "errors": [],
+ "fps": 60.0,
+ "frames": 600,
+ "frozen_at_utc": "2026-10-30T04:25:00Z",
+ "labels_file": "R2_MCFC_MIT_C033.labels_v1.json",
+ "rule": "Do not modify this label file. Corrections require labels_v2 with the reason recorded.",
+ "schema": "r2_labels_v1",
+ "seed_bbox": [
+  908.2,
+  306.1,
+  1015.1,
+  516.5
+ ],
+ "seed_frame": 0,
+ "sha256": "fb0f2f03f5b71ad1835dcd6c9b9d85f9e22776350c6d12590da0333d8d633ca4",
+ "split": "DEV",
+ "status": "FROZEN",
+ "valid": true
+}
