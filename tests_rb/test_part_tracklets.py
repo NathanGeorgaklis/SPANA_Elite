@@ -5,17 +5,22 @@
 #                 independent person unless there is evidence it is a second person; genuine overlapping people stay
 #                 separate; same-kit people are not collapsed; a real second person partly behind stays representable;
 #                 provisional competitors do not disappear for overlapping; ambiguity fails closed.
-"""F3b regression tests (synthetic, neutral TARGET / PERSON_A / OTHER; no benchmark knowledge).
+"""F3b tests (synthetic, neutral TARGET / PERSON_A / OTHER; no benchmark knowledge).
 
 Failure class reproduced (R2 DEV F3b): a detector returns, for ONE body, its main box plus a part box (here the upper
 body, sticking out above a main box that lost the head) that is substantially inside the main box but below the
 NESTED containment. The part box starts its own tracklet. When the part box is no longer detected, its hidden tracklet
-and the body's own tracklet both cover the body's next detection: MULTI_CLAIM counted two physically distinct bodies,
-the body's tracklet was closed as a merge and a merged region (and lineage) followed.
+and the body's own tracklet both cover the body's next detection: MULTI_CLAIM counts two physically distinct bodies,
+the body's tracklet is closed as a merge and a merged region (and lineage) follows.
 
-Rule under test: a tracklet born substantially inside a body observed in the same frame has UNPROVEN distinctness from
-it until the two are seen as clearly separate boxes in one frame. An unproven pair never counts as two bodies (no
-MULTI_CLAIM between them, no size corroboration of one by the other). Both remain tracklets and competitors.
+STATUS: F3b is OPEN. Five population-geometry fixes were built and each was shown by independent review to have a
+geometrically identical unsafe twin (a real person - full-height, short, crouching, or standing up from wholly inside
+the target's box - producing a silent swap, a wrong trusted identity or bank contamination that the baseline does not;
+R2/DEV_REMEDIATION_F3B/). They were rejected. The production code is the baseline (37a109c / a7cc9ac).
+
+  * TestSameBodyPartBoxes / TestTargetLevel F3b reproducers are expectedFailure: they are the acceptance tests for a
+    future fix, which needs evidence geometry cannot give (e.g. appearance of the part box against the body).
+  * Every other test is a SAFETY regression that the baseline passes and any future F3b fix must keep passing.
 """
 import math
 import unittest
@@ -26,6 +31,7 @@ from tests_rb import _synth_scene as SS
 from tests_rb._synth_people import Frame, box_at, cand, run
 
 CFG = TrackerConfig.default()
+PART_MIN = 0.5                                  # F3b geometry band: >= this much inside, below NESTED
 FPS = 30.0
 FULL = box_at(400, 360, 32, 80)                 # (384, 320, 416, 400)
 CLIPPED = (384.0, 330.0, 416.0, 400.0)          # the same body's box without the head
@@ -63,11 +69,12 @@ class TestGeometry(unittest.TestCase):
     def test_fixture_geometry_is_the_failure_class(self):
         # substantially inside, but neither NESTED nor a duplicate
         c = part_overlap(UPPER, CLIPPED)
-        self.assertGreaterEqual(c, CFG.get("population_part_birth_containment"))
+        self.assertGreaterEqual(c, PART_MIN)
         self.assertLess(c, CFG.get("population_nested_containment"))
 
 
 class TestSameBodyPartBoxes(unittest.TestCase):
+    @unittest.expectedFailure      # F3b OPEN (see module docstring)
     def test_full_and_part_box_of_one_person_never_merge(self):
         # frame 30: main box loses the head and an upper-body box is detected; afterwards only the full box
         fr = frames_full(30) + [Frame([cand(CLIPPED), cand(UPPER)], [("TARGET",), ("TARGET",)])] + frames_full(30)
@@ -77,14 +84,14 @@ class TestSameBodyPartBoxes(unittest.TestCase):
         self.assertEqual(len(main), 1, "the body's own tracklet is never closed by its part box")
         born = rn.results[30].tracklet(rn.results[30].observations[1].tracklet_id)
         self.assertIsNotNone(born, "the part box is still represented (a competitor), not deleted")
-        self.assertEqual(born.unproven_distinct_from, (rn.results[30].observations[0].tracklet_id,))
 
+    @unittest.expectedFailure      # F3b OPEN (see module docstring)
     def test_nested_alternatives_over_many_frames_never_merge(self):
         # 2 s of a body whose detector alternates: full box / main box plus a part box (upper body, or lower legs)
         # lower-leg box under a foot-clipped main box (sticks out below it; inside the full body)
         foot_clipped = (384.0, 320.0, 416.0, 388.0)
         lower = (386.0, 360.0, 414.0, 404.0)
-        self.assertGreaterEqual(part_overlap(lower, foot_clipped), CFG.get("population_part_birth_containment"))
+        self.assertGreaterEqual(part_overlap(lower, foot_clipped), PART_MIN)
         self.assertLess(part_overlap(lower, foot_clipped), CFG.get("population_nested_containment"))
         for part, main in ((UPPER, CLIPPED), (lower, foot_clipped)):
             # KNOWN LIMIT (recorded): if the body's own box is clipped on most frames its established height shrinks
@@ -108,9 +115,10 @@ class TestSameBodyPartBoxes(unittest.TestCase):
             fr.append(Frame([cand(FULL), cand(alt)], [("TARGET",), ("TARGET",)]) if k % 2 == 0
                       else Frame([cand(FULL)], [("TARGET",)]))
         rn = run(fr, fps=FPS)
-        self.assertEqual(rn.results[30].tracklet(rn.results[30].observations[1].tracklet_id).unproven_distinct_from,
-                         ())
+        for tid, own in rn.tracklet_owners().items():
+            self.assertEqual(len(own), 1, f"{tid} holds {own}")
 
+    @unittest.expectedFailure      # F3b OPEN (see module docstring)
     def test_duplicate_tracklets_converging_on_one_detection(self):
         # both the body's tracklet and its part tracklet are hidden, then one detection covers both: one body,
         # not a merge; the detection's tracklet records both as possible predecessors and carries no lineage
@@ -124,6 +132,7 @@ class TestSameBodyPartBoxes(unittest.TestCase):
         self.assertEqual(set(r.observations[0].possible_predecessors), {host, part},
                          "no identity continues: the new tracklet records both as possible predecessors")
 
+    @unittest.expectedFailure      # F3b OPEN (see module docstring)
     def test_part_box_does_not_corroborate_its_hosts_size_change(self):
         # the body's own pose widening while its unproven part tracklet is still live (hidden, no longer a recent
         # claimant) and touching it: a SIZE_ANOMALY (abstain), not a merge
@@ -174,8 +183,7 @@ class TestGenuineSecondPeople(unittest.TestCase):
         b += [None] * 40
         rn = self._pair(a, b)
         tb = rn.results[30].observations[1].tracklet_id
-        # full height: a person from its first frame, never an unproven part (review round 1)
-        self.assertEqual(rn.results[30].tracklet(tb).unproven_distinct_from, ())
+        self.assertIsNotNone(tb, "a full-height person partly behind is its own tracklet")
         # now the two converge into one union box
         fr = [Frame([cand(x), cand(y)], [("TARGET",), ("PERSON_A",)]) if y else Frame([cand(x)], [("TARGET",)])
               for x, y in zip(a[:80], b[:80])]
@@ -184,28 +192,13 @@ class TestGenuineSecondPeople(unittest.TestCase):
         self.assertTrue(any(P.MULTI_CLAIM in r.observations[0].merge_reasons for r in rn2.results[80:]),
                         "two people seen apart that converge into one box are a merge")
 
-    def test_short_partner_is_proven_distinct_when_seen_apart_or_seen_at_full_height(self):
-        # a short box born inside the body (unproven) that then moves clearly apart, or grows as tall as a whole
-        # body, is a person: the pair is no longer unproven
-        apart = [(386.0 + 6 * k, 312.0, 414.0 + 6 * k, 356.0) for k in range(1, 6)]    # ends 0.0 inside
-        grows = [(386.0, 312.0, 414.0, 356.0 + 10 * k) for k in range(1, 4)]           # ends 74 px of 80
-        for seq in (apart, grows):
-            fr = frames_full(30) + [Frame([cand(CLIPPED), cand(UPPER)], [("TARGET",), ("PERSON_A",)])]
-            fr += [Frame([cand(FULL), cand(b)], [("TARGET",), ("PERSON_A",)]) for b in seq]
-            rn = run(fr, fps=FPS)
-            tb = rn.results[30].observations[1].tracklet_id
-            self.assertEqual(rn.results[30].tracklet(tb).unproven_distinct_from,
-                             (rn.results[30].observations[0].tracklet_id,))
-            self.assertEqual(rn.results[-1].observations[1].tracklet_id, tb, "the same tracklet followed it")
-            self.assertEqual(rn.results[-1].tracklet(tb).unproven_distinct_from, ())
-
     def test_younger_partner_stepping_in_front_of_its_host_is_never_a_silent_swap(self):
         # PERSON_A is first seen 0.6 inside the target's box (unproven), stays there, then moves in front of the
         # target (the target is no longer detected) and walks away: no tracklet ever holds both people
         tgt = FULL
         fr = [Frame([cand(tgt)], [("TARGET",)]) for _ in range(30)]
         a0 = box_at(413, 362, 33, 82)
-        self.assertGreaterEqual(part_overlap(a0, tgt), CFG.get("population_part_birth_containment"))
+        self.assertGreaterEqual(part_overlap(a0, tgt), PART_MIN)
         fr += [Frame([cand(tgt), cand(a0)], [("TARGET",), ("PERSON_A",)]) for _ in range(10)]
         for k in range(6):                                      # moves over the target, which disappears behind it
             x = 413 - 13 * (k + 1) / 6
@@ -264,7 +257,7 @@ class TestGenuineSecondPeople(unittest.TestCase):
         # its own tracklet(s) throughout, the target's tracklet unbroken, no merge, and proven distinct at the end
         tgt = box_at(26, 360, 32, 80)                           # (10, 320, 42, 400)
         first = (0.0, 320.0, 24.0, 400.0)
-        self.assertGreaterEqual(part_overlap(first, tgt), CFG.get("population_part_birth_containment"))
+        self.assertGreaterEqual(part_overlap(first, tgt), PART_MIN)
         self.assertLess(part_overlap(first, tgt), CFG.get("population_nested_containment"))
         fr = [Frame([cand(tgt)], [("TARGET",)]) for _ in range(30)]
         for k in range(90):
@@ -274,21 +267,18 @@ class TestGenuineSecondPeople(unittest.TestCase):
             fr.append(Frame([cand(tgt)], [("TARGET",)]) if behind else
                       Frame([cand(tgt), cand(b)], [("TARGET",), ("PERSON_A",)]))
         rn = run(fr, fps=FPS)
-        # a full-height entering player is a person from its first frame (never an unproven part): the old,
-        # conservative handling applies while it is behind the target (merges allowed), never a silent swap
-        self.assertEqual(rn.results[30].tracklet(rn.results[30].observations[1].tracklet_id).unproven_distinct_from,
-                         ())
+        # the conservative handling applies while it is behind the target (merges allowed), never a silent swap
         for tid, own in rn.tracklet_owners().items():
             self.assertEqual(len(own), 1, f"{tid} holds {own}")
         last = rn.results[-1]
         tb = last.observations[1].tracklet_id
         self.assertIsNotNone(tb, "the entering player is represented")
-        self.assertEqual(last.tracklet(tb).unproven_distinct_from, ())
 
 
 class TestTargetLevel(unittest.TestCase):
     PPL = SS.make_people([("TARGET", (200, 60, 40), 1.0), ("OTHER", (200, 60, 40), 0.95)])
 
+    @unittest.expectedFailure      # F3b OPEN (see module docstring)
     def test_target_keeps_tracking_through_its_own_part_boxes(self):
         tb = SS.box_at(300, 400, 40, 100)                      # (280, 350, 320, 450)
         clipped = (280.0, 362.0, 320.0, 450.0)
@@ -498,6 +488,70 @@ class TestReviewRound2(unittest.TestCase):
         rn = run(fr, fps=FPS)
         self.assertEqual({t: o for t, o in rn.tracklet_owners().items() if len(o) > 1}, {})
         self.assertTrue(all(P.MERGED_SUSPECTED in r.observations[0].flags for r in rn.results[40:50]))
+
+
+class TestReviewRound3(unittest.TestCase):
+    """Independent review of 46fe988: a crouching real person born partly inside the target's box, moving wholly
+    inside it and standing up in front of it, gives exactly the geometry of the F3b part-box case (the part vanishes,
+    the whole box remains). No identity may continue through it (failed on 46fe988)."""
+    TGT = box_at(400, 360, 32, 80)
+
+    def test_crouching_person_standing_up_in_front_is_never_a_silent_swap(self):
+        for fps in (30.0, 15.0, 10.0):
+            for sc in (1.0, 1.05, 1.1):
+                for dx in (0.0, 3.0):
+                    for rise in (1, 2, 4):
+                        bw, bh, cx = 32 * sc, 80 * sc, 400 + dx
+                        fr = [Frame([cand(self.TGT)], [("TARGET",)]) for _ in range(int(fps))]
+                        fr += [Frame([cand(self.TGT), cand(box_at(412, 376, 28, 48))], [("TARGET",), ("PERSON_A",)])
+                               for _ in range(int(fps / 3))]
+                        n = int(fps / 2)
+                        for k in range(n):
+                            x = 412 + (cx - 412) * (k + 1) / n
+                            fr.append(Frame([cand(self.TGT), cand(box_at(x, 376, 28, 48))],
+                                            [("TARGET",), ("PERSON_A",)]))
+                        fr += [Frame([cand(self.TGT), cand(box_at(cx, 376, 28, 48))], [("TARGET",), ("PERSON_A",)])
+                               for _ in range(int(fps / 3))]
+                        for k in range(rise):
+                            f = (k + 1) / rise
+                            h, w = 48 + (bh - 48) * f, 28 + (bw - 28) * f
+                            b = box_at(cx, 400 - h / 2, w, h)
+                            fr.append(Frame([cand(b)], [("PERSON_A",)]) if f >= 0.75 else
+                                      Frame([cand(self.TGT), cand(b)], [("TARGET",), ("PERSON_A",)]))
+                        fr += [Frame([cand(box_at(cx, 400 - bh / 2, bw, bh))], [("PERSON_A",)])
+                               for _ in range(int(fps / 2))]
+                        v = 2 * 80 / fps
+                        fr += [Frame([cand(box_at(cx + v * (k + 1), 400 - bh / 2, bw, bh))], [("PERSON_A",)])
+                               for k in range(int(fps))]
+                        rn = run(fr, fps=fps)
+                        bad = {t: o for t, o in rn.tracklet_owners().items() if len(o) > 1}
+                        self.assertEqual(bad, {}, f"fps={fps} s={sc} dx={dx} rise={rise}")
+
+    def test_same_kit_person_standing_up_in_front_is_never_trusted(self):
+        ppl = SS.make_people([("TARGET", (200, 60, 40), 1.0), ("OTHER", (200, 60, 40), 0.95)])
+        for fps in (30.0, 15.0, 10.0):
+            tb = SS.box_at(300, 400, 40, 100)
+
+            def cr(x_):
+                return SS.box_at(x_, 420, 34, 60)
+            fr = [SS.SceneFrame({"TARGET": tb}) for _ in range(int(2 * fps))]
+            fr += [SS.SceneFrame({"TARGET": tb, "OTHER": cr(315)}, order=("TARGET", "OTHER"))
+                   for _ in range(int(fps / 3))]
+            n = int(fps / 2)
+            fr += [SS.SceneFrame({"TARGET": tb, "OTHER": cr(315 - 15 * (k + 1) / n)}, order=("TARGET", "OTHER"))
+                   for k in range(n)]
+            fr += [SS.SceneFrame({"TARGET": tb, "OTHER": cr(300)}, order=("TARGET", "OTHER"))
+                   for _ in range(int(fps / 3))]
+            fr += [SS.SceneFrame({"TARGET": tb, "OTHER": tb}, order=("TARGET", "OTHER")) for _ in range(int(fps / 2))]
+            v = 2 * 100 / fps
+            fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(300 + v * (k + 1), 400, 40, 100)},
+                                 order=("TARGET", "OTHER"), drop=("TARGET",)) for k in range(int(2 * fps))]
+            r = SS.run(fr, ppl, fps=fps)
+            bad = [k for k, (f, ds) in enumerate(zip(r.frames, r.dets))
+                   if f.identity_trusted and f.detection_index is not None
+                   and ds[f.detection_index].owners != ("TARGET",)]
+            self.assertEqual(bad, [], f"fps={fps}")
+            self.assertTrue(r.bank_is_pure(), f"fps={fps}")
 
 if __name__ == "__main__":
     unittest.main()

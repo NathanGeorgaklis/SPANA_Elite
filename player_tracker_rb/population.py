@@ -38,10 +38,7 @@ Per frame (update), in order:
                         population_max_gap_s and each filling >= merged_claim_min_box_fraction of the detection
                         (two bodies, one box; also catches a neighbour that "disappears" into a box; a small far body
                         behind a large near one is occlusion, not a merge). A hidden tracklet and its possible
-                        successor count as one body. Exception (NEW_R2 F3b, see 5): no MULTI_CLAIM when the
-                        detection is the older tracklet's own WHOLE box at its established single size (not at the
-                        edge, near its reference area and aspect) and every other claimant is a younger part-sized
-                        tracklet of UNPROVEN distinctness whose predicted box lies wholly inside that body's extent;
+                        successor count as one body;
        AREA_RATIO       its area is >= merged_area_ratio x the ESTABLISHED size of the tracklet it continues;
        ASPECT_WIDE      its w/h is wider than merged_aspect_band x that reference's while its height is not reduced;
        PERSISTENT_MERGE it lies in a merged region and fails those size tests against the region's reference;
@@ -81,24 +78,6 @@ Per frame (update), in order:
   5. Births. Any other unassigned detection starts a new tracklet. Hidden tracklets whose predicted box it covers
      (>= population_contact_cover_min) are recorded as possible predecessors (and the new id as their possible
      successor). The hidden tracklet is NOT closed: it may be a different person still hidden behind someone.
-     UNPROVEN DISTINCTNESS (NEW_R2, R2 DEV F3b): a tracklet born with >= population_part_birth_containment of the
-     smaller of its box and the box of an older body observed in the same frame inside the other, and SHORTER than
-     population_partial_height_ratio of that body's full height, may be a part box of that body (detectors return
-     upper-body and lower-body boxes below the NESTED containment) or a farther person partly behind it. A box as tall
-     as a whole body is always a person: a whole person can stand beside or in front of another, a part box cannot
-     (a same-height shifted alternative box therefore keeps the conservative handling). It is a tracklet and a
-     competitor like any other. Only when the older one continues on its own whole box at its established single
-     size, with the younger one's predicted box wholly inside that body's extent (the box stretched to its reference
-     height), is the younger one not a second claimant (no MULTI_CLAIM), exactly as a NESTED part box claims nothing;
-     the same holds for a detection no claimant took. Anything else (the younger one taking the detection, a short,
-     partial, edge, wider or taller box, same-age tracklets) is still a merge: a crouching or farther real person in
-     front of a body is geometrically a part box only while wholly inside the body's unchanged box. A part-sized
-     partner wholly inside a box never corroborates its size change (it is a SIZE_ANOMALY and escalates as usual).
-     All F3b size tests use the established size reference (median), not the latest box. The pair is
-     PROVEN distinct as soon as both are observed in one frame as boxes (outside one nested group) overlapping less
-     than population_part_birth_containment, or the younger one is observed as tall as a whole body. The pair is
-     exposed on each TrackletView (unproven_distinct_from); a multi-claim not treated as a merge records why on the
-     observation (multi_claim_exception).
   6. Unmatched tracklets become HIDDEN with a PREDICTED (then HELD) box, never an observed one. They close when
      the predicted box is mostly outside the image (LEFT_FRAME) or after population_max_unmatched_s
      (UNMATCHED_TIMEOUT). Contact with any other body during the gap is recorded and bars re-association.
@@ -122,7 +101,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, replace
-from typing import Any, Dict, FrozenSet, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -235,7 +214,6 @@ class Observation:
     max_iou_other: float                      # largest IoU with any other body this frame
     covered_fraction: float                   # fraction of this box covered by other bodies
     second_body_possible: bool = True         # another body could be inside this box (merge corroboration)
-    multi_claim_exception: Optional[str] = None   # NEW_R2 F3b: why a multi-claim was not a merge (decision log)
 
     @property
     def ref(self) -> str:
@@ -252,8 +230,7 @@ class Observation:
                 "flags": list(self.flags),
                 "merge_reasons": list(self.merge_reasons), "claimants": list(self.claimants),
                 "possible_predecessors": list(self.possible_predecessors), "max_iou_other": self.max_iou_other,
-                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible,
-                "multi_claim_exception": self.multi_claim_exception}
+                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible}
 
 
 @dataclass(frozen=True)
@@ -280,9 +257,6 @@ class TrackletView:
     bank_refusals: Tuple[str, ...]
     camera_compensated: bool
     is_competitor: bool = True
-    # NEW_R2 (F3b): tracklets this one has never been seen apart from (born substantially inside one another's box):
-    # possibly one body, so never counted as two bodies against each other
-    unproven_distinct_from: Tuple[str, ...] = ()
 
     @property
     def observed(self) -> bool:
@@ -299,8 +273,7 @@ class TrackletView:
                 "possible_predecessors": list(self.possible_predecessors),
                 "possible_successors": list(self.possible_successors), "bank_samples": self.bank_samples,
                 "bank_eligible": self.bank_eligible, "bank_refusals": list(self.bank_refusals),
-                "camera_compensated": self.camera_compensated, "is_competitor": self.is_competitor,
-                "unproven_distinct_from": list(self.unproven_distinct_from)}
+                "camera_compensated": self.camera_compensated, "is_competitor": self.is_competitor}
 
 
 @dataclass(frozen=True)
@@ -446,16 +419,6 @@ def _distinct_bodies(tids: Sequence[str], by_tid: Dict[str, "_Tracklet"]) -> int
     return len({uf.find(a) for a in tids})
 
 
-def _part_overlap(a: Box, b: Box) -> float:
-    """Fraction of the SMALLER of two boxes that lies inside the other."""
-    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
-    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
-    sa = max(0.0, a[2] - a[0]) * max(0.0, a[3] - a[1])
-    sb = max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
-    m = min(sa, sb)
-    return ix * iy / m if m > 0 else 0.0
-
-
 class _UnionFind:
     def __init__(self) -> None:
         self.parent: Dict[Any, Any] = {}
@@ -489,8 +452,6 @@ class Population:
         self._live: List[_Tracklet] = []
         self._regions: List[_MergedRegion] = []
         self._memory: List[ClosedTracklet] = []
-        # NEW_R2 (F3b): pairs of tracklet ids (live or remembered) whose distinctness is unproven
-        self._unproven: Set[FrozenSet[str]] = set()
         self._counter = 0
         self._order = 0
         self._last: Optional[FrameResult] = None
@@ -663,24 +624,6 @@ class Population:
         # observed height (a prediction made from a partial box is itself partial)
         full_h = {tr.tid: max([_wh(pbox[tr.tid])[1]] + [tr.sizes[-1][2]] if tr.sizes else [_wh(pbox[tr.tid])[1]])
                   for tr in live}
-        # established single-body size references (median of the recent window, camera-scaled): also the robust height
-        # used by the F3b part-size tests (not the latest or predicted box, which may be momentarily tall)
-        refs = {tr.tid: self._size_ref(tr, t) for tr in live}
-        near = c.get("merged_anomaly_clear_area_ratio")
-        nest_min = c.get("population_nested_containment")
-
-        def whole_single_body(i: int, tid: str) -> bool:
-            """Box i is tracklet tid's own whole body at its established single size: not at the image edge, at
-            least population_partial_height_ratio of its reference height, area and aspect within
-            merged_anomaly_clear_area_ratio of the reference (NEW_R2 F3b, review round 2)."""
-            ref = refs.get(tid)
-            if ref is None or edge[i]:
-                return False
-            w_, h_ = _wh(boxes[i])
-            rw_, rh_ = ref
-            ar, asp = (w_ * h_) / (rw_ * rh_), (w_ / h_) / (rw_ / rh_)
-            return h_ >= c.get("population_partial_height_ratio") * rh_ and \
-                1.0 / near <= ar <= near and 1.0 / near <= asp <= near
         valid: Dict[Tuple[str, int], float] = {}
         for tr in eligible:
             for i in bodies:
@@ -697,37 +640,6 @@ class Population:
             if tid in assigned_t or i in assigned_d:
                 continue
             assigned_t[tid], assigned_d[i] = i, tid
-        # NEW_R2 (F3b): two tracklets of unproven distinctness are PROVEN distinct once both are observed in one frame
-        # as separate boxes (not one nested group) overlapping less than population_part_birth_containment
-        # or as soon as the younger one is observed as tall as a whole body (population_partial_height_ratio of the
-        # older one's full height): a whole person can stand in front of another, a part box cannot (review round 1)
-        part_min = c.get("population_part_birth_containment")
-        part_h = c.get("population_partial_height_ratio")
-        by_tid_now = {tr.tid: tr for tr in live}
-        for pair in list(self._unproven):
-            a_, b_ = tuple(pair)
-            if a_ in assigned_t and b_ in assigned_t:
-                i_, j_ = assigned_t[a_], assigned_t[b_]
-                if group[i_] != group[j_] and _part_overlap(boxes[i_], boxes[j_]) < part_min:
-                    self._unproven.discard(pair)
-                    continue
-            if a_ in by_tid_now and b_ in by_tid_now:
-                old, young = sorted((a_, b_), key=lambda u: (by_tid_now[u].first_time, by_tid_now[u].order))
-                if young in assigned_t and (refs[old] is None or
-                                            _wh(boxes[assigned_t[young]])[1] >= part_h * refs[old][1]):
-                    self._unproven.discard(pair)
-        unproven = frozenset(self._unproven)
-
-        def same_body_possible(u: Optional[str], v: Optional[str], vbox: Optional[Box] = None,
-                               host_box: Optional[Box] = None) -> bool:
-            """v may be part of u's body: an unproven pair, and (when boxes are given) v's box wholly inside u's box
-            (population_nested_containment, as a NESTED part box)."""
-            if u is None or v is None or frozenset((u, v)) not in unproven:
-                return False
-            if vbox is None or host_box is None:
-                return True
-            return float(containment(np.asarray([vbox]), np.asarray([host_box]))[0, 0]) >= nest_min
-
         # A nested box and its container are alternative observations (possibly of one body). An unassigned
         # nested box, or an unassigned box containing an assigned nested box, is an ALTERNATIVE: it starts no
         # tracklet and takes part in no merge test (it stays an observation and a competitor).
@@ -760,17 +672,12 @@ class Population:
         second_body: Dict[int, bool] = {}
         for i in bodies:
             bi = boxes[i]
-            # a tracklet of unproven distinctness from this box's own tracklet may be the same body: never a second
-            # body for it (NEW_R2 F3b)
-            second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j])
-                                  and not same_body_possible(own_tid[i], assigned_d.get(j), boxes[j], bi)
-                                  for j in bodies)
-                              or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid])
-                                     and not same_body_possible(own_tid[i], tr.tid, pbox[tr.tid], bi) for tr in live)
+            second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) for j in bodies)
+
+                              or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) for tr in live)
                               # a memory box counts only while its position means something (not across a cut;
                               # review round 4 M1)
                               or any(m_.tracklet_id != own_tid[i] and m_.position_valid and _touch(bi, m_.last_box)
-                                     and not same_body_possible(own_tid[i], m_.tracklet_id, m_.last_box, bi)
                                      for m_ in self._memory))
         size_anomaly: Set[int] = set()
         anomaly_hold: Dict[int, Tuple[bool, bool]] = {}   # i -> (merge-sized now, near single size now)
@@ -832,7 +739,7 @@ class Population:
         # is unknown. It is forgotten population_closed_memory_s after its last evidence, or when it resolves.
         expired = {k for k, rg in enumerate(self._regions) if t - rg.last_evidence_t > hold}
         lo, hi = c.get("merged_aspect_band")
-        mc_exception: Dict[int, str] = {}
+        refs = {tr.tid: self._size_ref(tr, t) for tr in live}
         for i in track:
             cl = [tr.tid for tr in live
                   if cont_pd.get((tr.tid, i), 0.0) >= c.get("merged_overlap_min")
@@ -844,36 +751,7 @@ class Population:
                       and cont_pd[(tid, i)] * _wh(pbox[tid])[0] * _wh(pbox[tid])[1]
                       >= c.get("merged_claim_min_box_fraction") * det_area]
             if len(strong) >= 2 and _distinct_bodies(strong, by_tid) >= 2:
-                # NEW_R2 (F3b): two exceptions, where the claimants may be ONE body (pairs never seen apart):
-                #  * the body's own (older) tracklet keeps its detection and every other claimant is a younger
-                #    tracklet born inside it (possibly its part or alternative box): not two bodies;
-                #  * no claimant took the detection and every pair of claimants is unproven: no identity continues
-                #    (the detection starts a new tracklet with them as possible predecessors), no merged region.
-                # Every other case, including the younger one taking the detection, two tracklets of the same age,
-                # or any proven-distinct claimant, stays a MULTI_CLAIM merge.
-                # Review round 2: only where the box is the older body's own WHOLE box at its established single
-                # size and every other claimant's predicted box lies wholly inside it (as a NESTED part box would).
-                # A short, partial, edge, wider or taller box (a crouching / farther person in front, a union) is a
-                # merge as before.
-                def part_of(host: str, u: str) -> bool:
-                    # u's predicted box lies wholly inside the host's body extent here: box i stretched to the host's
-                    # reference height (a part box of a head- or foot-clipped body box lies inside its full body)
-                    if not (frozenset((host, u)) in unproven and by_tid[host].first_time < by_tid[u].first_time):
-                        return False
-                    x0, y0, x1, y1 = boxes[i]
-                    rh_ = refs[host][1]
-                    ext = (x0, min(y0, y1 - rh_), x1, max(y1, y0 + rh_))
-                    return float(containment(np.asarray([pbox[u]]), np.asarray([ext]))[0, 0]) >= nest_min
-                a_ = assigned_d.get(i)
-                host_keeps = a_ in strong and whole_single_body(i, a_) and \
-                    all(u == a_ or part_of(a_, u) for u in strong)
-                oldest = min(strong, key=lambda u: (by_tid[u].first_time, by_tid[u].order))
-                one_body_unclaimed = a_ is None and whole_single_body(i, oldest) and \
-                    all(u == oldest or part_of(oldest, u) for u in strong)
-                if host_keeps or one_body_unclaimed:
-                    mc_exception[i] = "OLDER_BODY_KEEPS_ITS_BOX" if host_keeps else "UNCLAIMED_ONE_BODY"
-                else:
-                    merge_reasons[i].append(MULTI_CLAIM)
+                merge_reasons[i].append(MULTI_CLAIM)
             # size reference: only the body this box would continue, or an evidenced merged region. A box that
             # merely covers another (smaller, hidden) body is not compared with it: that is occlusion.
             ref_wh: Optional[Tuple[float, float]] = None
@@ -1082,15 +960,6 @@ class Population:
             births[i] = tr
             observed_now[tr.tid] = i
             flags_now[tr.tid] = {CONTESTED} if i in contested_d else set()
-        # NEW_R2 (F3b): a tracklet born substantially inside (or around) the box of a body observed in this same
-        # frame may be a part or alternative box of that body: their distinctness is unproven until seen apart
-        # Only a box SHORTER than a whole body of the older one (population_partial_height_ratio of its full height)
-        # can be its part: a full-height box beside or in front of a body is treated as a person (review round 1)
-        for i, b in births.items():
-            for tid, j in observed_now.items():
-                if refs.get(tid) is not None and tid not in closed_now and group.get(j) != group.get(i) \
-                        and _part_overlap(boxes[i], boxes[j]) >= part_min and _wh(boxes[i])[1] < part_h * refs[tid][1]:
-                    self._unproven.add(frozenset((b.tid, tid)))
         for tr in hidden_now:
             for i, b in births.items():
                 if tr.tid in b.predecessors and b.tid not in tr.successors:
@@ -1209,8 +1078,7 @@ class Population:
                                    merge_reasons=tuple(merge_reasons.get(i, ())),
                                    claimants=tuple(claimants.get(i, ())), possible_predecessors=preds_i,
                                    max_iou_other=max_iou, covered_fraction=cov,
-                                   second_body_possible=second_body.get(i, True),
-                                   multi_claim_exception=mc_exception.get(i)))
+                                   second_body_possible=second_body.get(i, True)))
 
         # ---- 8. views and bank eligibility ---------------------------------------------------------------
         views: List[TrackletView] = []
@@ -1275,16 +1143,12 @@ class Population:
                 provisional=(t - tr.first_time) < c.get("population_provisional_s"), flags=tuple(sorted(fl)),
                 possible_predecessors=tr.predecessors, possible_successors=tuple(tr.successors),
                 bank_samples=len(tr.bank), bank_eligible=not refusals, bank_refusals=tuple(refusals),
-                camera_compensated=comp,
-                unproven_distinct_from=tuple(sorted(u for pair in self._unproven if tr.tid in pair
-                                                    for u in pair if u != tr.tid))))
+                camera_compensated=comp))
 
         # ---- memory ------------------------------------------------------------------------------------------
         self._memory.extend(closed)
         keep_s = c.get("population_closed_memory_s")
         self._memory = [m for m in self._memory if t - m.closed_time_s <= keep_s]
-        known = {tr.tid for tr in self._live} | {m.tracklet_id for m in self._memory}
-        self._unproven = {pair for pair in self._unproven if pair <= known}
         res = FrameResult(rel_frame=rel_frame, time_s=t, camera=camera, observations=tuple(obs),
                           tracklets=tuple(views), closed=tuple(closed), contact_events=tuple(events),
                           overlap_pairs=tuple(pairs))
