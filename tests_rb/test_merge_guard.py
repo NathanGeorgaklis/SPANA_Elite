@@ -52,7 +52,7 @@ def widest(r):
 
 class TestSingleBodySizeChange(unittest.TestCase):
     def test_short_pose_widening_does_not_close_the_tracklet(self):
-        boxes = widening(30, 15, n_hold=8, n_back=10)            # anomaly < merged_anomaly_max_s, then back
+        boxes = widening(30, 15, n_hold=8, n_back=20)            # anomaly < merged_anomaly_max_s, then back
         rn = run([Frame([cand(b)], [("TARGET",)]) for b in boxes], fps=FPS)
         tids = {r.observations[0].tracklet_id for r in rn.results}
         self.assertEqual(len(tids), 1, "the body's tracklet must not be closed by a short pose change")
@@ -110,6 +110,54 @@ class TestSingleBodySizeChange(unittest.TestCase):
         self.assertLess(codes.index("M"), int(MAX_S * FPS), "merged before any anomaly escalation")
 
 
+class TestIntermittentAnomaly(unittest.TestCase):
+    """Review round 2 H1: one near-size or partial frame must not end an anomaly (and reset escalation)."""
+
+    def _union_run(self, pattern):
+        # 1 s of a single body, then 3 s of a union whose width follows pattern(k) (in body widths); "P" = a partial
+        # frame (lower body hidden)
+        frames = [Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]) for _ in range(30)]
+        for k in range(90):
+            p = pattern(k)
+            if p == "P":
+                frames.append(Frame([cand((384.0, 320.0, 448.0, 360.0))], [("TARGET", "PERSON_A")]))
+            else:
+                w = 32 * p
+                frames.append(Frame([cand(box_at(400 + (w - 32) / 2, 360, w, 80))], [("TARGET", "PERSON_A")]))
+        rn = run(frames, fps=FPS)
+        return "".join(code(r.observations[0]) for r in rn.results[30:])
+
+    def check(self, codes):
+        first = codes.index("A")
+        self.assertNotIn(".", codes[first:], "an anomaly never ends on intermittent frames of a union")
+        self.assertTrue(codes.endswith("M" * 20), "a persistent union becomes a merge")
+        self.assertLessEqual(codes.index("M") - first, int(math.ceil(MAX_S * FPS)) + 1)
+
+    def test_union_alternating_wide_and_less_wide(self):
+        self.check(self._union_run(lambda k: 2.0 if k % 2 == 0 else 1.45))
+
+    def test_union_with_one_narrower_frame_every_half_second(self):
+        self.check(self._union_run(lambda k: 1.45 if k % 15 == 14 else 2.0))
+
+    def test_union_with_one_partial_frame_every_half_second(self):
+        self.check(self._union_run(lambda k: "P" if k % 15 == 14 else 2.0))
+
+    def test_running_stride_returning_to_normal_width_never_escalates(self):
+        # a single body's stride: width oscillates between x1.0 and x2.0 of its standing width, period 0.8 s; each
+        # narrow phase (<= x1.25 for about 0.27 s) ends the anomaly, so it never becomes a merge
+        frames = [Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]) for _ in range(30)]
+        for k in range(120):
+            f = 1.5 - 0.5 * math.cos(2 * math.pi * k / (0.8 * FPS))
+            w = 32 * f
+            frames.append(Frame([cand(box_at(400, 360, w, 80))], [("TARGET",)]))
+        rn = run(frames, fps=FPS)
+        codes = "".join(code(r.observations[0]) for r in rn.results[30:])
+        self.assertIn("A", codes)
+        self.assertNotIn("M", codes)
+        self.assertIn(".", codes[codes.index("A"):], "the anomaly ends between strides")
+        self.assertEqual(len({r.observations[0].tracklet_id for r in rn.results}), 1)
+
+
 class TestCorroboratedMerges(unittest.TestCase):
     def test_gradual_growth_over_a_second_tracked_body_is_a_merge_at_once(self):
         frames = []
@@ -134,20 +182,40 @@ class TestCorroboratedMerges(unittest.TestCase):
         rn = run(frames, fps=FPS)
         self.assertTrue(any(P.MERGED_SUSPECTED in r.observations[0].flags for r in rn.results[35:]))
 
-    def test_second_persons_own_full_height_box_inside_the_merged_box_corroborates(self):
-        # review H2: the union box M of A and B plus B's own full-height box nested inside M
+    def test_union_holding_a_second_persons_own_box_is_abstained_then_merged(self):
+        # review H2: the union box M of A and B plus B's own full-height box nested inside M. Nested boxes are not
+        # corroboration (tall same-body alternative boxes are common on real footage), so M is abstained on from the
+        # first merge-sized frame (never a clean single body, never banked) and is a merge once it persists.
         frames = [Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]) for _ in range(30)]
         for k in range(10):
             w = 32 + 32 * (k + 1) / 10
             m = box_at(400 + (w - 32) / 2, 360, w, 80)
-            bb = (m[2] - 30, m[1] + 2, m[2] - 1, m[3] - 1)            # B: ~96 % of M's height, at M's right side
-            frames.append(Frame([cand(m), cand(bb)], [("TARGET", "PERSON_A"), ("PERSON_A",)]))
+            frames.append(Frame([cand(m), cand((m[2] - 30, m[1] + 2, m[2] - 1, m[3] - 1))],
+                                [("TARGET", "PERSON_A"), ("PERSON_A",)]))
+        m = box_at(416, 360, 64, 80)
+        for _ in range(int(math.ceil(MAX_S * FPS)) + 3):
+            frames.append(Frame([cand(m), cand((m[2] - 30, m[1] + 2, m[2] - 1, m[3] - 1))],
+                                [("TARGET", "PERSON_A"), ("PERSON_A",)]))
         rn = run(frames, fps=FPS)
-        for r in rn.results[31:]:
-            m = widest(r)
-            self.assertTrue(m.second_body_possible)
-            self.assertNotIn(P.SIZE_ANOMALY, m.flags)
-        self.assertTrue(any(P.MERGED_SUSPECTED in widest(r).flags for r in rn.results[30:]))
+        codes = "".join(code(widest(r)) for r in rn.results[30:])
+        first = next(k for k, ch in enumerate(codes) if ch != ".")
+        self.assertNotIn(".", codes[first:], "once merge-sized, never a clean single body again")
+        self.assertEqual(codes[-1], "M")
+        for r in rn.results[30:]:
+            o = widest(r)
+            if o.tracklet_id:
+                self.assertFalse(r.tracklet(o.tracklet_id).bank_eligible and code(o) != ".")
+
+    def test_same_bodys_tight_alternative_box_does_not_turn_a_pose_change_into_a_merge(self):
+        # review round 2 M1: the detector also returns the body's own tight box inside its pose-widened box
+        frames = []
+        for b in widening(30, 15, n_hold=8, n_back=20):
+            cx = (b[0] + b[2]) / 2
+            frames.append(Frame([cand(b), cand(box_at(cx, 361, 30, 76))], [("TARGET",), ("TARGET",)]))
+        rn = run(frames, fps=FPS)
+        codes = "".join(code(widest(r)) for r in rn.results)
+        self.assertNotIn("M", codes)
+        self.assertEqual(len({widest(r).tracklet_id for r in rn.results}), 1)
 
     def test_overlapping_genuine_people_stay_separate_competitors(self):
         frames = [Frame([cand(box_at(400, 360, 32, 80)), cand(box_at(420, 362, 32, 80))],

@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -577,12 +577,23 @@ PARAMS: Tuple[Param, ...] = (
        "NEW_R2 (R2 DEV remediation F3). Development footage: a single isolated body's pose widened its box up to x1.65 "
        "its 1 s median area at constant height; F2 historical merged box x3.1", 1.0, 100.0),
     _p("merged_anomaly_max_s", "float", "s",
-       "An uncorroborated SIZE_ANOMALY (single body, no possible second body, below merged_uncorroborated_area_ratio) "
-       "that lasts this long is treated as a merge (the tracklet closes; merged region and lineage as for any merge). "
-       "Shorter anomalies are abstained on (never trusted or banked) without closing the tracklet. Seconds, so the rule "
+       "A SIZE_ANOMALY (single body, no possible second body, below merged_uncorroborated_area_ratio) that has not "
+       "ended after this long, and whose box is not near its held single-body size, is treated as a merge "
+       "(SUSTAINED_SIZE_ANOMALY; the tracklet closes; merged region and lineage as for any merge). Seconds, so the rule "
        "is frame-rate free.", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged",
-       "NEW_R2 (R2 DEV remediation F3, review H1/H3): longer than a single limb extension or stride; an unseen second "
-       "body that stays merged is still merged after this long", 0.0, 10.0),
+       "NEW_R2 (R2 DEV remediation F3, reviews H1/H3): longer than a single limb extension or stride; an unseen second "
+       "body that stays merged is still merged after this long. Not calibrated: to be measured on DEV", 0.0, 10.0),
+    _p("merged_anomaly_clear_area_ratio", "float", "ratio to the held single-body reference",
+       "A SIZE_ANOMALY ends only on boxes at most this large (area, and aspect relative to the reference) against the "
+       "held single-body size, not partial and not at the image edge, sustained for merged_anomaly_clear_s. A union "
+       "of two bodies stays clearly wider than one body even on its narrowest frames; a single body's stride or limb "
+       "extension returns close to its normal size.", 1.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged",
+       "NEW_R2 (R2 DEV remediation F3, review round 2 H1: a union alternating x2.0 / x1.45 ended the anomaly on its "
+       "x1.45 frames). Not calibrated", 1.0, 10.0),
+    _p("merged_anomaly_clear_s", "float", "s",
+       "How long a SIZE_ANOMALY's box must stay near its held single-body size (merged_anomaly_clear_area_ratio) before "
+       "the anomaly ends. One near-size or partial frame never ends it.", 0.2, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "merged", "NEW_R2 (R2 DEV remediation F3, review round 2 H1). Not calibrated", 0.0, 10.0),
     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
        "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 100.0),
@@ -780,6 +791,8 @@ def _cross_checks(v: Mapping[str, Any]) -> list:
         errs.append("merged_aspect_band must contain 1.0 (the target's own aspect)")
     if v["merged_uncorroborated_area_ratio"] < v["merged_area_ratio"]:
         errs.append("merged_uncorroborated_area_ratio must be >= merged_area_ratio")
+    if v["merged_anomaly_clear_area_ratio"] >= v["merged_area_ratio"]:
+        errs.append("merged_anomaly_clear_area_ratio must be < merged_area_ratio (a merge-sized box never clears)")
     if v["population_merged_region_hold_s"] > v["population_closed_memory_s"]:
         errs.append("population_merged_region_hold_s must be <= population_closed_memory_s")
     if v["population_max_gap_s"] > v["population_max_unmatched_s"]:
