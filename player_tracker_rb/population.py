@@ -675,7 +675,10 @@ class Population:
             second_body[i] = (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) for j in bodies)
 
                               or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) for tr in live)
-                              or any(m_.tracklet_id != own_tid[i] and _touch(bi, m_.last_box) for m_ in self._memory))
+                              # a memory box counts only while its position means something (not across a cut;
+                              # review round 4 M1)
+                              or any(m_.tracklet_id != own_tid[i] and m_.position_valid and _touch(bi, m_.last_box)
+                                     for m_ in self._memory))
         size_anomaly: Set[int] = set()
         anomaly_hold: Dict[int, Tuple[bool, bool]] = {}   # i -> (merge-sized now, near single size now)
         merge_reasons: Dict[int, List[str]] = {i: [] for i in track}
@@ -913,7 +916,9 @@ class Population:
                 elif merge_sized or not near:
                     tr.clear_since, held = None, True
                 else:
-                    if tr.clear_since is None:
+                    # the clearing run must be observed continuously: a frame where the tracklet was unseen restarts
+                    # it (review round 4 L2)
+                    if tr.clear_since is None or tr.last_obs_frame != self._last_frame:
                         tr.clear_since = t
                     held = t - tr.clear_since < c.get("merged_anomaly_clear_s")
                     if not held:                             # ended; frozen_ref stays as the fallback reference

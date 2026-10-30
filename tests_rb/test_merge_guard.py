@@ -377,5 +377,212 @@ class TestTargetLevel(unittest.TestCase):
             self.assertTrue(r.bank_is_pure(), mode)
 
 
+class TestReviewRound4(unittest.TestCase):
+    """Independent review round 4 (656a272): M1 pre-cut memory as corroboration, L1 stale target anomaly tracklet,
+    L2 anomaly clearing across a detection gap. Each failed on 656a272."""
+    PPL = SS.make_people([("TARGET", (200, 60, 40), 1.0), ("OTHER", (40, 60, 200), 1.0)])
+
+    def _after_cut(self, with_precut_person):
+        from player_tracker_rb.camera import CUT, identity_motion
+        fr = []
+        for _ in range(30):     # shot 1: a person where the target will stand in shot 2 (or far away)
+            b = box_at(400, 360, 32, 80) if with_precut_person else box_at(1000, 360, 32, 80)
+            fr.append(Frame([cand(b)], [("OTHER",)]))
+        cut = identity_motion(CUT, continuity_broken=True)
+        for k, b in enumerate(widening(8, 15, n_hold=4, n_back=20)):   # shot 2: one body, pose widening
+            fr.append(Frame([cand(b)], [("TARGET",)], camera=cut if k == 0 else None))
+        rn = run(fr, fps=FPS)
+        codes = "".join(code(r.observations[0]) for r in rn.results[30:])
+        lineage = any(P.MERGE_LINEAGE in v.flags for r in rn.results[30:] for v in r.tracklets)
+        return codes, lineage
+
+    def test_memory_from_before_a_cut_never_corroborates_a_merge(self):
+        # pixel positions from the previous shot mean nothing in the new one (position_valid False)
+        base = self._after_cut(False)
+        self.assertNotIn("M", base[0])
+        self.assertIn("A", base[0])
+        self.assertEqual(self._after_cut(True), base)
+
+    def test_target_lost_during_an_anomaly_returns_through_one_reacquisition(self):
+        b = lambda w: SS.box_at(300, 400, w, 100)
+        ws = [40.0] * 30 + [40 + 52 * (k + 1) / 15 for k in range(15)] + [92.0] * 3   # merge-sized union
+        ws += [56.0] * 45                       # x1.4 held: neither clears nor escalates; target ages to LOST
+        ws += [40.0] * 60
+        r = SS.run([SS.SceneFrame({"TARGET": b(w)}) for w in ws], self.PPL)
+        reacq = [k for k, f in enumerate(r.frames) if f.reidentified_this_frame]
+        self.assertEqual(len(reacq), 1, f"one return, not a re-broken one: {reacq}")
+        self.assertEqual([k for k, f in enumerate(r.frames) if k > reacq[0] and f.decision.get("continuity_broken")],
+                         [])
+        self.assertGreater(r.frames[reacq[0]].target_episode, r.frames[29].target_episode,
+                           "the return is a new (unverified) episode")
+        self.assertEqual(len({r.frames[k].target_episode for k in range(reacq[0], len(ws))}), 1)
+        self.assertTrue(r.bank_is_pure())
+        self.assertEqual(r.swaps(), [])
+
+    def test_anomaly_clearing_must_be_observed_continuously(self):
+        clear_s = CFG.get("merged_anomaly_clear_s")
+        for fps in (25.0, 30.0, 60.0):
+            gap = max(1, math.floor(0.6 * clear_s * fps))   # short enough that the same tracklet continues
+            def frames(n_after):
+                fr = [Frame([cand(b)], [("TARGET",)]) for b in widening(int(fps), int(fps / 2), n_hold=int(fps / 5))]
+                fr.append(Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]))      # one near-single frame
+                fr += [Frame([], []) for _ in range(gap)]                                # unseen
+                fr += [Frame([cand(box_at(400, 360, 32, 80))], [("TARGET",)]) for _ in range(n_after)]
+                obs = [x.observations[0] for x in run(fr, fps=fps).results if x.observations]
+                return [code(o) for o in obs], [o.tracklet_id for o in obs]
+            # the pre-gap frame plus the gap plus `short` observed frames span more than clear_s, but the frames
+            # observed continuously after the gap span less
+            short = math.ceil(clear_s * fps) - gap + 1           # one frame clear of the boundary
+            self.assertGreater((gap + short) / fps, clear_s * 1.001)
+            self.assertLess((short - 1) / fps, clear_s)
+            codes, tids = frames(short)
+            self.assertEqual(len(set(tids[-short - 2:])), 1, f"{fps} fps: same tracklet across the gap")
+            self.assertEqual(codes[-short:], ["A"] * short, f"{fps} fps: a gap is not part of the clearing")
+            codes, tids = frames(math.ceil(2 * clear_s * fps))    # positive control: sustained observation clears
+            self.assertEqual(codes[-1], ".", f"{fps} fps")
+            self.assertEqual(len(set(tids[-20:])), 1, f"{fps} fps")
+
+
+
+class TestAuditRound4(unittest.TestCase):
+    """Test audit round 4 (656a272): each anomaly rule is decided by its own check, at more than one frame rate."""
+    BODY = box_at(400, 360, 32, 80)
+
+    def _union(self, fps=FPS, n_hold=None, cy=360.0):
+        # a single body whose box becomes union-sized (x2.3 area, below the uncorroborated cap): a SIZE_ANOMALY
+        n_hold = int(fps / 5) if n_hold is None else n_hold
+        return [Frame([cand(b)], [("TARGET",)]) for b in widening(int(fps), int(fps / 2), n_hold=n_hold, cy=cy)]
+
+    def _codes(self, frames, fps=FPS):
+        rn = run(frames, fps=fps)
+        return "".join(code(widest(r)) if r.observations else "_" for r in rn.results), rn
+
+    def _tail_never_clears(self, tail_frame, body=None):
+        # union, then 0.1 s of single-size boxes (re-associated, clearing started but not done), then 0.5 s of
+        # tail boxes that only one check says are not near single size, then the full single body again
+        body = body or self.BODY
+        fr = self._union(cy=(body[1] + body[3]) / 2)
+        fr += [Frame([cand(body)], [("TARGET",)]) for _ in range(int(0.1 * FPS))]
+        fr += [tail_frame() for _ in range(int(0.5 * FPS))]
+        n = len(fr)
+        fr += [Frame([cand(body)], [("TARGET",)]) for _ in range(int(0.5 * FPS))]
+        codes, rn = self._codes(fr)
+        first = codes.index("A")
+        self.assertEqual(set(codes[first:n]), {"A"}, codes)
+        self.assertNotIn("M", codes)
+        self.assertTrue(codes.endswith("." * 5), "a full, single-size body ends it")
+        self.assertEqual(len({r.observations[0].tracklet_id for r in rn.results}), 1)
+
+    def test_partial_near_size_boxes_never_end_an_anomaly(self):
+        # lower body hidden: area and aspect are near single size, only the height says partial
+        part = (387.0, 320.0, 413.0, 376.0)                    # 26 x 56: area x0.57, aspect x1.16, height x0.7
+        self.assertLess(56 / 80, CFG.get("population_partial_height_ratio"))
+        self._tail_never_clears(lambda: Frame([cand(part)], [("TARGET",)]))
+
+    def test_edge_touching_boxes_never_end_an_anomaly(self):
+        # a body just below the top of the image; the tail boxes are the same body moved up to touch the edge
+        m = CFG.get("detector_edge_touch_margin_px")
+        body = box_at(400, m + 6 + 40, 32, 80)
+        at_edge = (body[0], m - 1, body[2], m - 1 + 80)
+        self._tail_never_clears(lambda: Frame([cand(at_edge)], [("TARGET",)]), body=body)
+
+    def test_same_area_wide_boxes_never_end_an_anomaly(self):
+        wide = (380.0, 336.0, 420.0, 400.0)                    # 40 x 64: area x1.0, aspect x1.56, height x0.8
+        lo, hi = CFG.get("merged_aspect_band")
+        self.assertLess((40 / 64) / (32 / 80), hi)              # not itself merge-sized
+        self.assertGreater((40 / 64) / (32 / 80), CFG.get("merged_anomaly_clear_area_ratio"))
+        self._tail_never_clears(lambda: Frame([cand(wide)], [("TARGET",)]))
+
+    def test_anomaly_ends_after_clear_s_in_seconds_at_any_frame_rate(self):
+        clear_s = CFG.get("merged_anomaly_clear_s")
+        for fps in (25.0, 30.0, 60.0):
+            fr = self._union(fps)
+            k0 = len(fr)
+            fr += [Frame([cand(self.BODY)], [("TARGET",)]) for _ in range(int(fps))]
+            codes, _ = self._codes(fr, fps)
+            end = codes.index(".", k0)
+            self.assertGreaterEqual((end - k0) / fps, clear_s - 1e-9, (fps, codes))
+            self.assertLessEqual((end - k0) / fps, clear_s + 1.01 / fps, (fps, codes))
+
+    def test_a_body_touching_an_active_anomaly_makes_it_a_merge_at_once(self):
+        # a not-near-single box (same area, wide aspect: no size reason of its own) while the anomaly is active;
+        # a second detection, born this frame, starts touching it: no 1 s wait
+        wide = (380.0, 336.0, 420.0, 400.0)
+        fr = self._union() + [Frame([cand(wide)], [("TARGET",)]) for _ in range(3)]
+        k = len(fr)
+        fr += [Frame([cand(wide), cand(box_at(434, 368, 32, 80))], [("TARGET",), ("PERSON_A",)]) for _ in range(3)]
+        rn = run(fr, fps=FPS)
+        first_a = [code(r.observations[0]) for r in rn.results].index("A")
+        self.assertLess((k - first_a) / FPS, MAX_S)
+        target_obs = [o for o in rn.results[k].observations if o.bbox == wide][0]
+        self.assertEqual(code(target_obs), "M", "touching second body during an anomaly")
+
+    def test_growth_touching_a_tracked_body_hidden_this_frame_is_a_merge(self):
+        # the other body is tracked beside the target and undetected exactly when the target's box jumps to a
+        # merge size covering it: its live predicted box corroborates the merge
+        a = box_at(445, 360, 32, 80)
+        fr = [Frame([cand(self.BODY), cand(a)], [("TARGET",), ("PERSON_A",)]) for _ in range(30)]
+        fr.append(Frame([cand(box_at(400, 360, 64, 80))], [("TARGET", "PERSON_A")]))
+        rn = run(fr, fps=FPS)
+        r = rn.results[30]
+        other = rn.results[29].observations[1].tracklet_id
+        self.assertIn(other, [v.tracklet_id for v in r.tracklets], "the other body's tracklet is live, not memory")
+        self.assertNotIn(other, [c.tracklet_id for c in r.closed])
+        self.assertEqual(code(r.observations[0]), "M")
+
+    def test_a_jump_right_after_an_anomaly_is_judged_against_the_held_reference(self):
+        # the anomaly lasted long enough for every pre-anomaly size to leave the reference window; just after it
+        # ends no new reference exists yet: a merge-sized jump must still be flagged (and anomalous sizes must not
+        # have entered the reference)
+        self.assertGreater((9 + 17 + 6) / FPS, CFG.get("population_size_ref_window_s") - 0.1)
+        fr = self._union(n_hold=17)
+        k0 = len(fr)
+        fr += [Frame([cand(self.BODY)], [("TARGET",)]) for _ in range(8)]
+        fr += [Frame([cand(box_at(400, 360, 64, 80))], [("TARGET",)]) for _ in range(3)]
+        codes, _ = self._codes(fr)
+        self.assertNotIn("M", codes[:k0 + 8])
+        self.assertEqual(codes[k0 + 7], ".", codes)
+        self.assertNotIn(".", codes[k0 + 8:], codes)
+
+    def test_held_reference_follows_a_camera_zoom(self):
+        from player_tracker_rb.camera import motion_from_matrix
+        from tests_rb._synth_people import W as SW, H as SH
+        cx, cy = SW / 2, SH / 2
+        n_zoom, total = 15, 1.5
+        z = total ** (1.0 / n_zoom)
+        zoom = motion_from_matrix([[z, 0, (1 - z) * cx], [0, z, (1 - z) * cy]], SW, SH)
+        fr = [Frame([cand(box_at(cx, cy, 32, 80))], [("TARGET",)]) for _ in range(30)]
+        fr += [Frame([cand(box_at(cx, cy, 32 + 42 * (k + 1) / 10, 80))], [("TARGET",)]) for k in range(10)]
+        for k in range(n_zoom):                                 # the union box zooms with the camera
+            s = z ** (k + 1)
+            fr.append(Frame([cand(box_at(cx, cy, 74 * s, 80 * s))], [("TARGET",)], camera=zoom))
+        fr += [Frame([cand(box_at(cx, cy, 32 * total, 80 * total))], [("TARGET",)]) for _ in range(int(FPS))]
+        codes, rn = self._codes(fr)
+        self.assertIn("A", codes)
+        self.assertNotIn("M", codes, "a single body at the new zoom is not merge-sized")
+        self.assertTrue(codes.endswith("." * 10), codes)
+        self.assertEqual(len({r.observations[0].tracklet_id for r in rn.results}), 1)
+
+    def test_no_velocity_is_learnt_from_anomalous_boxes(self):
+        # a union growing to one side moves its centre; that is not the body's motion. Undetected frames inside the
+        # anomaly predict the held box where it was, not drifting with the union's growth
+        fr = [Frame([cand(self.BODY)], [("TARGET",)]) for _ in range(30)]
+        for k in range(6):                                      # abrupt: every box after the still body is anomalous
+            w = 64 + 2 * k
+            fr.append(Frame([cand(box_at(400 + (w - 32) / 2, 360, w, 80))], [("TARGET",)]))
+        k = len(fr)
+        fr += [Frame([], []) for _ in range(5)]
+        rn = run(fr, fps=FPS)
+        self.assertEqual([code(r.observations[0]) for r in rn.results[30:k]], ["A"] * 6)
+        last = rn.results[k - 1].observations[0].bbox
+        v = rn.results[k + 4].tracklets[0]
+        self.assertIsNone(v.observed_box)
+        self.assertAlmostEqual((v.box[0] + v.box[2]) / 2, (last[0] + last[2]) / 2, delta=1.0)
+
+    def test_target_bank_refuses_size_anomaly_boxes_on_its_own(self):
+        # defence in depth: the target abstains on a SIZE_ANOMALY box, and its bank refuses one independently
+        self.assertIn(P.SIZE_ANOMALY, T._BANK_REFUSE_FLAGS)
+
+
 if __name__ == "__main__":
     unittest.main()

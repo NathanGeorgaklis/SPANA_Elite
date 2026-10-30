@@ -993,6 +993,10 @@ class TargetTracker:
         log["transition"] = f"{prev_state}->{state}"
         self._state = state
         self._last_frame = res.rel_frame
+        if self._anomaly_tracklet != self._tracklet:
+            # the anomaly marker belongs to the target's current tracklet only: once the target has left it (LOST,
+            # cut, closed, reacquired elsewhere) a later return is already a new episode (review round 4 L1)
+            self._anomaly_tracklet = None
         frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
                             trusted=trusted,
                             contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)

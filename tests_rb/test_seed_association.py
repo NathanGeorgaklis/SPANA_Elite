@@ -145,5 +145,65 @@ class TestSeedRule(unittest.TestCase):
         self.assertEqual(r.frames[0].decision["seed_rule"], "CONTAINMENT")
 
 
+def _iou(a, b):
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    i = ix * iy
+    return i / ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - i)
+
+
+class TestSeedChecksInIsolation(unittest.TestCase):
+    """Test audit round 4: each containment check refuses on its own (the body passes every other check), so a
+    regression that drops one check cannot hide behind another."""
+    CHECKS = {
+        "contain": lambda g: g["contain"] >= CFG.get("seed_contain_min"),
+        "dx": lambda g: abs(g["dx_h"]) <= CFG.get("seed_contain_max_centre_offset"),
+        "dy": lambda g: abs(g["dy_h"]) <= CFG.get("seed_contain_max_centre_offset"),
+        "height": lambda g: g["h_ratio"] >= CFG.get("seed_contain_min_height_ratio"),
+        "width": lambda g: g["w_ratio"] >= CFG.get("seed_contain_min_width_ratio"),
+        "feet": lambda g: abs(g["bottom_gap_h"]) <= CFG.get("seed_contain_max_bottom_gap"),
+    }
+
+    def _refused_by_only(self, sb, b, check):
+        g = T._seed_geometry(sb, b)
+        self.assertLess(_iou(sb, b), CFG.get("seed_min_iou"), "containment path")
+        self.assertEqual([k for k, ok in self.CHECKS.items() if not ok(g)], [check], g)
+        with self.assertRaises(T.SeedError) as cm:
+            run(frames(1, {"PERSON_A": b}), make_people([("PERSON_A", KIT_B, 1.0)]), seed_name="PERSON_A",
+                seed_box=sb)
+        self.assertIn("none is contained", str(cm.exception))
+
+    def test_horizontal_centre_offset_alone_refuses(self):
+        self._refused_by_only(box_at(300, 400, 85, 110), box_at(322, 400, 40, 100), "dx")
+
+    def test_vertical_centre_offset_alone_refuses(self):
+        # feet on the box's bottom line, but the body fills only its lower half
+        self._refused_by_only(box_at(300, 400, 60, 140), box_at(300, 430, 34, 80), "dy")
+
+    def test_height_ratio_alone_refuses(self):
+        self._refused_by_only(box_at(300, 400, 80, 200), box_at(300, 425, 40, 90), "height")
+
+    def test_containment_alone_refuses(self):
+        # a centred, body-sized detection reaching well outside the human box (above and below)
+        self._refused_by_only(box_at(300, 400, 85, 120), box_at(300, 400, 40, 150), "contain")
+
+    def test_two_qualifying_detections_are_ambiguous_without_the_competitor_test(self):
+        # both bodies pass every containment check; with the competitor test disabled (threshold above any partly
+        # contained body) the multiple-candidate refusal must still fail closed
+        sb = box_at(300, 400, 70, 140)
+        a, b = box_at(285, 396, 34, 140), box_at(315, 396, 34, 140)
+        for d in (a, b):
+            g = T._seed_geometry(sb, d)
+            self.assertEqual([k for k, ok in self.CHECKS.items() if not ok(g)], [], g)
+            self.assertLess(g["contain"], 1.0)
+            self.assertLess(_iou(sb, d), CFG.get("seed_min_iou"))
+        cfg = TrackerConfig.with_overrides({"seed_contain_competitor_max": 1.0})
+        with self.assertRaises(T.SeedError) as cm:
+            run(frames(1, {"PERSON_A": a, "OTHER": b}),
+                make_people([("PERSON_A", KIT_B, 1.0), ("OTHER", KIT_A, 0.0)]), seed_name="PERSON_A", seed_box=sb,
+                cfg=cfg)
+        self.assertIn("ambiguous", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
