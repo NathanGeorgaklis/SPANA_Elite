@@ -414,7 +414,6 @@ class _Tracklet:
     contained: Tuple[Box, ...] = ()          # NEW_R2 F3c: NESTED bodies inside its box when last observed
     contained_since: Tuple[float, ...] = ()  # NEW_R2 F3c: since when each has been seen inside it continuously
     contained_host: Optional[Box] = None     # NEW_R2 F3c: its own box on that observation
-    contained_t: float = 0.0                 # NEW_R2 F3c: time of that observation
 
 
 @dataclass
@@ -914,14 +913,21 @@ class Population:
             # crouched inside the box is seen there for longer before they stand up
             prev = [(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy)
                     for b, since in zip(tr.contained, tr.contained_since)
-                    if tr.contained_t - since >= hidden_min_s]
+                    if t - since >= hidden_min_s]     # inside from `since` until it was missed now
             if not prev:
                 continue
-            others = [boxes[j] for j in range(n) if j != i]     # any other detection, duplicates included
+            # still there = some other detection (duplicates included) overlapping where it would be by
+            # population_match_iou_min AND standing on the same feet line (within population_hidden_feet_gap_max
+            # of the host's height): a farther person behind, whose box merely overlaps that spot, is not it
+            # (NEW_R2 F3c audit A2)
+            others = [boxes[j] for j in range(n) if j != i]
+            seen = np.zeros(len(prev), dtype=bool)
             if others:
-                seen = box_iou_matrix(np.asarray(prev), np.asarray(others)).max(axis=1) >= match_min
-            else:
-                seen = np.zeros(len(prev), dtype=bool)
+                iou = box_iou_matrix(np.asarray(prev), np.asarray(others))
+                tol = c.get("population_hidden_feet_gap_max") * (hb1[3] - hb1[1])
+                for q, pb in enumerate(prev):
+                    seen[q] = any(iou[q, m] >= match_min and abs(others[m][3] - pb[3]) <= tol
+                                  for m in range(len(others)))
             if not bool(seen.all()):
                 breaks[i] = "CONTAINED_BODY_VANISHED"
                 uf.union(("t", order_of[tid]), ("d", i))
@@ -958,7 +964,9 @@ class Population:
             events.append(ContactEvent(EVENT_MERGED, tuple(ended), (i,), ()))
             evidence = any(r != UNRESOLVED_MERGE for r in merge_reasons[i])
             src = list(claimants[i])
-            est = [refs[tid] for tid in src if refs[tid] is not None]
+            # a claimant with MERGE_LINEAGE may itself be a box of two bodies: its size is no single-body
+            # reference (NEW_R2 F3c audit A1: a union's own size would otherwise make the union "single sized")
+            est = [refs[tid] for tid in src if refs[tid] is not None and not by_tid[tid].merge_lineage]
             ref_wh = max(est, key=lambda wh: (wh[0] * wh[1], wh)) if est else None
             if i in region_of:
                 rg = self._regions[region_of[i]]
@@ -1140,7 +1148,6 @@ class Population:
                 tr.contained = tuple(now_c)
                 tr.contained_since = tuple(since_c)
                 tr.contained_host = hb
-                tr.contained_t = t
         # tracklets observed this frame on a box that fills a region may hold its merged bodies (NEW_R2 F3c)
         for k, rg in enumerate(self._regions):
             for tid, i in observed_now.items():

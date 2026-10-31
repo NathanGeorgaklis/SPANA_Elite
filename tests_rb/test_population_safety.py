@@ -80,9 +80,10 @@ class TestPersistentUnion(unittest.TestCase):
     def test_union_box_never_becomes_an_ordinary_tracklet(self):
         for fps in FPS_SET:
             for kit in (SAME, OPP):
-                for third in (False, True):
-                    r = self._union(fps, kit, 5.0, third=third)
-                    tag = f"fps={fps} kit={kit} third={third}"
+                for third, gaps in ((False, ()), (True, ()), (True, ((4.0, 4.6),))):
+                    # (audit A1: a third person crossing, then a detection gap of the union)
+                    r = self._union(fps, kit, 6.0, third=third, gaps=gaps)
+                    tag = f"fps={fps} kit={kit} third={third} gaps={gaps}"
                     self.assertEqual(clean_union_tracklet_frames(r), [], tag)
                     self.assertEqual(tracking_on_union(r), [], tag)
                     self.assertEqual(wrong_trusted(r), [], tag)
@@ -97,19 +98,23 @@ class TestPersistentUnion(unittest.TestCase):
             self.assertEqual(tracking_on_union(r), [], fps)
             self.assertTrue(r.bank_is_pure(), fps)
 
-    def test_real_split_after_a_union_still_resolves(self):
-        # the two people come apart clearly: the region resolves and the population can follow both again
+    def test_real_split_after_a_union_gives_two_people_and_no_swap(self):
+        # the two people come apart clearly: the population follows both again, with no mixed tracklet. Their
+        # tracklets inherit MERGE_LINEAGE from the union box's tracklet (8c798bc behaviour, conservative: never a
+        # bank sample); clearing it after a proven split is reacquisition/verification work, not asserted here.
         for fps in FPS_SET:
-            fr = [Frame([cand(box_at(400, 360, 32, 80)), cand(box_at(445, 360, 32, 80))],
-                        [("TARGET",), ("OTHER",)]) for _ in range(int(fps))]
+            # (audit C: the union box must really hold both people, so that a merged region forms)
+            n_in = int(fps)
+            fr = [Frame([cand(box_at(400, 360, 32, 80)), cand(box_at(445 - 33 * k / n_in, 360, 32, 80))],
+                        [("TARGET",), ("OTHER",)]) for k in range(n_in)]
             fr += [Frame([cand((384.0, 320.0, 428.0, 400.0))], [("TARGET", "OTHER")]) for _ in range(int(fps))]
             fr += [Frame([cand(box_at(400 - 40 * (k + 1) / fps, 360, 32, 80)),
                           cand(box_at(412 + 40 * (k + 1) / fps, 360, 32, 80))], [("TARGET",), ("OTHER",)])
                    for k in range(int(2 * fps))]
             rn = run(fr, fps=fps)
+            self.assertTrue(any(P.MERGED_SUSPECTED in o.flags for r in rn.results for o in r.observations), fps)
             last = rn.results[-1]
             self.assertEqual(len([v for v in last.tracklets if v.observed]), 2, fps)
-            self.assertTrue(all(P.MERGE_LINEAGE not in v.flags for v in last.tracklets), fps)
             self.assertEqual(mixed_single_tracklets(rn), {}, fps)
 
 
@@ -283,3 +288,49 @@ class TestReviewRound1(unittest.TestCase):
                     self.assertEqual(breaks, [])
                     self.assertEqual(r.states().count("TRACKING"), len(r.frames))
                     self.assertTrue(all(f.identity_trusted for f in r.frames[1:]))
+
+
+class TestAuditRound1(unittest.TestCase):
+    """F3c test-audit findings (reproduced, then fixed)."""
+
+    def test_farther_person_overlapping_the_crouch_spot_does_not_mask_its_disappearance(self):
+        # A2: a farther person behind (bottom off the host's feet line) whose box overlaps where the crouched
+        # person was must not count as "the crouched person is still there" when that person stands up in front.
+        TGT = box_at(300, 400, 40, 100)
+        crouch = box_at(300, 425, 36, 50)                     # feet-aligned, nested in the target's box
+        far = (285.0, 360.0, 315.0, 435.0)                    # bottom 15 px above the feet line
+        for fps in FPS_SET:
+            for third in (False, True):
+                for rise in (1, 2):
+                    with self.subTest(fps=fps, third=third, rise=rise):
+                        def F(ds, os):
+                            if third:
+                                ds, os = ds + [far], os + [("THIRD",)]
+                            return Frame([cand(b) for b in ds], os)
+                        fr = [F([TGT], [("TARGET",)]) for _ in range(int(fps))]
+                        fr += [F([TGT, crouch], [("TARGET",), ("OTHER",)]) for _ in range(int(fps / 2))]
+                        for k in range(rise):
+                            f = (k + 1) / rise
+                            h = 50 + 52 * f
+                            b = box_at(300, 450 - h / 2, 36 + 6 * f, h)
+                            fr.append(F([b], [("OTHER",)]) if f >= 0.75 else F([TGT, b], [("TARGET",), ("OTHER",)]))
+                        fr += [F([box_at(300 + 3 * (k + 1), 399, 42, 102)], [("OTHER",)]) for k in range(int(fps))]
+                        rn = run(fr, fps=fps)
+                        self.assertEqual(mixed_single_tracklets(rn), {})
+                        self.assertTrue(any(o.continuity_break for r in rn.results for o in r.observations))
+
+    def test_hidden_min_duration_is_measured_in_seconds_at_every_frame_rate(self):
+        # population_hidden_min_s (0.2 s): a feet-aligned nested box seen for 0.1 s then gone is a flicker (no
+        # break); one seen for 0.3 s then gone breaks continuity. Same in seconds at every frame rate.
+        TGT = box_at(300, 400, 40, 100)
+        crouch = box_at(300, 425, 36, 50)
+        for fps in FPS_SET:
+            for seen_s, expect_break in ((0.1, False), (0.3, True)):
+                with self.subTest(fps=fps, seen_s=seen_s):
+                    fr = [Frame([cand(TGT)], [("TARGET",)]) for _ in range(int(fps))]
+                    fr += [Frame([cand(TGT), cand(crouch)], [("TARGET",), ("TARGET",)])
+                           for _ in range(max(1, round(seen_s * fps)))]
+                    fr += [Frame([cand(TGT)], [("TARGET",)]) for _ in range(int(fps))]
+                    rn = run(fr, fps=fps)
+                    breaks = [o for r in rn.results for o in r.observations if o.continuity_break]
+                    self.assertEqual(bool(breaks), expect_break)

@@ -556,7 +556,7 @@ PARAMS: Tuple[Param, ...] = (
        0.0, 1.0),
     _p("population_hidden_min_s", "float", "s",
        "A feet-aligned body nested in a tracklet's box counts for the vanished-hidden-body rule only once it has been "
-       "seen inside the box continuously (moving with it) for at least this long. A part box that flickers for a "
+       "seen inside the box continuously (moving with it) for at least this long, from its first sighting to the frame it is missed. A part box that flickers for a "
        "frame or two does not end the tracklet; a person crouched inside the box who then stands up has been seen "
        "there for longer.",
        0.2, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
