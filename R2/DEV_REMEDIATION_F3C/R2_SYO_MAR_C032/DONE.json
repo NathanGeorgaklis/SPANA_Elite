@@ -1,0 +1,10 @@
+{
+ "clip_id": "R2_SYO_MAR_C032",
+ "split": "DEV",
+ "outcome": "RUN_REFUSED",
+ "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']",
+ "fixture": "R2/labels/R2_SYO_MAR_C032.fixture.json",
+ "git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+ "git_dirty": false,
+ "seconds": 3.3
+}

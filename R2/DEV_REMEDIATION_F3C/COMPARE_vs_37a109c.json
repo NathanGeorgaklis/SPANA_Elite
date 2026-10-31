@@ -1,0 +1,760 @@
+{
+ "aggregate": {
+  "post": {
+   "available_run": 2105,
+   "bank_accepted": 72,
+   "bank_contaminated": 10,
+   "bank_unverified": 35,
+   "coverage_run_clips": 0.389,
+   "initialised": 8,
+   "merged_reason_frames": 835,
+   "p1": 5,
+   "p2": 0,
+   "p3": 1,
+   "p4": 1,
+   "refused": 3,
+   "trusted": 818,
+   "unknown_in": {
+    "p1": [],
+    "p2": [],
+    "p3": []
+   }
+  },
+  "pre": {
+   "available_run": 2105,
+   "bank_accepted": 72,
+   "bank_contaminated": 10,
+   "bank_unverified": 35,
+   "coverage_run_clips": 0.389,
+   "initialised": 8,
+   "merged_reason_frames": 817,
+   "p1": 5,
+   "p2": 0,
+   "p3": 1,
+   "p4": 1,
+   "refused": 3,
+   "trusted": 818,
+   "unknown_in": {
+    "p1": [],
+    "p2": [],
+    "p3": []
+   }
+  }
+ },
+ "per_clip": {
+  "R2_MCFC_MIT_C006": {
+   "post": {
+    "available": 284,
+    "b5": "PASS",
+    "box_frames": 40,
+    "box_iou": 0.619,
+    "coverage": 0.201,
+    "outcome": "SCORED",
+    "p1": 3,
+    "p1_frames": [
+     91,
+     92,
+     93
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 1,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 1,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 57
+   },
+   "post_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.244,
+    "target_bank": {
+     "accepted": 5,
+     "contaminated": 1,
+     "items": [
+      {
+       "clip_frame": 300,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 1
+    },
+    "target_frames_merged_reason": 188
+   },
+   "pre": {
+    "available": 284,
+    "b5": "PASS",
+    "box_frames": 40,
+    "box_iou": 0.619,
+    "coverage": 0.201,
+    "outcome": "SCORED",
+    "p1": 3,
+    "p1_frames": [
+     91,
+     92,
+     93
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 1,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 1,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 57
+   },
+   "pre_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.244,
+    "target_bank": {
+     "accepted": 5,
+     "contaminated": 1,
+     "items": [
+      {
+       "clip_frame": 300,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 1
+    },
+    "target_frames_merged_reason": 188
+   }
+  },
+  "R2_MCFC_MIT_C016": {
+   "post": {
+    "available": 167,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 76,
+    "box_iou": 0.736,
+    "coverage": 0.946,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 158
+   },
+   "post_diag": {
+    "frames_after_seed": 239,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.197,
+    "target_bank": {
+     "accepted": 9,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 360,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 390,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 4
+    },
+    "target_frames_merged_reason": 0
+   },
+   "pre": {
+    "available": 167,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 76,
+    "box_iou": 0.736,
+    "coverage": 0.946,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 158
+   },
+   "pre_diag": {
+    "frames_after_seed": 239,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.197,
+    "target_bank": {
+     "accepted": 9,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 360,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 390,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 4
+    },
+    "target_frames_merged_reason": 0
+   }
+  },
+  "R2_MCFC_MIT_C020": {
+   "post": {
+    "available": 569,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 57,
+    "box_iou": 0.71,
+    "coverage": 0.376,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 214
+   },
+   "post_diag": {
+    "frames_after_seed": 569,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 0.216,
+    "target_bank": {
+     "accepted": 15,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 9
+    },
+    "target_frames_merged_reason": 61
+   },
+   "pre": {
+    "available": 569,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 57,
+    "box_iou": 0.71,
+    "coverage": 0.376,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 214
+   },
+   "pre_diag": {
+    "frames_after_seed": 569,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 0.213,
+    "target_bank": {
+     "accepted": 15,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 9
+    },
+    "target_frames_merged_reason": 61
+   }
+  },
+  "R2_MCFC_MIT_C033": {
+   "post": {
+    "available": 417,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 49,
+    "box_iou": 0.642,
+    "coverage": 0.249,
+    "outcome": "SCORED",
+    "p1": 1,
+    "p1_frames": [
+     105
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 1,
+    "p4": 1,
+    "p4_frames": [
+     105
+    ],
+    "reacq_correct": 0,
+    "reacq_not": 3,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 104
+   },
+   "post_diag": {
+    "frames_after_seed": 599,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.095,
+    "target_bank": {
+     "accepted": 7,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 3
+    },
+    "target_frames_merged_reason": 488
+   },
+   "pre": {
+    "available": 417,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 49,
+    "box_iou": 0.642,
+    "coverage": 0.249,
+    "outcome": "SCORED",
+    "p1": 1,
+    "p1_frames": [
+     105
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 1,
+    "p4": 1,
+    "p4_frames": [
+     105
+    ],
+    "reacq_correct": 0,
+    "reacq_not": 3,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 104
+   },
+   "pre_diag": {
+    "frames_after_seed": 599,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.05,
+    "target_bank": {
+     "accepted": 7,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 3
+    },
+    "target_frames_merged_reason": 488
+   }
+  },
+  "R2_MCFC_MIT_C034": {
+   "post": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']"
+   },
+   "post_diag": null,
+   "pre": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['PARTIAL', 'TOUCHES_IMAGE_EDGE']"
+   },
+   "pre_diag": null
+  },
+  "R2_MCFC_MIT_C038": {
+   "post": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['ALTERNATIVE', 'NESTED', 'NOT_ISOLATED']"
+   },
+   "post_diag": null,
+   "pre": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['ALTERNATIVE', 'NESTED', 'NOT_ISOLATED']"
+   },
+   "pre_diag": null
+  },
+  "R2_SYO_MAR_C004": {
+   "post": {
+    "available": 127,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 24,
+    "box_iou": 0.539,
+    "coverage": 0.764,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 97
+   },
+   "post_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.997,
+    "target_bank": {
+     "accepted": 11,
+     "contaminated": 3,
+     "items": [
+      {
+       "clip_frame": 0,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 24,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 48,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 7
+    },
+    "target_frames_merged_reason": 28
+   },
+   "pre": {
+    "available": 127,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 24,
+    "box_iou": 0.539,
+    "coverage": 0.764,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 97
+   },
+   "pre_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.957,
+    "target_bank": {
+     "accepted": 11,
+     "contaminated": 3,
+     "items": [
+      {
+       "clip_frame": 0,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 24,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 48,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 7
+    },
+    "target_frames_merged_reason": 11
+   }
+  },
+  "R2_SYO_MAR_C012": {
+   "post": {
+    "available": 254,
+    "b5": "PASS",
+    "box_frames": 1,
+    "box_iou": 0.485,
+    "coverage": 0.004,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 1,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 1
+   },
+   "post_diag": {
+    "frames_after_seed": 254,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 6.091,
+    "target_bank": {
+     "accepted": 1,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 0
+    },
+    "target_frames_merged_reason": 6
+   },
+   "pre": {
+    "available": 254,
+    "b5": "PASS",
+    "box_frames": 1,
+    "box_iou": 0.485,
+    "coverage": 0.004,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 1,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 1
+   },
+   "pre_diag": {
+    "frames_after_seed": 254,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 5.272,
+    "target_bank": {
+     "accepted": 1,
+     "contaminated": 0,
+     "items": [],
+     "unverified": 0
+    },
+    "target_frames_merged_reason": 5
+   }
+  },
+  "R2_SYO_MAR_C016": {
+   "post": {
+    "available": 209,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 62,
+    "box_iou": 0.635,
+    "coverage": 0.651,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 136
+   },
+   "post_diag": {
+    "frames_after_seed": 209,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.402,
+    "target_bank": {
+     "accepted": 17,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 90,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 206,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 7
+    },
+    "target_frames_merged_reason": 0
+   },
+   "pre": {
+    "available": 209,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 62,
+    "box_iou": 0.635,
+    "coverage": 0.651,
+    "outcome": "SCORED",
+    "p1": 0,
+    "p1_frames": [],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 136
+   },
+   "pre_diag": {
+    "frames_after_seed": 209,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 1.273,
+    "target_bank": {
+     "accepted": 17,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 90,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 206,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 7
+    },
+    "target_frames_merged_reason": 0
+   }
+  },
+  "R2_SYO_MAR_C021": {
+   "post": {
+    "available": 78,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 9,
+    "box_iou": 0.4,
+    "coverage": 0.654,
+    "outcome": "SCORED",
+    "p1": 1,
+    "p1_frames": [
+     36
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "c67c738f5c885229a38266c644c71bdb21f4db5c",
+    "results_git_dirty": false,
+    "trusted": 51
+   },
+   "post_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 0.522,
+    "target_bank": {
+     "accepted": 7,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 24,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 42,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 4
+    },
+    "target_frames_merged_reason": 64
+   },
+   "pre": {
+    "available": 78,
+    "b5": "PASS_NO_CONFIDENT_CLAIM",
+    "box_frames": 9,
+    "box_iou": 0.4,
+    "coverage": 0.654,
+    "outcome": "SCORED",
+    "p1": 1,
+    "p1_frames": [
+     36
+    ],
+    "p2": 0,
+    "p2_people_checked_on_trusted_grid": 0,
+    "p3": 0,
+    "p4": 0,
+    "p4_frames": [],
+    "reacq_correct": 0,
+    "reacq_not": 0,
+    "results_git_commit": "37a109c5be2dc1e58a8bba5855fbcf97e7e51cab",
+    "results_git_dirty": false,
+    "trusted": 51
+   },
+   "pre_diag": {
+    "frames_after_seed": 299,
+    "of_which_truth_labelled_merged": 0,
+    "population_merged_observations_per_frame": 0.515,
+    "target_bank": {
+     "accepted": 7,
+     "contaminated": 2,
+     "items": [
+      {
+       "clip_frame": 24,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      },
+      {
+       "clip_frame": 42,
+       "why": [
+        "BOX_NOT_ON_HUMAN_TARGET_BOX"
+       ]
+      }
+     ],
+     "unverified": 4
+    },
+    "target_frames_merged_reason": 64
+   }
+  },
+  "R2_SYO_MAR_C032": {
+   "post": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']"
+   },
+   "post_diag": null,
+   "pre": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['NOT_ISOLATED']"
+   },
+   "pre_diag": null
+  }
+ }
+}

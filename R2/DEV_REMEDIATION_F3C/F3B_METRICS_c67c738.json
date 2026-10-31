@@ -1,0 +1,94 @@
+{
+ "per_clip": {
+  "R2_MCFC_MIT_C006": {
+   "births": 121,
+   "merged_contact_closures": 63,
+   "merged_contact_closures_with_part_born_claimant": 33,
+   "multi_claim_frames": 15,
+   "part_born": 36,
+   "target_frames_merged_reason": 188,
+   "target_merged_closures": 2,
+   "unproven_pairs_seen": 0
+  },
+  "R2_MCFC_MIT_C016": {
+   "births": 52,
+   "merged_contact_closures": 24,
+   "merged_contact_closures_with_part_born_claimant": 10,
+   "multi_claim_frames": 8,
+   "part_born": 18,
+   "target_frames_merged_reason": 0,
+   "target_merged_closures": 0,
+   "unproven_pairs_seen": 0
+  },
+  "R2_MCFC_MIT_C020": {
+   "births": 36,
+   "merged_contact_closures": 8,
+   "merged_contact_closures_with_part_born_claimant": 4,
+   "multi_claim_frames": 4,
+   "part_born": 9,
+   "target_frames_merged_reason": 61,
+   "target_merged_closures": 0,
+   "unproven_pairs_seen": 0
+  },
+  "R2_MCFC_MIT_C033": {
+   "births": 297,
+   "merged_contact_closures": 146,
+   "merged_contact_closures_with_part_born_claimant": 53,
+   "multi_claim_frames": 42,
+   "part_born": 56,
+   "target_frames_merged_reason": 488,
+   "target_merged_closures": 2,
+   "unproven_pairs_seen": 0
+  },
+  "R2_SYO_MAR_C004": {
+   "births": 134,
+   "merged_contact_closures": 88,
+   "merged_contact_closures_with_part_born_claimant": 48,
+   "multi_claim_frames": 30,
+   "part_born": 29,
+   "target_frames_merged_reason": 28,
+   "target_merged_closures": 2,
+   "unproven_pairs_seen": 0
+  },
+  "R2_SYO_MAR_C012": {
+   "births": 412,
+   "merged_contact_closures": 236,
+   "merged_contact_closures_with_part_born_claimant": 134,
+   "multi_claim_frames": 66,
+   "part_born": 82,
+   "target_frames_merged_reason": 6,
+   "target_merged_closures": 1,
+   "unproven_pairs_seen": 0
+  },
+  "R2_SYO_MAR_C016": {
+   "births": 198,
+   "merged_contact_closures": 86,
+   "merged_contact_closures_with_part_born_claimant": 29,
+   "multi_claim_frames": 31,
+   "part_born": 23,
+   "target_frames_merged_reason": 0,
+   "target_merged_closures": 0,
+   "unproven_pairs_seen": 0
+  },
+  "R2_SYO_MAR_C021": {
+   "births": 250,
+   "merged_contact_closures": 27,
+   "merged_contact_closures_with_part_born_claimant": 4,
+   "multi_claim_frames": 8,
+   "part_born": 4,
+   "target_frames_merged_reason": 64,
+   "target_merged_closures": 0,
+   "unproven_pairs_seen": 0
+  }
+ },
+ "total": {
+  "births": 1500,
+  "merged_contact_closures": 678,
+  "merged_contact_closures_with_part_born_claimant": 315,
+  "multi_claim_frames": 204,
+  "part_born": 257,
+  "target_frames_merged_reason": 835,
+  "target_merged_closures": 7,
+  "unproven_pairs_seen": 0
+ }
+}
