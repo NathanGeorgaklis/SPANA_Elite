@@ -1,5 +1,5 @@
 # SPANA engine v2-rebuild
-# REBUILT 2026-11 — NOT ORIGINAL SOURCE
+# REBUILT 2026-10 — NOT ORIGINAL SOURCE
 # Evidence basis: R2 DEV F5 instruction (Nathan, 2026-11-01 01:35): improve correct reacquisition after gaps /
 #                 contact / anomalies without weakening identity safety; DEV only; diagnose before changing thresholds.
 """Read-only F5 diagnosis of a DEV run: why is the target NOT trusted on frames where the frozen human truth says it is
