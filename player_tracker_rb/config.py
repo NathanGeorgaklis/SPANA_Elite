@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2c-2"   # r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2f5-1"   # r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -683,6 +683,22 @@ PARAMS: Tuple[Param, ...] = (
        "BEHAVIOURAL", "reacquisition", "D15; R1 approval §F (longer absence, stronger evidence)", 0.0, 1.0),
     _p("reacq_margin_cap", "float", "similarity difference", "Upper limit of the grown reacquisition margin.",
        0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition", "D15", 0.0, 1.0),
+    _p("target_reverify_window_s", "float", "s",
+       "Post-anomaly re-verification (F5): an unverified episode that returned onto the very tracklet whose ended "
+       "SIZE_ANOMALY broke a verified identity becomes verified only after an uninterrupted run of this long in "
+       "which every frame is TRACKING on that tracklet, passes the ordinary continuation tests, reaches "
+       "reacq_appearance_floor, has a clean box, and has no plausible competitor (no unknown or confusable body "
+       "near it, no target look-alike anywhere in the frame).",
+       1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "target",
+       "NEW_R2 (R2 DEV F5, Nathan 2026-11-01 01:56: sustained strong appearance + physical continuity + no plausible "
+       "local competitor). Twice reacq_window_s: a re-verification must be harder than an ordinary reacquisition. "
+       "Unvalidated.", 0.0, 30.0),
+    _p("target_reverify_min_travel_h", "float", "h",
+       "Post-anomaly re-verification also needs the box to travel at least this far over the scene during the run "
+       "(camera-compensated): a person hidden behind it could only stay hidden by moving in lockstep with it.",
+       0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "target",
+       "NEW_R2 (R2 DEV F5). About one body width (a standing person's width is ~0.3-0.4 h). Unvalidated.",
+       0.0, 10.0),
     _p("reacq_window_s", "float", "s", "Verification window W for a reacquisition candidate.", 0.5, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition", "D15", 0.0, 30.0),
     _p("reacq_min_hit_fraction", "float", "fraction of window frames",

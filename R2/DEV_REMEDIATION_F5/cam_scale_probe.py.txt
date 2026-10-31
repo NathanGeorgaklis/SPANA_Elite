@@ -1,0 +1,56 @@
+"""F5 diagnosis probe (DEV only): camera similarity scale vs homography local scale at people vs tracked-people
+height ratio, per frame. Reads the DEV clip and the decision log boxes of a finished run."""
+import sys, json, math, statistics
+import cv2, numpy as np
+sys.path.insert(0, '/home/claude/spana_push')
+from player_tracker_rb.config import TrackerConfig
+from player_tracker_rb.camera import CameraMotionEstimator
+cid, seed, n = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+L = [json.loads(l) for l in open(f'/home/claude/r2dev/out/c67c738/{cid}/{cid}_rb_decision_log.jsonl')]
+cap = cv2.VideoCapture(f'/home/claude/r2dev/clips/{cid}.mp4')
+cap.set(cv2.CAP_PROP_POS_FRAMES, seed)
+cfg = TrackerConfig.default(); est = CameraMotionEstimator(cfg)
+fps = cap.get(cv2.CAP_PROP_FPS)
+prevgray = None; prevboxes = None
+acc = {'sim': 0.0, 'homog': 0.0, 'people': 0.0, 'notrans': 0.0}
+prevh = {}
+for k in range(n):
+    ok, img = cap.read()
+    if not ok: break
+    boxes = [o['bbox'] for o in L[k]['population']['observations']]
+    cm = est.update(img, boxes, 1.0 / fps)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    cur = {}
+    rs = []
+    for o in L[k]['population']['observations']:
+        if o['tracklet_id'] and not o['flags']:
+            hh = o['bbox'][3] - o['bbox'][1]; cur[o['tracklet_id']] = (hh, o['bbox'])
+            if o['tracklet_id'] in prevh: rs.append(math.log(hh / prevh[o['tracklet_id']][0]))
+    if k > 0 and cm.status == 'ESTIMATED':
+        acc['sim'] += math.log(cm.scale)
+        # homography on the same masked features
+        w = cfg.get('flow_work_width_px'); s = w / img.shape[1]
+        pw = cv2.resize(prevgray, (w, int(round(img.shape[0] * s))), interpolation=cv2.INTER_AREA)
+        cw = cv2.resize(gray, (w, int(round(img.shape[0] * s))), interpolation=cv2.INTER_AREA)
+        mask = est._mask(pw.shape, prevboxes, s)
+        pts = cv2.goodFeaturesToTrack(pw, maxCorners=cfg.get('flow_max_corners'), qualityLevel=cfg.get('flow_quality_level'),
+                                      minDistance=cfg.get('flow_min_distance_px'), mask=mask)
+        nxt, st, _ = cv2.calcOpticalFlowPyrLK(pw, cw, pts, None, winSize=(cfg.get('flow_lk_win_px'),) * 2,
+                                              maxLevel=cfg.get('flow_lk_max_level'))
+        okk = st.reshape(-1).astype(bool); p0, p1 = pts.reshape(-1, 2)[okk], nxt.reshape(-1, 2)[okk]
+        H, inl = cv2.findHomography(p0, p1, cv2.RANSAC, cfg.get('flow_ransac_reproj_px'))
+        if H is not None and cur:
+            ls = []
+            for hh, b in cur.values():
+                x, y = (b[0] + b[2]) / 2 * s, b[3] * s          # feet point on the pitch
+                # local scale = sqrt(det J) of the homography at (x, y)
+                d = H[2, 0] * x + H[2, 1] * y + H[2, 2]
+                J = np.array([[H[0, 0] * d - (H[0, 0] * x + H[0, 1] * y + H[0, 2]) * H[2, 0], H[0, 1] * d - (H[0, 0] * x + H[0, 1] * y + H[0, 2]) * H[2, 1]],
+                              [H[1, 0] * d - (H[1, 0] * x + H[1, 1] * y + H[1, 2]) * H[2, 0], H[1, 1] * d - (H[1, 0] * x + H[1, 1] * y + H[1, 2]) * H[2, 1]]]) / d ** 2
+                ls.append(0.5 * math.log(abs(np.linalg.det(J))))
+            acc['homog'] += statistics.median(ls)
+        # translation-only (scale 1) has no scale
+    if rs: acc['people'] += statistics.median(rs)
+    prevh = cur; prevgray = gray; prevboxes = boxes
+    if k % 25 == 0:
+        print(k, cm.status, 'sim %.3f homog %.3f people %.3f' % tuple(math.exp(acc[x]) for x in ('sim', 'homog', 'people')), flush=True)
