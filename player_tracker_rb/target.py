@@ -369,6 +369,7 @@ class TargetTracker:
         # NEW_R2 F5: the tracklet whose ended SIZE_ANOMALY broke a VERIFIED episode, and the post-anomaly
         # re-verification run on it (None, or {"origin", "t0", "box0"}; see the module docstring)
         self._reverify: Optional[Dict[str, Any]] = None
+        self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
         self._base_state: str = LOST                        # the non-verifying state under REACQUIRING
@@ -1080,9 +1081,12 @@ class TargetTracker:
                 if cp.position_valid and not self._could_be_target(cp.box, h, t):
                     continue                                 # cannot physically be the target (size)
                 if cp.bank is None or not len(cp.bank):
+                    self._pc_detail = {"ref": cp.ref, "kind": cp.kind, "similarity": None}
                     return "UNKNOWN_LOCAL_BODY"
                 cs, _ = cp.bank.best_match(feat)
                 if cs is None or cs.composite is None or cs.composite >= floor:
+                    self._pc_detail = {"ref": cp.ref, "kind": cp.kind,
+                                       "similarity": None if cs is None else cs.composite}
                     return "CONFUSABLE_LOCAL_BODY"
         for o in res.observations:
             if not o.is_body or o.index in grp or (o.tracklet_id is not None and o.tracklet_id in own):
@@ -1092,6 +1096,8 @@ class TargetTracker:
                 continue
             ts, _ = self._bank.best_match(f)
             if ts is not None and ts.composite is not None and ts.composite >= floor:
+                self._pc_detail = {"ref": o.ref, "tracklet_id": o.tracklet_id, "flags": list(o.flags),
+                                   "similarity": ts.composite}
                 return "TARGET_LOOKALIKE_IN_FRAME"
         return None
 
@@ -1143,8 +1149,10 @@ class TargetTracker:
         if ov is None:
             return cancel("ORIGIN_TRACKLET_ENDED")
         oi = ov.detection_index if ov.observed else None
+        self._pc_detail = None
         why = self._plausible_competitor(res, image, cache, oi, rv["origin"], h)
         if why is not None and why != "FEATURE_NOT_USABLE":
+            rec["competitor"] = self._pc_detail             # which body, and how similar (rule 19)
             return cancel(why)
         obox = res.observations[oi].bbox if oi is not None else None
         spots = {}
