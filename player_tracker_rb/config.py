@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2c-1"   # r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2c-2"   # r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -554,6 +554,15 @@ PARAMS: Tuple[Param, ...] = (
        "NEW_R2 (R2 DEV remediation F3c). DEV 37a109c trusted target frames: 39 of 71 contained boxes bottom-aligned "
        "(|gap| <= 0.1 h). A person in front stands on the ground at or below the host's feet line. Unvalidated.",
        0.0, 1.0),
+    _p("population_hidden_min_s", "float", "s",
+       "A feet-aligned body nested in a tracklet's box counts for the vanished-hidden-body rule only once it has been "
+       "seen inside the box continuously (moving with it) for at least this long. A part box that flickers for a "
+       "frame or two does not end the tracklet; a person crouched inside the box who then stands up has been seen "
+       "there for longer.",
+       0.2, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "NEW_R2 (R2 DEV remediation F3c, review round 1 H3: a single-frame part box ended an isolated target's "
+       "trusted identity for the rest of the clip). Twin accepted: a crouched person detected for less than this "
+       "before standing up is not caught (the 8c798bc baseline catches none). Unvalidated.", 0.0, 10.0),
     _p("population_size_ref_window_s", "float", "s",
        "A tracklet's size reference is the median width and height of its non-partial observed boxes in this "
        "recent window (camera-scaled).", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",

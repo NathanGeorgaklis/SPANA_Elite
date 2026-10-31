@@ -74,7 +74,8 @@ Per frame (update), in order:
      PERSISTING MERGED BOX (NEW_R2, R2 DEV F3c): a detection holding >= population_region_fill_min of a region's
      box is the merged box itself. It never counts as one of the region's separate single bodies on its own (a
      two-person box below merged_area_ratio would otherwise count as "one single body"); it counts as one only once
-     another merged body has been seen emerging from the region (then it plausibly holds the rest); while one is observed the region is not
+     another merged body has been seen emerging from the region AND the box is back near one body's size
+     (merged_anomaly_clear_area_ratio; then it plausibly holds just the rest); while one is observed the region is not
      forgotten (memory runs from the later of the last merge evidence and the last such frame); and a tracklet ever
      observed on it keeps its MERGE_LINEAGE even when the region resolves. A body first seen OUTSIDE the region
      after it formed (it walked in) is an OUTSIDER like a body tracked before the merge: it never resolves it.
@@ -85,9 +86,10 @@ Per frame (update), in order:
   4b. Vanished hidden body (NEW_R2, R2 DEV F3c). A body NESTED inside a tracklet's box with its bottom edge on the
      box's feet line (within population_hidden_feet_gap_max of the box height) is a part of that body or a second
      person at its depth hidden in it (geometry cannot tell). If such a body was inside the box when the tracklet was last
-     observed and is now seen nowhere (no detection overlapping where it was by population_match_iou_min) while the
+     observed and is now seen nowhere (no detection overlapping, by population_match_iou_min, where it would be had it moved with the box) while the
      box goes on, the hidden person may have taken the box's place (e.g. stood up in front): the tracklet ends as
      a contested link (CONTACT_AMBIGUITY; the box starts a new tracklet with it as possible predecessor).
+     Only a body seen inside the box continuously (moving with it) for population_hidden_min_s counts.
   5. Births. Any other unassigned detection starts a new tracklet. Hidden tracklets whose predicted box it covers
      (>= population_contact_cover_min) are recorded as possible predecessors (and the new id as their possible
      successor). The hidden tracklet is NOT closed: it may be a different person still hidden behind someone.
@@ -410,6 +412,9 @@ class _Tracklet:
     merge_lineage: bool = False
     first_box: Optional[Box] = None          # NEW_R2 F3c: the box it was born on (outsider test for merged regions)
     contained: Tuple[Box, ...] = ()          # NEW_R2 F3c: NESTED bodies inside its box when last observed
+    contained_since: Tuple[float, ...] = ()  # NEW_R2 F3c: since when each has been seen inside it continuously
+    contained_host: Optional[Box] = None     # NEW_R2 F3c: its own box on that observation
+    contained_t: float = 0.0                 # NEW_R2 F3c: time of that observation
 
 
 @dataclass
@@ -774,10 +779,20 @@ class Population:
         # A filling box counts as ONE single body only once another of the merged bodies has been seen emerging from
         # the region (its tracklet born overlapping it): the merged box then plausibly holds just the remaining body
         # (the usual end of an occlusion). Without an emergence, a persisting filling box is evidence of nothing new.
+        clear_ratio = c.get("merged_anomaly_clear_area_ratio")
+
+        def near_single_fill(i: int, ref: Optional[Tuple[float, float]]) -> bool:
+            # the filling box is back near ONE body's size (as a SIZE_ANOMALY must be to end): a box still holding
+            # two bodies stays clearly larger even after a third person has stepped out of the group
+            if ref is None:
+                return False
+            w, h = _wh(boxes[i])
+            return (w * h) / (ref[0] * ref[1]) <= clear_ratio and (w / h) / (ref[0] / ref[1]) <= clear_ratio
+
         def region_count(k: int, rg: _MergedRegion) -> int:
             singles = {i for i in in_region[k] if single_sized(i, rg.ref_wh) and not outsider(i, rg)}
             n_sep = len((singles - fills[k]) | emerged[k])
-            if emerged[k] and singles & fills[k]:
+            if emerged[k] and any(near_single_fill(i, rg.ref_wh) for i in singles & fills[k]):
                 n_sep += 1
             return n_sep
 
@@ -878,16 +893,30 @@ class Population:
                         uf.union(("t", order_of[u]), ("d", assigned_t[u]))
         # NEW_R2 F3c: a body NESTED inside a tracklet's box is a part of that body or a second person hidden in it
         # (R1-E: geometry cannot tell). If such a body was inside the box when the tracklet was last observed and is
-        # now seen nowhere (no detection overlapping where it was by population_match_iou_min) while the box goes
+        # now seen nowhere (no detection overlapping, by population_match_iou_min, where it would be had it moved with the box) while the box goes
         # on, the hidden person may have taken the box's place (e.g. stood up in front): the link is ambiguous and
         # the tracklet ends like a contested link (CONTACT_AMBIGUITY; the box starts a new tracklet with it as
         # possible predecessor). Fails closed: no identity continues through a possible replacement.
         breaks: Dict[int, str] = {}
+        hidden_min_s = c.get("population_hidden_min_s")
         for tid, i in sorted(assigned_t.items(), key=lambda kv: order_of[kv[0]]):
             tr = by_tid[tid]
             if i in merged or not tr.contained:
                 continue
-            prev = [camera.warp_box(b) if camera.compensated else b for b in tr.contained]
+            # where each contained body would be now if it moved with its host (the host's bottom-centre
+            # displacement since that observation, which already includes camera motion): independent of frame
+            # rate and of the host's speed
+            hb0, hb1 = tr.contained_host, boxes[i]
+            ddx = (hb1[0] + hb1[2]) / 2.0 - (hb0[0] + hb0[2]) / 2.0
+            ddy = hb1[3] - hb0[3]
+            # only a body seen inside the box for at least population_hidden_min_s counts: a part box that
+            # flickers for a frame or two is a detector artefact far more often than a hidden person, and a person
+            # crouched inside the box is seen there for longer before they stand up
+            prev = [(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy)
+                    for b, since in zip(tr.contained, tr.contained_since)
+                    if tr.contained_t - since >= hidden_min_s]
+            if not prev:
+                continue
             others = [boxes[j] for j in range(n) if j != i]     # any other detection, duplicates included
             if others:
                 seen = box_iou_matrix(np.asarray(prev), np.asarray(others)).max(axis=1) >= match_min
@@ -1094,8 +1123,24 @@ class Population:
             if i is not None:
                 hb = boxes[i]
                 hh = hb[3] - hb[1]
-                tr.contained = tuple(boxes[j] for j in bodies if j != i and nested_in[j] == i
-                                     and hb[3] - boxes[j][3] <= feet_gap * hh)
+                now_c = [boxes[j] for j in bodies if j != i and nested_in[j] == i
+                         and hb[3] - boxes[j][3] <= feet_gap * hh]
+                since_c = []
+                if now_c and tr.contained and tr.contained_host is not None:
+                    h0 = tr.contained_host
+                    ddx = (hb[0] + hb[2]) / 2.0 - (h0[0] + h0[2]) / 2.0
+                    ddy = hb[3] - h0[3]
+                    moved = np.asarray([(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy) for b in tr.contained])
+                    iou = box_iou_matrix(np.asarray(now_c), moved)
+                    for q in range(len(now_c)):
+                        m = int(np.argmax(iou[q]))
+                        since_c.append(tr.contained_since[m] if iou[q, m] >= match_min else t)
+                else:
+                    since_c = [t] * len(now_c)
+                tr.contained = tuple(now_c)
+                tr.contained_since = tuple(since_c)
+                tr.contained_host = hb
+                tr.contained_t = t
         # tracklets observed this frame on a box that fills a region may hold its merged bodies (NEW_R2 F3c)
         for k, rg in enumerate(self._regions):
             for tid, i in observed_now.items():

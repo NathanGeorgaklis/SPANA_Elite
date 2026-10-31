@@ -233,3 +233,53 @@ class TestOrdinaryCasesStayTrackable(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestReviewRound1(unittest.TestCase):
+    """F3c independent review findings (reproduced, then fixed)."""
+
+    def test_third_person_stepping_out_of_a_persisting_union_does_not_resolve_it(self):
+        # H2: a third person hidden behind the pair since before the merge steps out sideways (born overlapping the
+        # region: an emergence). The union box still fills the region and is still two bodies wide, so it must not
+        # count as the region's remaining single body; after a detection gap the union must not come back clean.
+        TB, OB = SS.box_at(300, 400, 40, 100), SS.box_at(315, 400, 40, 100)
+        hidden3 = SS.box_at(307, 396, 36, 92)
+        for fps in FPS_SET:
+            for kit in (SAME, OPP):
+                for gap in (0.0, 0.6, 1.2):
+                    with self.subTest(fps=fps, kit=kit, gap=gap):
+                        fr = [SS.SceneFrame({"TARGET": TB, "THIRD": hidden3}, order=("THIRD", "TARGET"))
+                              for _ in range(int(2 * fps))]
+                        fr += [SS.SceneFrame({"TARGET": TB, "OTHER": OB, "THIRD": hidden3},
+                                             order=("THIRD", "OTHER", "TARGET")) for _ in range(int(fps / 3))]
+                        for k in range(int(7 * fps)):
+                            t = k / fps
+                            bx = {"TARGET": TB, "OTHER": OB,
+                                  "THIRD": SS.box_at(307 + min(1.0, max(0.0, t - 1.0)) * 120, 396, 36, 92)
+                                  if t >= 1.0 else hidden3}
+                            drop = ("TARGET", "OTHER") if 3.5 <= t < 3.5 + gap else ()
+                            fr.append(SS.SceneFrame(bx, merge=(("TARGET", "OTHER"),) if not drop else (), drop=drop,
+                                                    order=("THIRD", "OTHER", "TARGET")))
+                        r = SS.run(fr, people(kit), fps=fps)
+                        self.assertEqual(clean_union_tracklet_frames(r), [])
+                        self.assertEqual(tracking_on_union(r), [])
+                        self.assertEqual(wrong_trusted(r), [])
+                        self.assertTrue(r.bank_is_pure())
+
+    def test_persistent_part_box_on_a_running_player_breaks_nothing_at_any_frame_rate(self):
+        # M1: a contained body is compared where it would be had it moved with its host, so a persistent lower-body
+        # part box on a moving player never "vanishes" merely because the player moved between frames (low fps).
+        for fps in FPS_SET:
+            for speed_h in (1.0, 2.0):                         # body heights per second
+                with self.subTest(fps=fps, speed_h=speed_h):
+                    v = speed_h * 100 / fps
+                    fr = []
+                    for k in range(int(4 * fps)):
+                        b = SS.box_at(200 + v * k, 400, 40, 100)
+                        part = (b[0] + 4, b[1] + 45, b[2] - 4, b[3] - 1)
+                        fr.append(SS.SceneFrame({"TARGET": b}, parts=(("TARGET", part),) if k >= int(fps) else ()))
+                    r = SS.run(fr, people(OPP), fps=fps)
+                    breaks = [o for p in r.pops for o in p.observations if o.continuity_break]
+                    self.assertEqual(breaks, [])
+                    self.assertEqual(r.states().count("TRACKING"), len(r.frames))
+                    self.assertTrue(all(f.identity_trusted for f in r.frames[1:]))

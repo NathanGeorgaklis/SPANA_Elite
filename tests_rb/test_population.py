@@ -405,7 +405,7 @@ class TestNestedPartBoxes(Base):
     flagged merged, and the merged region kept a part-box as its size reference)."""
 
     @staticmethod
-    def _part_box_frames(lower: bool):
+    def _part_box_frames(lower):
         frames = []
         for k in range(30):
             cx = 400 + 4.0 * k
@@ -415,30 +415,33 @@ class TestNestedPartBoxes(Base):
             if k % 3 != 2:                                            # part boxes come and go
                 dets.append(cand((full[0] + 8, full[1] + 5, full[2] - 10, full[1] + 80), 0.7))
                 owners.append(("PERSON_A",))
-            if lower and k % 4 == 0:
+            if (lower == "flicker" and k % 4 == 0) or (lower == "persist" and k < 15):
                 dets.append(cand((full[0] + 15, full[1] + 70, full[2] - 12, full[3] - 2), 0.6))
                 owners.append(("PERSON_A",))
             frames.append(Frame(dets, owners))
         return frames
 
     def test_nested_part_boxes_are_not_tracklets_and_cause_no_merge(self):
-        # R2 DEV F3c: only a part box OFF the feet line (here the upper body) is harmless. A feet-aligned nested box
-        # is geometrically a crouching second person too; its disappearance breaks continuity (next test).
-        rn = run(self._part_box_frames(lower=False))
-        self.check_all(rn)
-        ids = {v.tracklet_id for r in rn.results for v in r.tracklets}
-        self.assertEqual(len(ids), 1, "one person, one tracklet")
-        self._check_nested(rn)
+        # upper-body part boxes (off the feet line) and a flickering feet-aligned lower-body box (never seen inside
+        # the body for population_hidden_min_s) are harmless: one person, one tracklet
+        for lower in (None, "flicker"):
+            with self.subTest(lower=lower):
+                rn = run(self._part_box_frames(lower))
+                self.check_all(rn)
+                ids = {v.tracklet_id for r in rn.results for v in r.tracklets}
+                self.assertEqual(len(ids), 1, "one person, one tracklet")
+                self._check_nested(rn)
 
-    def test_vanishing_feet_aligned_nested_box_breaks_continuity_but_causes_no_merge(self):
-        # R2 DEV F3c (failure 2, fail closed): a feet-aligned box nested in a body and then seen nowhere may be a
-        # hidden person who has just stood up in that body's place. The population cannot tell a lower-body part
-        # box from that, so the tracklet ends (contested) and the box is reborn naming it as possible predecessor.
-        # Cost (recorded): a flickering lower-body part box costs continuity; it is never a merge or a swap.
-        rn = run(self._part_box_frames(lower=True))
+    def test_vanishing_persistent_feet_aligned_nested_box_breaks_continuity_but_causes_no_merge(self):
+        # R2 DEV F3c (failure 2, fail closed): a feet-aligned box seen nested in a body for a while and then seen
+        # nowhere may be a hidden person who has just stood up in that body's place. The population cannot tell a
+        # lower-body part box from that, so the tracklet ends (contested) and the box is reborn naming it as
+        # possible predecessor. Cost (recorded): a persistent lower-body part box that disappears costs continuity;
+        # it is never a merge or a swap.
+        rn = run(self._part_box_frames("persist"))
         self.check_all(rn)
         ids = {v.tracklet_id for r in rn.results for v in r.tracklets}
-        self.assertGreater(len(ids), 1)
+        self.assertEqual(len(ids), 2)
         prev_tid = None
         for r in rn.results:
             tid = r.observations[0].tracklet_id
