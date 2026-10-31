@@ -13,3 +13,6 @@ __pycache__/
 .DS_Store
 # GOLD label-sheet frame images are regenerated deterministically by tools_rb/make_gold_label_sheet.py
 R1/gold_label_sheet/frames/
+
+# Nathan's R2 labelling work folder lives outside the repo (~/Documents/SPANA_R2_Work/); never commit it here
+R2/_spana_r2_work/

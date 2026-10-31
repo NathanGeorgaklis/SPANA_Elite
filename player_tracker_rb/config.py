@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2a-1"   # r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2c-1"   # r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -536,6 +536,24 @@ PARAMS: Tuple[Param, ...] = (
        "boxes of one person (smaller box 0.75-0.9 inside the larger) still became separate tracklets and "
        "produced false MULTI_CLAIM merges; side-by-side people in contact measured 0.33-0.62. In-sample, "
        "UNVALIDATED.", 0.0, 1.0),
+    _p("population_region_fill_min", "float", "fraction of the merged region's box area",
+       "A detection holding at least this fraction of a merged region's box is the merged box itself persisting: it "
+       "never counts as one of the region's separate single bodies when deciding whether the region resolved, it "
+       "keeps the region remembered (population_closed_memory_s counts from the last such frame as well as the last "
+       "merge evidence), and a tracklet ever observed on it keeps its MERGE_LINEAGE.",
+       0.9, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "NEW_R2 (R2 DEV remediation F3c). Two people a body-width or less apart give a union box about 1.3-1.4x one "
+       "body (below merged_area_ratio, so the union counted as one single body); a single body after a clean split "
+       "holds <= ~0.75-0.83 of the union box in the synthetic and DEV geometries. Unvalidated.", 0.0, 1.0),
+    _p("population_hidden_feet_gap_max", "float", "fraction of the host box height",
+       "A body NESTED inside a tracklet's box whose bottom edge is within this fraction of the box height of the "
+       "box's bottom edge may be a person at the box's depth or nearer (e.g. crouching in front): if it vanishes while "
+       "the box goes on, the tracklet ends (it may have stood up into the box). A nested box whose bottom is higher is "
+       "an upper-body part or a farther person behind, which cannot replace the box by standing up in front.",
+       0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",
+       "NEW_R2 (R2 DEV remediation F3c). DEV 37a109c trusted target frames: 39 of 71 contained boxes bottom-aligned "
+       "(|gap| <= 0.1 h). A person in front stands on the ground at or below the host's feet line. Unvalidated.",
+       0.0, 1.0),
     _p("population_size_ref_window_s", "float", "s",
        "A tracklet's size reference is the median width and height of its non-partial observed boxes in this "
        "recent window (camera-scaled).", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population",

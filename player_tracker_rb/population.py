@@ -71,10 +71,23 @@ Per frame (update), in order:
      MERGE LINEAGE: a tracklet born in an unresolved or lapsed region, or with a possible predecessor that carries
      merge lineage, may hold two bodies; it is MERGE_LINEAGE and never an appearance sample for its whole life.
      Only a resolved region (the bodies seen apart again) produces lineage-free tracklets.
+     PERSISTING MERGED BOX (NEW_R2, R2 DEV F3c): a detection holding >= population_region_fill_min of a region's
+     box is the merged box itself. It never counts as one of the region's separate single bodies on its own (a
+     two-person box below merged_area_ratio would otherwise count as "one single body"); it counts as one only once
+     another merged body has been seen emerging from the region (then it plausibly holds the rest); while one is observed the region is not
+     forgotten (memory runs from the later of the last merge evidence and the last such frame); and a tracklet ever
+     observed on it keeps its MERGE_LINEAGE even when the region resolves. A body first seen OUTSIDE the region
+     after it formed (it walked in) is an OUTSIDER like a body tracked before the merge: it never resolves it.
   4. Contested links. A tracklet-detection link is ambiguous if a rival detection (for that tracklet) or a rival
      tracklet (for that detection) has IoU within population_assoc_ambiguity_margin of it. Every tracklet in the
      connected group is closed (CONTACT_AMBIGUITY) and each of the group's detections starts a new tracklet whose
      possible_predecessors are the closed ones. A crossing therefore never produces a silent swap.
+  4b. Vanished hidden body (NEW_R2, R2 DEV F3c). A body NESTED inside a tracklet's box with its bottom edge on the
+     box's feet line (within population_hidden_feet_gap_max of the box height) is a part of that body or a second
+     person at its depth hidden in it (geometry cannot tell). If such a body was inside the box when the tracklet was last
+     observed and is now seen nowhere (no detection overlapping where it was by population_match_iou_min) while the
+     box goes on, the hidden person may have taken the box's place (e.g. stood up in front): the tracklet ends as
+     a contested link (CONTACT_AMBIGUITY; the box starts a new tracklet with it as possible predecessor).
   5. Births. Any other unassigned detection starts a new tracklet. Hidden tracklets whose predicted box it covers
      (>= population_contact_cover_min) are recorded as possible predecessors (and the new id as their possible
      successor). The hidden tracklet is NOT closed: it may be a different person still hidden behind someone.
@@ -214,6 +227,7 @@ class Observation:
     max_iou_other: float                      # largest IoU with any other body this frame
     covered_fraction: float                   # fraction of this box covered by other bodies
     second_body_possible: bool = True         # another body could be inside this box (merge corroboration)
+    continuity_break: Optional[str] = None    # NEW_R2 F3c: why this box could not continue its tracklet (log)
 
     @property
     def ref(self) -> str:
@@ -230,7 +244,8 @@ class Observation:
                 "flags": list(self.flags),
                 "merge_reasons": list(self.merge_reasons), "claimants": list(self.claimants),
                 "possible_predecessors": list(self.possible_predecessors), "max_iou_other": self.max_iou_other,
-                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible}
+                "covered_fraction": self.covered_fraction, "second_body_possible": self.second_body_possible,
+                "continuity_break": self.continuity_break}
 
 
 @dataclass(frozen=True)
@@ -393,6 +408,8 @@ class _Tracklet:
     predecessors: Tuple[str, ...] = ()
     successors: List[str] = field(default_factory=list)
     merge_lineage: bool = False
+    first_box: Optional[Box] = None          # NEW_R2 F3c: the box it was born on (outsider test for merged regions)
+    contained: Tuple[Box, ...] = ()          # NEW_R2 F3c: NESTED bodies inside its box when last observed
 
 
 @dataclass
@@ -404,6 +421,8 @@ class _MergedRegion:
     last_evidence_t: float                # last frame with size or multi-claim evidence of a merge here
     created_t: float = 0.0                # when the merge was first seen
     born: Set[str] = field(default_factory=set)   # tracklets born in it with MERGE_LINEAGE
+    last_filled_t: float = 0.0            # NEW_R2 F3c: last frame a detection still filled the region's box
+    fillers: Set[str] = field(default_factory=set)  # NEW_R2 F3c: tracklets observed on a box filling the region
 
 
 def _distinct_bodies(tids: Sequence[str], by_tid: Dict[str, "_Tracklet"]) -> int:
@@ -515,7 +534,8 @@ class Population:
                        last_obs_frame=frame, sizes=[] if partial else [(t,) + _wh(box)],
                        bank=AppearanceBank(self._cfg, require_trust=True,
                                            capacity=self._cfg.get("population_bank_max_samples")),
-                       predecessors=tuple(sorted(set(predecessors))), merge_lineage=bool(merge_lineage))
+                       predecessors=tuple(sorted(set(predecessors))), merge_lineage=bool(merge_lineage),
+                       first_box=box)
         return tr
 
     # -- main ------------------------------------------------------------------------------------------------
@@ -719,20 +739,49 @@ class Population:
             return (w * h) / (ref[0] * ref[1]) < c.get("merged_area_ratio") and \
                 (w / h) / (ref[0] / ref[1]) <= hi_band
         def outsider(i: int, rg: _MergedRegion) -> bool:
+            # not one of the merged bodies: a body tracked before the merge formed that was not a claimant, or
+            # (NEW_R2 F3c) a body first seen OUTSIDE the region after it formed (it walked in; a merged body comes
+            # out of the region, so its tracklet is born overlapping it)
             if i not in assigned_d:
                 return False
             tr = by_tid0[assigned_d[i]]
-            return tr.first_time < rg.created_t and tr.tid not in rg.claimants
+            if tr.tid in rg.claimants:
+                return False
+            if tr.first_time < rg.created_t:
+                return True
+            fb = tr.first_box
+            return fb is not None and float(containment(np.asarray([fb]), np.asarray([rg.box]))[0, 0]) < cmin
+
+        # NEW_R2 F3c: a box that still FILLS a region (>= population_region_fill_min of the region's box inside it)
+        # is the merged box itself persisting: it never counts as one of the region's separate single bodies (a
+        # two-person box under the merge size would otherwise count as "one single body"), and it keeps the region
+        # alive (a merge is not forgotten merely because the merged box persists)
+        fill_min = c.get("population_region_fill_min")
+        fills: Dict[int, Set[int]] = {k: set() for k in range(len(self._regions))}
+        for k, rg in enumerate(self._regions):
+            for i in track:
+                if float(containment(np.asarray([rg.box]), np.asarray([boxes[i]]))[0, 0]) >= fill_min:
+                    fills[k].add(i)
+            if fills[k]:
+                rg.last_filled_t = t
         emerged: Dict[int, Set[int]] = {k: set() for k in range(len(self._regions))}
         for k, rg in enumerate(self._regions):
             for i in track:
-                if region_of.get(i) == k or outsider(i, rg):
+                if region_of.get(i) == k or outsider(i, rg) or i in fills[k]:
                     continue
                 if float(containment(np.asarray([boxes[i]]), np.asarray([rg.box]))[0, 0]) >= cmin:
                     emerged[k].add(i)
-        resolved = {k for k, rg in enumerate(self._regions)
-                    if len({i for i in in_region[k] if single_sized(i, rg.ref_wh) and not outsider(i, rg)}
-                           | emerged[k]) >= rg.n_bodies}
+        # A filling box counts as ONE single body only once another of the merged bodies has been seen emerging from
+        # the region (its tracklet born overlapping it): the merged box then plausibly holds just the remaining body
+        # (the usual end of an occlusion). Without an emergence, a persisting filling box is evidence of nothing new.
+        def region_count(k: int, rg: _MergedRegion) -> int:
+            singles = {i for i in in_region[k] if single_sized(i, rg.ref_wh) and not outsider(i, rg)}
+            n_sep = len((singles - fills[k]) | emerged[k])
+            if emerged[k] and singles & fills[k]:
+                n_sep += 1
+            return n_sep
+
+        resolved = {k for k, rg in enumerate(self._regions) if region_count(k, rg) >= rg.n_bodies}
         hold = c.get("population_merged_region_hold_s")
         # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
         # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies
@@ -827,6 +876,26 @@ class Population:
                     uf.union(("d", i), ("t", order_of[u]))
                     if u in assigned_t:
                         uf.union(("t", order_of[u]), ("d", assigned_t[u]))
+        # NEW_R2 F3c: a body NESTED inside a tracklet's box is a part of that body or a second person hidden in it
+        # (R1-E: geometry cannot tell). If such a body was inside the box when the tracklet was last observed and is
+        # now seen nowhere (no detection overlapping where it was by population_match_iou_min) while the box goes
+        # on, the hidden person may have taken the box's place (e.g. stood up in front): the link is ambiguous and
+        # the tracklet ends like a contested link (CONTACT_AMBIGUITY; the box starts a new tracklet with it as
+        # possible predecessor). Fails closed: no identity continues through a possible replacement.
+        breaks: Dict[int, str] = {}
+        for tid, i in sorted(assigned_t.items(), key=lambda kv: order_of[kv[0]]):
+            tr = by_tid[tid]
+            if i in merged or not tr.contained:
+                continue
+            prev = [camera.warp_box(b) if camera.compensated else b for b in tr.contained]
+            others = [boxes[j] for j in range(n) if j != i]     # any other detection, duplicates included
+            if others:
+                seen = box_iou_matrix(np.asarray(prev), np.asarray(others)).max(axis=1) >= match_min
+            else:
+                seen = np.zeros(len(prev), dtype=bool)
+            if not bool(seen.all()):
+                breaks[i] = "CONTAINED_BODY_VANISHED"
+                uf.union(("t", order_of[tid]), ("d", i))
         groups: Dict[Any, Tuple[Set[str], Set[int]]] = {}
         tid_by_order = {tr.order: tr.tid for tr in live}
         for key in list(uf.parent):
@@ -1015,15 +1084,34 @@ class Population:
                     tr.contact_during_gap = True
                     break
 
-        # a resolved region proves its bodies were seen apart again: tracklets born in it lose their merge lineage
+        # bodies NESTED inside each observed tracklet's box this frame that stand on its feet line (NEW_R2 F3c; kept
+        # while the tracklet is hidden). Only a body whose bottom edge is within population_hidden_feet_gap_max of
+        # the box's height of the box's bottom edge can be a person at the box's depth (or nearer) who could stand
+        # up in front of it; a box whose bottom is higher is an upper-body part or a farther person behind it.
+        feet_gap = c.get("population_hidden_feet_gap_max")
+        for tr in new_live:
+            i = observed_now.get(tr.tid)
+            if i is not None:
+                hb = boxes[i]
+                hh = hb[3] - hb[1]
+                tr.contained = tuple(boxes[j] for j in bodies if j != i and nested_in[j] == i
+                                     and hb[3] - boxes[j][3] <= feet_gap * hh)
+        # tracklets observed this frame on a box that fills a region may hold its merged bodies (NEW_R2 F3c)
+        for k, rg in enumerate(self._regions):
+            for tid, i in observed_now.items():
+                if i in fills.get(k, ()):                   # regions created this frame have no fill record
+                    rg.fillers.add(tid)
+        # a resolved region proves its bodies were seen apart again: tracklets born in it lose their merge lineage,
+        # except a tracklet that was ever observed on the merged box itself (it held two bodies; NEW_R2 F3c)
         for k in resolved:
             for tr in new_live:
-                if tr.tid in self._regions[k].born:
+                if tr.tid in self._regions[k].born and tr.tid not in self._regions[k].fillers:
                     tr.merge_lineage = False
-        # merged regions are forgotten when resolved, or population_closed_memory_s after their last evidence
+        # merged regions are forgotten when resolved, or population_closed_memory_s after their last evidence AND
+        # after a detection last filled them (NEW_R2 F3c: a persisting merged box keeps its merge remembered)
         keep_region_s = c.get("population_closed_memory_s")
         self._regions = [rg for k, rg in enumerate(self._regions)
-                         if k not in resolved and t - rg.last_evidence_t <= keep_region_s]
+                         if k not in resolved and t - max(rg.last_evidence_t, rg.last_filled_t) <= keep_region_s]
 
         # ---- 7. overlap context --------------------------------------------------------------------------
         pairs: List[OverlapPair] = []
@@ -1078,7 +1166,8 @@ class Population:
                                    merge_reasons=tuple(merge_reasons.get(i, ())),
                                    claimants=tuple(claimants.get(i, ())), possible_predecessors=preds_i,
                                    max_iou_other=max_iou, covered_fraction=cov,
-                                   second_body_possible=second_body.get(i, True)))
+                                   second_body_possible=second_body.get(i, True),
+                                   continuity_break=breaks.get(i)))
 
         # ---- 8. views and bank eligibility ---------------------------------------------------------------
         views: List[TrackletView] = []
