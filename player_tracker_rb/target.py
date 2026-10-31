@@ -106,22 +106,25 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
     updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
     banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
-  * POST-ANOMALY RE-VERIFICATION (NEW_R2, R2 DEV F5): an unverified episode opened by a reacquisition onto the
-    very tracklet whose ended SIZE_ANOMALY broke a VERIFIED identity (physical continuity: the population never
-    closed, contested or merged that tracklet) becomes verified, without a confusable competitor, only after an
-    uninterrupted run of target_reverify_window_s in which EVERY frame is TRACKING on that tracklet and
-      - passes the ordinary continuation tests (floors, contrast, rivals, motion), with composite >=
-        reacq_appearance_floor (the stricter floor; no floor is lowered) and a clean box (no bank-refusal flag, not
-        CONTAINS_OTHER, not MERGE_LINEAGE);
-      - has no PLAUSIBLE COMPETITOR: no body near it (observed, hidden, or closed within contact_memory_s) that
-        could be the target's size and whose appearance is unknown (no bank) or confusable with the crop (bank
-        similarity >= appearance_floor); and no other body anywhere in the frame that itself passes appearance_floor
-        against the target bank (the target may be there). These only WITHHOLD; nothing far away ever verifies;
-      - and the run ends with the box having travelled >= target_reverify_min_travel_h over the scene (a person
-        hidden behind it could stay hidden only by moving in lockstep), while the spots it left (where the anomaly
-        ended, where the run started; camera-compensated) are checkable and show no target look-alike.
-    Any failure restarts the run; leaving the tracklet, a camera cut or a new episode ends it. Until verified the
-    frames stay untrusted and the bank is never updated. Decision log: reverify (status, why, elapsed_s, travel_h);
+  * POST-ANOMALY RE-VERIFICATION (NEW_R2, R2 DEV F5; OFF unless target_reverify_enabled): when an ended
+    SIZE_ANOMALY breaks a VERIFIED identity on its tracklet (the origin), a watch starts (WAIT). If the target is
+    then reacquired onto the very same tracklet (physical continuity: the population never closed, contested or
+    merged it) as an unverified episode, a RUN starts. The episode becomes verified, without a confusable
+    competitor, only after an uninterrupted run of target_reverify_window_s in which every frame is TRACKING on the
+    origin, passes the ordinary continuation tests with composite >= reacq_appearance_floor (no floor is lowered),
+    has a clean box (no bank-refusal flag, not CONTAINS_OTHER, not MERGE_LINEAGE) and a measured camera, and the run
+    ends with the box having travelled >= target_reverify_min_travel_h over the scene while both spots it left
+    (where the anomaly ended, where the run started; camera-compensated, wholly vacated) are checked clear.
+    From the end of the anomaly on, ANY evidence that another body could be the target CANCELS the rule for good: a
+    body near the origin box (observed, hidden or closed within contact_memory_s) of the target's possible size
+    whose appearance is unknown (no bank) or confusable (bank similarity >= appearance_floor), any other body
+    anywhere in the frame that itself passes appearance_floor against the target bank, or a target look-alike at
+    a vacated spot. Far bodies only ever withhold; nothing far away verifies. LOST, leaving the origin, a return
+    onto another tracklet, a cut, or target_reverify_max_s after the anomaly ends the watch. Until verified the
+    frames stay untrusted and the bank is never updated. KNOWN LIMIT (the reason it is off by default): a same-kit
+    replacement whose true target leaves no visible evidence (missed by the detector while walking away, or hidden
+    in lockstep) is re-verified on the wrong person. Decision log: reverify (phase, status, why, spots, elapsed_s,
+    travel_h);
   * every untrusted frame: min(untrusted_identity_confidence_ceiling,
         last trusted confidence * 0.5 ** (seconds since confirmation / confidence_half_life_s)).
 Separate quantities are reported, never folded into this one: raw detector score, target similarity, best
@@ -364,8 +367,6 @@ class TargetTracker:
         self._anomaly_tracklet: Optional[str] = None   # the target's tracklet while it carries a SIZE_ANOMALY
         # NEW_R2 F5: the tracklet whose ended SIZE_ANOMALY broke a VERIFIED episode, and the post-anomaly
         # re-verification run on it (None, or {"origin", "t0", "box0"}; see the module docstring)
-        self._anomaly_origin: Optional[str] = None
-        self._anomaly_spot: Optional[Box] = None         # where that anomaly ended (camera-compensated)
         self._reverify: Optional[Dict[str, Any]] = None
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
@@ -850,7 +851,7 @@ class TargetTracker:
             self._tracklet_since_t = None
             self._verif = None
             self._sizes, self._last_h = [], None              # scale from another shot means nothing here
-            self._anomaly_origin, self._anomaly_spot, self._reverify = None, None, None   # no continuity (F5)
+            self._reverify = None                             # physical continuity cannot span a cut (F5)
             log["camera"] = "CONTINUITY_BROKEN"
         elif self._motion is not None:
             self._motion = self._mm.apply_camera(self._motion, cam)
@@ -864,8 +865,6 @@ class TargetTracker:
                     for key in ("box0", "spot"):
                         if self._reverify[key] is not None:
                             self._reverify[key] = cam.warp_box(self._reverify[key])
-                if self._anomaly_spot is not None:
-                    self._anomaly_spot = cam.warp_box(self._anomaly_spot)
 
         h = self._height(t) or float(np.median([_wh(o.bbox)[1] for o in res.observations] or [1.0]))
         pred = self._mm.predict(self._motion, t) if (self._motion is not None and t > self._motion.t_obs) else None
@@ -903,8 +902,11 @@ class TargetTracker:
                     # episode, untrusted and never banked until contrast-verified; R1-G)
                     continuity_broken = True
                     # F5: remember where the anomaly happened if it interrupted a verified identity
-                    self._anomaly_origin = self._tracklet if self._contrast_verified else None
-                    self._anomaly_spot = res.observations[tv.detection_index].bbox
+                    self._reverify = None
+                    if self._contrast_verified and c.get("target_reverify_enabled"):
+                        # F5: watch for evidence against the tracklet from the end of the anomaly on (module doc)
+                        self._reverify = {"origin": self._tracklet, "spot": res.observations[tv.detection_index].bbox,
+                                          "t_end": t, "phase": "WAIT", "t0": None, "box0": None}
                     self._tracklet, self._anomaly_tracklet = None, None
                     log["continuity_broken"] = "SIZE_ANOMALY_ENDED"
             if continuity_broken:
@@ -995,10 +997,12 @@ class TargetTracker:
                 self._known_others = set()                   # a new episode: earlier co-observations are reset
                 # F5: an unverified return onto the very tracklet whose anomaly broke a verified identity may be
                 # re-verified by sustained physical and appearance evidence (module docstring)
-                self._reverify = ({"origin": ev.tracklet_id, "t0": None, "box0": None, "spot": self._anomaly_spot}
-                                  if (not self._contrast_verified and ev.tracklet_id is not None
-                                      and ev.tracklet_id == self._anomaly_origin) else None)
-                self._anomaly_origin, self._anomaly_spot = None, None
+                if self._reverify is not None:
+                    if self._reverify["phase"] == "WAIT" and not self._contrast_verified and \
+                            ev.tracklet_id is not None and ev.tracklet_id == self._reverify["origin"]:
+                        self._reverify["phase"] = "RUN"
+                    else:
+                        self._reverify = None                # returned elsewhere: the rule does not apply
             elif self._verif is not None:
                 state = REACQUIRING
                 reasons = sorted(set(reasons) | {REACQUISITION_UNVERIFIED})
@@ -1017,7 +1021,7 @@ class TargetTracker:
         trusted = True
         if self._reverify is not None:
             log["reverify"] = self._reverify_step(res, image, cache, state, chosen, h)
-            if self._contrast_verified:
+            if log["reverify"].get("status") == "REVERIFIED":
                 conf_trusted = self._confidence_trusted(chosen)
         if state == TRACKING:
             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
@@ -1045,32 +1049,34 @@ class TargetTracker:
         return frame
 
     def _plausible_competitor(self, res: P.FrameResult, image: np.ndarray, cache: Dict[int, AppearanceFeature],
-                              ev: CandidateEvaluation, h: float) -> Optional[str]:
-        """F5: the reason another body could be the target now, or None. Local: any body near the box (observed,
-        hidden or recently closed within contact_memory_s) that could be the target's size and whose appearance is
-        unknown (no bank) or confusable with this crop (bank similarity >= appearance_floor). Anywhere in the frame:
-        any other observed body that itself passes appearance_floor against the TARGET bank (the target may be
-        there). Used only to WITHHOLD re-verification, never to grant it."""
+                              i: Optional[int], origin: str, h: float) -> Optional[str]:
+        """F5: the reason another body could be the target now, or None. Local (only when the origin tracklet is
+        observed, on detection i): any body near its box (observed, hidden or recently closed within
+        contact_memory_s) that could be the target's size and whose appearance is unknown (no bank) or confusable
+        with the crop (bank similarity >= appearance_floor). Anywhere in the frame: any other observed body that
+        itself passes appearance_floor against the TARGET bank (the target may be there). Used only to WITHHOLD
+        re-verification, never to grant it."""
         c = self._cfg
         t = res.time_s
         floor = c.get("appearance_floor")
-        grp = self._group(res, ev.detection_index)
-        own = set(self._target_tracklets) | ({ev.tracklet_id} if ev.tracklet_id else set())
-        feat = self._feature(cache, res, image, ev.detection_index)
-        if not feat.usable:
-            return "FEATURE_NOT_USABLE"
-        for cp in self._pop.competitors(ev.box, h, exclude_tracklet_ids=sorted(own),
-                                        exclude_detection_indices=sorted(grp)):
-            if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
-                    cp.closed_age_s > c.get("contact_memory_s"):
-                continue
-            if cp.position_valid and not self._could_be_target(cp.box, h, t):
-                continue                                     # cannot physically be the target (size)
-            if cp.bank is None or not len(cp.bank):
-                return "UNKNOWN_LOCAL_BODY"
-            cs, _ = cp.bank.best_match(feat)
-            if cs is None or cs.composite is None or cs.composite >= floor:
-                return "CONFUSABLE_LOCAL_BODY"
+        grp = self._group(res, i) if i is not None else set()
+        own = set(self._target_tracklets) | {origin}
+        if i is not None:
+            feat = self._feature(cache, res, image, i)
+            if not feat.usable:
+                return "FEATURE_NOT_USABLE"
+            for cp in self._pop.competitors(res.observations[i].bbox, h, exclude_tracklet_ids=sorted(own),
+                                            exclude_detection_indices=sorted(grp)):
+                if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
+                        cp.closed_age_s > c.get("contact_memory_s"):
+                    continue
+                if cp.position_valid and not self._could_be_target(cp.box, h, t):
+                    continue                                 # cannot physically be the target (size)
+                if cp.bank is None or not len(cp.bank):
+                    return "UNKNOWN_LOCAL_BODY"
+                cs, _ = cp.bank.best_match(feat)
+                if cs is None or cs.composite is None or cs.composite >= floor:
+                    return "CONFUSABLE_LOCAL_BODY"
         for o in res.observations:
             if not o.is_body or o.index in grp or (o.tracklet_id is not None and o.tracklet_id in own):
                 continue
@@ -1082,67 +1088,109 @@ class TargetTracker:
                 return "TARGET_LOOKALIKE_IN_FRAME"
         return None
 
+    def _spot_check(self, res: P.FrameResult, image: np.ndarray, spot: Optional[Box],
+                    origin_box: Optional[Box]) -> Tuple[str, Optional[float]]:
+        """F5: what a spot the origin box has left shows now: ("NONE", None) no spot; ("COVERED", None) the origin
+        box still overlaps it at all; ("UNCHECKABLE", None) no valid crop (occluded / outside); ("LOOKALIKE", s) a target
+        look-alike (composite s >= appearance_floor against the target bank); ("CLEAR", s) otherwise."""
+        c = self._cfg
+        if spot is None:
+            return "NONE", None
+        if origin_box is not None and _cover(spot, origin_box) > 0.0:
+            return "COVERED", None                           # not yet wholly vacated by the origin box
+        vac = self._ext.extract(image, spot, others=[ob.bbox for ob in res.observations])
+        if not vac.usable:
+            return "UNCHECKABLE", None
+        vs, _ = self._bank.best_match(vac)
+        sim = None if vs is None else vs.composite
+        if sim is not None and sim >= c.get("appearance_floor"):
+            return "LOOKALIKE", sim
+        return "CLEAR", sim
+
     def _reverify_step(self, res: P.FrameResult, image: np.ndarray, cache: Dict[int, AppearanceFeature],
                        state: str, chosen: Optional[CandidateEvaluation], h: float) -> Dict[str, Any]:
-        """F5 post-anomaly re-verification (module docstring). Runs only on an unverified episode opened by a
-        return onto the tracklet whose ended SIZE_ANOMALY broke a verified identity. Every condition must hold on
-        every frame of a run lasting target_reverify_window_s; any failure restarts the run."""
+        """F5 post-anomaly re-verification (module docstring). WAIT from the end of the anomaly until the target is
+        reacquired onto the origin tracklet, then RUN. Any evidence that another body could be the target (a
+        plausible competitor, a look-alike at a spot the box left) CANCELS the rule for good; an ordinary failure
+        restarts the run; LOST, leaving the origin tracklet, a cut or target_reverify_max_s ends it."""
         c = self._cfg
         t = res.time_s
         rv = self._reverify
-        if self._contrast_verified:                          # verified meanwhile (e.g. by ordinary contrast)
+        rec: Dict[str, Any] = {"phase": rv["phase"]}
+
+        def cancel(why: str) -> Dict[str, Any]:
             self._reverify = None
-            return {"status": "ALREADY_VERIFIED"}
+            rec.update({"status": "CANCELLED", "why": why})
+            return rec
+
+        if self._contrast_verified and rv["phase"] == "RUN":
+            self._reverify = None                            # verified meanwhile (e.g. by ordinary contrast)
+            rec["status"] = "ALREADY_VERIFIED"
+            return rec
+        if t - rv["t_end"] > c.get("target_reverify_max_s"):
+            return cancel("EXPIRED")
+        if state == LOST:
+            return cancel("LOST")
+        views = {v.tracklet_id: v for v in res.tracklets}
+        ov = views.get(rv["origin"])
+        if ov is None:
+            return cancel("ORIGIN_TRACKLET_ENDED")
+        oi = ov.detection_index if ov.observed else None
+        why = self._plausible_competitor(res, image, cache, oi, rv["origin"], h)
+        if why is not None and why != "FEATURE_NOT_USABLE":
+            return cancel(why)
+        obox = res.observations[oi].bbox if oi is not None else None
+        spots = {}
+        for key in ("spot", "box0"):
+            st, sim = self._spot_check(res, image, rv[key], obox)
+            spots[key] = st
+            if st == "LOOKALIKE":
+                rec["similarity"] = sim
+                return cancel("TARGET_LOOKALIKE_AT_VACATED_SPOT")
+        rec["spots"] = spots
+        if rv["phase"] == "WAIT":
+            rec["status"] = "WAITING"
+            return rec
+        # ---- RUN: every frame TRACKING on the origin tracklet, clean, strong, camera measured ----------------
         if state != TRACKING or chosen is None or chosen.tracklet_id != rv["origin"]:
             if self._tracklet != rv["origin"]:
-                self._reverify = None                        # left the tracklet: physical continuity is gone
-                return {"status": "ENDED_LEFT_TRACKLET"}
+                return cancel("LEFT_ORIGIN_TRACKLET")
             rv["t0"], rv["box0"] = None, None
-            return {"status": "RESTART", "why": "NOT_TRACKING_ON_ORIGIN"}
+            rec.update({"status": "RESTART", "why": "NOT_TRACKING_ON_ORIGIN"})
+            return rec
         o = res.observations[chosen.detection_index]
-        v = res.tracklet(chosen.tracklet_id)
-        why: Optional[str] = None
         bad_flags = [f for f in _BANK_REFUSE_FLAGS + (P.CONTAINS_OTHER,) if f in o.flags]
-        if not chosen.passed:
-            why = "EVALUATION_FAILED"
+        restart: Optional[str] = None
+        if res.camera.status != ESTIMATED:
+            restart = "CAMERA_NOT_MEASURED"                  # travel and spots need a measured camera
+        elif not chosen.passed:
+            restart = "EVALUATION_FAILED"
+        elif why == "FEATURE_NOT_USABLE":
+            restart = why
         elif bad_flags:
-            why = "BOX_NOT_CLEAN:" + "+".join(sorted(bad_flags))
-        elif v is not None and P.MERGE_LINEAGE in v.flags:
-            why = "MERGE_LINEAGE"
+            restart = "BOX_NOT_CLEAN:" + "+".join(sorted(bad_flags))
+        elif P.MERGE_LINEAGE in ov.flags:
+            restart = "MERGE_LINEAGE"
         elif chosen.composite is None or chosen.composite < c.get("reacq_appearance_floor"):
-            why = "BELOW_REACQ_FLOOR"
-        else:
-            why = self._plausible_competitor(res, image, cache, chosen, h)
-        if why is not None:
+            restart = "BELOW_REACQ_FLOOR"
+        if restart is not None:
             rv["t0"], rv["box0"] = None, None
-            return {"status": "RESTART", "why": why}
+            rec.update({"status": "RESTART", "why": restart})
+            return rec
         if rv["t0"] is None:
             rv["t0"], rv["box0"] = t, chosen.box
         cx0, cy0 = centre(rv["box0"])
         cx1, cy1 = centre(chosen.box)
         travel_h = math.hypot(cx1 - cx0, cy1 - cy0) / h
         elapsed = t - rv["t0"]
-        rec = {"status": "RUNNING", "elapsed_s": elapsed, "travel_h": travel_h}
+        rec.update({"status": "RUNNING", "elapsed_s": elapsed, "travel_h": travel_h})
         if elapsed >= c.get("target_reverify_window_s") and travel_h >= c.get("target_reverify_min_travel_h"):
-            # the spots the box has left - where the anomaly ended and where this run started (camera-compensated) -
-            # must not still show a target look-alike: a person there (e.g. the target, uncovered when the box moved
-            # off it and missed by the detector) means the box is not the only candidate. Each spot must be
-            # checkable (a valid crop, not covered by the box itself or anyone else)
-            sims = []
-            for spot in (rv["spot"], rv["box0"]):
-                if spot is None:
-                    continue
-                vac = self._ext.extract(image, spot, others=[ob.bbox for ob in res.observations])
-                if not vac.usable:
-                    rec["vacated_spot"] = "UNCHECKABLE"
-                    return rec
-                vs, _ = self._bank.best_match(vac)
-                sims.append(None if vs is None else vs.composite)
-                if vs is not None and vs.composite is not None and vs.composite >= c.get("appearance_floor"):
-                    rv["t0"], rv["box0"] = None, None
-                    return {"status": "RESTART", "why": "TARGET_LOOKALIKE_AT_VACATED_SPOT", "similarity": vs.composite}
-            rec["vacated_spot_similarities"] = sims
+            # both spots the box has left must have been checked clear now (not covered, not uncheckable)
+            if any(spots[k] not in ("CLEAR", "NONE") for k in spots) or spots.get("box0") != "CLEAR":
+                rec["status"] = "SPOTS_NOT_CLEAR"
+                return rec
             self._contrast_verified = True
+            self._tracklet_since_t = t       # known others only after target_known_other_min_s of verified tracking
             self._reverify = None
             rec["status"] = "REVERIFIED"
         return rec

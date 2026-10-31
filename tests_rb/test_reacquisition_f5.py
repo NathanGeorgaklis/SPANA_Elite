@@ -24,7 +24,11 @@ KIT_A = (200, 60, 40)
 KIT_B = (40, 40, 210)
 SAME_KIT_COS = 0.75            # realistic same-kit embedding similarity (R1-D: same-kit P90 ~0.78)
 FPS_SET = (30.0, 15.0, 10.0)
-CFG = TrackerConfig.default()
+CFG = TrackerConfig.with_overrides({"target_reverify_enabled": True})   # the rule is OFF by default (pending decision)
+
+
+def run(frames, ppl, fps):
+    return SS.run(frames, ppl, fps=fps, cfg=CFG)
 
 
 def people(*others):
@@ -79,7 +83,7 @@ class TestPostAnomalyReverification(unittest.TestCase):
                 boxes += [go(k) for k in range(int(4 * fps))]
                 far = [SS.box_at(1000, 380, 40, 100)] * len(boxes)
                 ppl = people(("OTHER", KIT_B, 0.2))
-                r = SS.run([SS.SceneFrame({"TARGET": b, "OTHER": o}) for b, o in zip(boxes, far)], ppl, fps=fps)
+                r = run([SS.SceneFrame({"TARGET": b, "OTHER": o}) for b, o in zip(boxes, far)], ppl, fps)
                 an = anomaly_frames(r)
                 self.assertTrue(an)
                 for k in an:
@@ -105,7 +109,7 @@ class TestPostAnomalyReverification(unittest.TestCase):
             with self.subTest(fps=fps):
                 boxes, _ = pose_then(fps, None)
                 boxes += [SS.box_at(300, 400, 40, 100) for _ in range(int(4 * fps))]
-                r = SS.run([SS.SceneFrame({"TARGET": b}) for b in boxes], people(), fps=fps)
+                r = run([SS.SceneFrame({"TARGET": b}) for b in boxes], people(), fps=fps)
                 self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
                                      for f in r.frames))
                 self.assertFalse(r.frames[-1].identity_trusted)
@@ -125,7 +129,7 @@ class TestPostAnomalyReverification(unittest.TestCase):
                 side = [None] * n0 + [SS.box_at(300 + 100 * k / fps + 35, 400, 40, 100) for k in range(n)]
                 ppl = people(("OTHER", KIT_B, 0.2))
                 fr = [SS.SceneFrame({"TARGET": b, **({"OTHER": s} if s else {})}) for b, s in zip(boxes, side)]
-                r = SS.run(fr, ppl, fps=fps)
+                r = run(fr, ppl, fps)
                 for k, f in enumerate(r.frames[n0:], start=n0):
                     rv = f.decision.get("reverify") or {}
                     self.assertNotEqual(rv.get("status"), "REVERIFIED", f"frame {k}")
@@ -143,7 +147,7 @@ class TestPostAnomalyReverification(unittest.TestCase):
                 boxes += [go(k) for k in range(n)]
                 ppl = people(("OTHER", KIT_A, 0.97))
                 far = SS.box_at(1050, 390, 40, 100)
-                r = SS.run([SS.SceneFrame({"TARGET": b, "OTHER": far}) for b in boxes], ppl, fps=fps)
+                r = run([SS.SceneFrame({"TARGET": b, "OTHER": far}) for b in boxes], ppl, fps)
                 self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
                                      for f in r.frames))
                 self.assertTrue(any((f.decision.get("reverify") or {}).get("why") == "TARGET_LOOKALIKE_IN_FRAME"
@@ -170,7 +174,7 @@ class TestSameKitReplacement(unittest.TestCase):
             tbk = SS.box_at(300 - (100 * (k + 1) / fps if target_moves else 0.0), 400, 40, 100)
             fr.append(SS.SceneFrame({"TARGET": tbk, "OTHER": ob}, order=("TARGET", "OTHER"),
                                     drop=() if target_detected else ("TARGET",)))
-        return SS.run(fr, same, fps=fps), n_hide
+        return run(fr, same, fps), n_hide
 
     def test_replacement_with_the_uncovered_target_detected_is_never_trusted(self):
         for fps in FPS_SET:
@@ -204,7 +208,7 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
                       for k in range(int(2 * fps))]
                 fr += [SS.SceneFrame({"OTHER": SS.box_at(600 + 100 * k / fps, 400, 40, 100)})
                        for k in range(int(4 * fps))]
-                r = SS.run(fr, ppl, fps=fps)
+                r = run(fr, ppl, fps)
                 self.assertEqual(trusted_on_other(r), [])
                 self.assertFalse(any("reverify" in f.decision for f in r.frames))
                 self.assertTrue(r.bank_is_pure())
@@ -217,7 +221,7 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
                 fr += [SS.SceneFrame({}) for _ in range(int(3 * fps))]
                 fr += [SS.SceneFrame({"TARGET": SS.box_at(320 + 100 * k / fps, 400, 40, 100)})
                        for k in range(int(3 * fps))]
-                r = SS.run(fr, people(), fps=fps)
+                r = run(fr, people(), fps)
                 self.assertFalse(any("reverify" in f.decision for f in r.frames))
                 self.assertEqual(trusted_on_other(r), [])
                 bank_only_when_trusted(self, r)
@@ -234,7 +238,7 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
                 boxes += [go(k) for k in range(n)]
                 side = [SS.box_at(300 + 100 * max(0, k - n0) / fps + 70, 400, 40, 100) for k in range(len(boxes))]
                 ppl = people(("OTHER", KIT_A, SAME_KIT_COS))
-                r = SS.run([SS.SceneFrame({"TARGET": b, "OTHER": s}) for b, s in zip(boxes, side)], ppl, fps=fps)
+                r = run([SS.SceneFrame({"TARGET": b, "OTHER": s}) for b, s in zip(boxes, side)], ppl, fps)
                 self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
                                      for f in r.frames))
                 self.assertEqual(trusted_on_other(r), [])
@@ -252,7 +256,7 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
                 fr[cut_at] = SS.SceneFrame({"TARGET": boxes[cut_at]},
                                            camera=identity_motion(CUT, reasons=("HISTOGRAM_CHANGE",),
                                                                   continuity_broken=True))
-                r = SS.run(fr, people(), fps=fps)
+                r = run(fr, people(), fps)
                 after = r.frames[cut_at:]
                 self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
                                      for f in after), "no physical continuity across a cut")
@@ -262,3 +266,131 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def replacement_base(fps, tx=300.0):
+    """An undetected same-kit OTHER wholly behind the target, a union-like anomaly as it slides out, then OTHER in
+    front hiding the target: the target's tracklet now holds OTHER (geometry cannot tell)."""
+    tb = SS.box_at(tx, 400, 40, 100)
+    n_hide, n_union, n_front = int(1.5 * fps), max(2, int(fps / 2)), int(fps)
+    fr = [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(tx, 395, 38, 95)}, order=("OTHER", "TARGET"),
+                        drop=("OTHER",)) for _ in range(n_hide)]
+    fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(tx + 40 * (k + 1) / n_union, 395, 38, 95)},
+                         order=("OTHER", "TARGET"), merge=(("TARGET", "OTHER"),)) for k in range(n_union)]
+    fr += [SS.SceneFrame({"TARGET": tb, "OTHER": SS.box_at(tx + 2, 401, 41, 101)}, order=("TARGET", "OTHER"),
+                         drop=("TARGET",)) for _ in range(n_front)]
+    return fr
+
+
+SAME_PAIR = SS.make_people([("TARGET", KIT_A, 1.0), ("OTHER", KIT_A, 0.95)])
+
+
+class TestReviewRound1(unittest.TestCase):
+    """F5 independent review findings on d68b0cd (reproduced; all were wrong trusted identities with a
+    contaminated bank that 304f27e does not produce)."""
+
+    def check_safe(self, r):
+        self.assertEqual(trusted_without_target(r), [])
+        self.assertTrue(r.bank_is_pure())
+        bank_only_when_trusted(self, r)
+
+    def test_replaced_box_after_the_detected_target_walks_out_of_frame(self):
+        # (b) the uncovered target is detected (a target look-alike in the frame: the rule is cancelled for good,
+        # not merely held back while it is visible) and walks out of the frame; OTHER walks on with the box
+        for fps in (30.0, 15.0):
+            with self.subTest(fps=fps):
+                fr = replacement_base(fps, tx=150.0)
+                for k in range(int(4 * fps)):
+                    s = (k + 1) / fps
+                    boxes = {"OTHER": SS.box_at(152 + 100 * s, 401, 41, 101)}
+                    if 150 - 300 * s > -30:
+                        boxes["TARGET"] = SS.box_at(150 - 300 * s, 400, 40, 100)
+                    fr.append(SS.SceneFrame(boxes, order=("TARGET", "OTHER")))
+                self.check_safe(run(fr, SAME_PAIR, fps))
+
+    def test_stale_origin_after_the_target_was_seen_for_seconds(self):
+        # (h) the real target stays visible for 2 s (cancelling the rule), then leaves; the origin must not come
+        # back to life (and expires after target_reverify_max_s anyway)
+        for fps in (30.0, 15.0):
+            with self.subTest(fps=fps):
+                fr = replacement_base(fps, tx=400.0)
+                for k in range(int(6 * fps)):
+                    s = (k + 1) / fps
+                    tx = 330 - 20 * s if s < 2.0 else 330 - 40 - 300 * (s - 2.0)
+                    boxes = {"OTHER": SS.box_at(402 + 60 * s, 401, 41, 101)}
+                    if tx > -30:
+                        boxes["TARGET"] = SS.box_at(tx, 400, 40, 100)
+                    fr.append(SS.SceneFrame(boxes))
+                self.check_safe(run(fr, SAME_PAIR, fps))
+
+    def test_uncompensated_camera_pan_is_not_travel(self):
+        # (f2) both people still, target hidden behind OTHER; the camera pans but cannot be measured (UNKNOWN):
+        # image motion is not travel over the scene, so the run never completes
+        from player_tracker_rb.camera import UNKNOWN
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr = replacement_base(fps, tx=600.0)
+                dx = 150.0 / fps
+                for k in range(int(4 * fps)):
+                    off = -dx * (k + 1)
+                    fr.append(SS.SceneFrame({"TARGET": SS.box_at(600 + off, 400, 40, 100),
+                                             "OTHER": SS.box_at(602 + off, 401, 41, 101)},
+                                            order=("TARGET", "OTHER"), drop=("TARGET",),
+                                            camera=identity_motion(UNKNOWN, reasons=("TOO_FEW_TRACKED",))))
+                self.check_safe(run(fr, SAME_PAIR, fps))
+
+    def test_lookalike_seen_after_the_anomaly_cancels_for_good_and_never_locks_the_target_out(self):
+        # (i) the real target walks away (visible), is hidden by a different-kit THIRD for 2.5 s, then is visible
+        # again: OTHER is never re-verified, and the real target's tracklet is never recorded as a known other
+        ppl = SS.make_people([("TARGET", KIT_A, 1.0), ("OTHER", KIT_A, 0.95), ("THIRD", KIT_B, 0.2)])
+        fps = 30.0
+        fr = replacement_base(fps)
+        for k in range(int(8 * fps)):
+            s = (k + 1) / fps
+            tx = 300 - 100 * min(s, 1.5)
+            boxes = {"TARGET": SS.box_at(tx, 400, 40, 100), "OTHER": SS.box_at(302 + 100 * min(s, 4.0), 401, 41, 101)}
+            order = ("TARGET", "OTHER")
+            if 1.5 <= s < 4.0:
+                boxes["THIRD"] = SS.box_at(tx, 402, 46, 104)
+                order = ("TARGET", "OTHER", "THIRD")
+            elif s >= 4.0:
+                boxes["THIRD"] = SS.box_at(tx - 100 * (s - 4.0) - 60, 402, 46, 104)
+                order = ("TARGET", "OTHER", "THIRD")
+            fr.append(SS.SceneFrame(boxes, order=order))
+        r = run(fr, ppl, fps)
+        self.check_safe(r)
+        tgt = {r.pops[-1].observations[i].tracklet_id for i, d in enumerate(r.dets[-1]) if d.owners == ("TARGET",)}
+        self.assertFalse(tgt & r.tracker._known_others)
+
+    def test_the_rule_is_off_by_default(self):
+        self.assertFalse(TrackerConfig.default().get("target_reverify_enabled"))
+        boxes, _ = pose_then(30.0, None)
+        go = walk(30.0, 1.0)
+        boxes += [go(k) for k in range(120)]
+        r = SS.run([SS.SceneFrame({"TARGET": b}) for b in boxes], people(), fps=30.0)
+        self.assertFalse(any("reverify" in f.decision for f in r.frames))
+        self.assertFalse(r.frames[-1].identity_trusted, "off: the 304f27e behaviour (unverified episode)")
+
+
+class TestResidualRiskWhenEnabled(unittest.TestCase):
+    """KNOWN LIMIT (recorded, the reason the rule is OFF by default): with the rule ON, a same-kit replacement whose
+    true target leaves no visible evidence - uncovered but missed by the detector while it walks away, or hidden
+    behind the new box moving in lockstep - is re-verified on the wrong person and contaminates the bank. Geometry
+    and generic appearance cannot tell this from a correct return."""
+
+    def _residual(self, fps, lockstep):
+        fr = replacement_base(fps)
+        for k in range(int(4 * fps)):
+            s = (k + 1) / fps
+            ob = SS.box_at(302 + 100 * s, 401, 41, 101)
+            tb = SS.box_at(300 + 100 * s, 400, 38, 98) if lockstep else SS.box_at(300 - 100 * s, 400, 40, 100)
+            fr.append(SS.SceneFrame({"TARGET": tb, "OTHER": ob}, order=("TARGET", "OTHER"), drop=("TARGET",)))
+        return run(fr, SAME_PAIR, fps)
+
+    @unittest.expectedFailure
+    def test_undetected_target_walking_away_after_a_replacement(self):
+        self.assertEqual(trusted_without_target(self._residual(30.0, lockstep=False)), [])
+
+    @unittest.expectedFailure
+    def test_target_hidden_in_lockstep_behind_the_replacement(self):
+        self.assertEqual(trusted_without_target(self._residual(30.0, lockstep=True)), [])
