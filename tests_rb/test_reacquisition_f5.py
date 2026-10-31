@@ -93,6 +93,11 @@ class TestPostAnomalyReverification(unittest.TestCase):
                        == "REVERIFIED"]
                 self.assertEqual(len(rev), 1, "re-verified exactly once")
                 k = rev[0]
+                rv = r.frames[k].decision["reverify"]
+                self.assertGreaterEqual(rv["elapsed_s"], CFG.get("target_reverify_window_s") - 1e-6)
+                self.assertGreaterEqual(rv["travel_h"], CFG.get("target_reverify_min_travel_h"))
+                self.assertEqual(rv["spots"], {"spot": "CLEAR", "box0": "CLEAR"})
+                self.assertGreaterEqual(r.frames[k].identity_confidence_rb, 0.5, "trusted confidence on that frame")
                 self.assertGreaterEqual(r.frames[k].target_episode, 2)
                 self.assertTrue(all(f.identity_trusted for f in r.frames[k:]), "trusted from re-verification on")
                 # it took at least the reacquisition window plus the re-verification window after the anomaly
@@ -264,9 +269,6 @@ class TestOtherReturnsAreNotReverified(unittest.TestCase):
                 bank_only_when_trusted(self, r)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 def replacement_base(fps, tx=300.0):
     """An undetected same-kit OTHER wholly behind the target, a union-like anomaly as it slides out, then OTHER in
@@ -394,3 +396,107 @@ class TestResidualRiskWhenEnabled(unittest.TestCase):
     @unittest.expectedFailure
     def test_target_hidden_in_lockstep_behind_the_replacement(self):
         self.assertEqual(trusted_without_target(self._residual(30.0, lockstep=True)), [])
+
+
+class TestAuditRound1(unittest.TestCase):
+    """F5 test-audit gaps (mutants that survived the first suite)."""
+
+    def check_safe(self, r):
+        self.assertEqual(trusted_without_target(r), [])
+        self.assertTrue(r.bank_is_pure())
+        bank_only_when_trusted(self, r)
+
+    def test_target_seen_at_the_vacated_spot_then_walking_off_undetected_cancels_for_good(self):
+        # N57: the uncovered target is visible (but missed by the detector) at the spot for 0.6 s, then walks away
+        # undetected; the spot then reads clear, but the look-alike seen there must have cancelled the rule for good
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr = replacement_base(fps)
+                for k in range(int(4 * fps)):
+                    s = (k + 1) / fps
+                    tx = 300 if s < 0.6 else 300 - 150 * (s - 0.6)
+                    fr.append(SS.SceneFrame({"TARGET": SS.box_at(tx, 400, 40, 100),
+                                             "OTHER": SS.box_at(302 + 100 * s, 401, 41, 101)},
+                                            order=("TARGET", "OTHER"), drop=("TARGET",)))
+                r = run(fr, SAME_PAIR, fps)
+                self.check_safe(r)
+                self.assertTrue(any((f.decision.get("reverify") or {}).get("why") == "TARGET_LOOKALIKE_AT_VACATED_SPOT"
+                                    and f.decision["reverify"].get("status") == "CANCELLED" for f in r.frames))
+
+    def test_lookalike_seen_only_around_the_anomaly_cancels_for_good(self):
+        # N58/N63: a target look-alike is visible far away for 0.3 s at the end of the anomaly, then gone before the
+        # return: the watch (open from the anomaly's start) is cancelled and the episode is never re-verified
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                boxes, n0 = pose_then(fps, None)
+                go = walk(fps, 1.0)
+                boxes += [go(k) for k in range(int(4 * fps))]
+                ppl = people(("OTHER", KIT_A, 0.97))
+                fr = [SS.SceneFrame({"TARGET": b, **({"OTHER": SS.box_at(1050, 390, 40, 100)}
+                                                     if n0 <= k < n0 + max(2, int(0.3 * fps)) else {})})
+                      for k, b in enumerate(boxes)]
+                r = run(fr, ppl, fps)
+                self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
+                                     for f in r.frames))
+                self.assertTrue(any((f.decision.get("reverify") or {}).get("status") == "CANCELLED"
+                                    and f.decision["reverify"].get("phase") in ("ANOMALY", "WAIT") for f in r.frames))
+                self.check_safe(r)
+
+    def test_an_unverified_episode_is_never_laundered_by_an_anomaly(self):
+        # N32: the target returns after leaving the frame (an UNVERIFIED episode: no confusable competitor), then
+        # its box has a pose anomaly and returns: the watch must never open (it needs a verified identity)
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(300, 400, 40, 100)}) for _ in range(int(fps))]
+                fr += [SS.SceneFrame({}) for _ in range(int(2 * fps))]
+                fr += [SS.SceneFrame({"TARGET": SS.box_at(600, 400, 40, 100)}) for _ in range(int(2 * fps))]
+                boxes, _ = pose_then(fps, None, cx=600.0)
+                go = walk(fps, 1.0, cx=600.0)
+                fr += [SS.SceneFrame({"TARGET": b}) for b in boxes + [go(k) for k in range(int(4 * fps))]]
+                r = run(fr, people(), fps)
+                self.assertTrue(any(not f.identity_trusted and f.rb_state == T.TRACKING for f in r.frames),
+                                "the return was an unverified episode")
+                self.assertFalse(any("reverify" in f.decision for f in r.frames))
+                self.check_safe(r)
+
+    def test_a_return_that_waits_past_the_expiry_is_not_reverified(self):
+        # N52/N53: back on its tracklet the target stands still for 3.5 s (> target_reverify_max_s after the
+        # anomaly), then walks cleanly: the watch has expired, so the episode stays unverified
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                boxes, _ = pose_then(fps, None)
+                boxes += [SS.box_at(300, 400, 40, 100) for _ in range(int(3.5 * fps))]
+                go = walk(fps, 1.0)
+                boxes += [go(k) for k in range(int(3 * fps))]
+                r = run([SS.SceneFrame({"TARGET": b}) for b in boxes], people(), fps)
+                self.assertFalse(any((f.decision.get("reverify") or {}).get("status") == "REVERIFIED"
+                                     for f in r.frames))
+                self.assertTrue(any((f.decision.get("reverify") or {}).get("why") == "EXPIRED" for f in r.frames))
+                self.assertFalse(r.frames[-1].identity_trusted)
+
+    def test_one_frame_detector_flicker_restarts_the_run(self):
+        # N18/N19: one missed detection 0.8 s into the run restarts it: re-verification comes at least one full
+        # window after the flicker
+        for fps in (30.0, 15.0):
+            with self.subTest(fps=fps):
+                boxes, n0 = pose_then(fps, None)
+                go = walk(fps, 1.0)
+                boxes += [go(k) for k in range(int(4 * fps))]
+                r0 = run([SS.SceneFrame({"TARGET": b}) for b in boxes], people(), fps)
+                rev0 = next(k for k, f in enumerate(r0.frames)
+                            if (f.decision.get("reverify") or {}).get("status") == "REVERIFIED")
+                run_start = next(k for k, f in enumerate(r0.frames)
+                                 if (f.decision.get("reverify") or {}).get("status") == "RUNNING")
+                miss = run_start + int(0.8 * fps)
+                fr = [SS.SceneFrame({"TARGET": b}, drop=("TARGET",) if k == miss else ())
+                      for k, b in enumerate(boxes)]
+                r = run(fr, people(), fps)
+                rev = [k for k, f in enumerate(r.frames)
+                       if (f.decision.get("reverify") or {}).get("status") == "REVERIFIED"]
+                self.assertTrue(rev)
+                self.assertGreater(rev[0], rev0)
+                self.assertGreaterEqual((rev[0] - miss) / fps, CFG.get("target_reverify_window_s") - 1.5 / fps)
+
+
+if __name__ == "__main__":
+    unittest.main()

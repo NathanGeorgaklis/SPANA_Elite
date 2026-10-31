@@ -106,8 +106,9 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
     updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
     banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
-  * POST-ANOMALY RE-VERIFICATION (NEW_R2, R2 DEV F5; OFF unless target_reverify_enabled): when an ended
-    SIZE_ANOMALY breaks a VERIFIED identity on its tracklet (the origin), a watch starts (WAIT). If the target is
+  * POST-ANOMALY RE-VERIFICATION (NEW_R2, R2 DEV F5; OFF unless target_reverify_enabled): when a SIZE_ANOMALY
+    starts on the tracklet of a VERIFIED identity (the origin), a watch starts (ANOMALY); when the anomaly ends and
+    breaks the identity, it waits (WAIT). If the target is
     then reacquired onto the very same tracklet (physical continuity: the population never closed, contested or
     merged it) as an unverified episode, a RUN starts. The episode becomes verified, without a confusable
     competitor, only after an uninterrupted run of target_reverify_window_s in which every frame is TRACKING on the
@@ -115,7 +116,7 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     has a clean box (no bank-refusal flag, not CONTAINS_OTHER, not MERGE_LINEAGE) and a measured camera, and the run
     ends with the box having travelled >= target_reverify_min_travel_h over the scene while both spots it left
     (where the anomaly ended, where the run started; camera-compensated, wholly vacated) are checked clear.
-    From the end of the anomaly on, ANY evidence that another body could be the target CANCELS the rule for good: a
+    From the start of the anomaly on, ANY evidence that another body could be the target CANCELS the rule for good: a
     body near the origin box (observed, hidden or closed within contact_memory_s) of the target's possible size
     whose appearance is unknown (no bank) or confusable (bank similarity >= appearance_floor), any other body
     anywhere in the frame that itself passes appearance_floor against the target bank, or a target look-alike at
@@ -894,6 +895,11 @@ class TargetTracker:
             continuity_broken = False
             if tv is not None and tv.observed:
                 if P.SIZE_ANOMALY in res.observations[tv.detection_index].flags:
+                    if self._anomaly_tracklet != self._tracklet and self._contrast_verified and \
+                            c.get("target_reverify_enabled"):
+                        # F5: watch for evidence against the tracklet from the START of the anomaly (module doc)
+                        self._reverify = {"origin": self._tracklet, "spot": None, "t_end": None,
+                                          "phase": "ANOMALY", "t0": None, "box0": None}
                     self._anomaly_tracklet = self._tracklet
                 elif self._anomaly_tracklet == self._tracklet:
                     # NEW_R2: the target's own tracklet carried a size anomaly (possibly an unseen second body in
@@ -902,11 +908,12 @@ class TargetTracker:
                     # episode, untrusted and never banked until contrast-verified; R1-G)
                     continuity_broken = True
                     # F5: remember where the anomaly happened if it interrupted a verified identity
-                    self._reverify = None
-                    if self._contrast_verified and c.get("target_reverify_enabled"):
-                        # F5: watch for evidence against the tracklet from the end of the anomaly on (module doc)
-                        self._reverify = {"origin": self._tracklet, "spot": res.observations[tv.detection_index].bbox,
-                                          "t_end": t, "phase": "WAIT", "t0": None, "box0": None}
+                    rvw = self._reverify
+                    if rvw is not None and rvw["phase"] == "ANOMALY" and rvw["origin"] == self._tracklet:
+                        # F5: the watched anomaly ended; a watch cancelled during it is never re-opened
+                        rvw.update({"spot": res.observations[tv.detection_index].bbox, "t_end": t, "phase": "WAIT"})
+                    else:
+                        self._reverify = None
                     self._tracklet, self._anomaly_tracklet = None, None
                     log["continuity_broken"] = "SIZE_ANOMALY_ENDED"
             if continuity_broken:
@@ -1127,7 +1134,7 @@ class TargetTracker:
             self._reverify = None                            # verified meanwhile (e.g. by ordinary contrast)
             rec["status"] = "ALREADY_VERIFIED"
             return rec
-        if t - rv["t_end"] > c.get("target_reverify_max_s"):
+        if rv["t_end"] is not None and t - rv["t_end"] > c.get("target_reverify_max_s"):
             return cancel("EXPIRED")
         if state == LOST:
             return cancel("LOST")
@@ -1148,6 +1155,11 @@ class TargetTracker:
                 rec["similarity"] = sim
                 return cancel("TARGET_LOOKALIKE_AT_VACATED_SPOT")
         rec["spots"] = spots
+        if rv["phase"] == "ANOMALY":
+            if self._anomaly_tracklet != rv["origin"]:
+                return cancel("ANOMALY_LEFT_ORIGIN")     # the target left the tracklet during its anomaly
+            rec["status"] = "WATCHING"
+            return rec
         if rv["phase"] == "WAIT":
             rec["status"] = "WAITING"
             return rec

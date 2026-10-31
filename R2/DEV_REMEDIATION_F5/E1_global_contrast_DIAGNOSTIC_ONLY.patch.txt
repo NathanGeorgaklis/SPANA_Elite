@@ -1,0 +1,74 @@
+commit d034419a0a32085e4495b63815e4290d1203da38
+Author: Nathan Georgaklis <nathan.georgaklis@leontarimanagement.com>
+Date:   Sun Nov 1 01:43:11 2026 +1100
+
+    EXP F5 E1 (local only): global confusable contrast verifies an episode
+
+diff --git a/player_tracker_rb/target.py b/player_tracker_rb/target.py
+index 2ec8b0b..65903c3 100644
+--- a/player_tracker_rb/target.py
++++ b/player_tracker_rb/target.py
+@@ -216,6 +216,8 @@ class CandidateEvaluation:
+     unknown_contacts: Tuple[str, ...]
+     passed: bool
+     details: Tuple[str, ...]
++    verify_competitor: Optional[str] = None             # EXP E1: most similar banked body anywhere in the frame
++    verify_competitor_similarity: Optional[float] = None
+ 
+     @property
+     def composite(self) -> Optional[float]:
+@@ -228,7 +230,8 @@ class CandidateEvaluation:
+                 "target_similarity": self.target_similarity, "best_competitor": self.best_competitor,
+                 "best_competitor_similarity": self.best_competitor_similarity, "contrast": self.contrast,
+                 "margin": self.margin, "unknown_contacts": list(self.unknown_contacts), "passed": self.passed,
+-                "details": list(self.details)}
++                "details": list(self.details), "verify_competitor": self.verify_competitor,
++                "verify_competitor_similarity": self.verify_competitor_similarity}
+ 
+ 
+ @dataclass(frozen=True)
+@@ -570,6 +573,18 @@ class TargetTracker:
+                 cs, _ = cp.bank.best_match(feat)
+                 if cs is not None and cs.composite is not None and (best_sim is None or cs.composite > best_sim):
+                     best_ref, best_sim = cp.ref, cs.composite
++        # EXP E1: every banked body observed this frame outside the candidate's group (anywhere), for VERIFICATION
++        v_ref, v_sim = None, None
++        if feat.usable:
++            for ob in res.observations:
++                if not ob.is_body or ob.index in grp or ob.tracklet_id is None or ob.tracklet_id in excl_t:
++                    continue
++                bk = self._pop.bank_of(ob.tracklet_id)
++                if bk is None or not len(bk):
++                    continue
++                cs, _ = bk.best_match(feat)
++                if cs is not None and cs.composite is not None and (v_sim is None or cs.composite > v_sim):
++                    v_ref, v_sim = ob.tracklet_id, cs.composite
+         contrast = None
+         if sim is not None and sim.composite is not None and best_sim is not None:
+             contrast = sim.composite - best_sim
+@@ -582,7 +597,7 @@ class TargetTracker:
+             distance_h=dist_h, merged=merged, motion=mrec, quality_flags=tuple(feat.quality.flags),
+             target_similarity=None if sim is None else sim.as_record(), best_competitor=best_ref,
+             best_competitor_similarity=best_sim, contrast=contrast, margin=margin, unknown_contacts=tuple(unknown),
+-            passed=not details, details=tuple(details))
++            passed=not details, details=tuple(details), verify_competitor=v_ref, verify_competitor_similarity=v_sim)
+ 
+     def _could_be_target(self, box: Box, h: float, t: float) -> bool:
+         """Scale plausibility: could a box of this height be the target's body now? Same bound as the motion
+@@ -630,8 +645,14 @@ class TargetTracker:
+         """A passed contrast VERIFIES identity only if the competitor could be confused with the target: its bank's
+         similarity to this crop reaches appearance_floor. Beating an obviously different person says nothing about
+         an unseen look-alike (R1-G review L4)."""
+-        return ev.contrast is not None and ev.best_competitor_similarity is not None and \
+-            ev.best_competitor_similarity >= self._cfg.get("appearance_floor")
++        if ev.contrast is not None and ev.best_competitor_similarity is not None and \
++                ev.best_competitor_similarity >= self._cfg.get("appearance_floor"):
++            return True
++        # EXP E1: a confusable body anywhere in the frame, beaten by the margin
++        if ev.passed and ev.composite is not None and ev.verify_competitor_similarity is not None and \
++                ev.verify_competitor_similarity >= self._cfg.get("appearance_floor"):
++            return ev.composite - ev.verify_competitor_similarity >= ev.margin
++        return False
+ 
+     def _confidence_untrusted(self, t: float) -> float:
+         c = self._cfg
