@@ -17,17 +17,19 @@ if it is merged-suspected, merge-sized against the seed box itself (merged_area_
 only single-body size reference on the first frame), has an unusable crop, or cannot anchor the bank.
 DEFERRED SEED ANCHOR (NEW_R2, R2 DEV F2): if the seed-frame crop is refused by the bank ONLY for geometry
 (_SEED_DEFERRABLE: PARTIAL, TOUCHES_IMAGE_EDGE, NESTED, ALTERNATIVE, CONTAINS_OTHER, NOT_ISOLATED), the anchor is
-deferred, provided the seed body is exactly one population tracklet (detection and its nested part boxes), that
-tracklet's box itself matches the seed box (IoU >= seed_min_iou, or it is the matched detection), it has no merge
-lineage, and no other body could be the boxed person (IoU >= seed_min_iou with the seed box, or >=
-seed_contain_competitor_max of it inside). Otherwise SeedError at once. While pending, every frame is TRACKING on that
-tracklet but UNTRUSTED (reason LOW_QUALITY_CROP: no appearance bank yet; confidence untrusted ceiling); the seed frame
-too. The first frame whose crop passes the ORDINARY bank update (every bank rule, nothing relaxed) anchors the bank
-and is trusted (confidence 1.0, the human identification carried by the uninterrupted tracklet); the normal tracker
+deferred, provided the matched detection ITSELF has a population tracklet (a nested / alternative box without one is
+refused: a part box and a second person inside a larger box cannot be told apart, so a host box never carries the
+identity; review HIGH-1), no box nested with it has another tracklet, the tracklet has no merge lineage, and no other
+body could be the boxed person (IoU >= seed_min_iou with the seed box, or >= seed_contain_competitor_max of it inside).
+Otherwise SeedError at once. While pending, every frame is TRACKING on that tracklet but UNTRUSTED (reason
+LOW_QUALITY_CROP: no appearance bank yet; confidence untrusted ceiling); the seed frame too. The first frame whose crop
+passes the ORDINARY bank update (every bank rule, nothing relaxed) anchors the bank and is trusted; the normal tracker
 runs from the next frame. SeedError (the run is refused) if, before that: the camera breaks continuity, the tracklet
 is not observed on a frame, its box becomes CONTESTED / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGED_SUSPECTED /
-SIZE_ANOMALY or the tracklet gains MERGE_LINEAGE, or seed_anchor_max_s passes. A refused seed-frame crop is never a
-bank sample.
+SIZE_ANOMALY or the tracklet gains MERGE_LINEAGE, a usable crop matches the human-identified seed-frame crop below
+reacq_appearance_floor (review HIGH-2: the tracklet may have been carried onto someone entering at the same spot; a
+near-identical look-alike remains indistinguishable, as everywhere), or seed_anchor_max_s passes. The seed-frame crop
+is a comparison reference only, never a bank sample.
 
 States (D05): TRACKING (trusted, observed), OCCLUDED, AMBIGUOUS, LOST, REACQUIRING (verifying a candidate).
 Only TRACKING is trusted, and only TRACKING has an observed box (D06): every other state writes the target's
@@ -111,7 +113,9 @@ quarantine, at most once per target_bank_sample_interval_s; then AppearanceBank'
 self-consistency checks apply.
 
 IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
-  * seed frame: 1.0 (human-provided identity);
+  * seed frame: 1.0 (human-provided identity); a DEFERRED seed (F2) is untrusted until its anchor frame, which gets
+    0.5 + 0.5 * a with a = clip((s - reacq_appearance_floor) / (1 - reacq_appearance_floor), 0, 1), s = composite
+    similarity to the human-identified seed crop (k = 1: the seed identity carried by the uncontested tracklet);
   * TRACKING: 0.5 + 0.5 * min(a, k), with
         a = clip((target_similarity - floor) / (1 - floor), 0, 1)           (appearance margin above its floor)
         k = clip((contrast - margin) / (1 - margin), 0, 1); with no banked competitor k = 1 for continuation of a
@@ -158,7 +162,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 import numpy as np
 
 from .appearance import (AppearanceBank, AppearanceExtractor, AppearanceFeature, AppearanceSimilarity,
-                         BankUpdateContext, identity_support)
+                         BankUpdateContext, compare, identity_support)
 from .camera import ESTIMATED, FIRST_FRAME
 from .config import TrackerConfig, sec_ge, sec_gt, sec_le, sec_lt
 from .detector import box_iou_matrix, containment
@@ -861,13 +865,14 @@ class TargetTracker:
                 "bank": bank, "transition": "SEED"}
         trusted = True
         if bank["status"] != "ACCEPTED":
-            if not set(bank["refusals"]) <= set(_SEED_DEFERRABLE):
+            if not bank["refusals"] or not set(bank["refusals"]) <= set(_SEED_DEFERRABLE):
                 self._failed = True                          # never usable after a refused seed (fail closed)
                 raise SeedError(f"the seed crop cannot anchor the target appearance bank: {bank['refusals']}")
             tid = self._seed_body_tracklet(res, o.index, sb)    # raises SeedError if the body is not one or is in doubt
             self._tracklet, self._tracklet_since_t = tid, res.time_s
             self._target_tracklets.add(tid)
-            self._seed_pending = {"tracklet": tid, "t0": res.time_s, "refusals": sorted(bank["refusals"])}
+            self._seed_pending = {"tracklet": tid, "t0": res.time_s, "refusals": sorted(bank["refusals"]),
+                                  "ref": feat}                # the human-identified seed crop (never a bank sample)
             info["seed_anchor"] = {"status": "PENDING", "tracklet": tid, "refusals": sorted(bank["refusals"])}
             trusted = False
         self._last_frame = res.rel_frame
@@ -881,23 +886,25 @@ class TargetTracker:
         return fr
 
     def _seed_body_tracklet(self, res: P.FrameResult, i: int, sb: Box) -> str:
-        """F2: the population tracklet of the seed body (detection i and the part boxes nested with it: one tracked
-        body), refusing the seed if the body is not exactly one tracklet, if that tracklet's box does not itself match
-        the seed box (IoU >= seed_min_iou, or it is detection i), or if another body outside the group could be the
-        boxed person (IoU >= seed_min_iou with the seed box, or >= seed_contain_competitor_max of it inside the box)."""
+        """F2: the population tracklet of the seed body, refusing the deferral (SeedError) unless: detection i itself
+        has a tracklet (review HIGH-1: a nested / alternative box without one may be another person inside a host box,
+        and the host can never carry the identity: geometry cannot tell a part box from a second body), no other box
+        nested with it has a different tracklet, the tracklet has no merge lineage, and no other body outside its group
+        could be the boxed person (IoU >= seed_min_iou with the seed box, or >= seed_contain_competitor_max of it
+        inside the box)."""
         c = self._cfg
         obs = res.observations
+        tid = obs[i].tracklet_id
+        if tid is None:
+            self._failed = True
+            raise SeedError("the seed box matches a nested / alternative detection without its own track (a part box "
+                            "and a second person inside a larger box cannot be told apart): anchor not deferred")
         grp = self._group(res, i)
         tids = {obs[j].tracklet_id for j in grp if obs[j].tracklet_id}
-        if len(tids) != 1:
+        if tids != {tid}:
             self._failed = True
-            raise SeedError(f"the seed body is not one tracked body (tracklets {sorted(tids)}): anchor not deferred")
-        tid = next(iter(tids))
-        host = next(j for j in grp if obs[j].tracklet_id == tid)
-        if host != i and float(box_iou_matrix(np.asarray([sb]), np.asarray([obs[host].bbox]))[0][0]) < \
-                c.get("seed_min_iou"):
-            self._failed = True
-            raise SeedError("the seed body's tracked box does not match the seed box: anchor not deferred")
+            raise SeedError(f"the seed body's nested group holds other tracks {sorted(tids - {tid})}: "
+                            "anchor not deferred")
         if self._tracklet_merge_lineage(res, tid):
             self._failed = True
             raise SeedError("the seed body's tracklet has merge lineage: anchor not deferred")
@@ -920,10 +927,11 @@ class TargetTracker:
                           log: Dict[str, Any]) -> TargetFrame:
         """F2: one frame while the seed anchor is pending. The human identified the body at the seed; until its bank
         anchors, only the same population tracklet, observed on every frame and never contested, merged or anomalous,
-        carries that identity. Untrusted and LOW_QUALITY_CROP (no appearance bank yet) until the first ordinary
-        bank-clean crop (_bank_update ACCEPTED), which anchors the bank and is trusted at the seed's confidence (the
-        human identification carried by the uninterrupted tracklet). Any break, a cut, or seed_anchor_max_s without
-        an anchor refuses the seed (SeedError: the run is refused, fail closed)."""
+        AND whose every usable crop still matches the human-identified seed crop at reacq_appearance_floor (review
+        HIGH-2: geometry alone can carry the tracklet onto someone entering at the same spot), carries that identity.
+        Untrusted and LOW_QUALITY_CROP (no appearance bank yet) until the first ordinary bank-clean crop (_bank_update
+        ACCEPTED), which anchors the bank and is trusted. Any break, a cut, an appearance mismatch, or
+        seed_anchor_max_s without an anchor refuses the seed (SeedError: the run is refused, fail closed)."""
         c = self._cfg
         sp = self._seed_pending
         t = res.time_s
@@ -947,18 +955,29 @@ class TargetTracker:
             refuse(f"the seed body's box became {broken}")
         cache: Dict[int, AppearanceFeature] = {}
         feat = self._feature(cache, res, image, o.index)
+        floor = c.get("reacq_appearance_floor")
+        sim = compare(sp["ref"], feat, c) if feat.usable else None
+        if sim is not None and (sim.composite is None or sim.composite < floor):
+            refuse(f"the seed body's crop no longer matches the seed crop (composite "
+                   f"{'n/a' if sim.composite is None else round(sim.composite, 3)} < reacq_appearance_floor {floor})")
         ev = CandidateEvaluation(o.index, o.tracklet_id, o.bbox, "SEED", True, None, False, None,
                                  tuple(feat.quality.flags), None, None, None, None, 0.0, (), True, ())
         self._state = TRACKING
-        bank = self._confirm(res, image, ev, 1.0, cache) if feat.usable else \
+        # anchor-frame confidence (identity confidence formula with k = 1: the seed's human identification carried by
+        # the uninterrupted, uncontested tracklet), a = the seed-crop similarity's margin above reacq_appearance_floor
+        a = 0.0 if sim is None else min(1.0, max(0.0, (sim.composite - floor) / (1.0 - floor)))
+        conf = 1.0 / 2 + a / 2
+        bank = self._confirm(res, image, ev, conf, cache) if feat.usable else \
             {"status": "REFUSED", "refusals": ["FEATURE_NOT_USABLE"]}
         log.update({"seed_anchor": {"status": "ANCHORED" if bank["status"] == "ACCEPTED" else "PENDING",
-                                    "tracklet": tid, "elapsed_s": t - sp["t0"]},
+                                    "tracklet": tid, "elapsed_s": t - sp["t0"],
+                                    "seed_similarity": None if sim is None else sim.as_record()},
                     "bank": bank, "transition": f"{log['from']}->TRACKING"})
         self._last_frame = res.rel_frame
         if bank["status"] == "ACCEPTED":
             self._seed_pending = None
-            fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, log)
+            self._tracklet_since_t = t           # review M4: the known-other timer starts with appearance evidence
+            fr = self._frame(res, TRACKING, (), o.index, ev, conf, False, log)
         else:
             fr = self._frame(res, TRACKING, (LOW_QUALITY_CROP,), o.index, ev,
                              c.get("untrusted_identity_confidence_ceiling"), False, log, trusted=False,

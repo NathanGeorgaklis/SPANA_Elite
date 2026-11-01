@@ -15,6 +15,8 @@ else the largest detection >= 0.9 inside it with >= 0.5 of its height):
   * the other observations touching it: IoU, fraction inside the matched box, flags, nested_in;
   * the frozen truth for the frame (visibility, resolvable, contact, merged).
 The seed frame's row also shows the seed box's IoU with the matched observation.
+Each row also gives the matched box's area (px^2) and its appearance similarity (composite / embedding / LAB) to the
+seed-frame crop of the seed match (the production extractor and embedding model), for the F2 anchor-continuity check.
 """
 import json
 import os
@@ -56,8 +58,10 @@ def main(repo, clips_dir, seconds, cids):
     from player_tracker_rb.camera import CameraMotionEstimator, ESTIMATED
     from player_tracker_rb.config import TrackerConfig
     from player_tracker_rb.video_io import SequentialVideoReader
+    from player_tracker_rb.appearance import AppearanceExtractor, compare
     cfg = TrackerConfig.default()
-    det, _emb = R.build_backends(cfg)
+    det, emb = R.build_backends(cfg)
+    ext = AppearanceExtractor(cfg, emb)
     for cid in cids:
         with open(os.path.join(repo, "R2", "labels", cid + ".fixture.json")) as f:
             fx = json.load(f)
@@ -81,7 +85,9 @@ def main(repo, clips_dir, seconds, cids):
                 cam = est.update(image, [d.bbox for d in cands], 1.0 / fps)
                 return pop.update(rel, rel / fps, cands, cam)
 
-            def report(rel, res):
+            ref = {}
+
+            def report(rel, res, image):
                 cf = rel + s
                 hb = lab["target_boxes"].get(str(cf)) if rel else fx["seed_bbox"]
                 pf = lab["per_frame"][cf] if cf < len(lab["per_frame"]) else {}
@@ -110,17 +116,25 @@ def main(repo, clips_dir, seconds, cids):
                     refuse.append("NOT_ISOLATED")
                 if res.camera.status != ESTIMATED and rel:
                     refuse.append("CAMERA_UNVERIFIED")
-                print(f"  f{rel:3d} match iou {iou:.2f} trk {o.tracklet_id} nested_in {o.nested_in} "
+                feat = ext.extract(image, o.bbox, others=[x.bbox for x in others if x.index not in grp])
+                if rel == 0:
+                    ref["feat"] = feat
+                sim = compare(ref["feat"], feat, cfg) if feat.usable and ref["feat"].usable else None
+                simtxt = "n/a" if sim is None else \
+                    f"{sim.composite:.3f}/{sim.embedding:.3f}/{sim.lab:.3f}" if sim.composite is not None else "none"
+                area = (o.bbox[2] - o.bbox[0]) * (o.bbox[3] - o.bbox[1])
+                print(f"  f{rel:3d} match iou {iou:.2f} area {area:.0f} sim_to_seed {simtxt} trk {o.tracklet_id} "
+                      f"nested_in {o.nested_in} "
                       f"flags {list(o.flags)} REFUSE {sorted(set(refuse)) or 'NONE (bank-clean)'} "
                       f"touching {touch}  truth {truth}")
 
             res = step(0, reader.seed.image)
-            report(0, res)
+            report(0, res, reader.seed.image)
             for fr in reader:
                 if fr.rel_frame > n_max:
                     break
                 res = step(fr.rel_frame, fr.image)
-                report(fr.rel_frame, res)
+                report(fr.rel_frame, res, fr.image)
 
 
 if __name__ == "__main__":
