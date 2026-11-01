@@ -122,7 +122,7 @@ import numpy as np
 
 from .appearance import AppearanceBank, AppearanceExtractor, BankUpdateContext, covered_fraction
 from .camera import CUT, ESTIMATED, FIRST_FRAME, CameraMotion
-from .config import TrackerConfig
+from .config import TrackerConfig, sec_ge, sec_gt, sec_le, sec_lt
 from .detector import PersonCandidate, box_iou_matrix, containment
 from .motion import DETECTION, MotionModel, MotionState, Prediction, centre
 
@@ -518,8 +518,8 @@ class Population:
         if tr.anomaly_since is not None and tr.frozen_ref is not None:
             return tr.frozen_ref                       # never adopt the anomalous (possibly two-body) size
         c = self._cfg
-        tr.sizes = [x for x in tr.sizes if t - x[0] <= c.get("population_size_ref_window_s")]
-        if len(tr.sizes) < 2 or tr.sizes[-1][0] - tr.sizes[0][0] < c.get("population_size_ref_min_s"):
+        tr.sizes = [x for x in tr.sizes if sec_le(t - x[0], c.get("population_size_ref_window_s"))]
+        if len(tr.sizes) < 2 or sec_lt(tr.sizes[-1][0] - tr.sizes[0][0], c.get("population_size_ref_min_s")):
             return tr.frozen_ref                       # after an anomaly: the held reference until a new one exists
         tr.frozen_ref = None
         return float(np.median([x[1] for x in tr.sizes])), float(np.median([x[2] for x in tr.sizes]))
@@ -635,7 +635,7 @@ class Population:
         for tr in live:
             gap = t - tr.motion.t_obs
             hidden = tr.last_obs_frame != self._last_frame
-            if hidden and (gap > c.get("population_max_gap_s") or tr.contact_during_gap):
+            if hidden and (sec_gt(gap, c.get("population_max_gap_s")) or tr.contact_during_gap):
                 continue
             eligible.append(tr)
         iou_td: Dict[Tuple[str, int], float] = {}
@@ -810,7 +810,7 @@ class Population:
             claimants[i] = cl
             det_area = _wh(boxes[i])[0] * _wh(boxes[i])[1]
             strong = [tid for tid in cl
-                      if t - by_tid[tid].motion.t_obs <= c.get("population_max_gap_s")
+                      if sec_le(t - by_tid[tid].motion.t_obs, c.get("population_max_gap_s"))
                       and cont_pd[(tid, i)] * _wh(pbox[tid])[0] * _wh(pbox[tid])[1]
                       >= c.get("merged_claim_min_box_fraction") * det_area]
             if len(strong) >= 2 and _distinct_bodies(strong, by_tid) >= 2:
@@ -849,7 +849,7 @@ class Population:
                     elapsed = t - tr_i.anomaly_since if active else 0.0
                     if size_reasons and (second_body[i] or area_rel >= c.get("merged_uncorroborated_area_ratio")):
                         pass                                 # corroborated: a merge (D11, unchanged)
-                    elif active and ((size_reasons and elapsed >= c.get("merged_anomaly_max_s"))
+                    elif active and ((size_reasons and sec_ge(elapsed, c.get("merged_anomaly_max_s")))
                                      or (second_body[i] and not near_single)):
                         # escalation needs merge-sized evidence now (or a second body touching it): a partial or
                         # edge box is not evidence of a second body and neither ends nor escalates the anomaly
@@ -913,7 +913,7 @@ class Population:
             # crouched inside the box is seen there for longer before they stand up
             prev = [(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy)
                     for b, since in zip(tr.contained, tr.contained_since)
-                    if t - since >= hidden_min_s]     # inside from `since` until it was missed now
+                    if sec_ge(t - since, hidden_min_s)]     # inside from `since` until it was missed now
             if not prev:
                 continue
             # still there = some other detection (duplicates included) overlapping where it would be by
@@ -1026,7 +1026,7 @@ class Population:
                     # it (review round 4 L2)
                     if tr.clear_since is None or tr.last_obs_frame != self._last_frame:
                         tr.clear_since = t
-                    held = t - tr.clear_since < c.get("merged_anomaly_clear_s")
+                    held = sec_lt(t - tr.clear_since, c.get("merged_anomaly_clear_s"))
                     if not held:                             # ended; frozen_ref stays as the fallback reference
                         tr.anomaly_since, tr.clear_since = None, None
             elif tr.anomaly_since is not None:               # active anomaly, box judged elsewhere (e.g. no reference)
@@ -1098,7 +1098,7 @@ class Population:
             if self._inside_fraction(p.box) < c.get("population_min_inside_fraction"):
                 self._close(tr, LEFT_FRAME, rel_frame, t, p.box, True, closed, LAST_PREDICTED)
                 continue
-            if p.dt_s > c.get("population_max_unmatched_s"):
+            if sec_gt(p.dt_s, c.get("population_max_unmatched_s")):
                 self._close(tr, UNMATCHED_TIMEOUT, rel_frame, t, p.box, True, closed, LAST_PREDICTED)
                 continue
             new_live.append(tr)
@@ -1163,7 +1163,7 @@ class Population:
         # after a detection last filled them (NEW_R2 F3c: a persisting merged box keeps its merge remembered)
         keep_region_s = c.get("population_closed_memory_s")
         self._regions = [rg for k, rg in enumerate(self._regions)
-                         if k not in resolved and t - max(rg.last_evidence_t, rg.last_filled_t) <= keep_region_s]
+                         if k not in resolved and sec_le(t - max(rg.last_evidence_t, rg.last_filled_t), keep_region_s)]
 
         # ---- 7. overlap context --------------------------------------------------------------------------
         pairs: List[OverlapPair] = []
@@ -1281,7 +1281,7 @@ class Population:
                 observation_source=src, box=box, observed_box=obs_box, detection_index=i,
                 first_frame=tr.first_frame, first_time_s=tr.first_time, last_observed_frame=tr.last_obs_frame,
                 time_since_observed_s=t - tr.motion.t_obs, age_s=t - tr.first_time,
-                provisional=(t - tr.first_time) < c.get("population_provisional_s"), flags=tuple(sorted(fl)),
+                provisional=sec_lt(t - tr.first_time, c.get("population_provisional_s")), flags=tuple(sorted(fl)),
                 possible_predecessors=tr.predecessors, possible_successors=tuple(tr.successors),
                 bank_samples=len(tr.bank), bank_eligible=not refusals, bank_refusals=tuple(refusals),
                 camera_compensated=comp))
@@ -1289,7 +1289,7 @@ class Population:
         # ---- memory ------------------------------------------------------------------------------------------
         self._memory.extend(closed)
         keep_s = c.get("population_closed_memory_s")
-        self._memory = [m for m in self._memory if t - m.closed_time_s <= keep_s]
+        self._memory = [m for m in self._memory if sec_le(t - m.closed_time_s, keep_s)]
         res = FrameResult(rel_frame=rel_frame, time_s=t, camera=camera, observations=tuple(obs),
                           tracklets=tuple(views), closed=tuple(closed), contact_events=tuple(events),
                           overlap_pairs=tuple(pairs))

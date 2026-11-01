@@ -1068,6 +1068,26 @@ def seconds_to_frames(seconds: float, fps: float) -> int:
     return max(1, int(math.ceil(seconds * fps - _EPS)))
 
 
+# NEW_R2 F4/F6 (time boundaries): frame times are frame / fps, so a duration that is an exact multiple of the frame
+# interval can differ from the same limit by floating-point error (at 10 fps one missed frame is a 0.2 s gap that
+# computes to 0.20000000000000018 > 0.2). Durations within _EPS seconds of a limit are EQUAL to it. These four are the
+# only sanctioned way to compare a duration with a limit in seconds; they change nothing off the boundary.
+def sec_gt(duration_s: float, limit_s: float) -> bool:
+    return duration_s > limit_s + _EPS
+
+
+def sec_ge(duration_s: float, limit_s: float) -> bool:
+    return duration_s >= limit_s - _EPS
+
+
+def sec_lt(duration_s: float, limit_s: float) -> bool:
+    return duration_s < limit_s - _EPS
+
+
+def sec_le(duration_s: float, limit_s: float) -> bool:
+    return duration_s <= limit_s + _EPS
+
+
 def frames_to_seconds(frames: int, fps: float) -> float:
     if not (isinstance(fps, (int, float)) and fps > 0 and math.isfinite(fps)):
         raise ValueError(f"fps must be a positive finite number, got {fps!r}")

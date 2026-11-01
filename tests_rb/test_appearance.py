@@ -305,8 +305,9 @@ class TestBank(unittest.TestCase):
             (A.BankUpdateContext(identity_trusted=True, max_competitor_iou=math.nextafter(c.get("bank_contact_iou"), 1)),
              "CONTESTED_BY_OTHER_PERSON"),
             (A.BankUpdateContext(identity_trusted=True, max_competitor_iou=float("nan")), "CONTESTED_BY_OTHER_PERSON"),
+            # below the quarantine by more than the frame-time float tolerance (R2 F4/F6: within it is equal)
             (A.BankUpdateContext(identity_trusted=True,
-                                 seconds_since_reacquisition=math.nextafter(c.get("post_reacq_quarantine_s"), 0)),
+                                 seconds_since_reacquisition=c.get("post_reacq_quarantine_s") - 1e-6),
              "POST_REACQUISITION_QUARANTINE"),
             (A.BankUpdateContext(identity_trusted=True, seconds_since_reacquisition=float("nan")),
              "POST_REACQUISITION_QUARANTINE"),

@@ -43,7 +43,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Dict, Sequence, Tuple
 
 from .camera import CameraMotion
-from .config import TrackerConfig
+from .config import TrackerConfig, sec_le
 
 DETECTION = "DETECTION"
 PREDICTED = "PREDICTED"
@@ -155,7 +155,7 @@ class MotionModel:
         h = st.ref_box[3] - st.ref_box[1]
         g = math.exp(st.log_h_rate * de)
         box = box_from(cx + st.vx * de, cy + st.vy * de, w * g, h * g)
-        return Prediction(box=box, source=PREDICTED if dt <= horizon else HELD, dt_s=dt, extrapolated_s=de,
+        return Prediction(box=box, source=PREDICTED if sec_le(dt, horizon) else HELD, dt_s=dt, extrapolated_s=de,
                           camera_compensated=st.camera_compensated)
 
     def check(self, st: MotionState, box: Sequence[float], t: float, *, partial: bool = False) -> MotionCheck:

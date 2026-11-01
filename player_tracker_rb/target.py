@@ -147,7 +147,7 @@ import numpy as np
 from .appearance import (AppearanceBank, AppearanceExtractor, AppearanceFeature, AppearanceSimilarity,
                          BankUpdateContext, identity_support)
 from .camera import ESTIMATED, FIRST_FRAME
-from .config import TrackerConfig
+from .config import TrackerConfig, sec_ge, sec_gt, sec_le, sec_lt
 from .detector import box_iou_matrix, containment
 from .motion import DETECTION, HELD, PREDICTED, MotionModel, MotionState, centre
 from . import population as P
@@ -455,8 +455,8 @@ class TargetTracker:
         """The target's ESTABLISHED recent size (median w, h of non-partial confirmed boxes within
         target_height_window_s, spanning at least population_size_ref_min_s), or None."""
         c = self._cfg
-        recent = [(ts, ww, hh) for (ts, ww, hh) in self._sizes if t - ts <= c.get("target_height_window_s")]
-        if len(recent) < 2 or recent[-1][0] - recent[0][0] < c.get("population_size_ref_min_s"):
+        recent = [(ts, ww, hh) for (ts, ww, hh) in self._sizes if sec_le(t - ts, c.get("target_height_window_s"))]
+        if len(recent) < 2 or sec_lt(recent[-1][0] - recent[0][0], c.get("population_size_ref_min_s")):
             return None
         return float(np.median([x[1] for x in recent])), float(np.median([x[2] for x in recent]))
 
@@ -602,7 +602,7 @@ class TargetTracker:
                                       exclude_detection_indices=sorted(grp))
         for cp in comps:
             if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
-                    cp.closed_age_s > c.get("contact_memory_s"):
+                    sec_gt(cp.closed_age_s, c.get("contact_memory_s")):
                 continue
             has_bank = cp.bank is not None and len(cp.bank) > 0
             if not has_bank:
@@ -709,7 +709,7 @@ class TargetTracker:
         seed_frame = self._last_frame is None
         if res.camera.status != ESTIMATED and not res.camera.continuity_broken and not seed_frame:
             refusals.append("CAMERA_UNVERIFIED")
-        if self._last_bank_t is not None and t - self._last_bank_t < c.get("target_bank_sample_interval_s"):
+        if self._last_bank_t is not None and sec_lt(t - self._last_bank_t, c.get("target_bank_sample_interval_s")):
             refusals.append("SAMPLE_NOT_DUE")
         if refusals:
             return {"status": "REFUSED", "refusals": sorted(set(refusals))}
@@ -735,7 +735,7 @@ class TargetTracker:
         if not partial:
             self._sizes.append((t,) + _wh(o.bbox))
             self._last_h = _wh(o.bbox)[1]
-        self._sizes = [x for x in self._sizes if t - x[0] <= self._cfg.get("target_height_window_s")]
+        self._sizes = [x for x in self._sizes if sec_le(t - x[0], self._cfg.get("target_height_window_s"))]
         self._position_valid = True
         if o.tracklet_id != self._tracklet or self._tracklet_since_t is None:
             self._tracklet_since_t = t
@@ -748,7 +748,7 @@ class TargetTracker:
         grp = self._group(res, ev.detection_index)
         seeding = self._last_confirm_t is None              # the seed box is the human's own identification
         settled = seeding or (self._contrast_verified and ev.role == CONTINUATION and
-                              t - self._tracklet_since_t >= self._cfg.get("target_known_other_min_s"))
+                              sec_ge(t - self._tracklet_since_t, self._cfg.get("target_known_other_min_s")))
         for other in (res.observations if settled else ()):
             if other.is_body and other.index not in grp and other.tracklet_id and \
                     other.tracklet_id != o.tracklet_id and other.tracklet_id not in self._target_tracklets:
@@ -893,7 +893,7 @@ class TargetTracker:
         pred = self._mm.predict(self._motion, t) if (self._motion is not None and t > self._motion.t_obs) else None
         pred_box: Optional[Box] = pred.box if pred is not None else None
         absence = 0.0 if self._last_confirm_t is None else t - self._last_confirm_t
-        prior = (self._position_valid and pred_box is not None and absence < c.get("lost_long_s"))
+        prior = (self._position_valid and pred_box is not None and sec_lt(absence, c.get("lost_long_s")))
         gate_h = self._gate(t) if prior else None
         log.update({"h": h, "gate_h": gate_h, "absence_s": absence, "positional_prior": prior})
 
@@ -994,7 +994,7 @@ class TargetTracker:
         # ---- aging (D14) ------------------------------------------------------------------------------------
         if state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None:
             limit = c.get("max_occluded_s") if state == OCCLUDED else c.get("max_ambiguous_s")
-            if t - self._last_confirm_t > limit:
+            if sec_gt(t - self._last_confirm_t, limit):
                 state, reasons = LOST, sorted(set(reasons) | {AGED_OUT})
                 self._tracklet = None
         if state == LOST:
@@ -1097,7 +1097,7 @@ class TargetTracker:
             for cp in self._pop.competitors(res.observations[i].bbox, h, exclude_tracklet_ids=sorted(own),
                                             exclude_detection_indices=sorted(grp)):
                 if cp.kind == P.RECENTLY_CLOSED and cp.closed_age_s is not None and \
-                        cp.closed_age_s > c.get("contact_memory_s"):
+                        sec_gt(cp.closed_age_s, c.get("contact_memory_s")):
                     continue
                 if cp.position_valid and not self._could_be_target(cp.box, h, t):
                     continue                                 # cannot physically be the target (size)
@@ -1161,7 +1161,7 @@ class TargetTracker:
             self._reverify = None                            # verified meanwhile (e.g. by ordinary contrast)
             rec["status"] = "ALREADY_VERIFIED"
             return rec
-        if rv["t_end"] is not None and t - rv["t_end"] > c.get("target_reverify_max_s"):
+        if rv["t_end"] is not None and sec_gt(t - rv["t_end"], c.get("target_reverify_max_s")):
             return cancel("EXPIRED")
         if state == LOST:
             return cancel("LOST")
@@ -1225,7 +1225,7 @@ class TargetTracker:
         travel_h = math.hypot(cx1 - cx0, cy1 - cy0) / h
         elapsed = t - rv["t0"]
         rec.update({"status": "RUNNING", "elapsed_s": elapsed, "travel_h": travel_h})
-        if elapsed >= c.get("target_reverify_window_s") and travel_h >= c.get("target_reverify_min_travel_h"):
+        if sec_ge(elapsed, c.get("target_reverify_window_s")) and travel_h >= c.get("target_reverify_min_travel_h"):
             # both spots the box has left must have been checked clear now (not covered, not uncheckable)
             if any(spots[k] not in ("CLEAR", "NONE") for k in spots) or spots.get("box0") != "CLEAR":
                 rec["status"] = "SPOTS_NOT_CLEAR"

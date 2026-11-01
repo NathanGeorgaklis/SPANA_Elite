@@ -51,7 +51,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from .config import TrackerConfig
+from .config import TrackerConfig, sec_ge
 
 # Crop-quality flags
 LOW_RESOLUTION = "LOW_RESOLUTION"
@@ -425,7 +425,7 @@ class AppearanceBank:
             if not (_finite(ctx.max_competitor_iou) and ctx.max_competitor_iou <= c.get("bank_contact_iou")):
                 r.append("CONTESTED_BY_OTHER_PERSON")
             s = ctx.seconds_since_reacquisition
-            if s is not None and not (_finite(s) and s >= c.get("post_reacq_quarantine_s")):
+            if s is not None and not (_finite(s) and sec_ge(s, c.get("post_reacq_quarantine_s"))):
                 r.append("POST_REACQUISITION_QUARANTINE")
         if not r and self.samples:
             best, _ = self.best_match(feat)

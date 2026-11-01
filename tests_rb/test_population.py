@@ -309,8 +309,12 @@ class TestMerged(Base):
         rn = run(frames, cfg=TrackerConfig.with_overrides({"merged_area_ratio": 10.0,
                                                            "merged_uncorroborated_area_ratio": 10.0}))
         self.assertIn(P.SIZE_ANOMALY, rn.results[12].observations[0].flags)
-        o = rn.results[-1].observations[0]
-        self.assertEqual(o.merge_reasons, (P.ASPECT_WIDE,))
+        # the merge is confirmed on the frame the anomaly has lasted exactly merged_anomaly_max_s (R2 F4/F6: frame
+        # times within the float tolerance of a limit are equal to it), and for the size test alone
+        first = next(k for k, r in enumerate(rn.results) if P.MERGED_SUSPECTED in r.observations[0].flags)
+        self.assertAlmostEqual(rn.results[first].time_s - rn.results[12].time_s,
+                               TrackerConfig.default().get("merged_anomaly_max_s"), delta=1e-9)
+        self.assertEqual(rn.results[first].observations[0].merge_reasons, (P.ASPECT_WIDE,))
 
     def test_persistent_merge_is_not_tracked(self):
         a, b = box_at(400, 360, 32, 80), box_at(440, 360, 32, 80)
