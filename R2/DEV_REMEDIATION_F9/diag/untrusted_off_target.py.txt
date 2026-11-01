@@ -1,0 +1,20 @@
+"""F9 read-only DEV check: untrusted TRACKING/REACQUIRING frames whose target box is not the human target box."""
+import json, os, sys
+sys.path.insert(0, sys.argv[1])
+from tools_rb.r2_f5_reacq_diag import load, frames, _iou
+repo, outs, cids = sys.argv[1], sys.argv[2].split(","), sys.argv[3:]
+for cid in cids:
+    lab = load(repo, cid); s = lab["seed"]["frame"]; row = []
+    for out in outs:
+        n = {"TRACKING": 0, "REACQUIRING": 0}
+        for rec in frames(out, cid):
+            cf = rec["frame"] + s
+            if cf >= len(lab["per_frame"]): break
+            t = rec["target"]
+            if t["identity_trusted"] or t["rb_state"] not in n: continue
+            di = t.get("detection_index"); obs = rec["population"]["observations"]
+            if di is None or di >= len(obs): continue
+            hb = lab["target_boxes"].get(str(cf))
+            if hb is None or _iou(hb, obs[di]["bbox"]) < 0.3: n[t["rb_state"]] += 1
+        row.append(n)
+    print(cid, " -> ".join(f"T{r['TRACKING']}/R{r['REACQUIRING']}" for r in row))
