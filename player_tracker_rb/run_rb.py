@@ -576,7 +576,10 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
                 cands = det.detect(fr.image)
                 cam = est.update(fr.image, [d.bbox for d in cands], 1.0 / fps)
                 res = pop.update(f, f / fps, cands, cam)
-                tf = tracker.update(res, fr.image)
+                try:
+                    tf = tracker.update(res, fr.image)
+                except T.SeedError as e:                     # F2: a deferred seed anchor was never reached
+                    raise RunRefusedError(f"seed refused: {e}") from e
                 excluded = possibly_target(tracker, tf, res, cfg)
                 trec = builder.target_record(f, tf, excluded)
                 precs = builder.population_records(f, res, excluded)

@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2f9-1"   # r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2f2-1"   # r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -195,6 +195,14 @@ PARAMS: Tuple[Param, ...] = (
        "bottom edge. A smaller person standing farther away inside the human box has a higher feet line.", 0.2, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
        "NEW_R2 (R2 DEV remediation F1, review M2). DEV seeds refused by IoU: 0.07-0.16 seed heights", 0.0, 1.0),
+    _p("seed_anchor_max_s", "float", "s",
+       "Deferred seed anchor (NEW_R2 F2): when the seed body is unambiguous but its seed-frame crop cannot anchor the "
+       "target bank for geometry-only reasons (partial, image edge, nested/alternative part boxes, contained part, "
+       "light overlap), the bank is anchored on the first ordinary bank-clean crop of the SAME population tracklet "
+       "within this long; the target is untrusted until then and the run is refused (fail closed) if the tracklet "
+       "breaks or this time passes.", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "video",
+       "NEW_R2 (R2 DEV F2). DEV refused seeds: the same body was bank-clean after 0.07 s and 0.28 s; the third never "
+       "was (genuine contact)", 0.0, 10.0),
     _p("seed_contain_competitor_max", "float", "fraction of the other detection's area",
        "Containment seed path: if any other body detection lies at least this much inside the seed box, the box may "
        "hold two people and the seed is refused as ambiguous (fail closed). Applies only to the containment path; "

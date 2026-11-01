@@ -15,6 +15,19 @@ appearance), then decides the target.
 SEED (D18): the max-IoU body detection (>= seed_min_iou) to the human seed box, refused (SeedError, fail closed)
 if it is merged-suspected, merge-sized against the seed box itself (merged_area_ratio / merged_aspect_band: the
 only single-body size reference on the first frame), has an unusable crop, or cannot anchor the bank.
+DEFERRED SEED ANCHOR (NEW_R2, R2 DEV F2): if the seed-frame crop is refused by the bank ONLY for geometry
+(_SEED_DEFERRABLE: PARTIAL, TOUCHES_IMAGE_EDGE, NESTED, ALTERNATIVE, CONTAINS_OTHER, NOT_ISOLATED), the anchor is
+deferred, provided the seed body is exactly one population tracklet (detection and its nested part boxes), that
+tracklet's box itself matches the seed box (IoU >= seed_min_iou, or it is the matched detection), it has no merge
+lineage, and no other body could be the boxed person (IoU >= seed_min_iou with the seed box, or >=
+seed_contain_competitor_max of it inside). Otherwise SeedError at once. While pending, every frame is TRACKING on that
+tracklet but UNTRUSTED (reason LOW_QUALITY_CROP: no appearance bank yet; confidence untrusted ceiling); the seed frame
+too. The first frame whose crop passes the ORDINARY bank update (every bank rule, nothing relaxed) anchors the bank
+and is trusted (confidence 1.0, the human identification carried by the uninterrupted tracklet); the normal tracker
+runs from the next frame. SeedError (the run is refused) if, before that: the camera breaks continuity, the tracklet
+is not observed on a frame, its box becomes CONTESTED / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGED_SUSPECTED /
+SIZE_ANOMALY or the tracklet gains MERGE_LINEAGE, or seed_anchor_max_s passes. A refused seed-frame crop is never a
+bank sample.
 
 States (D05): TRACKING (trusted, observed), OCCLUDED, AMBIGUOUS, LOST, REACQUIRING (verifying a candidate).
 Only TRACKING is trusted, and only TRACKING has an observed box (D06): every other state writes the target's
@@ -195,6 +208,13 @@ _DETAIL_TO_REASON = {
 }
 
 # observations whose box the target bank must refuse (population flags)
+# NEW_R2 F2: seed-frame bank refusals that say only that THIS crop is a poor appearance sample (geometry), not that the
+# seed body's identity is in doubt: the anchor may be deferred to a later crop of the same tracklet
+_SEED_DEFERRABLE = (P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.NESTED, P.ALTERNATIVE, P.CONTAINS_OTHER, "NOT_ISOLATED")
+# while the anchor is pending, any of these on the seed body's box (or MERGE_LINEAGE on its tracklet) means it may no
+# longer be one body: the seed is refused (fail closed)
+_SEED_PENDING_BREAK = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY)
+
 _BANK_REFUSE_FLAGS = (P.CONTESTED, P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION,
                       P.MERGED_SUSPECTED, P.NESTED, P.ALTERNATIVE, P.SIZE_ANOMALY)
 
@@ -375,6 +395,7 @@ class TargetTracker:
         # re-verification run on it (None, or {"origin", "t0", "box0"}; see the module docstring)
         self._reverify: Optional[Dict[str, Any]] = None
         self._lost_gate0: Optional[Tuple[float, float]] = None   # F9: (time, gate) when the LOST search started
+        self._seed_pending: Optional[Dict[str, Any]] = None       # F2: deferred seed anchor (tracklet, t0, why)
         self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
@@ -835,18 +856,114 @@ class TargetTracker:
                                  tuple(feat.quality.flags), None, None, None, None, 0.0, (), True, ())
         self._state = TRACKING
         bank = self._confirm(res, image, ev, 1.0, cache)
+        info = {"seed": True, "seed_iou": float(ious[k]), "seed_rule": rule, "seed_containment": geo[k]["contain"],
+                "seed_centre_offset_h": (geo[k]["dx_h"], geo[k]["dy_h"]), "seed_height_ratio": geo[k]["h_ratio"],
+                "bank": bank, "transition": "SEED"}
+        trusted = True
         if bank["status"] != "ACCEPTED":
-            self._failed = True                              # never usable after a refused seed (fail closed)
-            raise SeedError(f"the seed crop cannot anchor the target appearance bank: {bank['refusals']}")
+            if not set(bank["refusals"]) <= set(_SEED_DEFERRABLE):
+                self._failed = True                          # never usable after a refused seed (fail closed)
+                raise SeedError(f"the seed crop cannot anchor the target appearance bank: {bank['refusals']}")
+            tid = self._seed_body_tracklet(res, o.index, sb)    # raises SeedError if the body is not one or is in doubt
+            self._tracklet, self._tracklet_since_t = tid, res.time_s
+            self._target_tracklets.add(tid)
+            self._seed_pending = {"tracklet": tid, "t0": res.time_s, "refusals": sorted(bank["refusals"])}
+            info["seed_anchor"] = {"status": "PENDING", "tracklet": tid, "refusals": sorted(bank["refusals"])}
+            trusted = False
         self._last_frame = res.rel_frame
-        fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, {"seed": True, "seed_iou": float(ious[k]),
-                                                                     "seed_rule": rule,
-                                                                     "seed_containment": geo[k]["contain"],
-                                                                     "seed_centre_offset_h": (geo[k]["dx_h"],
-                                                                                              geo[k]["dy_h"]),
-                                                                     "seed_height_ratio": geo[k]["h_ratio"],
-                                                                     "bank": bank, "transition": "SEED"})
+        if trusted:
+            fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, info)
+        else:
+            fr = self._frame(res, TRACKING, (LOW_QUALITY_CROP,), o.index, ev,
+                             c.get("untrusted_identity_confidence_ceiling"), False, info, trusted=False,
+                             untrusted_tracking_reasons=(LOW_QUALITY_CROP,))
         self._prev_t = res.time_s
+        return fr
+
+    def _seed_body_tracklet(self, res: P.FrameResult, i: int, sb: Box) -> str:
+        """F2: the population tracklet of the seed body (detection i and the part boxes nested with it: one tracked
+        body), refusing the seed if the body is not exactly one tracklet, if that tracklet's box does not itself match
+        the seed box (IoU >= seed_min_iou, or it is detection i), or if another body outside the group could be the
+        boxed person (IoU >= seed_min_iou with the seed box, or >= seed_contain_competitor_max of it inside the box)."""
+        c = self._cfg
+        obs = res.observations
+        grp = self._group(res, i)
+        tids = {obs[j].tracklet_id for j in grp if obs[j].tracklet_id}
+        if len(tids) != 1:
+            self._failed = True
+            raise SeedError(f"the seed body is not one tracked body (tracklets {sorted(tids)}): anchor not deferred")
+        tid = next(iter(tids))
+        host = next(j for j in grp if obs[j].tracklet_id == tid)
+        if host != i and float(box_iou_matrix(np.asarray([sb]), np.asarray([obs[host].bbox]))[0][0]) < \
+                c.get("seed_min_iou"):
+            self._failed = True
+            raise SeedError("the seed body's tracked box does not match the seed box: anchor not deferred")
+        if self._tracklet_merge_lineage(res, tid):
+            self._failed = True
+            raise SeedError("the seed body's tracklet has merge lineage: anchor not deferred")
+        for o in obs:
+            if not o.is_body or o.index in grp:
+                continue
+            g = _seed_geometry(sb, o.bbox)
+            iou = float(box_iou_matrix(np.asarray([sb]), np.asarray([o.bbox]))[0][0])
+            if iou >= c.get("seed_min_iou") or g["contain"] >= c.get("seed_contain_competitor_max"):
+                self._failed = True
+                raise SeedError(f"seed box is ambiguous: another body (detection {o.index}, IoU {iou:.2f}, "
+                                f"{g['contain']:.2f} inside) could be the seed person: anchor not deferred")
+        return tid
+
+    def _tracklet_merge_lineage(self, res: P.FrameResult, tid: str) -> bool:
+        v = res.tracklet(tid)
+        return v is not None and P.MERGE_LINEAGE in v.flags
+
+    def _seed_anchor_step(self, res: P.FrameResult, image: np.ndarray, cut: bool,
+                          log: Dict[str, Any]) -> TargetFrame:
+        """F2: one frame while the seed anchor is pending. The human identified the body at the seed; until its bank
+        anchors, only the same population tracklet, observed on every frame and never contested, merged or anomalous,
+        carries that identity. Untrusted and LOW_QUALITY_CROP (no appearance bank yet) until the first ordinary
+        bank-clean crop (_bank_update ACCEPTED), which anchors the bank and is trusted at the seed's confidence (the
+        human identification carried by the uninterrupted tracklet). Any break, a cut, or seed_anchor_max_s without
+        an anchor refuses the seed (SeedError: the run is refused, fail closed)."""
+        c = self._cfg
+        sp = self._seed_pending
+        t = res.time_s
+        tid = sp["tracklet"]
+
+        def refuse(why: str) -> None:
+            self._failed = True
+            raise SeedError(f"seed anchor not reached ({why}); seed-frame refusals {sp['refusals']}")
+        if cut:
+            refuse("camera continuity broken")
+        if sec_gt(t - sp["t0"], c.get("seed_anchor_max_s")):
+            refuse(f"no bank-clean crop of the seed body within seed_anchor_max_s")
+        tv = res.tracklet(tid)
+        if tv is None or not tv.observed:
+            refuse(f"the seed body's tracklet {tid} was not observed")
+        o = res.observations[tv.detection_index]
+        broken = [f for f in _SEED_PENDING_BREAK if f in o.flags]
+        if self._tracklet_merge_lineage(res, tid):
+            broken.append(P.MERGE_LINEAGE)
+        if broken:
+            refuse(f"the seed body's box became {broken}")
+        cache: Dict[int, AppearanceFeature] = {}
+        feat = self._feature(cache, res, image, o.index)
+        ev = CandidateEvaluation(o.index, o.tracklet_id, o.bbox, "SEED", True, None, False, None,
+                                 tuple(feat.quality.flags), None, None, None, None, 0.0, (), True, ())
+        self._state = TRACKING
+        bank = self._confirm(res, image, ev, 1.0, cache) if feat.usable else \
+            {"status": "REFUSED", "refusals": ["FEATURE_NOT_USABLE"]}
+        log.update({"seed_anchor": {"status": "ANCHORED" if bank["status"] == "ACCEPTED" else "PENDING",
+                                    "tracklet": tid, "elapsed_s": t - sp["t0"]},
+                    "bank": bank, "transition": f"{log['from']}->TRACKING"})
+        self._last_frame = res.rel_frame
+        if bank["status"] == "ACCEPTED":
+            self._seed_pending = None
+            fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, log)
+        else:
+            fr = self._frame(res, TRACKING, (LOW_QUALITY_CROP,), o.index, ev,
+                             c.get("untrusted_identity_confidence_ceiling"), False, log, trusted=False,
+                             untrusted_tracking_reasons=(LOW_QUALITY_CROP,))
+        self._prev_t = t
         return fr
 
     # -- per frame -----------------------------------------------------------------------------------------
@@ -888,6 +1005,9 @@ class TargetTracker:
                     for key in ("box0", "spot"):
                         if self._reverify[key] is not None:
                             self._reverify[key] = cam.warp_box(self._reverify[key])
+
+        if self._seed_pending is not None:
+            return self._seed_anchor_step(res, image, cut, log)     # F2: deferred seed anchor (own rules)
 
         h = self._height(t) or float(np.median([_wh(o.bbox)[1] for o in res.observations] or [1.0]))
         pred = self._mm.predict(self._motion, t) if (self._motion is not None and t > self._motion.t_obs) else None
@@ -1348,7 +1468,8 @@ class TargetTracker:
     def _frame(self, res: P.FrameResult, state: str, reasons: Tuple[str, ...], det_idx: Optional[int],
                ev: Optional[CandidateEvaluation], conf: float, reidentified: bool, log: Dict[str, Any], *,
                contested_box: Optional[Box] = None, occluders: Tuple[str, ...] = (), merged: bool = False,
-               pred: Any = None, trusted: bool = True) -> TargetFrame:
+               pred: Any = None, trusted: bool = True,
+               untrusted_tracking_reasons: Tuple[str, ...] = (INSUFFICIENT_CONTRAST,)) -> TargetFrame:
         t = res.time_s
         if state == TRACKING:
             o = res.observations[det_idx]
@@ -1383,7 +1504,8 @@ class TargetTracker:
             observed_or_contested_box=contested_box if state != TRACKING else box,
             observation_tracklet_id=tracklet, target_episode=self._episode,
             identity_trusted=state == TRACKING and trusted, identity_confidence_rb=float(conf),
-            identity_uncertainty_reasons=(() if trusted else (INSUFFICIENT_CONTRAST,)) if state == TRACKING else reasons,
+            identity_uncertainty_reasons=(() if trusted else tuple(untrusted_tracking_reasons)) if state == TRACKING
+            else reasons,
             occluder_track_ids=tuple(occluders), merged_suspected=bool(merged), raw_detection_conf=raw,
             reidentified_this_frame=reidentified, target_similarity=tsim, best_competitor_similarity=csim,
             rel_frame=res.rel_frame, time_s=t, bbox=tuple(float(v) for v in box), detection_index=det_idx,
