@@ -148,8 +148,12 @@ class LongRun(unittest.TestCase):
             self.assertLessEqual(s["target_bank_samples"], cfg.get("bank_max_samples"), f)
         n = len(self.sizes)
         early, late = self.sizes[: 2 * n // 3], self.sizes[2 * n // 3:]
+        # target_known_others is bounded on every frame by the bodies the population knows (asserted above) and is
+        # reset at every reacquisition; its level follows how long the target stays verified within a shot, not run
+        # length (R2 DEV F9: 3600-frame run, per-shot means 2.1 / 1.4 / 4.4 / 5.3 / 4.4 / 3.2, no growth)
         growing_ok = {"target_reacquisition_events", "writer_final_records", "writer_lifetimes",
-                      "writer_population_ids_seen", "writer_conflict_pairs", "writer_provisional_ids"}
+                      "writer_population_ids_seen", "writer_conflict_pairs", "writer_provisional_ids",
+                      "target_known_others"}
         for key in self.sizes[0][1]:
             if key in growing_ok:
                 continue

@@ -83,6 +83,9 @@ recent heights follow the measured camera transform (D16).
 
 SEARCH GATE (D13): radius = min(gate_base_h + gate_growth_h_per_s * u, gate_max_h) target heights around the
 predicted centre, u = seconds since the last confirmation; frozen while AMBIGUOUS (gate_grows_while_ambiguous).
+While LOST (or REACQUIRING from LOST) the cap does not apply and the radius is gate_base_h + gate_lost_growth_h_per_s
+* u (NEW_R2 F9: a running player leaves a 3 h gate in about a second, and the positional prior lasts lost_long_s).
+Only the candidate search widens: no identity test changes.
 h = median height of the target's non-partial observed boxes in the last target_height_window_s (camera-scaled).
 
 APPEARANCE BANK (D12): updated only on a TRACKING frame of a VERIFIED episode (trusted), from a box that the population also considers
@@ -506,7 +509,16 @@ class TargetTracker:
         if not c.get("gate_grows_while_ambiguous") and self._ambiguous_since_t is not None:
             ref_t = self._ambiguous_since_t                 # frozen from the start of the ambiguity
         u = max(0.0, ref_t - self._last_confirm_t)
+        if self._lost_search():
+            # NEW_R2 F9: LOST, the target may have moved as far as a running player can since it was last
+            # confirmed; the fixed cap (reached in about a second) would hide it until lost_long_s. Only the
+            # SEARCH grows: every candidate still faces the same appearance, contrast, motion and verification tests
+            return c.get("gate_base_h") + c.get("gate_lost_growth_h_per_s") * u
         return min(c.get("gate_base_h") + c.get("gate_growth_h_per_s") * u, c.get("gate_max_h"))
+
+    def _lost_search(self) -> bool:
+        """F9: the target is LOST (or verifying a reacquisition from LOST) as of the previous frame."""
+        return self._state == LOST or (self._state == REACQUIRING and self._base_state == LOST)
 
     def _in_gate(self, box: Box, pred_box: Optional[Box], gate_h: Optional[float], h: float) -> bool:
         if pred_box is None or gate_h is None:
