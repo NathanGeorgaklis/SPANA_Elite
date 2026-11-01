@@ -151,5 +151,60 @@ class TestLostSearch(unittest.TestCase):
                 self.assertEqual(r.frames[-1].rb_state, T.TRACKING)
 
 
+def lost_search_gates(r):
+    """(time, gate_h, state) on frames whose search ran from LOST (the previous frame LOST, or REACQUIRING from it)."""
+    out, prev = [], None
+    for f in r.frames:
+        g = f.decision.get("gate_h")
+        if prev is not None and g is not None and (prev.rb_state == T.LOST or (
+                prev.rb_state == T.REACQUIRING and out and out[-1][2] in (T.LOST, T.REACQUIRING))):
+            out.append((f.decision["absence_s"], g, f.rb_state))
+        prev = f
+    return out
+
+
+def capped_gate(u):
+    return min(CFG.get("gate_base_h") + CFG.get("gate_growth_h_per_s") * u, CFG.get("gate_max_h"))
+
+
+class TestLostGateShape(unittest.TestCase):
+    """Review F9 M2 / LOW: no extra jump at LOST entry, a pinned growth rate, continuity into REACQUIRING."""
+
+    def test_ambiguous_to_lost_adds_no_jump_and_grows_at_the_pinned_rate(self):
+        # a different-kit person stays in contact until the AMBIGUOUS target ages to LOST, then everyone vanishes
+        fps = 30.0
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, 100)}) for _ in range(15)]
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, 100), "OTHER": SS.box_at(530, 400, 40, 100)},
+                             order=["TARGET", "OTHER"]) for _ in range(60)]
+        fr += [SS.SceneFrame({}) for _ in range(30)]
+        r = SS.run(fr, people(("OTHER", (40, 60, 200), 0.2)), fps=fps)
+        self.assertIn(T.AMBIGUOUS, [f.rb_state for f in r.frames])
+        g = lost_search_gates(r)
+        self.assertTrue(g)
+        u0, g0, _ = g[0]
+        # the first LOST search frame uses the ordinary (pre-F9) gate: never wider than the cap
+        self.assertAlmostEqual(g0, capped_gate(u0), delta=1e-6)
+        self.assertLessEqual(g0, CFG.get("gate_max_h") + 1e-9)
+        rate = CFG.get("gate_lost_growth_h_per_s")
+        for u, gh, _ in g:
+            self.assertAlmostEqual(gh, g0 + rate * (u - u0), delta=1e-6)
+        self.assertEqual(r.swaps(), [])
+        self.assertTrue(r.bank_is_pure())
+
+    def test_gate_is_continuous_from_lost_into_reacquiring(self):
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr, back = moved_while_lost(fps)
+                r = SS.run(fr, people(), fps=fps)
+                g = lost_search_gates(r)
+                states = {s for _, _, s in g}
+                self.assertIn(T.REACQUIRING, states)
+                u0, g0, _ = g[0]
+                rate = CFG.get("gate_lost_growth_h_per_s")
+                for u, gh, _ in g:
+                    self.assertAlmostEqual(gh, g0 + rate * (u - u0), delta=1e-6)
+                self.assertGreater(g[-1][1], CFG.get("gate_max_h"), "the LOST search outgrew the old cap")
+
+
 if __name__ == "__main__":
     unittest.main()

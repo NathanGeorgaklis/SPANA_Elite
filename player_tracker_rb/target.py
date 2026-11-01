@@ -83,8 +83,10 @@ recent heights follow the measured camera transform (D16).
 
 SEARCH GATE (D13): radius = min(gate_base_h + gate_growth_h_per_s * u, gate_max_h) target heights around the
 predicted centre, u = seconds since the last confirmation; frozen while AMBIGUOUS (gate_grows_while_ambiguous).
-While LOST (or REACQUIRING from LOST) the cap does not apply and the radius is gate_base_h + gate_lost_growth_h_per_s
-* u (NEW_R2 F9: a running player leaves a 3 h gate in about a second, and the positional prior lasts lost_long_s).
+While LOST (or REACQUIRING from LOST) the cap does not apply: the radius is g0 + gate_lost_growth_h_per_s * (t - t0),
+where g0 is the ordinary capped gate at the first LOST search frame t0: F9 adds no jump at LOST entry (that frame's gate
+is the pre-F9 gate) and only grows the search on from there
+(NEW_R2 F9: a running player leaves a 3 h gate in about a second, and the positional prior lasts lost_long_s).
 Only the candidate search widens: no identity test changes.
 h = median height of the target's non-partial observed boxes in the last target_height_window_s (camera-scaled).
 
@@ -372,6 +374,7 @@ class TargetTracker:
         # NEW_R2 F5: the tracklet whose ended SIZE_ANOMALY broke a VERIFIED episode, and the post-anomaly
         # re-verification run on it (None, or {"origin", "t0", "box0"}; see the module docstring)
         self._reverify: Optional[Dict[str, Any]] = None
+        self._lost_gate0: Optional[Tuple[float, float]] = None   # F9: (time, gate) when the LOST search started
         self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
         self._last_h: Optional[float] = None
         self._state: Optional[str] = None
@@ -509,12 +512,18 @@ class TargetTracker:
         if not c.get("gate_grows_while_ambiguous") and self._ambiguous_since_t is not None:
             ref_t = self._ambiguous_since_t                 # frozen from the start of the ambiguity
         u = max(0.0, ref_t - self._last_confirm_t)
+        capped = min(c.get("gate_base_h") + c.get("gate_growth_h_per_s") * u, c.get("gate_max_h"))
         if self._lost_search():
-            # NEW_R2 F9: LOST, the target may have moved as far as a running player can since it was last
-            # confirmed; the fixed cap (reached in about a second) would hide it until lost_long_s. Only the
+            # NEW_R2 F9: LOST, the target may have moved as far as a running player can; the fixed cap (reached in
+            # about a second) would hide it until lost_long_s. The growth starts where the gate stood when the target
+            # became LOST (review M2: a gate frozen during AMBIGUOUS must not jump wide at LOST entry, F6). Only the
             # SEARCH grows: every candidate still faces the same appearance, contrast, motion and verification tests
-            return c.get("gate_base_h") + c.get("gate_lost_growth_h_per_s") * u
-        return min(c.get("gate_base_h") + c.get("gate_growth_h_per_s") * u, c.get("gate_max_h"))
+            if self._lost_gate0 is None:
+                self._lost_gate0 = (t, capped)
+            t0, g0 = self._lost_gate0
+            return g0 + c.get("gate_lost_growth_h_per_s") * max(0.0, t - t0)
+        self._lost_gate0 = None
+        return capped
 
     def _lost_search(self) -> bool:
         """F9: the target is LOST (or verifying a reacquisition from LOST) as of the previous frame."""

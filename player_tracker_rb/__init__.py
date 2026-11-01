@@ -12,4 +12,4 @@ player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ 
 Stages: R1-A (config, output_schema), R1-B (video_io, provenance), R1-C (detector), R1-D (appearance), R1-E
 (population, motion, camera), R1-F (target identity), R1-G (run_rb: the integrated Pass-1 pipeline).
 """
-__version__ = "0.11.0-r2f9"   # R2 DEV remediation F1 + F3 + F3c (population safety) + F5 (post-anomaly re-verification, off) + F8 (camera scale corroboration) + F9 (LOST search gate)
+__version__ = "0.11.1-r2f9"   # R2 DEV remediation F1 + F3 + F3c (population safety) + F5 (post-anomaly re-verification, off) + F8 (camera scale corroboration) + F9 (LOST search gate)
