@@ -6,7 +6,10 @@
 #                 similarity; no tracker change.
 """Offline appearance-backend comparison on frozen DEV truth (read-only; refuses EVAL fixtures; no tracker change).
 
-    python tools_rb/r2_reid_eval.py REPO CLIPS_DIR RUN_OUT_DIR MODELS_DIR OUT_JSON CLIP_ID [CLIP_ID ...]
+    python tools_rb/r2_reid_eval.py REPO CLIPS_DIR RUN_OUT_DIR MODELS_DIR OUT_DIR CLIP_ID [CLIP_ID ...]
+
+Each clip's crop similarities are written to OUT_DIR/<clip>.rows.jsonl as soon as the clip is done (a clip whose rows
+file exists is not recomputed); the summary over all requested clips is then written to OUT_DIR/REID_EVAL.json.
 
 Run in a separate environment with torch (the production environment is not modified). For every frozen-truth frame
 where the target is available (VISIBLE/PARTIAL, resolvable, not merged, not human-uncertain) and boxed:
@@ -43,6 +46,7 @@ GAP_S = 1.0
 POST_GAP_S = 1.5
 SAME_KIT_PCT = 10
 TPR_PCT = 10
+THREADS = 2
 MEAN = (0.485, 0.456, 0.406)
 STD = (0.229, 0.224, 0.225)
 
@@ -89,7 +93,9 @@ def competitors(obs, tb):
 class ReidOnnx:
     def __init__(self, path):
         import onnxruntime as ort
-        self.s = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+        so = ort.SessionOptions()
+        so.intra_op_num_threads = THREADS
+        self.s = ort.InferenceSession(path, sess_options=so, providers=["CPUExecutionProvider"])
         self.inp = self.s.get_inputs()[0].name
 
     def __call__(self, crops):
@@ -107,6 +113,7 @@ class ReidTorch:
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         self.torch = torch
+        torch.set_num_threads(THREADS)
         self.m = getattr(mod, factory)(num_classes=num_classes, pretrained=False, loss="softmax")
         safe = []
         if extra_safe:
@@ -172,7 +179,7 @@ def _auc(pos, neg):
     return (rank - n1 * (n1 + 1) / 2.0) / (n1 * n0)
 
 
-def main(repo, clips_dir, run_out, models_dir, out_json, cids):
+def main(repo, clips_dir, run_out, models_dir, out_dir, cids):
     import numpy as np
     sys.path.insert(0, repo)
     from player_tracker_rb import run_rb as R
@@ -192,8 +199,16 @@ def main(repo, clips_dir, run_out, models_dir, out_json, cids):
     }
     wl, we = cfg.get("composite_weight_lab"), cfg.get("composite_weight_embedding")
     backends = ["LAB", "DINOV2", "COMPOSITE"] + list(reid)
+    os.makedirs(out_dir, exist_ok=True)
     rows = []                                   # (clip, rel, kind, post_gap, {backend: sim}, lab_sim)
     for cid in cids:
+        rp = os.path.join(out_dir, cid + ".rows.jsonl")
+        if os.path.exists(rp):
+            with open(rp) as f:
+                rows += [json.loads(line) for line in f]
+            print(cid, "rows (cached)", sum(1 for r in rows if r["clip"] == cid), flush=True)
+            continue
+        n0 = len(rows)
         with open(os.path.join(repo, "R2", "labels", cid + ".fixture.json")) as f:
             fx = json.load(f)
         if fx["split"] != "DEV":
@@ -274,7 +289,11 @@ def main(repo, clips_dir, run_out, models_dir, out_json, cids):
             handle(0, reader.seed.image)
             for fr in reader:
                 handle(fr.rel_frame, fr.image)
-        print(cid, "rows", sum(1 for r in rows if r["clip"] == cid), flush=True)
+        with open(rp + ".partial", "x") as f:
+            for r in rows[n0:]:
+                f.write(json.dumps(r) + "\n")
+        os.rename(rp + ".partial", rp)
+        print(cid, "rows", len(rows) - n0, flush=True)
 
     def summarise(sel):
         out = {}
@@ -315,11 +334,8 @@ def main(repo, clips_dir, run_out, models_dir, out_json, cids):
                          "GAP_S": GAP_S, "POST_GAP_S": POST_GAP_S, "SAME_KIT_PCT": SAME_KIT_PCT, "TPR_PCT": TPR_PCT},
               "pooled": summarise(rows), "post_gap": summarise([r for r in rows if r["post_gap"]]),
               "per_clip": {c: summarise([r for r in rows if r["clip"] == c]) for c in cids}}
-    with open(out_json, "x") as f:
+    with open(os.path.join(out_dir, "REID_EVAL.json"), "w") as f:
         json.dump(report, f, indent=1)
-    with open(out_json + ".rows.jsonl", "x") as f:
-        for r in rows:
-            f.write(json.dumps(r) + "\n")
     for scope in ("pooled", "post_gap"):
         print("==", scope)
         for b, m in report[scope].items():
