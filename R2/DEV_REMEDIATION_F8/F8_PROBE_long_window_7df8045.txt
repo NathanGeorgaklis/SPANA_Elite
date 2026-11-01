@@ -1,0 +1,8 @@
+R2_MCFC_MIT_C006 checked 244 flagged 126 worst ratio 1.519
+R2_MCFC_MIT_C016 checked 184 flagged 0 worst ratio 1.134
+R2_MCFC_MIT_C020 checked 514 flagged 0 worst ratio 1.070
+R2_MCFC_MIT_C033 checked 544 flagged 336 worst ratio 1.619
+R2_SYO_MAR_C004_ checked 272 flagged 0 worst ratio 1.065
+R2_SYO_MAR_C012_ checked 227 flagged 93 worst ratio 1.327
+R2_SYO_MAR_C016_ checked 182 flagged 0 worst ratio 1.105
+R2_SYO_MAR_C021_ checked 225 flagged 0 worst ratio 1.105

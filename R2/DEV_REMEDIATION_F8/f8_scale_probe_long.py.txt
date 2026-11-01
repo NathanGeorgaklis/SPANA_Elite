@@ -1,0 +1,29 @@
+"""F8 probe (DEV only): windowed camera log-scale vs IoU-matched people log-height-ratio, from a run's decision log."""
+import sys, json, math, statistics, collections, glob, os
+def iou(a,b):
+    ix=max(0,min(a[2],b[2])-max(a[0],b[0])); iy=max(0,min(a[3],b[3])-max(a[1],b[1])); i=ix*iy
+    u=(a[2]-a[0])*(a[3]-a[1])+(b[2]-b[0])*(b[3]-b[1])-i; return i/u if u>0 else 0
+W, TOL, MINP = 3.0, math.log(1.15), 3
+for f in sorted(glob.glob(sys.argv[1]+'/*/*_rb_decision_log.jsonl')):
+    L=[json.loads(l) for l in open(f)]
+    fps=60.0 if 'MCFC' in f else 30.0
+    prev=None; win=collections.deque(); flagged=0; n=0; worst=0
+    for r in L:
+        cam=r['population']['camera']; boxes=[o['bbox'] for o in r['population']['observations'] ]
+        if prev is not None and cam['status']=='ESTIMATED':
+            m=cam['matrix']; rs=[]; used=set()
+            for b in prev:
+                cx,cy=(b[0]+b[2])/2,(b[1]+b[3])/2; nx=m[0][0]*cx+m[0][1]*cy+m[0][2]; ny=m[1][0]*cx+m[1][1]*cy+m[1][2]
+                hw,hh=(b[2]-b[0])/2,(b[3]-b[1])/2; q=(nx-hw,ny-hh,nx+hw,ny+hh)
+                best=max(((iou(q,c),j) for j,c in enumerate(boxes) if j not in used), default=(0,None))
+                if best[0]>=0.5: used.add(best[1]); c=boxes[best[1]]; rs.append(math.log((c[3]-c[1])/(b[3]-b[1])))
+            pr=statistics.median(rs) if len(rs)>=MINP else None
+            win.append((r['frame']/fps, math.log(cam['scale']), pr))
+            while win and win[-1][0]-win[0][0] > W: win.popleft()
+            pairs=[(c,p) for _,c,p in win if p is not None]
+            if len(pairs) >= 0.5*len(win) and win[-1][0]-win[0][0] >= 0.9:
+                d=abs(sum(c for c,_ in pairs)-sum(p for _,p in pairs)); worst=max(worst,d); n+=1
+                if d>TOL: flagged+=1
+        elif cam['status']!='ESTIMATED': win.clear()
+        prev=boxes
+    print(os.path.basename(f)[:16], 'checked', n, 'flagged', flagged, 'worst ratio %.3f'%math.exp(worst))

@@ -30,10 +30,12 @@ Method (per frame, D16):
      People are the scale that matters downstream, so the fitted scale is checked against them: each previous person
      box is moved by the fitted transform (centre only) and matched one-to-one to a current box by IoU >=
      camera_scale_match_iou_min; with >= camera_scale_check_min_people matches the frame's people log-height ratio
-     is their median. Over the last camera_scale_check_window_s of ESTIMATED frames (people measured on at least
-     half of them), if exp|sum log(fitted scale) - sum people log-ratio| > camera_scale_disagreement_ratio_max the
-     scale is UNCORROBORATED: the frame is reported as a TRANSLATION-ONLY motion (scale 1, no rotation; the median
-     inlier flow), reason SCALE_UNCORROBORATED, the full fit kept as measured_matrix. Fail closed: no size change is
+     is their median (a box nested >= population_nested_containment in a larger one counts once). Over the last
+     camera_scale_check_window_s AND camera_scale_check_long_window_s of ESTIMATED frames (people measured on at
+     least half of each), if exp|sum log(fitted scale) - sum people log-ratio| > camera_scale_disagreement_ratio_max
+     in either the scale is UNCORROBORATED until both are back within camera_scale_release_ratio: the frame is
+     reported as a TRANSLATION-ONLY motion (scale 1, no rotation, the image centre moved as the fit moves it),
+     reason SCALE_UNCORROBORATED, the full fit kept as measured_matrix. Fail closed: no size change is
      propagated on a scale the people contradict. Without enough people the fit is used as before (no evidence
      either way). The window always accumulates the FITTED scale, so a sustained false zoom stays rejected.
 
@@ -192,6 +194,7 @@ class CameraMotionEstimator:
         self._t = 0.0
         # F8: (t, log fitted scale, people log-height ratio or None) of recent ESTIMATED frames
         self._scale_window: List[Tuple[float, float, Optional[float]]] = []
+        self._scale_rejected = False                         # F8: hysteresis state of the scale check
 
     def reset(self) -> None:
         self.__init__(self._cfg)
@@ -250,6 +253,7 @@ class CameraMotionEstimator:
         """F8: median log height ratio of people matched between the frames (previous box centre moved by the fitted
         transform, size kept; one-to-one greedy by IoU), or None with too few matches."""
         c = self._cfg
+        prev_boxes, boxes = self._bodies(prev_boxes), self._bodies(boxes)
         if not prev_boxes or not boxes:
             return None
         cur = np.asarray(boxes, dtype=np.float64)
@@ -282,20 +286,59 @@ class CameraMotionEstimator:
             return None
         return float(np.median(ratios))
 
-    def _scale_uncorroborated(self, t: float, log_scale: float, people: Optional[float]) -> Tuple[bool, Dict[str, Any]]:
-        """F8: add this ESTIMATED frame to the window and say whether the fitted scale is contradicted by people."""
+    def _bodies(self, boxes: Sequence[Sequence[float]]) -> List[Sequence[float]]:
+        """F8: one box per body: a box lying >= population_nested_containment inside another, larger box (a
+        duplicate, part or alternative box) is dropped, so one person's boxes count once."""
         c = self._cfg
-        win = c.get("camera_scale_check_window_s")
+        keep = []
+        for i, b in enumerate(boxes):
+            area = (b[2] - b[0]) * (b[3] - b[1])
+            nested = False
+            for j, o in enumerate(boxes):
+                if i == j:
+                    continue
+                oarea = (o[2] - o[0]) * (o[3] - o[1])
+                ix = max(0.0, min(b[2], o[2]) - max(b[0], o[0]))
+                iy = max(0.0, min(b[3], o[3]) - max(b[1], o[1]))
+                if area > 0 and ix * iy / area >= c.get("population_nested_containment") and \
+                        (oarea > area or (oarea == area and j < i)):
+                    nested = True
+                    break
+            if not nested:
+                keep.append(b)
+        return keep
+
+    def _window_disagreement(self, t: float, win: float, min_span: float) -> Optional[float]:
+        """F8: |sum log fitted scale - sum people log ratio| over the last `win` s of ESTIMATED frames, or None when
+        less than `min_span` s is available or people were measured on fewer than half of its frames."""
+        rows = [x for x in self._scale_window if t - x[0] <= win]
+        if not rows or t - rows[0][0] < min_span:
+            return None
+        pairs = [(ls, pr) for (_, ls, pr) in rows if pr is not None]
+        if 2 * len(pairs) < len(rows):
+            return None
+        return abs(sum(ls for ls, _ in pairs) - sum(pr for _, pr in pairs))
+
+    def _scale_uncorroborated(self, t: float, log_scale: float, people: Optional[float]) -> Tuple[bool, Dict[str, Any]]:
+        """F8: add this ESTIMATED frame and say whether the fitted scale is contradicted by people, over a short
+        window (a fast false zoom) and a long one (a slow drift). Hysteresis: once rejected, the scale stays rejected
+        until both windows agree within camera_scale_release_ratio (no flapping at the threshold)."""
+        c = self._cfg
+        short_w, long_w = c.get("camera_scale_check_window_s"), c.get("camera_scale_check_long_window_s")
         self._scale_window.append((t, log_scale, people))
-        self._scale_window = [x for x in self._scale_window if t - x[0] <= win]
-        span = t - self._scale_window[0][0]
-        pairs = [(ls, pr) for (_, ls, pr) in self._scale_window if pr is not None]
-        info: Dict[str, Any] = {"window_s": span, "people_frames": len(pairs), "frames": len(self._scale_window)}
-        if span < win * c.get("camera_scale_check_min_span_fraction") or 2 * len(pairs) < len(self._scale_window):
-            return False, info
-        d = abs(sum(ls for ls, _ in pairs) - sum(pr for _, pr in pairs))
-        info["disagreement_ratio"] = math.exp(d)
-        return d > math.log(c.get("camera_scale_disagreement_ratio_max")), info
+        self._scale_window = [x for x in self._scale_window if t - x[0] <= max(short_w, long_w)]
+        # the long window decides as soon as the short one could (it then holds all the history up to long_w)
+        min_span = short_w * c.get("camera_scale_check_min_span_fraction")
+        ds = [d for d in (self._window_disagreement(t, short_w, min_span),
+                          self._window_disagreement(t, long_w, min_span)) if d is not None]
+        info: Dict[str, Any] = {"disagreement_ratio": math.exp(max(ds)) if ds else None}
+        worst = max(ds) if ds else None
+        if self._scale_rejected:
+            if worst is not None and worst <= math.log(c.get("camera_scale_release_ratio")):
+                self._scale_rejected = False
+        elif worst is not None and worst > math.log(c.get("camera_scale_disagreement_ratio_max")):
+            self._scale_rejected = True
+        return self._scale_rejected, info
 
     # -- main ------------------------------------------------------------------------------------------------
     def update(self, image: np.ndarray, person_boxes: Sequence[Sequence[float]], dt_s: float) -> CameraMotion:
@@ -316,11 +359,12 @@ class CameraMotionEstimator:
 
         self._t += dt_s
         if prev_work is None:
-            self._scale_window = []
+            self._scale_window, self._scale_rejected = [], False
             return identity_motion(FIRST_FRAME)
         hist_d = float(cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA))
         hist_change = hist_d >= c.get("cut_hist_distance_min")
         if prev_shape != shape:
+            self._scale_window, self._scale_rejected = [], False
             return identity_motion(CUT, reasons=(RESOLUTION_CHANGED,), hist_distance=hist_d, continuity_broken=True)
 
         reasons: List[str] = []
@@ -384,17 +428,16 @@ class CameraMotionEstimator:
             bad, _info = self._scale_uncorroborated(self._t, math.log(motion.scale), people)
             if not bad:
                 return motion
-            # F8: translation-only motion from the median inlier flow (source px); the full fit is audit only
-            keep = inl.reshape(-1).astype(bool)
-            flow = (p1[keep] - p0[keep]) / s
-            dx, dy = float(np.median(flow[:, 0])), float(np.median(flow[:, 1]))
+            # F8: translation-only motion that moves the image centre as the fit does (unbiased by where the
+            # features happen to lie, unlike their median flow under a false zoom); the full fit is audit only
+            dx, dy = motion.shift_px
             tr = motion_from_matrix([[1.0, 0.0, dx], [0.0, 1.0, dy]], shape[1], shape[0], n_features=n_feat,
                                     n_tracked=n_tracked, inlier_fraction=inlier_frac, hist_distance=hist_d,
                                     residual=motion.residual)
             return CameraMotion(tr.status, tr.matrix, tr.shift_px, tr.scale, tr.rotation_rad, tr.n_features,
                                 tr.n_tracked, tr.inlier_fraction, tr.hist_distance, (SCALE_UNCORROBORATED,), False,
                                 motion.matrix, tr.residual)
-        self._scale_window = []                              # no measured continuity: the check starts again
+        self._scale_window, self._scale_rejected = [], False   # no measured continuity: the check starts again
         measured = None if motion is None else motion.matrix
         resid = None if motion is None else motion.residual
         if hist_change:

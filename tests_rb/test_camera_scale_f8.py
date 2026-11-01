@@ -146,5 +146,73 @@ class TestScaleCorroboration(unittest.TestCase):
         self.assertEqual(flagged(ms), [])
 
 
+
+class TestReviewRound1(unittest.TestCase):
+    """F8 focused review findings on 8baf561 (reproduced, then fixed)."""
+
+    def _false_zoom(self, fps, rate_per_s, seconds, pts=None, extra=None):
+        pts = pts or people_world(5)
+        n = int(seconds * fps)
+        zs = [rate_per_s ** (k / fps) for k in range(n)]
+        fr = []
+        for k, z in enumerate(zs):
+            bx = boxes_in_view(pts, 1200, 700, z, size_zoom=1.0)
+            if extra:
+                bx = bx + extra(bx)
+            fr.append((view(WORLD, 1200, 700, z), bx, 1 / fps))
+        return run(fr), zs
+
+    def test_slow_false_zoom_is_caught_by_the_long_window(self):
+        # H1: x0.88 per second for 4 s (x0.60 overall) never exceeds the 1 s threshold
+        for fps in (30.0, 10.0):
+            with self.subTest(fps=fps):
+                ms, zs = self._false_zoom(fps, 0.88, 4.0)
+                f = flagged(ms)
+                self.assertTrue(f)
+                leaked = math.exp(sum(math.log(m.scale) for m in ms[1:]))
+                self.assertGreater(leaked, 0.80, "most of the false zoom is not propagated")
+
+    def test_no_flapping_once_rejected(self):
+        # H1: just above the threshold the check must not switch back and forth between fit and translation
+        ms, _ = self._false_zoom(30.0, 0.87, 4.0)
+        f = flagged(ms)
+        self.assertTrue(f)
+        self.assertEqual(f, list(range(f[0], len(ms))), "rejected continuously once rejected")
+
+    def test_fallback_translation_moves_the_image_centre_like_the_fit(self):
+        # H2: the translation-only motion is the fit's own centre shift, not the median flow of wherever the
+        # features lie (which a false zoom biases)
+        ms, _ = self._false_zoom(30.0, 0.7, 2.5)
+        for k in flagged(ms):
+            m = ms[k]
+            (a, b, tx), (c, d, ty) = m.measured_matrix
+            cx, cy = W / 2, H / 2
+            self.assertAlmostEqual(m.shift_px[0], a * cx + b * cy + tx - cx, delta=1e-6)
+            self.assertAlmostEqual(m.shift_px[1], c * cx + d * cy + ty - cy, delta=1e-6)
+
+    def test_part_boxes_of_one_person_count_once(self):
+        # M3: two people plus three nested part boxes of one of them are still only two people: no decision
+        def parts(bx):
+            x1, y1, x2, y2 = bx[0]
+            return [(x1 + 2, y1 + 2, x2 - 2, (y1 + y2) / 2), (x1 + 3, (y1 + y2) / 2, x2 - 3, y2 - 1)]
+        ms, _ = self._false_zoom(30.0, 0.7, 2.5, pts=people_world(2), extra=parts)
+        self.assertEqual(flagged(ms), [])
+
+    def test_resolution_change_restarts_the_check(self):
+        # L5: a resolution change is a cut and also restarts the window and the rejection state
+        pts = people_world(5)
+        fps = 30.0
+        n = int(1.5 * fps)
+        zs = [0.7 ** (k / n) for k in range(n)]
+        fr = [(view(WORLD, 1200, 700, z), boxes_in_view(pts, 1200, 700, z, size_zoom=1.0), 1 / fps) for z in zs]
+        fr += [(view(WORLD, 1200 + 50 * k / fps, 700, 1.0, 1920, 1080),
+                [(b[0] * 1.5, b[1] * 1.5, b[2] * 1.5, b[3] * 1.5) for b in boxes_in_view(pts, 1200, 700, 1.0)],
+                1 / fps) for k in range(int(0.5 * fps))]
+        ms = run(fr)
+        self.assertTrue([k for k in flagged(ms) if k < n])
+        self.assertEqual(ms[n].status, C.CUT)
+        self.assertEqual([k for k in flagged(ms) if k > n], [])
+
+
 if __name__ == "__main__":
     unittest.main()
