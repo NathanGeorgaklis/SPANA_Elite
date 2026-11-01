@@ -270,7 +270,7 @@ class PersonIdentityLayer:
             pd = self._pending[tid]
             age = t - pd.birth_t
             samples = pd.feats
-            if not [pid for pid in pd.candidates if self._persons[pid].alive is None]:
+            if not [pid for pid in pd.candidates if pid in self._persons and self._persons[pid].alive is None]:
                 decisions.append(self._open(pd, NEW, (), {"reason": "NO_CANDIDATE_PERSON", "scores": []}))
                 continue
             ready = sec_ge(age, c.get("identity_evidence_s")) and len(samples) >= c.get("identity_min_samples")
@@ -294,7 +294,10 @@ class PersonIdentityLayer:
                     if pid is not None and pid != target_pid:
                         self._persons[pid].not_target = True
         # bounded memory (long matches): a person gone longer than the link window can never be a candidate again
-        gone = [pid for pid, p in self._persons.items() if p.alive is None and not p.is_target
+        # (a person still listed as a candidate of an undecided newborn is kept until that decision: the link window
+        # is measured from the newborn's birth)
+        held = {pid for pd in self._pending.values() for pid in pd.candidates}
+        gone = [pid for pid, p in self._persons.items() if p.alive is None and not p.is_target and pid not in held
                 and sec_gt(t - p.last_t, c.get("identity_link_window_s"))]
         for pid in gone:
             for tid in self._persons.pop(pid).tracklets:
@@ -372,7 +375,7 @@ class PersonIdentityLayer:
                 live: Dict[str, P.TrackletView]) -> Dict[str, Any]:
         c = self._cfg
         m = c.get("ambiguity_margin")
-        cands = [pid for pid in pd.candidates if self._persons[pid].alive is None]
+        cands = [pid for pid in pd.candidates if pid in self._persons and self._persons[pid].alive is None]
         scores = [self._score(pd, samples, pid, target_bank) for pid in cands]
         open_ = [s for s in scores if not s["vetoes"] and s["similarity"] is not None]
         viable = sorted((s for s in open_ if s["viable"]), key=lambda s: -s["similarity"])

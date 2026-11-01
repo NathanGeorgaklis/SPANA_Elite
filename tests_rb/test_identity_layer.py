@@ -233,6 +233,22 @@ class TestIdentityLayer(unittest.TestCase):
         self.assertLessEqual(len(r.layer._persons), 2 + int(win) + 2)
         r.check_safe(self)
 
+    def test_a_candidate_is_not_forgotten_while_a_newborn_still_considers_it(self):
+        # regression (DEV crash): a person last seen just inside the link window when a newborn is born passes the
+        # window before the newborn's decision; it must stay available until that decision
+        fps = 30.0
+        win = CFG.get("identity_link_window_s")
+        # the person's last time is its tracklet's closure (population_max_unmatched_s after its last observation):
+        # the newborn appears 0.1 s before that person passes the window, and is decided >= identity_evidence_s later
+        n_gone = int((win + CFG.get("population_max_unmatched_s") - 0.1) * fps)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H), "OTHER": SS.box_at(900, 400, 40, H)})
+              for _ in range(30)]
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n_gone)]
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H), "OTHER": SS.box_at(905, 400, 40, H)})
+               for _ in range(int(2 * fps))]
+        r = Run(fr, people(("OTHER", KIT_B, 0.2)), fps)
+        r.check_safe(self)
+
 
 class FakeReader:
     """A jersey-number reader keyed on the synthetic scene: numbers[owner] -> number, None for unreadable."""
