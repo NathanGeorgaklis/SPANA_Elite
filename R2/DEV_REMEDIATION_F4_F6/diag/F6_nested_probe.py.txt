@@ -1,0 +1,29 @@
+"""F6 read-only DEV probe: trusted frames whose target box holds unresolved nested/alternative boxes (no tracklet);
+covered fraction with vs without them; frozen truth availability. DEV only (load() refuses EVAL)."""
+import json, sys, collections
+sys.path.insert(0, sys.argv[1])
+from tools_rb.r2_f5_reacq_diag import load, frames, _iou, _inside
+from player_tracker_rb.appearance import covered_fraction
+repo, out = sys.argv[1], sys.argv[2]
+tot = collections.Counter()
+for cid in sys.argv[3:]:
+    lab = load(repo, cid); s = lab["seed"]["frame"]; c = collections.Counter(); rows = []
+    for rec in frames(out, cid):
+        cf = rec["frame"] + s
+        if cf >= len(lab["per_frame"]): break
+        t = rec["target"]
+        if not t["identity_trusted"] or t.get("detection_index") is None: continue
+        obs = rec["population"]["observations"]; tb = obs[t["detection_index"]]["bbox"]
+        pf = lab["per_frame"][cf]
+        avail = pf["visibility"] in ("VISIBLE", "PARTIAL") and pf["resolvable"] == "YES" and not pf["merged"] and not pf["human_uncertain"]
+        alts = [o["bbox"] for o in obs if o["index"] != t["detection_index"] and o.get("tracklet_id") is None
+                and o.get("duplicate_of") is None and _inside(o["bbox"], tb) >= 0.5]
+        if not alts: continue
+        bodies = [o["bbox"] for o in obs if o["index"] != t["detection_index"] and o.get("tracklet_id") is not None]
+        c0 = covered_fraction(tb, bodies); c1 = covered_fraction(tb, bodies + alts)
+        if c0 <= 0.3 < c1:
+            k = "avail" if avail else "UNAVAILABLE"
+            c[k] += 1; rows.append((rec["frame"], k, round(c0, 2), round(c1, 2)))
+    tot.update(c)
+    print(cid, dict(c), rows[:12])
+print("TOTAL", dict(tot))

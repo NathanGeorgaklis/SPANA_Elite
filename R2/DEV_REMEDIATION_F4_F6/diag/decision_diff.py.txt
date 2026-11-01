@@ -1,0 +1,16 @@
+"""F4/F6 read-only DEV check: per clip, target decision records (state, trusted, reasons, detection, transition)
+that differ between two runs."""
+import json, sys
+a, b = sys.argv[1], sys.argv[2]
+for cid in sys.argv[3:]:
+    def load(d):
+        out = []
+        for l in open(f"{d}/{cid}/{cid}_rb_decision_log.jsonl"):
+            t = json.loads(l)["target"]
+            out.append((t["rb_state"], t["identity_trusted"], tuple(t.get("identity_uncertainty_reasons") or ()),
+                        t.get("detection_index"), (t.get("decision") or {}).get("transition")))
+        return out
+    x, y = load(a), load(b)
+    diff = [k for k in range(min(len(x), len(y))) if x[k] != y[k]]
+    trust = [k for k in diff if x[k][1] != y[k][1]]
+    print(cid, "frames", len(y), "differing", len(diff), "trust changed", len(trust), diff[:8])

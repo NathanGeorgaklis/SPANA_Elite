@@ -1,0 +1,8 @@
+R2_MCFC_MIT_C006 frames 300 differing 0 trust changed 0 []
+R2_MCFC_MIT_C016 frames 240 differing 0 trust changed 0 []
+R2_MCFC_MIT_C020 frames 570 differing 2 trust changed 0 [261, 262]
+R2_MCFC_MIT_C033 frames 600 differing 0 trust changed 0 []
+R2_SYO_MAR_C004 frames 300 differing 1 trust changed 0 [190]
+R2_SYO_MAR_C012 frames 255 differing 0 trust changed 0 []
+R2_SYO_MAR_C016 frames 210 differing 0 trust changed 0 []
+R2_SYO_MAR_C021 frames 300 differing 0 trust changed 0 []
