@@ -800,7 +800,7 @@ class Population:
         # A LAPSED region (hold elapsed without resolution) no longer makes a box merged, but detections in it
         # still inherit its claimants as possible predecessors and MERGE_LINEAGE: whether it still holds two bodies
         # is unknown. It is forgotten population_closed_memory_s after its last evidence, or when it resolves.
-        expired = {k for k, rg in enumerate(self._regions) if t - rg.last_evidence_t > hold}
+        expired = {k for k, rg in enumerate(self._regions) if sec_gt(t - rg.last_evidence_t, hold)}
         lo, hi = c.get("merged_aspect_band")
         refs = {tr.tid: self._size_ref(tr, t) for tr in live}
         for i in track:
@@ -1269,7 +1269,7 @@ class Population:
                     refusals.append(NOT_ISOLATED)
                 if not cam_ok:
                     refusals.append(CAMERA_UNVERIFIED)
-                if tr.last_sample_t is not None and t - tr.last_sample_t < interval:
+                if tr.last_sample_t is not None and sec_lt(t - tr.last_sample_t, interval):
                     refusals.append(SAMPLE_NOT_DUE)
             if not comp:
                 fl.add(CAMERA_UNCOMPENSATED)

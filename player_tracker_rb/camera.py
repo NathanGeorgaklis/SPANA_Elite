@@ -62,7 +62,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from .config import TrackerConfig
+from .config import TrackerConfig, sec_le, sec_lt
 
 FIRST_FRAME = "FIRST_FRAME"
 ESTIMATED = "ESTIMATED"
@@ -308,11 +308,11 @@ class CameraMotionEstimator:
                 keep.append(b)
         return keep
 
-    def _window_disagreement(self, t: float, win: float, min_span: float) -> Optional[float]:
-        """F8: |sum log fitted scale - sum people log ratio| over the last `win` s of ESTIMATED frames, or None when
-        less than `min_span` s is available or people were measured on fewer than half of its frames."""
-        rows = [x for x in self._scale_window if t - x[0] <= win]
-        if not rows or t - rows[0][0] < min_span:
+    def _window_disagreement(self, t: float, win_s: float, min_span_s: float) -> Optional[float]:
+        """F8: |sum log fitted scale - sum people log ratio| over the last `win_s` of ESTIMATED frames, or None when
+        less than `min_span_s` is available or people were measured on fewer than half of its frames."""
+        rows = [x for x in self._scale_window if sec_le(t - x[0], win_s)]
+        if not rows or sec_lt(t - rows[0][0], min_span_s):
             return None
         pairs = [(ls, pr) for (_, ls, pr) in rows if pr is not None]
         if 2 * len(pairs) < len(rows):
@@ -326,7 +326,7 @@ class CameraMotionEstimator:
         c = self._cfg
         short_w, long_w = c.get("camera_scale_check_window_s"), c.get("camera_scale_check_long_window_s")
         self._scale_window.append((t, log_scale, people))
-        self._scale_window = [x for x in self._scale_window if t - x[0] <= max(short_w, long_w)]
+        self._scale_window = [x for x in self._scale_window if sec_le(t - x[0], max(short_w, long_w))]
         # the long window decides as soon as the short one could (it then holds all the history up to long_w)
         min_span = short_w * c.get("camera_scale_check_min_span_fraction")
         ds = [d for d in (self._window_disagreement(t, short_w, min_span),

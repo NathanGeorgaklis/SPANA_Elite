@@ -11,7 +11,7 @@ the same limit by floating-point error. At 10 fps a single missed frame (a 0.2 s
 as 0.20000000000000018 > 0.2: the population closed the target's tracklet, the return became a reacquisition and opened
 an UNVERIFIED episode, so trust never came back (at 15 / 30 fps the same miss was harmless).
 """
-import re
+import ast
 import os
 import unittest
 
@@ -63,6 +63,59 @@ def crossing(fps, *, cos, kit, contact_s, overlap=25.0, walk_s=0.5, end=150.0, a
     return fr, c0, sep
 
 
+# documented exceptions: the sanctioned helpers themselves, and timestamp ORDERING (equal timestamps must fail)
+DURATION_COMPARE_ALLOWED = {
+    ("config.py", "duration_s > limit_s + _EPS"), ("config.py", "duration_s >= limit_s - _EPS"),
+    ("config.py", "duration_s < limit_s - _EPS"), ("config.py", "duration_s <= limit_s + _EPS"),
+    ("population.py", "time_s > self._last_t"),
+}
+
+
+def _dur_get(n):
+    return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get" and n.args
+            and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str)
+            and n.args[0].value.endswith("_s") and not n.args[0].value.endswith("_per_s"))
+
+
+def raw_duration_compares(src, fname):
+    """(file, line, source) of every ordering comparison with a duration limit as a direct operand; comparisons with
+    the constant 0 (validity checks: dt_s > 0) are not limits."""
+    tree = ast.parse(src)
+    out = set()
+    for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))] + [tree]:
+        bound = set()
+        for n in ast.walk(fn):
+            if isinstance(n, ast.Assign):
+                vals = n.value.elts if isinstance(n.value, ast.Tuple) else [n.value]
+                tgts = n.targets[0].elts if isinstance(n.targets[0], ast.Tuple) else [n.targets[0]]
+                bound |= {tg.id for tg, v in zip(tgts, vals) if isinstance(tg, ast.Name) and _dur_get(v)}
+
+        def dur(e):
+            if _dur_get(e):
+                return True
+            if isinstance(e, ast.Name):
+                return (e.id.endswith("_s") and not e.id.endswith("_per_s")) or e.id in bound
+            if isinstance(e, ast.Call) and isinstance(e.func, ast.Name) and e.func.id in ("min", "max") and e.args:
+                return all(dur(a) for a in e.args)
+            return False
+        for n in ast.walk(fn):
+            if isinstance(n, ast.Compare) and any(isinstance(o, (ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for o in n.ops):
+                ops = [n.left] + list(n.comparators)
+                if any(isinstance(x, ast.Constant) and x.value == 0 for x in ops):
+                    continue
+                if any(dur(x) for x in ops):
+                    out.add((fname, n.lineno, ast.get_source_segment(src, n)))
+    return sorted(out)
+
+
+def missed(fps, n_miss, *, total_s=4.0, at_s=1.0):
+    """The lone target is not detected for n_miss frames from at_s on."""
+    kk = int(round(at_s * fps))
+    fr = [SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, H)}, drop=("TARGET",) if kk <= k < kk + n_miss else ())
+          for k in range(int(total_s * fps))]
+    return SS.run(fr, people(), fps=fps), kk
+
+
 class TestTimeBoundaries(unittest.TestCase):
     def test_sanctioned_comparisons_treat_float_error_at_a_limit_as_equal(self):
         g = 16 / 10 - 14 / 10                                # one missed frame at 10 fps, as frame times compute it
@@ -74,23 +127,74 @@ class TestTimeBoundaries(unittest.TestCase):
         # off the boundary nothing changes (one 60 fps frame is far above the tolerance)
         self.assertTrue(CF.sec_gt(0.2 + 1 / 60, 0.2))
         self.assertTrue(CF.sec_lt(0.2 - 1 / 60, 0.2))
+        # the tolerance is far below any frame: a microsecond past a limit is past it (review: pin the tolerance)
+        self.assertTrue(CF.sec_gt(0.2 + 1e-6, 0.2))
+        self.assertTrue(CF.sec_lt(0.2 - 1e-6, 0.2))
+        self.assertFalse(CF.sec_le(0.2 + 1e-6, 0.2))
+        self.assertFalse(CF.sec_ge(0.2 - 1e-6, 0.2))
+
+    def test_the_hygiene_check_sees_hidden_forms(self):
+        src = ("def f(c, t, a):\n"
+               "    hold = c.get('x_hold_s')\n"
+               "    w_s = 1\n"
+               "    return (t - a > hold, t > (c.get('y_s')), t - a <= max(hold, w_s),\n"
+               "            t <\n"
+               "            w_s, t > c.get('rate_per_s') * a, a > 0)\n")
+        lines = sorted(r[1] for r in raw_duration_compares(src, "x.py"))
+        self.assertEqual(lines, [4, 4, 4, 5])
+
+    def test_undetected_target_ages_out_exactly_one_frame_past_its_limit_at_any_fps(self):
+        # review M: the aging boundary in both directions. A lone undetected target is OCCLUDED until its population
+        # tracklet is dropped after population_max_unmatched_s (shorter than max_occluded_s, so it is the operative
+        # limit here): at exactly that absence it is still OCCLUDED, one frame later it is LOST (AGED_OUT)
+        lim = min(CFG.get("population_max_unmatched_s"), CFG.get("max_occluded_s"))
+        for fps in (10.0, 25.0, 30.0, 50.0, 60.0):
+            with self.subTest(fps=fps):
+                n = round(lim * fps)
+                r, kk = missed(fps, n + 3)
+                last = kk - 1                                           # last confirmation
+                self.assertTrue(all(f.rb_state == T.OCCLUDED for f in r.frames[kk:last + n + 1]), "up to the limit")
+                self.assertEqual(r.frames[last + n + 1].rb_state, T.LOST, "one frame past it")
+                self.assertIn(T.AGED_OUT, r.frames[last + n + 1].identity_uncertainty_reasons)
+                self.assertTrue(r.bank_is_pure())
+
+    def test_gap_one_frame_past_the_population_limit_starts_a_new_tracklet(self):
+        # review M: the upper side of the gap rule; the return is a reacquisition, not a continuation
+        gap_s = CFG.get("population_max_gap_s")
+        for fps in (10.0, 15.0, 25.0, 30.0, 50.0, 60.0):
+            with self.subTest(fps=fps):
+                miss = round(gap_s * fps)                               # the gap is gap_s + one frame
+                r, kk = missed(fps, miss)
+                back = kk + miss
+                before = r.frames[kk - 1].observation_tracklet_id
+                self.assertNotEqual(r.pops[back].observations[0].tracklet_id, before)
+                self.assertFalse(r.frames[back].identity_trusted)
+                self.assertEqual(wrong_trusted(r), [])
+
+    def test_non_integer_fps_is_unchanged_by_the_tolerance(self):
+        # at 29.97 / 59.94 fps no limit is a whole number of frames: one missed frame continues as before
+        for fps in (29.97, 59.94):
+            with self.subTest(fps=fps):
+                r, kk = missed(fps, 1)
+                self.assertTrue(all(f.identity_trusted for f in r.frames[kk + 1:]))
+                self.assertEqual(r.frames[-1].target_episode, 1)
 
     def test_no_raw_comparison_with_a_seconds_limit_in_the_package(self):
+        # AST check (review F4/F6 M: a line regex missed limits in local variables, parenthesised calls and split
+        # lines): no <, <=, >, >= may compare a duration limit directly. A duration limit is a cfg.get("..._s") call
+        # (not "..._per_s"), a name ending in _s, a name bound in the same function to such a call, or min/max of them.
         pkg = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "player_tracker_rb")
-        pat = re.compile(r'(?:[<>]=?)\s*(?:c|cfg|self\._cfg)\.get\("[a-z0-9_]+_s"\)|'
-                         r'(?:c|cfg|self\._cfg)\.get\("[a-z0-9_]+_s"\)\s*(?:[<>]=?)')
         bad = []
         for name in sorted(os.listdir(pkg)):
             if name.endswith(".py"):
                 with open(os.path.join(pkg, name)) as f:
-                    for i, line in enumerate(f, 1):
-                        if pat.search(line) and not re.search(r'_per_s"\)', line):     # rates, not durations
-                            bad.append(f"{name}:{i}: {line.strip()}")
+                    src = f.read()
+                bad += [r for r in raw_duration_compares(src, name) if (r[0], r[2]) not in DURATION_COMPARE_ALLOWED]
         self.assertEqual(bad, [], "compare durations with config.sec_gt / sec_ge / sec_lt / sec_le")
 
     def test_one_frame_visibility_loss_keeps_trust_at_any_fps(self):
         # FAILS ON 1ab094a at 10 fps: a single missed frame ended trust for good
-        for fps in (10.0, 15.0, 25.0, 30.0, 60.0):
+        for fps in (10.0, 15.0, 25.0, 30.0, 50.0, 60.0):
             with self.subTest(fps=fps):
                 n, kk = int(3 * fps), int(1.5 * fps)
                 fr = [SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, H)}, drop=("TARGET",) if k == kk else ())

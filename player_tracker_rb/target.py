@@ -446,7 +446,7 @@ class TargetTracker:
 
     def _height(self, t: float) -> Optional[float]:
         win = self._cfg.get("target_height_window_s")
-        recent = [hh for (ts, _ww, hh) in self._sizes if t - ts <= win]
+        recent = [hh for (ts, _ww, hh) in self._sizes if sec_le(t - ts, win)]
         if recent:
             return float(np.median(recent))
         return self._last_h
