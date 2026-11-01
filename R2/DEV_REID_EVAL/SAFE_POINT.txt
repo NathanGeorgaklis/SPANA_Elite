@@ -1,0 +1,9 @@
+LAB                        TPR@FMR5% 0.468  TPR@FMR1% 0.343  same-kit rank1 0.543 (n 593) margin 0.005  per-clip TPR@5% {"C006": 0.68, "C020": 0.96, "C033": 0.63, "C012": 0.02}
+DINOV2                     TPR@FMR5% 0.362  TPR@FMR1% 0.277  same-kit rank1 0.528 (n 593) margin 0.009  per-clip TPR@5% {"C006": 0.13, "C020": 0.88, "C033": 0.42, "C012": 0.24}
+OSNET_AIN_MSMT17           TPR@FMR5% 0.353  TPR@FMR1% 0.313  same-kit rank1 0.470 (n 593) margin -0.009  per-clip TPR@5% {"C006": 0.08, "C020": 1.0, "C033": 0.43, "C012": 0.18}
+YOUTU_REID                 TPR@FMR5% 0.346  TPR@FMR1% 0.224  same-kit rank1 0.535 (n 593) margin 0.015  per-clip TPR@5% {"C006": 0.19, "C020": 0.82, "C033": 0.46, "C012": 0.17}
+OSNET_MARKET_UPLOAD        TPR@FMR5% 0.239  TPR@FMR1% 0.184  same-kit rank1 0.405 (n 593) margin -0.027  per-clip TPR@5% {"C006": 0.12, "C020": 0.59, "C033": 0.42, "C012": 0.06}
+COMPOSITE                  TPR@FMR5% 0.400  TPR@FMR1% 0.312  same-kit rank1 0.504 (n 593) margin 0.001  per-clip TPR@5% {"C006": 0.26, "C020": 0.99, "C033": 0.44, "C012": 0.19}
+LAB+OSNET_AIN_MSMT17       TPR@FMR5% 0.383  TPR@FMR1% 0.321  same-kit rank1 0.514 (n 593) margin 0.005  per-clip TPR@5% {"C006": 0.19, "C020": 1.0, "C033": 0.44, "C012": 0.18}
+LAB+YOUTU_REID             TPR@FMR5% 0.394  TPR@FMR1% 0.257  same-kit rank1 0.550 (n 593) margin 0.022  per-clip TPR@5% {"C006": 0.27, "C020": 0.97, "C033": 0.48, "C012": 0.16}
+LAB+OSNET_MARKET_UPLOAD    TPR@FMR5% 0.346  TPR@FMR1% 0.227  same-kit rank1 0.492 (n 593) margin -0.001  per-clip TPR@5% {"C006": 0.24, "C020": 1.0, "C033": 0.45, "C012": 0.05}

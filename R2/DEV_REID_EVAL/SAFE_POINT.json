@@ -1,0 +1,212 @@
+{
+ "same_kit_lab_threshold": 0.7011645842587741,
+ "backends": {
+  "LAB": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.9465473331018756,
+   "tpr_at_fmr0.05": 0.46771653543307085,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.675,
+    "R2_MCFC_MIT_C020": 0.9576271186440678,
+    "R2_MCFC_MIT_C033": 0.6306306306306306,
+    "R2_SYO_MAR_C012": 0.024390243902439025
+   },
+   "thr_fmr0.01": 0.9666972329947162,
+   "tpr_at_fmr0.01": 0.34330708661417325,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.425,
+    "R2_MCFC_MIT_C020": 0.8983050847457628,
+    "R2_MCFC_MIT_C033": 0.36936936936936937,
+    "R2_SYO_MAR_C012": 0.012195121951219513
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5430016863406408,
+   "same_kit_margin_median": 0.005423633094851499
+  },
+  "DINOV2": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.7797528488696525,
+   "tpr_at_fmr0.05": 0.36220472440944884,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.13125,
+    "R2_MCFC_MIT_C020": 0.8813559322033898,
+    "R2_MCFC_MIT_C033": 0.42342342342342343,
+    "R2_SYO_MAR_C012": 0.23577235772357724
+   },
+   "thr_fmr0.01": 0.8044498920639315,
+   "tpr_at_fmr0.01": 0.27716535433070866,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.08125,
+    "R2_MCFC_MIT_C020": 0.7542372881355932,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.11382113821138211
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5278246205733558,
+   "same_kit_margin_median": 0.00907758383657109
+  },
+  "OSNET_AIN_MSMT17": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.7758060592537497,
+   "tpr_at_fmr0.05": 0.352755905511811,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.08125,
+    "R2_MCFC_MIT_C020": 1.0,
+    "R2_MCFC_MIT_C033": 0.43243243243243246,
+    "R2_SYO_MAR_C012": 0.18292682926829268
+   },
+   "thr_fmr0.01": 0.7982553216014157,
+   "tpr_at_fmr0.01": 0.31338582677165355,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.0625,
+    "R2_MCFC_MIT_C020": 0.9745762711864406,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.11382113821138211
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.47048903878583476,
+   "same_kit_margin_median": -0.009003416718675106
+  },
+  "YOUTU_REID": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.7108926923499714,
+   "tpr_at_fmr0.05": 0.3464566929133858,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.1875,
+    "R2_MCFC_MIT_C020": 0.8220338983050848,
+    "R2_MCFC_MIT_C033": 0.4594594594594595,
+    "R2_SYO_MAR_C012": 0.17073170731707318
+   },
+   "thr_fmr0.01": 0.7561958548137572,
+   "tpr_at_fmr0.01": 0.22362204724409449,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.15625,
+    "R2_MCFC_MIT_C020": 0.4576271186440678,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.06910569105691057
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5345699831365935,
+   "same_kit_margin_median": 0.014542299045749107
+  },
+  "OSNET_MARKET_UPLOAD": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.9094304026043524,
+   "tpr_at_fmr0.05": 0.23937007874015748,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.125,
+    "R2_MCFC_MIT_C020": 0.5932203389830508,
+    "R2_MCFC_MIT_C033": 0.42342342342342343,
+    "R2_SYO_MAR_C012": 0.06097560975609756
+   },
+   "thr_fmr0.01": 0.927545166818305,
+   "tpr_at_fmr0.01": 0.18425196850393702,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.075,
+    "R2_MCFC_MIT_C020": 0.4576271186440678,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.02032520325203252
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.40472175379426645,
+   "same_kit_margin_median": -0.027145095414439213
+  },
+  "COMPOSITE": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.8225902661708856,
+   "tpr_at_fmr0.05": 0.4,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.25625,
+    "R2_MCFC_MIT_C020": 0.9915254237288136,
+    "R2_MCFC_MIT_C033": 0.44144144144144143,
+    "R2_SYO_MAR_C012": 0.1910569105691057
+   },
+   "thr_fmr0.01": 0.8446272915371762,
+   "tpr_at_fmr0.01": 0.31181102362204727,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.1375,
+    "R2_MCFC_MIT_C020": 0.8983050847457628,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.0975609756097561
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5042158516020236,
+   "same_kit_margin_median": 0.0010162249650522703
+  },
+  "LAB+OSNET_AIN_MSMT17": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.8229280271247527,
+   "tpr_at_fmr0.05": 0.3826771653543307,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.19375,
+    "R2_MCFC_MIT_C020": 1.0,
+    "R2_MCFC_MIT_C033": 0.44144144144144143,
+    "R2_SYO_MAR_C012": 0.18292682926829268
+   },
+   "thr_fmr0.01": 0.8414924470782837,
+   "tpr_at_fmr0.01": 0.32125984251968503,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.08125,
+    "R2_MCFC_MIT_C020": 1.0,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.10975609756097561
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5143338954468802,
+   "same_kit_margin_median": 0.00498022753451699
+  },
+  "LAB+YOUTU_REID": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.7784645507626378,
+   "tpr_at_fmr0.05": 0.3937007874015748,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.26875,
+    "R2_MCFC_MIT_C020": 0.9745762711864406,
+    "R2_MCFC_MIT_C033": 0.4774774774774775,
+    "R2_SYO_MAR_C012": 0.15853658536585366
+   },
+   "thr_fmr0.01": 0.813462206599134,
+   "tpr_at_fmr0.01": 0.2566929133858268,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.175,
+    "R2_MCFC_MIT_C020": 0.6271186440677966,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.06097560975609756
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.5497470489038786,
+   "same_kit_margin_median": 0.02152981171960422
+  },
+  "LAB+OSNET_MARKET_UPLOAD": {
+   "n_true": 635,
+   "n_same_kit": 3220,
+   "thr_fmr0.05": 0.9095493878901548,
+   "tpr_at_fmr0.05": 0.3464566929133858,
+   "per_clip_tpr_at_fmr0.05": {
+    "R2_MCFC_MIT_C006": 0.24375,
+    "R2_MCFC_MIT_C020": 1.0,
+    "R2_MCFC_MIT_C033": 0.45045045045045046,
+    "R2_SYO_MAR_C012": 0.052845528455284556
+   },
+   "thr_fmr0.01": 0.9297561146281791,
+   "tpr_at_fmr0.01": 0.22677165354330708,
+   "per_clip_tpr_at_fmr0.01": {
+    "R2_MCFC_MIT_C006": 0.11875,
+    "R2_MCFC_MIT_C020": 0.6186440677966102,
+    "R2_MCFC_MIT_C033": 0.4144144144144144,
+    "R2_SYO_MAR_C012": 0.024390243902439025
+   },
+   "same_kit_frames": 593,
+   "same_kit_rank1": 0.4924114671163575,
+   "same_kit_margin_median": -0.0011743973282465348
+  }
+ }
+}

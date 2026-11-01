@@ -1,0 +1,19 @@
+R2_MCFC_MIT_C006 rows 788
+R2_MCFC_MIT_C020 rows 435
+R2_MCFC_MIT_C033 rows 411
+R2_SYO_MAR_C012 rows 4817
+== pooled
+  LAB                  true 0.942 hardest 0.923 margin 0.006 rank1 0.545 auc 0.851 sameKitFMR@TPR90 1.0 (n_true 635, n_comp 5816, n_samekit 3220)
+  DINOV2               true 0.750 hardest 0.749 margin 0.007 rank1 0.526 auc 0.803 sameKitFMR@TPR90 0.83 (n_true 635, n_comp 5816, n_samekit 3220)
+  COMPOSITE            true 0.790 hardest 0.795 margin 0.002 rank1 0.506 auc 0.817 sameKitFMR@TPR90 0.846 (n_true 635, n_comp 5816, n_samekit 3220)
+  OSNET_AIN_MSMT17     true 0.741 hardest 0.741 margin -0.009 rank1 0.472 auc 0.788 sameKitFMR@TPR90 0.877 (n_true 635, n_comp 5816, n_samekit 3220)
+  YOUTU_REID           true 0.664 hardest 0.665 margin 0.015 rank1 0.534 auc 0.854 sameKitFMR@TPR90 0.642 (n_true 635, n_comp 5816, n_samekit 3220)
+  OSNET_MARKET_UPLOAD  true 0.855 hardest 0.882 margin -0.027 rank1 0.402 auc 0.842 sameKitFMR@TPR90 0.623 (n_true 635, n_comp 5816, n_samekit 3220)
+== post_gap
+  LAB                  true 0.947 hardest 0.911 margin 0.026 rank1 0.833 auc 0.971 sameKitFMR@TPR90 1.0 (n_true 45, n_comp 16, n_samekit 14)
+  DINOV2               true 0.566 hardest 0.455 margin 0.168 rank1 0.833 auc 0.889 sameKitFMR@TPR90 0.0 (n_true 45, n_comp 16, n_samekit 14)
+  COMPOSITE            true 0.703 hardest 0.583 margin 0.147 rank1 0.833 auc 0.917 sameKitFMR@TPR90 0.071 (n_true 45, n_comp 16, n_samekit 14)
+  OSNET_AIN_MSMT17     true 0.669 hardest 0.523 margin 0.146 rank1 1.0 auc 0.994 sameKitFMR@TPR90 0.0 (n_true 45, n_comp 16, n_samekit 14)
+  YOUTU_REID           true 0.553 hardest 0.337 margin 0.221 rank1 1.0 auc 0.997 sameKitFMR@TPR90 0.0 (n_true 45, n_comp 16, n_samekit 14)
+  OSNET_MARKET_UPLOAD  true 0.849 hardest 0.779 margin 0.055 rank1 0.833 auc 0.933 sameKitFMR@TPR90 0.143 (n_true 45, n_comp 16, n_samekit 14)
+EVAL_EXIT 0
