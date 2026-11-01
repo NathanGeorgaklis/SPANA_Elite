@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2f2-1"   # r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2id-1"   # r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -111,6 +111,8 @@ UNV = "UNVALIDATED"
 # ---------------------------------------------------------------------------------------------
 # The registry. Ordered by group. Each name is unique (enforced at import time).
 # ---------------------------------------------------------------------------------------------
+_IDENT_EV = "NEW_R2 (R2 DEV persistent identity layer, diagnostic only; not used by target trust)"
+
 PARAMS: Tuple[Param, ...] = (
     # ---- contract (historical Pass-1 JSON, kept bit-for-bit in meaning) -----------------------
     _p("legacy_identity_trust_threshold", "float", "confidence (0-1)",
@@ -847,6 +849,41 @@ PARAMS: Tuple[Param, ...] = (
        "historical", "TASK3M_REID_APPEARANCE_AUDIT.md s2"),
     _p("hist_ambiguity_margin", "float", "score margin", "Historical assignment ambiguity margin (audit only).",
        0.08, H, "DOCUMENTED", "NOT_APPLICABLE", "REFERENCE_ONLY", "historical", "TASK3M_MOTION_ASSOCIATION_AUDIT.md s2"),
+    # NEW_R2: persistent football identity layer (identity.py). Read-only diagnostic layer over the population and the
+    # target tracker; it never changes target state, trust or the target bank.
+    _p("identity_link_window_s", "float", "s",
+       "A newborn tracklet may be linked only to a person last seen at most this long before it was born.", 3.0, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+       _IDENT_EV + "; equal to lost_long_s (the target's positional prior)", 0.0, 60.0),
+    _p("identity_evidence_s", "float", "s",
+       "Appearance evidence for a newborn tracklet is aggregated over at least this long before a link is decided.",
+       0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV, 0.0, 10.0),
+    _p("identity_decide_max_s", "float", "s",
+       "A newborn tracklet still undecided this long after birth gets link status UNKNOWN (no forced link).", 1.5,
+       N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV, 0.0, 30.0),
+    _p("identity_min_samples", "int", "appearance samples",
+       "Minimum clean appearance samples of the newborn tracklet before its link is decided.", 2, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV, 1, 100),
+    _p("identity_gate_base_h", "float", "h",
+       "Physical link gate: a candidate person must be within this distance (in the newborn box's heights) of the "
+       "newborn box, plus the running-speed growth, when both positions are valid.", 0.75, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "identity", _IDENT_EV + "; equal to gate_base_h", 0.0, 20.0),
+    _p("identity_max_speed_h_per_s", "float", "h per s",
+       "Physical link gate growth: a player can move at most this many body heights per second while unseen.", 3.0,
+       N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV + "; equal to gate_lost_growth_h_per_s",
+       0.0, 50.0),
+    _p("identity_history_max_samples", "int", "appearance samples",
+       "Appearance samples kept per person (the earliest and the most recent are kept, oldest middle ones dropped).",
+       32, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV, 1, 10000),
+    _p("identity_kit_veto_lab", "float", "LAB similarity",
+       "Team (kit) veto: a link is refused when the aggregated LAB kit similarity is below this (clearly another "
+       "kit). Kit evidence only ever refuses; it never makes a link.", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
+       "identity", _IDENT_EV + "; equal to lab_floor", 0.0, 1.0),
+    _p("identity_number_min_reads", "int", "readings",
+       "Jersey-number evidence: a tracklet's number is CONFIRMED only after this many agreeing readings and no "
+       "conflicting one; confirmed different numbers refuse a link, equal numbers never make one.", 3, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV + "; no number reader is configured in R2",
+       1, 1000),
     _p("hist_base_gate_px", "float", "px", "Historical base gate (audit only).", 90.0, H, "DOCUMENTED",
        "NOT_APPLICABLE", "REFERENCE_ONLY", "historical", "TASK3C finding 4"),
     _p("hist_gate_growth_px_per_frame", "float", "px per frame", "Historical gate growth (audit only).", 35.0, H,
