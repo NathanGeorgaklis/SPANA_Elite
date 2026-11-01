@@ -1,0 +1,142 @@
+{
+ "R2_MCFC_MIT_C016": {
+  "tracklet_truth": {
+   "NOT_TARGET": 39,
+   "TARGET": 1,
+   "UNCLEAR": 2
+  },
+  "decisions": {
+   "NEW": 8,
+   "TARGET_TRACKLET_NEW": 1,
+   "UNKNOWN": 2
+  },
+  "narrowing": {
+   "frames": 2,
+   "other_bodies": 9,
+   "excluded_by_layer": 4,
+   "excluded_by_tracker": 7,
+   "excluded_by_layer_only": 0,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 2,
+   "FALSE_TARGET_PERSON": 0
+  }
+ },
+ "R2_MCFC_MIT_C006": {
+  "tracklet_truth": {
+   "TARGET": 1,
+   "NOT_TARGET": 85,
+   "UNCLEAR": 17
+  },
+  "decisions": {
+   "NEW": 12,
+   "TARGET_TRACKLET_NEW": 1,
+   "UNKNOWN": 4
+  },
+  "narrowing": {
+   "frames": 46,
+   "other_bodies": 162,
+   "excluded_by_layer": 6,
+   "excluded_by_tracker": 88,
+   "excluded_by_layer_only": 0,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 15,
+   "FALSE_TARGET_PERSON": 0
+  }
+ },
+ "R2_MCFC_MIT_C020": {
+  "tracklet_truth": {
+   "TARGET": 1,
+   "NOT_TARGET": 21
+  },
+  "decisions": {
+   "NEW": 7,
+   "TARGET_TRACKLET_NEW": 1,
+   "LINKED": 2,
+   "UNKNOWN": 2
+  },
+  "narrowing": {
+   "frames": 65,
+   "other_bodies": 200,
+   "excluded_by_layer": 151,
+   "excluded_by_tracker": 19,
+   "excluded_by_layer_only": 132,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 65,
+   "FALSE_TARGET_PERSON": 0
+  }
+ },
+ "R2_MCFC_MIT_C033": {
+  "tracklet_truth": {
+   "NOT_TARGET": 124,
+   "TARGET": 5,
+   "UNCLEAR": 3
+  },
+  "decisions": {
+   "NEW": 9,
+   "TARGET_TRACKLET_NEW": 1,
+   "UNKNOWN": 15,
+   "TARGET_TRACKLET_UNKNOWN": 1,
+   "LINKED": 1
+  },
+  "narrowing": {
+   "frames": 52,
+   "other_bodies": 227,
+   "excluded_by_layer": 45,
+   "excluded_by_tracker": 45,
+   "excluded_by_layer_only": 0,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 0,
+   "FALSE_TARGET_PERSON": 0
+  }
+ },
+ "R2_SYO_MAR_C012": {
+  "tracklet_truth": {
+   "NOT_TARGET": 371,
+   "UNCLEAR": 32,
+   "TARGET": 15
+  },
+  "decisions": {
+   "NEW": 28,
+   "UNKNOWN": 42,
+   "TARGET_TRACKLET_UNKNOWN": 1
+  },
+  "narrowing": {
+   "frames": 119,
+   "other_bodies": 3521,
+   "excluded_by_layer": 0,
+   "excluded_by_tracker": 1202,
+   "excluded_by_layer_only": 0,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 0,
+   "FALSE_TARGET_PERSON": 0
+  }
+ },
+ "R2_MCFC_MIT_C034": {
+  "tracklet_truth": {
+   "TARGET": 1,
+   "NOT_TARGET": 100,
+   "UNCLEAR": 5
+  },
+  "decisions": {
+   "NEW": 8,
+   "TARGET_TRACKLET_NEW": 1,
+   "UNKNOWN": 13
+  },
+  "narrowing": {
+   "frames": 17,
+   "other_bodies": 95,
+   "excluded_by_layer": 0,
+   "excluded_by_tracker": 95,
+   "excluded_by_layer_only": 0,
+   "FALSE_EXCLUSION_layer": 0,
+   "FALSE_EXCLUSION_tracker": 0,
+   "true_is_target_person": 0,
+   "FALSE_TARGET_PERSON": 0
+  }
+ }
+}
