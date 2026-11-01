@@ -8,6 +8,7 @@
 """Persistent identity layer (player_tracker_rb/identity.py) on synthetic scenes (neutral TARGET / OTHER)."""
 import unittest
 
+from player_tracker_rb import camera as C
 from player_tracker_rb import identity as I
 from player_tracker_rb import population as P
 from player_tracker_rb import target as T
@@ -30,7 +31,7 @@ def people(*others):
 class Run:
     """Population + the unchanged target tracker + the identity layer, frame by frame."""
 
-    def __init__(self, frames, ppl, fps=30.0, reader=None, with_layer=True):
+    def __init__(self, frames, ppl, fps=30.0, reader=None, with_layer=True, override=None):
         cfg = CFG
         pop = P.Population(cfg, SS.W, SS.H)
         tt = T.TargetTracker(cfg, pop, AppearanceExtractor(cfg, SS.SignatureEmbedding(ppl, 0.0)))
@@ -49,7 +50,12 @@ class Run:
                 reader.frame = (fr, ds)
             if lay is not None:
                 on = tf.observation_tracklet_id if tf.rb_state == T.TRACKING else None
-                self.ids.append(lay.update(res, img, target_tracklet=on, target_trusted=tf.identity_trusted,
+                trusted = tf.identity_trusted
+                if override is not None:                      # inject a tracker error into the layer's INPUT only
+                    o = override(k, res, ds)
+                    if o is not None:
+                        on, trusted = o
+                self.ids.append(lay.update(res, img, target_tracklet=on, target_trusted=trusted,
                                            target_bank=tt.bank))
             self.frames.append(tf)
             self.dets.append(ds)
@@ -84,13 +90,17 @@ class Run:
             tc.assertEqual(len(ows), 1, f"person {pid} mixes {ows}")
         for k, idf in enumerate(self.ids):
             for x in idf.tracklets:
-                if self.owner(k, x.tracklet_id) == "TARGET":
+                ow = self.owner(k, x.tracklet_id)
+                if ow == "TARGET":
                     tc.assertFalse(x.not_target_person, f"frame {k}: the true target is marked not-target")
-        # the target person's history is the tracker's own (trusted) bank, nothing else
-        for idf in self.ids[-1:]:
-            if idf.target_person is not None:
-                p = self.layer._persons[idf.target_person]
-                tc.assertEqual(len(self.layer._history(p, self.tt.bank)), len(self.tt.bank.samples))
+                elif ow is not None:
+                    tc.assertFalse(x.is_target_person, f"frame {k}: {ow} is marked as the target person")
+        # the target person's history IS the tracker's own (trusted) bank, sample for sample
+        for pid, p in self.layer._persons.items():
+            if p.is_target:
+                hist = self.layer._history(p, self.tt.bank)
+                tc.assertEqual(len(hist), len(self.tt.bank.samples))
+                tc.assertTrue(all(a is b for a, b in zip(hist, self.tt.bank.samples)))
 
 
 def status_of_owner(r, owner, after):
@@ -248,6 +258,151 @@ class TestIdentityLayer(unittest.TestCase):
                for _ in range(int(2 * fps))]
         r = Run(fr, people(("OTHER", KIT_B, 0.2)), fps)
         r.check_safe(self)
+
+
+class TestReviewRound1(unittest.TestCase):
+    """Review findings on e234b47 (reproduced, then fixed)."""
+
+    def test_hidden_target_returning_with_a_look_alike_stranger_never_gives_the_stranger_the_target(self):
+        # HIGH-1: exclusivity was one-shot: the true target's newborn was blocked (UNKNOWN), then the stranger linked
+        for fps in FPS_SET:
+            for sx in (330.0, 470.0):
+                for cos in (0.97, 0.95):
+                    with self.subTest(fps=fps, sx=sx, cos=cos):
+                        fr = []
+                        for k in range(int(4 * fps)):
+                            s = k / fps
+                            b = {"TARGET": SS.box_at(400, 400, 40, H)}
+                            if s >= 1.5:
+                                b["OTHER"] = SS.box_at(sx, 400, 40, H)
+                            fr.append(SS.SceneFrame(b, drop=("TARGET",) if 1.0 <= s < 1.5 else ()))
+                        Run(fr, people(("OTHER", KIT_A, cos)), fps).check_safe(self)
+
+    def test_continuation_born_while_the_old_tracklet_is_held_is_not_given_another_person(self):
+        # HIGH-2: candidates frozen at birth, a held (unseen) person excluded: the true target was linked to a
+        # same-kit player who had left (NOT_TARGET) and so falsely excluded
+        fps = 30.0
+        for jump in (120, 160, 200, 260):
+            for dropn in (2, 4):
+                with self.subTest(jump=jump, drop=dropn):
+                    n0 = int(2.0 * fps)
+                    fr = []
+                    for k in range(int(4.5 * fps)):
+                        s = k / fps
+                        b = {"TARGET": SS.box_at(400 if k < n0 else 400 + jump, 400, 40, H)}
+                        if s < 1.2:
+                            b["OTHER"] = SS.box_at(400 + jump + 30, 400, 40, H)
+                        fr.append(SS.SceneFrame(b, drop=("TARGET",) if n0 <= k < n0 + dropn else ()))
+                    Run(fr, people(("OTHER", KIT_A, 0.9)), fps).check_safe(self)
+
+    def _stranger(self, fps, cos):
+        fr = []
+        for k in range(int(4 * fps)):
+            s = k / fps
+            b = {}
+            if s < 1.0:
+                b["TARGET"] = SS.box_at(400, 400, 40, H)
+            if s >= 1.6:
+                b["OTHER"] = SS.box_at(450, 400, 40, H)
+            fr.append(SS.SceneFrame(b))
+        return Run(fr, people(("OTHER", KIT_A, cos)), fps)
+
+    def test_never_seen_same_kit_stranger_after_the_target_leaves_is_not_the_target(self):
+        # HIGH-3 (open world): links into the target person need reacq_appearance_floor
+        for fps in FPS_SET:
+            for cos in (0.6, 0.75):
+                with self.subTest(fps=fps, cos=cos):
+                    self._stranger(fps, cos).check_safe(self)
+
+    @unittest.expectedFailure
+    def test_open_world_residual_a_near_identical_stranger(self):
+        # RESIDUAL (recorded, not fixed): a never-seen same-kit player whose embedding is close to the target's
+        # (cosine 0.85, composite ~0.90 >= reacq_appearance_floor) where the target was last seen is linked into the
+        # target person. Appearance cannot reject an unseen look-alike (R2 ReID evaluation); no layer rule can.
+        self._stranger(30.0, 0.85).check_safe(self)
+
+    def test_a_short_tracker_error_marks_nothing(self):
+        # M5: three frames of "trusted on OTHER" (a tracker error fed to the layer) never settle a target person
+        fps = 30.0
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H), "OTHER": SS.box_at(700, 400, 40, H)})
+              for _ in range(90)]
+
+        def ov(k, res, ds):
+            if 40 <= k < 43:
+                oth = [o.tracklet_id for o in res.observations if ds[o.index].owners == ("OTHER",)]
+                return oth[0], True
+            return None
+        r = Run(fr, people(("OTHER", KIT_A, 0.75)), fps, override=ov)
+        r.check_safe(self)
+        self.assertFalse(any(p.conflict for p in r.layer._persons.values()), "nothing was settled, nothing marked")
+
+    def test_an_unreachable_look_alike_is_not_the_target(self):
+        # audit (gate mutant): the target leaves; a near-identical same-kit player appears far beyond running reach
+        # within the link window: it is never linked into the target person
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr = []
+                for k in range(int(4 * fps)):
+                    s = k / fps
+                    b = {}
+                    if s < 1.0:
+                        b["TARGET"] = SS.box_at(200, 400, 40, H)
+                    if s >= 1.2:
+                        b["OTHER"] = SS.box_at(1150, 400, 40, H)
+                    fr.append(SS.SceneFrame(b))
+                Run(fr, people(("OTHER", KIT_A, 0.97)), fps).check_safe(self)
+
+    def test_no_appearance_only_link_after_a_camera_cut(self):
+        # audit (open world): after a cut the positions mean nothing: the returning body is UNKNOWN, never LINKED
+        fps = 30.0
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(30)]
+        fr += [SS.SceneFrame({}) for _ in range(5)]
+        fr += [SS.SceneFrame({}, camera=SS.identity_motion(C.CUT, continuity_broken=True))]
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(600, 400, 40, H)}) for _ in range(40)]
+        r = Run(fr, people(), fps)
+        st = [d["status"] for d in r.links() if d["scores"]]
+        self.assertTrue(st)
+        self.assertNotIn(I.LINKED, st)
+        r.check_safe(self)
+
+    def test_a_long_tracker_error_is_a_conflict_that_narrows_nothing(self):
+        # M5: a settled wrong trust makes OTHER's person both target and not-target: CONFLICT, no narrowing
+        fps = 30.0
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H), "OTHER": SS.box_at(700, 400, 40, H)})
+              for _ in range(90)]
+
+        def ov(k, res, ds):
+            if 40 <= k < 60:
+                oth = [o.tracklet_id for o in res.observations if ds[o.index].owners == ("OTHER",)]
+                return oth[0], True
+            return None
+        r = Run(fr, people(("OTHER", KIT_A, 0.75)), fps, override=ov)
+        last = r.ids[-1]
+        for x in last.tracklets:
+            if r.owner(len(r.ids) - 1, x.tracklet_id) == "TARGET":
+                self.assertFalse(x.not_target_person)
+            else:
+                self.assertFalse(x.is_target_person)
+        self.assertTrue(any(p.conflict for p in r.layer._persons.values()))
+
+    def test_camera_pan_during_a_hidden_gap_still_relinks(self):
+        # M6: the physical gate compared boxes from different frames (false PHYSICALLY_UNREACHABLE -> NEW)
+        fps = 30.0
+        for v in (10.0, 20.0):
+            for hid in (0.5, 1.0):
+                with self.subTest(v=v, hid=hid):
+                    fr, x = [], 940.0
+                    for k in range(int(4 * fps)):
+                        s = k / fps
+                        if k > 0:
+                            x -= v
+                        cam = None if k == 0 else SS.motion_from_matrix([[1, 0, -v], [0, 1, 0]], SS.W, SS.H)
+                        fr.append(SS.SceneFrame({"TARGET": SS.box_at(x, 400, 40, H)}, camera=cam,
+                                                drop=("TARGET",) if 1.0 <= s < 1.0 + hid else ()))
+                    r = Run(fr, people(), fps)
+                    st = [d["status"] for d in r.links() if d["scores"]]
+                    self.assertNotIn(I.NEW, st)
+                    r.check_safe(self)
 
 
 class FakeReader:
