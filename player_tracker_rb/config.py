@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2f5-2"   # r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2f8-1"   # r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -761,6 +761,27 @@ PARAMS: Tuple[Param, ...] = (
     _p("camera_max_shift_frac_per_s", "float", "fraction of frame width per s",
        "An estimated image-centre shift faster than this is implausible (estimate rejected: UNKNOWN).", 3.0, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera motion", 0.0, 1000.0),
+    _p("camera_scale_check_window_s", "float", "s",
+       "Camera scale corroboration (F8): the fitted scale is compared with people's measured height changes over "
+       "this window of ESTIMATED frames.", 1.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera",
+       "NEW_R2 (R2 DEV F8). Long enough for a false zoom to accumulate beyond person-height noise. Unvalidated.",
+       0.0, 30.0),
+    _p("camera_scale_check_min_span_fraction", "float", "fraction of camera_scale_check_window_s",
+       "The check only decides once the window spans at least this fraction of camera_scale_check_window_s.",
+       0.9, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "NEW_R2 (R2 DEV F8).", 0.0, 1.0),
+    _p("camera_scale_disagreement_ratio_max", "float", "ratio over the window",
+       "Camera scale corroboration (F8): if the fitted scale and people's heights disagree by more than this ratio "
+       "over the window, the scale is UNCORROBORATED and the frame is a translation-only motion.",
+       1.15, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera",
+       "NEW_R2 (R2 DEV F8). DEV windowed disagreement (R2/DEV_REMEDIATION_F8): false-zoom clips 1.18-1.50, "
+       "agreeing clips <= 1.13. In-sample, UNVALIDATED.", 1.0, 10.0),
+    _p("camera_scale_check_min_people", "int", "count",
+       "Camera scale corroboration needs at least this many people matched between consecutive frames.",
+       3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera",
+       "NEW_R2 (R2 DEV F8). A median of fewer is dominated by one person's own depth motion.", 1, 1000),
+    _p("camera_scale_match_iou_min", "float", "IoU",
+       "Camera scale corroboration: a previous person box (moved by the fitted transform) matches a current box at "
+       "this IoU.", 0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "NEW_R2 (R2 DEV F8).", 0.0, 1.0),
     _p("camera_max_scale_ratio_per_s", "float", "ratio per s",
        "An estimated zoom faster than this factor per second is implausible (estimate rejected: UNKNOWN).",
        3.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "camera", "R1-E (NEW): bound on camera zoom", 1.0, 1000.0),

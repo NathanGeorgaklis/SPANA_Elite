@@ -25,6 +25,17 @@ Method (per frame, D16):
      >= cut_residual_min does not explain the image change (e.g. a static broadcast overlay dominated the features
      across a cut): the estimate is rejected (HIGH_RESIDUAL), which is a flow failure.
   7. Hard cut: grey-histogram Bhattacharyya distance >= cut_hist_distance_min AND flow failure.
+  8. Scale corroboration (NEW_R2, R2 DEV F8). A similarity fit to a panning broadcast camera over a deep scene
+     (pitch near, stands far) can report a steady false zoom (DEV: x0.66 over 4 s while people's heights rose).
+     People are the scale that matters downstream, so the fitted scale is checked against them: each previous person
+     box is moved by the fitted transform (centre only) and matched one-to-one to a current box by IoU >=
+     camera_scale_match_iou_min; with >= camera_scale_check_min_people matches the frame's people log-height ratio
+     is their median. Over the last camera_scale_check_window_s of ESTIMATED frames (people measured on at least
+     half of them), if exp|sum log(fitted scale) - sum people log-ratio| > camera_scale_disagreement_ratio_max the
+     scale is UNCORROBORATED: the frame is reported as a TRANSLATION-ONLY motion (scale 1, no rotation; the median
+     inlier flow), reason SCALE_UNCORROBORATED, the full fit kept as measured_matrix. Fail closed: no size change is
+     propagated on a scale the people contradict. Without enough people the fit is used as before (no evidence
+     either way). The window always accumulates the FITTED scale, so a sustained false zoom stays rejected.
 
 Status of every frame:
   FIRST_FRAME  no previous frame (no continuity to break);
@@ -68,6 +79,7 @@ IMPLAUSIBLE_ROTATION = "IMPLAUSIBLE_ROTATION"
 HISTOGRAM_CHANGE = "HISTOGRAM_CHANGE"
 HIGH_RESIDUAL = "HIGH_RESIDUAL"
 RESOLUTION_CHANGED = "RESOLUTION_CHANGED"
+SCALE_UNCORROBORATED = "SCALE_UNCORROBORATED"   # NEW_R2 F8: the fitted scale disagrees with people's heights
 
 Matrix = Tuple[Tuple[float, float, float], Tuple[float, float, float]]
 IDENTITY: Matrix = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
@@ -177,6 +189,9 @@ class CameraMotionEstimator:
         self._prev_hist: Optional[np.ndarray] = None
         self._prev_boxes: List[Tuple[float, float, float, float]] = []
         self._prev_shape: Optional[Tuple[int, int]] = None
+        self._t = 0.0
+        # F8: (t, log fitted scale, people log-height ratio or None) of recent ESTIMATED frames
+        self._scale_window: List[Tuple[float, float, Optional[float]]] = []
 
     def reset(self) -> None:
         self.__init__(self._cfg)
@@ -230,6 +245,58 @@ class CameraMotionEstimator:
             return 1.0
         return float(np.abs(da - db).mean() / contrast)
 
+    def _people_log_ratio(self, motion: "CameraMotion", prev_boxes: Sequence[Sequence[float]],
+                          boxes: Sequence[Sequence[float]]) -> Optional[float]:
+        """F8: median log height ratio of people matched between the frames (previous box centre moved by the fitted
+        transform, size kept; one-to-one greedy by IoU), or None with too few matches."""
+        c = self._cfg
+        if not prev_boxes or not boxes:
+            return None
+        cur = np.asarray(boxes, dtype=np.float64)
+        moved = []
+        for b in prev_boxes:
+            nx, ny = motion.warp_point((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
+            hw, hh = (b[2] - b[0]) / 2, (b[3] - b[1]) / 2
+            moved.append((nx - hw, ny - hh, nx + hw, ny + hh))
+        m = np.asarray(moved, dtype=np.float64)
+        ix = np.clip(np.minimum(m[:, None, 2], cur[None, :, 2]) - np.maximum(m[:, None, 0], cur[None, :, 0]), 0, None)
+        iy = np.clip(np.minimum(m[:, None, 3], cur[None, :, 3]) - np.maximum(m[:, None, 1], cur[None, :, 1]), 0, None)
+        inter = ix * iy
+        area_m = (m[:, 2] - m[:, 0]) * (m[:, 3] - m[:, 1])
+        area_c = (cur[:, 2] - cur[:, 0]) * (cur[:, 3] - cur[:, 1])
+        union = area_m[:, None] + area_c[None, :] - inter
+        iou = np.divide(inter, union, out=np.zeros_like(inter), where=union > 0)
+        ratios, used_i, used_j = [], set(), set()
+        for k in np.argsort(-iou, axis=None):
+            i, j = divmod(int(k), iou.shape[1])
+            if iou[i, j] < c.get("camera_scale_match_iou_min"):
+                break
+            if i in used_i or j in used_j:
+                continue
+            used_i.add(i)
+            used_j.add(j)
+            h0, h1 = prev_boxes[i][3] - prev_boxes[i][1], boxes[j][3] - boxes[j][1]
+            if h0 > 0 and h1 > 0:
+                ratios.append(math.log(h1 / h0))
+        if len(ratios) < c.get("camera_scale_check_min_people"):
+            return None
+        return float(np.median(ratios))
+
+    def _scale_uncorroborated(self, t: float, log_scale: float, people: Optional[float]) -> Tuple[bool, Dict[str, Any]]:
+        """F8: add this ESTIMATED frame to the window and say whether the fitted scale is contradicted by people."""
+        c = self._cfg
+        win = c.get("camera_scale_check_window_s")
+        self._scale_window.append((t, log_scale, people))
+        self._scale_window = [x for x in self._scale_window if t - x[0] <= win]
+        span = t - self._scale_window[0][0]
+        pairs = [(ls, pr) for (_, ls, pr) in self._scale_window if pr is not None]
+        info: Dict[str, Any] = {"window_s": span, "people_frames": len(pairs), "frames": len(self._scale_window)}
+        if span < win * c.get("camera_scale_check_min_span_fraction") or 2 * len(pairs) < len(self._scale_window):
+            return False, info
+        d = abs(sum(ls for ls, _ in pairs) - sum(pr for _, pr in pairs))
+        info["disagreement_ratio"] = math.exp(d)
+        return d > math.log(c.get("camera_scale_disagreement_ratio_max")), info
+
     # -- main ------------------------------------------------------------------------------------------------
     def update(self, image: np.ndarray, person_boxes: Sequence[Sequence[float]], dt_s: float) -> CameraMotion:
         """Motion from the previous frame to `image`. `person_boxes` are this frame's detections (source px);
@@ -247,7 +314,9 @@ class CameraMotionEstimator:
             self._prev_shape
         self._prev_work, self._prev_hist, self._prev_boxes, self._prev_shape = work, hist, boxes, shape
 
+        self._t += dt_s
         if prev_work is None:
+            self._scale_window = []
             return identity_motion(FIRST_FRAME)
         hist_d = float(cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA))
         hist_change = hist_d >= c.get("cut_hist_distance_min")
@@ -311,7 +380,21 @@ class CameraMotionEstimator:
                             reasons.append(IMPLAUSIBLE_ROTATION)
 
         if not reasons and motion is not None:
-            return motion
+            people = self._people_log_ratio(motion, prev_boxes, boxes)
+            bad, _info = self._scale_uncorroborated(self._t, math.log(motion.scale), people)
+            if not bad:
+                return motion
+            # F8: translation-only motion from the median inlier flow (source px); the full fit is audit only
+            keep = inl.reshape(-1).astype(bool)
+            flow = (p1[keep] - p0[keep]) / s
+            dx, dy = float(np.median(flow[:, 0])), float(np.median(flow[:, 1]))
+            tr = motion_from_matrix([[1.0, 0.0, dx], [0.0, 1.0, dy]], shape[1], shape[0], n_features=n_feat,
+                                    n_tracked=n_tracked, inlier_fraction=inlier_frac, hist_distance=hist_d,
+                                    residual=motion.residual)
+            return CameraMotion(tr.status, tr.matrix, tr.shift_px, tr.scale, tr.rotation_rad, tr.n_features,
+                                tr.n_tracked, tr.inlier_fraction, tr.hist_distance, (SCALE_UNCORROBORATED,), False,
+                                motion.matrix, tr.residual)
+        self._scale_window = []                              # no measured continuity: the check starts again
         measured = None if motion is None else motion.matrix
         resid = None if motion is None else motion.residual
         if hist_change:
