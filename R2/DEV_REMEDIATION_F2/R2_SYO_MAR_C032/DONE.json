@@ -1,0 +1,10 @@
+{
+ "clip_id": "R2_SYO_MAR_C032",
+ "split": "DEV",
+ "outcome": "RUN_REFUSED",
+ "reason": "seed refused: seed anchor not reached (the seed body's crop no longer matches the seed crop (composite 0.829 < reacq_appearance_floor 0.85)); seed-frame refusals ['NOT_ISOLATED']",
+ "fixture": "R2/labels/R2_SYO_MAR_C032.fixture.json",
+ "git_commit": "27dedec82d10fd634db96bc0c5f3a59ce6ab8243",
+ "git_dirty": false,
+ "seconds": 21.1
+}

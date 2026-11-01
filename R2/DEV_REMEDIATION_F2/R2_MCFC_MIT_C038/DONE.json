@@ -1,0 +1,10 @@
+{
+ "clip_id": "R2_MCFC_MIT_C038",
+ "split": "DEV",
+ "outcome": "RUN_REFUSED",
+ "reason": "seed refused: the seed box matches a nested / alternative detection without its own track (a part box and a second person inside a larger box cannot be told apart): anchor not deferred",
+ "fixture": "R2/labels/R2_MCFC_MIT_C038.fixture.json",
+ "git_commit": "27dedec82d10fd634db96bc0c5f3a59ce6ab8243",
+ "git_dirty": false,
+ "seconds": 5.5
+}
