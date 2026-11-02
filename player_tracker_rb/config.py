@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2nt-1"   # r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2tp-1"   # r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -112,6 +112,7 @@ UNV = "UNVALIDATED"
 # The registry. Ordered by group. Each name is unique (enforced at import time).
 # ---------------------------------------------------------------------------------------------
 _IDENT_EV = "NEW_R2 (R2 DEV persistent identity layer, diagnostic only; not used by target trust)"
+_PROF_EV = "NEW_R2 (R2 DEV target reference profile, diagnostic only; not used by the tracker)"
 
 PARAMS: Tuple[Param, ...] = (
     # ---- contract (historical Pass-1 JSON, kept bit-for-bit in meaning) -----------------------
@@ -892,6 +893,27 @@ PARAMS: Tuple[Param, ...] = (
        "conflicting one; confirmed different numbers refuse a link, equal numbers never make one.", 3, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV + "; no number reader is configured in R2",
        1, 1000),
+    # ---- target reference profile (NEW_R2, diagnostic only; target_profile.py; not used by the tracker) ------
+    _p("profile_max_anchors", "int", "anchors",
+       "Target reference profile: at most this many diverse trusted anchors (the most redundant non-seed anchor is "
+       "evicted).", 8, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile", _PROF_EV, 1, 1000),
+    _p("profile_anchor_min_novelty", "float", "similarity difference",
+       "A trusted sample becomes an anchor only if its embedding similarity to every anchor is below 1 minus this "
+       "(near-duplicates are not kept).", 0.05, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile",
+       _PROF_EV + "; stricter than bank_min_novelty (a view, not a sample)", 0.0, 1.0),
+    _p("profile_consistency_k", "int", "anchors",
+       "Profile consistency: the mean of this many best anchor composites (fewer when fewer anchors).", 3, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile", _PROF_EV, 1, 1000),
+    _p("profile_support_min_fraction", "float", "fraction of anchors",
+       "Profile verdict: at least this fraction of the anchors must reach appearance_floor (temporal median).", 0.5,
+       N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile", _PROF_EV, 0.0, 1.0),
+    _p("profile_temporal_window_s", "float", "s",
+       "Profile temporal consistency: a body's clean matches over the last this many seconds are aggregated.", 0.5,
+       N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile", _PROF_EV, 0.0, 60.0),
+    _p("profile_temporal_min_s", "float", "s",
+       "Profile temporal consistency: a body's evidence counts only once its clean matches span at least this long.",
+       0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "profile", _PROF_EV + "; equal to identity_evidence_s", 0.0,
+       60.0),
     _p("hist_base_gate_px", "float", "px", "Historical base gate (audit only).", 90.0, H, "DOCUMENTED",
        "NOT_APPLICABLE", "REFERENCE_ONLY", "historical", "TASK3C finding 4"),
     _p("hist_gate_growth_px_per_frame", "float", "px per frame", "Historical gate growth (audit only).", 35.0, H,

@@ -214,8 +214,9 @@ class Result:
 
 def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: str = "TARGET",
         cfg: Optional[TrackerConfig] = None, fps: float = FPS, width: int = W, height: int = H,
-        visible_min: float = 0.35, pose_gain: float = 0.0, seed_box=None) -> Result:
-    """seed_box: the human seed box at frame 0 (default: the seed person's rendered box, i.e. a tight box)."""
+        visible_min: float = 0.35, pose_gain: float = 0.0, seed_box=None, observer=None) -> Result:
+    """seed_box: the human seed box at frame 0 (default: the seed person's rendered box, i.e. a tight box).
+    observer: optional read-only callback(k, res, image, target_frame, tracker, extractor) after each frame."""
     cfg = cfg or TrackerConfig.default()
     pop = P.Population(cfg, width, height)
     ext = AppearanceExtractor(cfg, SignatureEmbedding(people, pose_gain))
@@ -234,6 +235,8 @@ def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: s
             tf = tt.seed(res, img, seed_box if seed_box is not None else fr.boxes[seed_name])
         else:
             tf = tt.update(res, img)
+        if observer is not None:
+            observer(k, res, img, tf, tt, ext)
         out_frames.append(tf)
         out_dets.append(ds)
         out_pops.append(res)
