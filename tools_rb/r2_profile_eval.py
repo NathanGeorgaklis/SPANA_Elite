@@ -16,14 +16,21 @@ profile's best / topk / support / temporal values on the same crop.
 Truth (frozen DEV labels; only the target is labelled; fixed before any profile result was seen):
   * frames: target_boxes frame, VISIBLE/PARTIAL, resolvable, not merged, not human_uncertain, and the true box
     detected as a body (IoU >= 0.5). Split TRUSTED / UNTRUSTED by the tracker's identity_trusted.
+  * PRE is causal: on a frame where the trusted bank just accepted this frame's sample, it is scored against the
+    bank without that sample.
   * SAME-KIT competitor: its kit (median LAB to the target's anchors) >= the 10th percentile of the true target's own
     kit values in that clip (as in the R2 ReID evaluation). The HARDEST same-kit competitor is chosen per method.
   * separation = true score - hardest same-kit score; rank-1 = separation > 0; margin = separation >=
     ambiguity_margin.
   * counterfactual verdicts: PROFILE = the layer's verdict; PRE = the production analogue (production score >=
     reacq_appearance_floor and >= every other body + ambiguity_margin). TRUE / WRONG = on the true box / another box;
-    WRONG_TARGET_ABSENT = SUPPORTED on some box on a frame where the target is labelled not visible / unresolvable or
-    its box is not detected (open world).
+    WRONG_TARGET_ABSENT = SUPPORTED on some box on a frame where the target is labelled not visible / unresolvable
+    (open world); WRONG_TARGET_UNDETECTED = SUPPORTED on some box where the target is labelled visible and resolvable
+    but its true box is not detected as a body, or the frame is merged / human-uncertain (every SUPPORTED there is
+    counted as wrong-or-unverifiable).
+  * PROFILE_joint scores the true box like the verdict (lower of temporal and current topk) and competitors like the
+    verdict's rivals (higher of temporal and current; current only when no temporal). COMMON: the same comparison
+    restricted to frames where every method has a true value and a same-kit competitor value.
 """
 import collections
 import json
@@ -55,7 +62,7 @@ def run_clip(repo, clips_dir, out_dir, cid):
     from player_tracker_rb import run_rb as R
     from player_tracker_rb import target as T
     from player_tracker_rb import target_profile as TP
-    from player_tracker_rb.appearance import AppearanceExtractor
+    from player_tracker_rb.appearance import AppearanceExtractor, compare
     from player_tracker_rb.camera import CameraMotionEstimator
     from player_tracker_rb.config import TrackerConfig
     from player_tracker_rb.video_io import SequentialVideoReader
@@ -80,9 +87,15 @@ def run_clip(repo, clips_dir, out_dir, cid):
                 res = pop.update(rel, rel / fps, cands, cam)
                 tf = tt.seed(res, image, fx["seed_bbox"]) if seed else tt.update(res, image)
                 pf = prof.update(res, image, tf, tt.bank)
+                # PRE is causal too: on a frame where the bank just accepted this frame's sample, score against the
+                # bank without it (the production bank before this frame)
+                just = isinstance(tf.decision, dict) and (tf.decision.get("bank") or {}).get("status") == "ACCEPTED"
+                samples = tt.bank.samples[:-1] if just else tt.bank.samples
                 for row in pf["candidates"]:
-                    s, _ = tt.bank.best_match(prof.last_features[row["index"]])
-                    row["pre"] = None if s is None else s.composite
+                    f = prof.last_features[row["index"]]
+                    vals = [compare(f, x, cfg).composite for x in samples] if f.usable else []
+                    vals = [v for v in vals if v is not None]
+                    row["pre"] = max(vals) if vals else None
                 out.write(json.dumps({"frame": rel, "target": {"rb_state": tf.rb_state, "trusted": tf.identity_trusted,
                                                                 "tracklet": tf.observation_tracklet_id,
                                                                 "index": tf.detection_index},
@@ -116,6 +129,11 @@ def score(repo, out_dir, cids):
                "PROFILE_topk": lambda r: (r["match"] or {}).get("topk"),
                "PROFILE_joint": lambda r: None if r["temporal"] is None or r["match"] is None
                else min(r["temporal"]["topk"], r["match"]["topk"])}
+
+    def rival_level(r):                    # how the verdict scores a rival: higher of temporal and current
+        vals = [x for x in ((r["temporal"] or {}).get("topk"), (r["match"] or {}).get("topk")) if x is not None]
+        return max(vals) if vals else None
+    comp_fn = dict(methods, PROFILE_joint=rival_level)
     report = {}
     for cid in cids:
         fx = _fixture(repo, cid)
@@ -129,7 +147,7 @@ def score(repo, out_dir, cids):
         with open(os.path.join(out_dir, cid + ".anchors.json")) as f:
             anc = json.load(f)
         frames = []                       # (rec, true_row, others, trusted)
-        absent = []
+        absent, undetected = [], []
         for r in recs:
             cf = r["frame"] + s
             pf = lab["per_frame"][cf] if cf < len(lab["per_frame"]) else None
@@ -146,6 +164,8 @@ def score(repo, out_dir, cids):
                 frames.append((r, true, [x for x in rows if x is not true], r["target"]["trusted"]))
             elif not_visible:
                 absent.append(r)
+            elif pf is not None:
+                undetected.append(r)
         kits = [t["match"]["kit"] for _, t, _, _ in frames if t["match"] and t["match"]["kit"] is not None]
         kit_thr = float(np.percentile(kits, 10)) if kits else None
         out = {"anchors": len(anc["anchors"]), "anchor_aspects": [round(a["aspect"], 3) for a in anc["anchors"]],
@@ -154,16 +174,24 @@ def score(repo, out_dir, cids):
                "frames_true_detected": len(frames),
                "frames_trusted": sum(1 for f in frames if f[3]), "tracker_trusted_all": sum(
                    1 for r in recs if r["target"]["trusted"]), "methods": {}}
+        def same_kit(others, cf):
+            return [cf(o) for o in others if o["match"] and o["match"]["kit"] is not None and kit_thr is not None
+                    and o["match"]["kit"] >= kit_thr and cf(o) is not None]
+        common = {id(f[0]) for f in frames if all(methods[m](f[1]) is not None and same_kit(f[2], comp_fn[m])
+                                                  for m in methods)}
+        out["frames_common"] = len(common)
         for name, fn in methods.items():
             res = {}
-            for split in ("ALL", "UNTRUSTED", "TRUSTED"):
+            cf = comp_fn[name]
+            for split in ("ALL", "UNTRUSTED", "TRUSTED", "COMMON_ALL", "COMMON_UNTRUSTED"):
                 seps, n_sk, rank1, mar = [], 0, 0, 0
                 for r, t, others, trusted in frames:
-                    if (split == "UNTRUSTED" and trusted) or (split == "TRUSTED" and not trusted):
+                    if split.endswith("UNTRUSTED") and trusted or split == "TRUSTED" and not trusted:
+                        continue
+                    if split.startswith("COMMON") and id(r) not in common:
                         continue
                     tv = fn(t)
-                    sk = [fn(o) for o in others if o["match"] and o["match"]["kit"] is not None and kit_thr is not None
-                          and o["match"]["kit"] >= kit_thr and fn(o) is not None]
+                    sk = same_kit(others, cf)
                     if tv is None or not sk:
                         continue
                     n_sk += 1
@@ -195,6 +223,15 @@ def score(repo, out_dir, cids):
                 srt = sorted(pre, reverse=True)
                 if srt[0] >= floor and (len(srt) == 1 or srt[1] <= srt[0] - margin):
                     v["PRE_WRONG_TARGET_ABSENT"] += 1
+        for r in undetected:
+            if r["profile"]["verdict"]["status"] == "SUPPORTED":
+                v["PROFILE_WRONG_TARGET_UNDETECTED"] += 1
+            pre = [x.get("pre") for x in r["profile"]["candidates"] if x.get("pre") is not None]
+            if pre:
+                srt = sorted(pre, reverse=True)
+                if srt[0] >= floor and (len(srt) == 1 or srt[1] <= srt[0] - margin):
+                    v["PRE_WRONG_TARGET_UNDETECTED"] += 1
+        out["frames_target_undetected"] = len(undetected)
         out["frames_target_absent"] = len(absent)
         out["verdicts"] = dict(v)
         report[cid] = out

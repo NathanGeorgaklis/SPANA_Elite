@@ -28,13 +28,25 @@ def people(*others):
     return SS.make_people([("TARGET", KIT_A, 1.0)] + list(others))
 
 
+def check_invariants(res, pf):
+    """Every frame: temporal evidence only for a box that is clean NOW; none on a box with a break flag."""
+    for row in pf["candidates"]:
+        o = res.observations[row["index"]]
+        if row["temporal"] is not None:
+            assert row["clean"], ("temporal evidence on a box that is not clean now", res.rel_frame, row)
+        if any(f in o.flags for f in TP._BREAK_FLAGS):
+            assert row["temporal"] is None and not row["clean"], ("break flag", res.rel_frame, o.flags)
+
+
 def run(frames, pp, fps, *, pose_gain=0.0, reader=None, cfg=CFG):
     out = {"frames": [], "prof": None}
 
     def obs(k, res, img, tf, tt, ext):
         if out["prof"] is None:
             out["prof"] = TP.TargetProfile(cfg, ext, number_reader=reader)
-        out["frames"].append(out["prof"].update(res, img, tf, tt.bank))
+        f = out["prof"].update(res, img, tf, tt.bank)
+        check_invariants(res, f)
+        out["frames"].append(f)
     r = SS.run(frames, pp, fps=fps, pose_gain=pose_gain, observer=obs, cfg=cfg)
     return r, out["prof"], out["frames"]
 
@@ -207,8 +219,148 @@ class TestTargetProfile(unittest.TestCase):
         self.assertEqual(true_new_pose.support, 1.0, "the true target matches every anchor")
         self.assertLess(z.support, CFG.get("profile_support_min_fraction"))
 
+    def test_novelty_threshold_and_unusable_features(self):
+        prof = TP.TargetProfile(CFG, None)
+        lab = lab_of(1)
+        base = np.eye(12)[0]
+        self.assertEqual(prof.offer(feat(base, lab), (0, 0, 40, 100), 0, 0.0, "SEED"), TP.ADDED)
+        nov = CFG.get("profile_anchor_min_novelty")
+
+        def at_cos(cs):
+            return feat(cs * base + np.sqrt(1 - cs * cs) * np.eye(12)[3], lab)
+        self.assertEqual(prof.offer(at_cos(1 - nov / 2), (0, 0, 40, 100), 1, 0.1, "TRUSTED_BANK"), TP.REDUNDANT)
+        self.assertEqual(prof.offer(at_cos(1 - 2 * nov), (0, 0, 40, 100), 2, 0.2, "TRUSTED_BANK"), TP.ADDED)
+        bad = AppearanceFeature(lab=None, embedding=None, quality=CropQuality(H, 1.0, 0.0, 0.0, False, ()))
+        self.assertEqual(prof.offer(bad, (0, 0, 40, 100), 3, 0.3, "TRUSTED_BANK"), TP.REFUSED)
+        self.assertEqual(len(prof.anchors), 2)
+
+    def test_the_seed_anchor_is_never_evicted_even_when_most_redundant(self):
+        cfg = TrackerConfig.with_overrides({"profile_max_anchors": 2})
+        prof = TP.TargetProfile(cfg, None)
+        lab = lab_of(1)
+        e = np.eye(12)
+        prof.offer(feat(e[0], lab), (0, 0, 40, 100), 0, 0.0, "SEED")
+        prof.offer(feat(e[0] + 0.5 * e[5], lab), (0, 0, 40, 100), 1, 0.1, "TRUSTED_BANK")
+        prof.offer(feat(e[0] + 0.4 * e[6], lab), (0, 0, 40, 100), 2, 0.2, "TRUSTED_BANK")   # closest to the seed
+        self.assertEqual(len(prof.anchors), 2)
+        self.assertEqual(prof.anchors[0].rel_frame, 0, "the seed stays")
+
+    def test_a_continuity_break_clears_every_history(self):
+        from types import SimpleNamespace
+        from player_tracker_rb import population as P
+        from player_tracker_rb.appearance import AppearanceExtractor
+        from player_tracker_rb.detector import PersonCandidate
+        pp = people()
+        ext = AppearanceExtractor(CFG, SS.SignatureEmbedding(pp, 0.0))
+        pop = P.Population(CFG, SS.W, SS.H)
+        cands = [PersonCandidate(SS.box_at(400, 400, 40, H), 0.9, False, "synthetic")]
+        pop.update(0, 0.0, cands, SS.identity_motion(C.FIRST_FRAME))
+        res = pop.update(1, 1 / 30.0, cands, SS.identity_motion(C.CUT, continuity_broken=True))
+        prof = TP.TargetProfile(CFG, ext)
+        tid = res.tracklets[0].tracklet_id
+        prof._hist = {tid: [(0.0, None)]}
+        img = SS.render(SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}), pp)
+        tf = SimpleNamespace(decision={}, identity_trusted=False, bbox=(0, 0, 1, 1))
+        prof.update(res, img, tf, SimpleNamespace(samples=[]))
+        self.assertEqual(prof._hist, {})
+
+    def _flag_frames(self):
+        """A stub extractor (fixed usable target-like feature, settable crop flags) and a real one-body FrameResult."""
+        from types import SimpleNamespace
+        from player_tracker_rb import population as P
+        from player_tracker_rb.detector import PersonCandidate
+        lab = lab_of(1)
+
+        class Stub:
+            flags = ()
+
+            def extract(self, image, box, *, others, merged_suspected=False):
+                return AppearanceFeature(lab=lab, embedding=l2_normalise(np.eye(12)[0]),
+                                         quality=CropQuality(H, 1.0, 0.0, 1.0, True, tuple(Stub.flags)))
+        pop = P.Population(CFG, SS.W, SS.H)
+        cands = [PersonCandidate(SS.box_at(400, 400, 40, H), 0.9, False, "synthetic")]
+        res = [pop.update(0, 0.0, cands, SS.identity_motion(C.FIRST_FRAME))]
+        for k in range(1, 4):
+            res.append(pop.update(k, k / 30.0, cands, SS.motion_from_matrix([[1, 0, 0], [0, 1, 0]], SS.W, SS.H)))
+        assert len({r.observations[0].tracklet_id for r in res}) == 1, "one continuing tracklet"
+        prof = TP.TargetProfile(CFG, Stub())
+        prof.offer(feat(np.eye(12)[0], lab), (0, 0, 40, 100), 0, 0.0, "SEED")
+        tf = SimpleNamespace(decision={}, identity_trusted=False, bbox=(0, 0, 1, 1))
+        bank = SimpleNamespace(samples=[])
+        img = np.zeros((SS.H, SS.W, 3), np.uint8)
+        return prof, Stub, res, tf, bank, img
+
+    def _with_obs_flag(self, res, flag):
+        import dataclasses
+        o = res.observations[0]
+        return dataclasses.replace(res, observations=(dataclasses.replace(o, flags=o.flags + (flag,)),))
+
+    def test_a_break_flag_clears_the_history_and_unclean_boxes_add_nothing(self):
+        from player_tracker_rb import population as P
+        from player_tracker_rb.appearance import OCCLUDED_BY_OTHER
+        required = (P.MERGED_SUSPECTED, P.IN_MERGED_REGION, P.CONTESTED, P.SIZE_ANOMALY, P.DUPLICATE_ABSORBED,
+                    P.REASSOCIATED_AFTER_GAP)                 # named here, not read from the module under test
+        for flag in required:
+            with self.subTest(flag=flag):
+                prof, Stub, res, tf, bank, img = self._flag_frames()
+                prof.update(res[1], img, tf, bank)
+                tid = res[1].observations[0].tracklet_id
+                self.assertEqual(len(prof._hist[tid]), 1)
+                prof.update(self._with_obs_flag(res[2], flag), img, tf, bank)
+                self.assertNotIn(tid, prof._hist, "history cleared by the break")
+        for flag in (P.PARTIAL, P.TOUCHES_IMAGE_EDGE):
+            with self.subTest(flag=flag):
+                prof, Stub, res, tf, bank, img = self._flag_frames()
+                prof.update(res[1], img, tf, bank)
+                tid = res[1].observations[0].tracklet_id
+                f = prof.update(self._with_obs_flag(res[2], flag), img, tf, bank)
+                self.assertEqual(len(prof._hist[tid]), 1, "no evidence added, history kept")
+                self.assertFalse(f["candidates"][0]["clean"])
+        with self.subTest(flag=OCCLUDED_BY_OTHER):
+            prof, Stub, res, tf, bank, img = self._flag_frames()
+            prof.update(res[1], img, tf, bank)
+            tid = res[1].observations[0].tracklet_id
+            Stub.flags = (OCCLUDED_BY_OTHER,)
+            f = prof.update(res[2], img, tf, bank)
+            self.assertEqual(len(prof._hist[tid]), 1)
+            self.assertIsNone(f["candidates"][0]["temporal"])
+
+    def test_an_unscored_body_in_view_blocks_support(self):
+        prof = TP.TargetProfile(CFG, None)
+        prof.offer(feat(np.eye(12)[0], lab_of(1)), (0, 0, 40, 100), 0, 0.0, "SEED")
+        good = {"topk": 0.95, "support": 1.0, "kit": 0.9}
+        rows = self._rows([good])
+        rows.append({"index": 1, "tracklet": "T9", "match": None, "temporal": None, "number": TP.UNKNOWN})
+        v = prof._verdict(rows)
+        self.assertNotEqual(v["status"], TP.SUPPORTED)
+        self.assertIn("UNSCORED_BODY_IN_VIEW", v["reasons"])
+
+    def test_a_rival_counts_with_its_higher_temporal_evidence(self):
+        prof = TP.TargetProfile(CFG, None)
+        prof.offer(feat(np.eye(12)[0], lab_of(1)), (0, 0, 40, 100), 0, 0.0, "SEED")
+        good = {"topk": 0.95, "support": 1.0, "kit": 0.9}
+        rival = dict(good, topk=0.93, now={"topk": 0.7, "support": 0.0, "kit": 0.9})
+        v = prof._verdict(self._rows([good, rival]))
+        self.assertEqual(v["status"], TP.AMBIGUOUS)
+        self.assertIn(1, v["rivals"])
+
+    def test_a_tiny_target_beside_a_look_alike_after_a_cut_does_not_support_the_look_alike(self):
+        # review HIGH-2: the true target's crop is too small to score; the look-alike must not be SUPPORTED
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                n1, n2 = int(1.5 * fps), int(2.0 * fps)
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+                for k in range(n2):
+                    cam = SS.identity_motion(C.CUT, continuity_broken=True) if k == 0 else None
+                    fr.append(SS.SceneFrame({"TARGET": SS.box_at(300, 400, 8, 20), "LOOK": SS.box_at(700, 400, 40, H)},
+                                            camera=cam))
+                r, prof, pf = run(fr, people(("LOOK", KIT_A, 0.9)), fps)
+                seen = [k for k in range(len(fr)) if any(d.owners == ("TARGET",) for d in r.dets[k])]
+                self.assertTrue([k for k in seen if k >= n1], "control: the tiny target is detected")
+                self.assertEqual([k for k in supported(r, pf, "LOOK") if k in seen], [])
+
     def _rows(self, entries):
-        return [{"index": i, "tracklet": f"T{i}", "match": e.get("now", {"topk": e["topk"], "support": e["support"]}),
+        return [{"index": i, "tracklet": f"T{i}", "match": e.get("now", {"topk": e["topk"], "support": e["support"], "kit": e["kit"]}),
                  "temporal": e, "number": e.get("n", TP.UNKNOWN)} for i, e in enumerate(entries)]
 
     def test_verdict_needs_every_cue_and_a_margin(self):
@@ -225,7 +377,7 @@ class TestTargetProfile(unittest.TestCase):
                 v = prof._verdict(self._rows([e]))
                 self.assertNotEqual(v["status"], TP.SUPPORTED)
                 self.assertIn(why, v["reasons"])
-        v = prof._verdict(self._rows([dict(good, now={"topk": 0.6, "support": 0.0})]))
+        v = prof._verdict(self._rows([dict(good, now={"topk": 0.6, "support": 0.0, "kit": 0.9})]))
         self.assertNotEqual(v["status"], TP.SUPPORTED, "good past evidence never outvotes a poor current box")
         v = prof._verdict(self._rows([good, dict(good, topk=0.92)]))
         self.assertEqual(v["status"], TP.AMBIGUOUS)
@@ -278,6 +430,36 @@ class TestTargetProfile(unittest.TestCase):
         win = CFG.get("profile_temporal_window_s")
         self.assertTrue(all(s["profile_histories"] <= 2 and s["profile_history_samples"] <= 2 * (win * fps + 2)
                             for _, s, _ in sizes))
+
+
+class TestTrackerResidualSameKitSubstitution(unittest.TestCase):
+    """Review of b36c5cb, HIGH-1 (the UNCHANGED tracker; this stage may not change it): the target vanishes and, in
+    the same frame, a same-kit player (identity cosine >= ~0.7, composite >= appearance_floor) takes its exact box.
+    The population continues the tracklet, the tracker stays TRACKING and TRUSTED, its bank takes the look-alike, and
+    the profile inherits it as an anchor. Recorded residual for a dedicated tracker stage."""
+
+    def scene(self, fps, cos):
+        n1, n2 = int(1.5 * fps), int(1.5 * fps)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+        fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(n2)]
+        return run(fr, people(("LOOK", KIT_A, cos)), fps)
+
+    @unittest.expectedFailure
+    def test_residual_tracker_never_trusts_a_same_kit_substitute(self):
+        r, prof, pf = self.scene(30.0, 0.8)
+        self.assertEqual([k for k in r.swaps() if r.frames[k].identity_trusted], [])
+
+    @unittest.expectedFailure
+    def test_residual_profile_never_anchors_a_same_kit_substitute(self):
+        r, prof, pf = self.scene(30.0, 0.8)
+        anchors_only_from_trusted_bank_accepts(self, r, prof)
+
+    def test_below_the_floor_no_substitute_is_trusted(self):
+        for cos in (0.3, 0.6):
+            with self.subTest(cos=cos):
+                r, prof, pf = self.scene(30.0, cos)
+                self.assertEqual([k for k in r.swaps() if r.frames[k].identity_trusted], [])
+                anchors_only_from_trusted_bank_accepts(self, r, prof)
 
 
 if __name__ == "__main__":
