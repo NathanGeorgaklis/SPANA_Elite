@@ -76,14 +76,16 @@ continued: the target can then only come back through REACQUISITION.
 NOT_TARGET MEMORY (NEW_R2, R2 DEV; OFF unless not_target_memory_enabled): every KNOWN OTHER is also remembered, with
 a snapshot of its own population bank at that moment, and the memory is NOT cleared when a reacquisition is accepted
 (the known others are): a body seen as a separate box beside the trusted, verified, settled target is a different
-physical person for as long as its own tracklet is one unbroken body. An entry is dropped for good when its tracklet
-is no longer live, when its box is CONTESTED / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGED_SUSPECTED /
-SIZE_ANOMALY or its tracklet gains MERGE_LINEAGE (it may now hold the target: F3c), or on any camera continuity break
-(all entries). The snapshot is refreshed on every settled frame beside the trusted target. It only VETOES
-reacquisition candidates: a remembered tracklet is excluded only if its current crop matches its own snapshot and does
-not match the target bank better by ambiguity_margin (otherwise -- no usable crop, an empty snapshot, or a crop that
-now looks more like the target: the population may have carried that tracklet onto the target -- the veto is
-withdrawn and the box faces the ordinary tests). Nothing is ever learned from an untrusted or ambiguous frame (entries come only from known others).
+physical person for as long as its own tracklet is one unbroken body. A body is recorded (and its snapshot refreshed,
+on every settled frame) only while it shows no break flag and no MERGE_LINEAGE. An entry is dropped for good when its
+tracklet is no longer live, becomes one of the target's own tracklets, gains MERGE_LINEAGE, or its box is CONTESTED /
+DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGED_SUSPECTED / SIZE_ANOMALY / PARTIAL / TOUCHES_IMAGE_EDGE /
+REASSOCIATED_AFTER_GAP (it may no longer be that one body: F3c), and all entries on any camera continuity break. It
+only VETOES reacquisition candidates, and only on POSITIVE evidence: the current crop matches its own snapshot at
+appearance_floor and better than it matches the target bank by ambiguity_margin (no usable crop, an empty snapshot,
+or a look-alike of both -> no veto: the population may have carried that tracklet onto the target). A vetoed box is
+never accepted but remains a RIVAL, so a veto can never clear the way for a worse candidate. Nothing is ever learned
+from an untrusted or ambiguous frame (entries come only from known others).
 
 REACQUISITION (D15; any box that is not the continuing tracklet, after any break):
   * candidates: every non-merged, non-alternative detection whose tracklet is not a KNOWN OTHER (a tracked body
@@ -233,7 +235,8 @@ _SEED_DEFERRABLE = (P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.NESTED, P.ALTERNATIVE, P.
 _SEED_PENDING_BREAK = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY)
 
 # NOT_TARGET memory: a remembered tracklet whose box shows any of these may no longer be one body (the entry is dropped)
-_NT_BREAK_FLAGS = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY)
+_NT_BREAK_FLAGS = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY,
+                   P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.REASSOCIATED_AFTER_GAP)
 
 _BANK_REFUSE_FLAGS = (P.CONTESTED, P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION,
                       P.MERGED_SUSPECTED, P.NESTED, P.ALTERNATIVE, P.SIZE_ANOMALY)
@@ -796,12 +799,13 @@ class TargetTracker:
             if other.is_body and other.index not in grp and other.tracklet_id and \
                     other.tracklet_id != o.tracklet_id and other.tracklet_id not in self._target_tracklets:
                 self._known_others.add(other.tracklet_id)
-                if self._cfg.get("not_target_memory_enabled"):
+                if self._cfg.get("not_target_memory_enabled") and self._nt_recordable(res, other):
                     # refreshed on every settled frame beside the trusted target: those samples are of a separate body
                     bank = self._pop.bank_of(other.tracklet_id)
                     self._nt_memory[other.tracklet_id] = list(bank.samples) if bank is not None else []
         if o.tracklet_id:
             self._target_tracklets.add(o.tracklet_id)
+            self._nt_memory.pop(o.tracklet_id, None)        # the target's own tracklet is never remembered as another
         self._last_confirm_t, self._last_confirm_frame = t, res.rel_frame
         self._last_trusted_conf = conf
         self._uncertain_from = None
@@ -1430,16 +1434,26 @@ class TargetTracker:
         live = {v.tracklet_id: v for v in res.tracklets}
         for tid in list(self._nt_memory):
             v = live.get(tid)
-            if v is None or P.MERGE_LINEAGE in v.flags:
+            if v is None or P.MERGE_LINEAGE in v.flags or tid in self._target_tracklets:
                 del self._nt_memory[tid]
                 continue
             if v.observed and any(f in res.observations[v.detection_index].flags for f in _NT_BREAK_FLAGS):
                 del self._nt_memory[tid]
 
+    @staticmethod
+    def _nt_recordable(res: P.FrameResult, other: P.Observation) -> bool:
+        """A body is remembered only while it is plainly one whole body: no break flag, no merge lineage."""
+        if any(f in other.flags for f in _NT_BREAK_FLAGS):
+            return False
+        v = res.tracklet(other.tracklet_id)
+        return v is not None and P.MERGE_LINEAGE not in v.flags
+
     def _nt_veto(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
                  o: P.Observation) -> Optional[Dict[str, Any]]:
         """The NOT_TARGET memory's verdict on reacquisition candidate o: None (not remembered), or a record with
-        veto True (excluded) / False (withdrawn: it now looks more like the target than like its recorded self)."""
+        veto True (excluded) / False (withdrawn). A veto needs POSITIVE evidence: the crop matches its own snapshot at
+        appearance_floor AND better than it matches the target bank by ambiguity_margin. A look-alike (similar to
+        both) is never vetoed: the population may have carried the remembered tracklet onto the target."""
         snap = self._nt_memory.get(o.tracklet_id) if o.tracklet_id else None
         if snap is None:
             return None
@@ -1451,10 +1465,11 @@ class TargetTracker:
             if sim.composite is not None and (ns is None or sim.composite > ns):
                 ns = sim.composite
         t_sim = None if ts is None else ts.composite
-        # no veto without appearance evidence that the box is still that other person (no usable crop, no snapshot)
-        withdrawn = ns is None or t_sim is None or t_sim >= ns + self._cfg.get("ambiguity_margin")
+        # no veto without positive evidence that the box is still that other person and not the target
+        veto = ns is not None and t_sim is not None and ns >= self._cfg.get("appearance_floor") and \
+            ns >= t_sim + self._cfg.get("ambiguity_margin")
         return {"tracklet": o.tracklet_id, "target_similarity": t_sim, "own_snapshot_similarity": ns,
-                "veto": not withdrawn}
+                "veto": veto}
 
     def _reacquire(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
                    pred_box: Optional[Box], gate_h: Optional[float], h: float, absence: float,
@@ -1468,24 +1483,26 @@ class TargetTracker:
                 and e.tracklet_id == self._tracklet]
         excluded_known = []
         nt_log: List[Dict[str, Any]] = []
+        nt_vetoed: List[CandidateEvaluation] = []          # never accepted, but still rivals (a veto clears no way)
         for o in res.observations:
             if not o.is_body or P.ALTERNATIVE in o.flags:
                 continue
             if o.tracklet_id in self._known_others:
                 excluded_known.append(o.tracklet_id)        # seen beside the confirmed target: not the target
                 continue
-            if c.get("not_target_memory_enabled"):
-                nt = self._nt_veto(cache, res, image, o)
-                if nt is not None:
-                    nt_log.append(nt)
-                    if nt["veto"]:
-                        continue                            # remembered as a different person: vetoed
+            nt = self._nt_veto(cache, res, image, o) if c.get("not_target_memory_enabled") else None
+            if nt is not None:
+                nt_log.append(nt)
             if self._tracklet is not None and o.tracklet_id == self._tracklet:
                 continue                                    # the current (failing) continuation is not re-tested
             if not self._in_gate(o.bbox, pred_box, gate_h, h):
                 continue
-            cands.append(self._evaluate(cache, res, image, o.index, role=REACQUISITION, pred_box=pred_box,
-                                        gate_h=gate_h, h=h, absence_s=absence))
+            e = self._evaluate(cache, res, image, o.index, role=REACQUISITION, pred_box=pred_box,
+                               gate_h=gate_h, h=h, absence_s=absence)
+            if nt is not None and nt["veto"]:
+                nt_vetoed.append(e)                         # remembered as a different person: never accepted
+                continue
+            cands.append(e)
         evals.extend(cands)
         passing = sorted([e for e in cands if e.passed and e.tracklet_id is not None],
                          key=lambda e: (-e.composite, e.detection_index))
@@ -1498,7 +1515,7 @@ class TargetTracker:
                             key=lambda e: (-e.composite, e.detection_index))
         out["best_failing"] = lookalikes[0] if lookalikes and not lookalikes[0].passed else None
         best = passing[0] if passing else None
-        rivals = self._rivals(cands + cont, best) if best is not None else []
+        rivals = self._rivals(cands + cont + nt_vetoed, best) if best is not None else []
         hit = best is not None and not rivals
         v = self._verif
         if v is not None:
