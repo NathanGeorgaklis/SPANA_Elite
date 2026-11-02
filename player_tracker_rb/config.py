@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2tp-1"   # r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2ho-1"   # r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -112,6 +112,8 @@ UNV = "UNVALIDATED"
 # The registry. Ordered by group. Each name is unique (enforced at import time).
 # ---------------------------------------------------------------------------------------------
 _IDENT_EV = "NEW_R2 (R2 DEV persistent identity layer, diagnostic only; not used by target trust)"
+_HAND_EV = ("NEW_R2 (R2 DEV same-frame identity handoff safety; thresholds reuse reacq_appearance_floor and "
+            "ambiguity_margin; tools_rb/r2_handoff_diag.py DEV measurement)")
 _PROF_EV = "NEW_R2 (R2 DEV target reference profile, diagnostic only; not used by the tracker)"
 
 PARAMS: Tuple[Param, ...] = (
@@ -893,6 +895,23 @@ PARAMS: Tuple[Param, ...] = (
        "conflicting one; confirmed different numbers refuse a link, equal numbers never make one.", 3, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _IDENT_EV + "; no number reader is configured in R2",
        1, 1000),
+    # ---- same-frame identity handoff safety (NEW_R2, R2 DEV; target.py) -----------------------------------
+    _p("continuity_step_enabled", "bool", "flag",
+       "Handoff safety on: the target tracklet's consecutive-crop appearance step must stay continuous (below "
+       "reacq_appearance_floor, or ambiguity_margin below its recent median, breaks continuity: reacquisition only), "
+       "and a continuation frame offers a bank sample only after a passed step.", True, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "identity", _HAND_EV, None, None),
+    _p("continuity_step_max_gap_s", "float", "s",
+       "Handoff safety: a step is tested only against a previous usable crop of the same tracklet at most this old "
+       "(consecutive observations).", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
+       _HAND_EV + "; measured on DEV at <= 2 frames apart", 0.0, 10.0),
+    _p("continuity_step_window_s", "float", "s",
+       "Handoff safety: the step baseline is the median of the tracklet's accepted steps over this window.", 0.5, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _HAND_EV + "; measured on DEV with a 15-frame window",
+       0.0, 60.0),
+    _p("continuity_step_min_steps", "int", "steps",
+       "Handoff safety: the relative (drop) test needs at least this many accepted steps in the window.", 3, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _HAND_EV + "; as measured on DEV", 1, 1000),
     # ---- target reference profile (NEW_R2, diagnostic only; target_profile.py; not used by the tracker) ------
     _p("profile_max_anchors", "int", "anchors",
        "Target reference profile: at most this many diverse trusted anchors (the most redundant non-seed anchor is "

@@ -143,6 +143,21 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
     updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
     banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
+  * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; ON unless continuity_step_enabled is False): geometry alone cannot
+    tell a continuing target from a different player who takes its box in the same frame (the population continues
+    the tracklet; the bank test passes for a same-kit player above appearance_floor). On every frame the target's
+    own tracklet is observed with a usable, uncontaminated crop, its STEP is the composite similarity to the same
+    tracklet's previous such crop, if that crop is at most continuity_step_max_gap_s old. A step BREAKS continuity
+    if it is below reacq_appearance_floor, or if it is at least ambiguity_margin below the median of the tracklet's
+    own accepted steps over the last continuity_step_window_s (when at least continuity_step_min_steps exist). A
+    break is handled like an ended size anomaly: the tracklet is released, the frame is AMBIGUOUS
+    (COMPETING_CANDIDATE; decision log continuity_broken = APPEARANCE_STEP) and the target can only come back
+    through reacquisition (a new, unverified episode: untrusted and never banked until contrast-verified). The
+    target bank is offered a sample on a continuation frame only if this frame's step was tested and passed
+    (CONTINUITY_UNPROVEN otherwise): every bank sample is appearance-linked to the previous observation. DEV
+    measurement (tools_rb/r2_handoff_diag.py, 9 clips): a nearby real player's crop against the target's previous
+    crop breaks on 100 % of 4,656 cases; genuine trusted steps break on 1.6 %. Residual: a near-identical twin
+    (synthetic cosine >= ~0.95) substituted with no break flag is not detected by appearance.
   * POST-ANOMALY RE-VERIFICATION (NEW_R2, R2 DEV F5; OFF unless target_reverify_enabled): when a SIZE_ANOMALY
     starts on the tracklet of a VERIFIED identity (the origin), a watch starts (ANOMALY); when the anomaly ends and
     breaks the identity, it waits (WAIT). If the target is
@@ -177,7 +192,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 import numpy as np
 
 from .appearance import (AppearanceBank, AppearanceExtractor, AppearanceFeature, AppearanceSimilarity,
-                         BankUpdateContext, compare, identity_support)
+                         BankUpdateContext, CONTAMINATION_FLAGS, compare, identity_support)
 from .camera import ESTIMATED, FIRST_FRAME
 from .config import TrackerConfig, sec_ge, sec_gt, sec_le, sec_lt
 from .detector import box_iou_matrix, containment
@@ -417,6 +432,11 @@ class TargetTracker:
         # NEW_R2 F5: the tracklet whose ended SIZE_ANOMALY broke a VERIFIED episode, and the post-anomaly
         # re-verification run on it (None, or {"origin", "t0", "box0"}; see the module docstring)
         self._reverify: Optional[Dict[str, Any]] = None
+        # NEW_R2 handoff safety: (tracklet, time, feature) of the target tracklet's last usable uncontaminated crop,
+        # the recent accepted steps on it (time, composite), and whether this frame's step was tested and passed
+        self._step_ref: Optional[Tuple[str, float, AppearanceFeature]] = None
+        self._step_hist: List[Tuple[float, float]] = []
+        self._step_proven = False
         self._lost_gate0: Optional[Tuple[float, float]] = None   # F9: (time, gate) when the LOST search started
         self._seed_pending: Optional[Dict[str, Any]] = None       # F2: deferred seed anchor (tracklet, t0, why)
         self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
@@ -753,15 +773,20 @@ class TargetTracker:
         if max_iou > c.get("bank_contact_iou"):
             refusals.append("NOT_ISOLATED")
         seed_frame = self._last_frame is None
+        if self._cfg.get("continuity_step_enabled") and not seed_frame and not self._step_proven:
+            refusals.append("CONTINUITY_UNPROVEN")           # handoff safety: no step-linked proof this frame
         if res.camera.status != ESTIMATED and not res.camera.continuity_broken and not seed_frame:
             refusals.append("CAMERA_UNVERIFIED")
         if self._last_bank_t is not None and sec_lt(t - self._last_bank_t, c.get("target_bank_sample_interval_s")):
             refusals.append("SAMPLE_NOT_DUE")
-        if refusals:
-            return {"status": "REFUSED", "refusals": sorted(set(refusals))}
         feat = self._feature(cache, res, image, i)
         ctx = BankUpdateContext(identity_trusted=True, merged_suspected=False, max_competitor_iou=max_iou,
                                 seconds_since_reacquisition=None if self._reacq_t is None else t - self._reacq_t)
+        if refusals == ["CONTINUITY_UNPROVEN"]:
+            # log the bank's own reasons too (read-only check: nothing is added or counted)
+            refusals += list(self._bank.update_refusals(feat, ctx))
+        if refusals:
+            return {"status": "REFUSED", "refusals": sorted(set(refusals))}
         status, why = self._bank.add(feat, ctx)
         self._last_bank_t = t
         return {"status": status, "refusals": list(why)}
@@ -986,6 +1011,8 @@ class TargetTracker:
         if sim is not None and (sim.composite is None or sim.composite < floor):
             refuse(f"the seed body's crop no longer matches the seed crop (composite "
                    f"{'n/a' if sim.composite is None else round(sim.composite, 3)} < reacq_appearance_floor {floor})")
+        # handoff safety: the bank anchor's continuity proof here is this crop's match to the human seed crop
+        self._step_proven = sim is not None
         ev = CandidateEvaluation(o.index, o.tracklet_id, o.bbox, "SEED", True, None, False, None,
                                  tuple(feat.quality.flags), None, None, None, None, 0.0, (), True, ())
         self._state = TRACKING
@@ -1018,6 +1045,7 @@ class TargetTracker:
         self._check_frame(res, image)
         c = self._cfg
         t = res.time_s
+        self._step_proven = False
         self._pop.sample_appearance(res.rel_frame, image, self._ext)
         alive = {v.tracklet_id for v in res.tracklets} | {m.tracklet_id for m in self._pop.recently_closed()}
         self._known_others &= alive                          # bounded: only bodies the population still knows
@@ -1038,6 +1066,7 @@ class TargetTracker:
             self._verif = None
             self._sizes, self._last_h = [], None              # scale from another shot means nothing here
             self._reverify = None                             # physical continuity cannot span a cut (F5)
+            self._step_ref, self._step_hist = None, []         # nor can an appearance step
             log["camera"] = "CONTINUITY_BROKEN"
         elif self._motion is not None:
             self._motion = self._mm.apply_camera(self._motion, cam)
@@ -1104,6 +1133,20 @@ class TargetTracker:
                         self._reverify = None
                     self._tracklet, self._anomaly_tracklet = None, None
                     log["continuity_broken"] = "SIZE_ANOMALY_ENDED"
+            if not continuity_broken and tv is not None and tv.observed and c.get("continuity_step_enabled"):
+                step = self._handoff_step(cache, res, image, tv)
+                log["continuity_step"] = step
+                if step["broken"]:
+                    # NEW_R2 handoff safety (module doc): another body may have taken the target's box
+                    continuity_broken = True
+                    if self._reverify is not None and self._reverify.get("origin") == self._tracklet:
+                        self._reverify = None
+                    if self._anomaly_tracklet == self._tracklet:
+                        self._anomaly_tracklet = None
+                    self._tracklet = None
+                    log["continuity_broken"] = "APPEARANCE_STEP"
+                elif step["tested"]:
+                    self._step_proven = True
             if continuity_broken:
                 state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]
             elif tv is not None and tv.observed:
@@ -1422,6 +1465,37 @@ class TargetTracker:
         if occ:
             return OCCLUDED, [OCCLUDER_OVERLAP], tuple(sorted(occ)), False
         return OCCLUDED, [NO_CANDIDATE_IN_GATE], (), False
+
+    def _handoff_step(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
+                      tv: P.TrackletView) -> Dict[str, Any]:
+        """NEW_R2 same-frame handoff safety (module docstring): test the target tracklet's appearance step."""
+        c = self._cfg
+        t = res.time_s
+        feat = self._feature(cache, res, image, tv.detection_index)
+        clean = feat.usable and not any(f in feat.quality.flags for f in CONTAMINATION_FLAGS)
+        ref = self._step_ref
+        if ref is not None and ref[0] != tv.tracklet_id:
+            ref, self._step_hist = None, []
+        rec: Dict[str, Any] = {"tested": False, "broken": False}
+        if clean and ref is not None and sec_le(t - ref[1], c.get("continuity_step_max_gap_s")):
+            d = compare(feat, ref[2], c).composite
+            if d is not None:
+                win = c.get("continuity_step_window_s")
+                hist = [x for x in self._step_hist if sec_le(t - x[0], win)]
+                base = float(np.median([x[1] for x in hist])) if len(hist) >= c.get("continuity_step_min_steps") \
+                    else None
+                below = d < c.get("reacq_appearance_floor")
+                drop = base is not None and base - d >= c.get("ambiguity_margin")
+                rec = {"tested": True, "step": d, "baseline": base, "broken": below or drop,
+                       "why": (["BELOW_REACQ_FLOOR"] if below else []) + (["DROP"] if drop else [])}
+                if not rec["broken"]:
+                    hist.append((t, d))
+                self._step_hist = hist
+        if rec["broken"]:
+            self._step_ref, self._step_hist = None, []
+        elif clean:
+            self._step_ref = (tv.tracklet_id, t, feat)
+        return rec
 
     def _nt_prune(self, res: P.FrameResult) -> None:
         """NOT_TARGET memory upkeep (module docstring): drop every entry on a camera continuity break, and an entry

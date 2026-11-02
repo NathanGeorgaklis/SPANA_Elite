@@ -433,10 +433,9 @@ class TestTargetProfile(unittest.TestCase):
 
 
 class TestTrackerResidualSameKitSubstitution(unittest.TestCase):
-    """Review of b36c5cb, HIGH-1 (the UNCHANGED tracker; this stage may not change it): the target vanishes and, in
-    the same frame, a same-kit player (identity cosine >= ~0.7, composite >= appearance_floor) takes its exact box.
-    The population continues the tracklet, the tracker stays TRACKING and TRUSTED, its bank takes the look-alike, and
-    the profile inherits it as an anchor. Recorded residual for a dedicated tracker stage."""
+    """Review of b36c5cb, HIGH-1: the target vanishes and, in the same frame, a same-kit player (identity cosine >=
+    ~0.7, composite >= appearance_floor) takes its exact box. Fixed in the R2 DEV handoff-safety stage for cosine
+    <= 0.9; a near twin (0.97) remains a tracker residual (tests_rb/test_handoff_safety.py)."""
 
     def scene(self, fps, cos):
         n1, n2 = int(1.5 * fps), int(1.5 * fps)
@@ -444,13 +443,12 @@ class TestTrackerResidualSameKitSubstitution(unittest.TestCase):
         fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(n2)]
         return run(fr, people(("LOOK", KIT_A, cos)), fps)
 
-    @unittest.expectedFailure
-    def test_residual_tracker_never_trusts_a_same_kit_substitute(self):
+    def test_tracker_never_trusts_a_same_kit_substitute(self):
+        # fixed by the same-frame handoff safety rule (continuity_step_*; tests_rb/test_handoff_safety.py)
         r, prof, pf = self.scene(30.0, 0.8)
         self.assertEqual([k for k in r.swaps() if r.frames[k].identity_trusted], [])
 
-    @unittest.expectedFailure
-    def test_residual_profile_never_anchors_a_same_kit_substitute(self):
+    def test_profile_never_anchors_a_same_kit_substitute(self):
         r, prof, pf = self.scene(30.0, 0.8)
         anchors_only_from_trusted_bank_accepts(self, r, prof)
 
