@@ -1,0 +1,6 @@
+all trusted 1117 breaks 18 0.0161 Counter({'R2_MCFC_MIT_C006': 8, 'R2_SYO_MAR_C016': 7, 'R2_MCFC_MIT_C033': 2, 'R2_MCFC_MIT_C034': 1})
+all untrusted 1005 breaks 59 0.0587 Counter({'R2_MCFC_MIT_C033': 27, 'R2_MCFC_MIT_C006': 16, 'R2_SYO_MAR_C004': 4, 'R2_SYO_MAR_C012': 4, 'R2_SYO_MAR_C016': 3, 'R2_SYO_MAR_C021': 3, 'R2_MCFC_MIT_C016': 1, 'R2_MCFC_MIT_C020': 1})
+all impostor 4656 caught 1.0
+clean trusted 684 breaks 9 0.0132 Counter({'R2_SYO_MAR_C016': 6, 'R2_MCFC_MIT_C006': 1, 'R2_MCFC_MIT_C033': 1, 'R2_MCFC_MIT_C034': 1})
+clean untrusted 430 breaks 15 0.0349 Counter({'R2_MCFC_MIT_C033': 9, 'R2_SYO_MAR_C016': 3, 'R2_MCFC_MIT_C006': 2, 'R2_MCFC_MIT_C020': 1})
+clean impostor 2981 caught 1.0
