@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2id-1"   # r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2nt-1"   # r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -700,6 +700,13 @@ PARAMS: Tuple[Param, ...] = (
        "BEHAVIOURAL", "reacquisition", "D15; R1 approval §F (longer absence, stronger evidence)", 0.0, 1.0),
     _p("reacq_margin_cap", "float", "similarity difference", "Upper limit of the grown reacquisition margin.",
        0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "reacquisition", "D15", 0.0, 1.0),
+    _p("not_target_memory_enabled", "bool", "flag",
+       "NOT_TARGET memory on or off. On: a KNOWN OTHER (recorded only beside the trusted, verified, settled target) is "
+       "still excluded from reacquisition after a reacquisition is accepted, while its own tracklet continues "
+       "unbroken (no merge, size anomaly, contest, merge lineage; cleared on a cut) and its current crop does not "
+       "look more like the target than like its recorded self. A veto only: it never proves the target.", False, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "target",
+       "NEW_R2 (R2 DEV NOT_TARGET memory). Off by default pending Nathan's integration decision.", None, None),
     _p("target_reverify_enabled", "bool", "flag",
        "Post-anomaly re-verification (F5) on or off. Off: an unverified episode is verified only by beating a "
        "confusable competitor (R1-G).", False, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "target",

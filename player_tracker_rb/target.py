@@ -73,11 +73,24 @@ tracklet closed: CONTACT_AMBIGUITY -> AMBIGUOUS (COMPETING_CANDIDATE), MERGED_CO
 LEFT_FRAME -> LOST (TARGET_OUT_OF_FRAME), UNMATCHED_TIMEOUT -> LOST (AGED_OUT). A closed tracklet is never
 continued: the target can then only come back through REACQUISITION.
 
+NOT_TARGET MEMORY (NEW_R2, R2 DEV; OFF unless not_target_memory_enabled): every KNOWN OTHER is also remembered, with
+a snapshot of its own population bank at that moment, and the memory is NOT cleared when a reacquisition is accepted
+(the known others are): a body seen as a separate box beside the trusted, verified, settled target is a different
+physical person for as long as its own tracklet is one unbroken body. An entry is dropped for good when its tracklet
+is no longer live, when its box is CONTESTED / DUPLICATE_ABSORBED / IN_MERGED_REGION / MERGED_SUSPECTED /
+SIZE_ANOMALY or its tracklet gains MERGE_LINEAGE (it may now hold the target: F3c), or on any camera continuity break
+(all entries). The snapshot is refreshed on every settled frame beside the trusted target. It only VETOES
+reacquisition candidates: a remembered tracklet is excluded only if its current crop matches its own snapshot and does
+not match the target bank better by ambiguity_margin (otherwise -- no usable crop, an empty snapshot, or a crop that
+now looks more like the target: the population may have carried that tracklet onto the target -- the veto is
+withdrawn and the box faces the ordinary tests). Nothing is ever learned from an untrusted or ambiguous frame (entries come only from known others).
+
 REACQUISITION (D15; any box that is not the continuing tracklet, after any break):
   * candidates: every non-merged, non-alternative detection whose tracklet is not a KNOWN OTHER (a tracked body
     observed as a separate box in the same frame as the target at the seed, or while the target was confirmed by
     continuation on one tracklet for >= target_known_other_min_s; cleared when a reacquisition is accepted and
-    pruned to tracklets the population still knows); while positional continuity is valid and the target
+    pruned to tracklets the population still knows) and not vetoed by the NOT_TARGET MEMORY (below); while
+    positional continuity is valid and the target
     was confirmed less than lost_long_s ago, only inside the search gate; otherwise anywhere (appearance only);
   * per frame test: as above with reacq_appearance_floor and the margin
         m(a) = min(reacq_contrastive_margin + reacq_margin_growth_per_s * a, reacq_margin_cap)
@@ -218,6 +231,9 @@ _SEED_DEFERRABLE = (P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.NESTED, P.ALTERNATIVE, P.
 # while the anchor is pending, any of these on the seed body's box (or MERGE_LINEAGE on its tracklet) means it may no
 # longer be one body: the seed is refused (fail closed)
 _SEED_PENDING_BREAK = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY)
+
+# NOT_TARGET memory: a remembered tracklet whose box shows any of these may no longer be one body (the entry is dropped)
+_NT_BREAK_FLAGS = (P.CONTESTED, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION, P.MERGED_SUSPECTED, P.SIZE_ANOMALY)
 
 _BANK_REFUSE_FLAGS = (P.CONTESTED, P.PARTIAL, P.TOUCHES_IMAGE_EDGE, P.DUPLICATE_ABSORBED, P.IN_MERGED_REGION,
                       P.MERGED_SUSPECTED, P.NESTED, P.ALTERNATIVE, P.SIZE_ANOMALY)
@@ -413,6 +429,7 @@ class TargetTracker:
         self._tracklet: Optional[str] = None                 # the target's current population tracklet
         self._target_tracklets: Set[str] = set()             # every tracklet the target was confirmed on
         self._known_others: Set[str] = set()                 # tracklets seen as separate bodies beside the target
+        self._nt_memory: Dict[str, List[AppearanceFeature]] = {}   # NOT_TARGET memory: tracklet -> snapshot
         self._tracklet_since_t: Optional[float] = None       # when the target was first confirmed on its tracklet
         self._failed = False                                 # a refused seed leaves the tracker unusable
         self._last_confirm_t: Optional[float] = None
@@ -442,7 +459,8 @@ class TargetTracker:
     def state_sizes(self) -> Dict[str, int]:
         """Sizes of everything the target tracker keeps between frames (diagnostics: long-run memory checks)."""
         return {"target_size_history": len(self._sizes), "target_tracklets": len(self._target_tracklets),
-                "target_known_others": len(self._known_others), "target_bank_samples": len(self._bank),
+                "target_known_others": len(self._known_others), "target_not_target_memory": len(self._nt_memory),
+                "target_bank_samples": len(self._bank),
                 "target_verification_history": len(self._verif.history) if self._verif is not None else 0,
                 "target_reacquisition_events": len(self._events)}
 
@@ -778,6 +796,10 @@ class TargetTracker:
             if other.is_body and other.index not in grp and other.tracklet_id and \
                     other.tracklet_id != o.tracklet_id and other.tracklet_id not in self._target_tracklets:
                 self._known_others.add(other.tracklet_id)
+                if self._cfg.get("not_target_memory_enabled"):
+                    # refreshed on every settled frame beside the trusted target: those samples are of a separate body
+                    bank = self._pop.bank_of(other.tracklet_id)
+                    self._nt_memory[other.tracklet_id] = list(bank.samples) if bank is not None else []
         if o.tracklet_id:
             self._target_tracklets.add(o.tracklet_id)
         self._last_confirm_t, self._last_confirm_frame = t, res.rel_frame
@@ -995,6 +1017,7 @@ class TargetTracker:
         self._pop.sample_appearance(res.rel_frame, image, self._ext)
         alive = {v.tracklet_id for v in res.tracklets} | {m.tracklet_id for m in self._pop.recently_closed()}
         self._known_others &= alive                          # bounded: only bodies the population still knows
+        self._nt_prune(res)
         self._target_tracklets &= alive | ({self._tracklet} if self._tracklet else set())
         prev_state = self._state
         cache: Dict[int, AppearanceFeature] = {}
@@ -1396,6 +1419,43 @@ class TargetTracker:
             return OCCLUDED, [OCCLUDER_OVERLAP], tuple(sorted(occ)), False
         return OCCLUDED, [NO_CANDIDATE_IN_GATE], (), False
 
+    def _nt_prune(self, res: P.FrameResult) -> None:
+        """NOT_TARGET memory upkeep (module docstring): drop every entry on a camera continuity break, and an entry
+        whose tracklet is gone or may no longer be one body."""
+        if not self._nt_memory:
+            return
+        if res.camera.continuity_broken:
+            self._nt_memory = {}
+            return
+        live = {v.tracklet_id: v for v in res.tracklets}
+        for tid in list(self._nt_memory):
+            v = live.get(tid)
+            if v is None or P.MERGE_LINEAGE in v.flags:
+                del self._nt_memory[tid]
+                continue
+            if v.observed and any(f in res.observations[v.detection_index].flags for f in _NT_BREAK_FLAGS):
+                del self._nt_memory[tid]
+
+    def _nt_veto(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
+                 o: P.Observation) -> Optional[Dict[str, Any]]:
+        """The NOT_TARGET memory's verdict on reacquisition candidate o: None (not remembered), or a record with
+        veto True (excluded) / False (withdrawn: it now looks more like the target than like its recorded self)."""
+        snap = self._nt_memory.get(o.tracklet_id) if o.tracklet_id else None
+        if snap is None:
+            return None
+        feat = self._feature(cache, res, image, o.index)
+        ts, _ = self._bank.best_match(feat)
+        ns = None
+        for s in snap:
+            sim = compare(feat, s, self._cfg)
+            if sim.composite is not None and (ns is None or sim.composite > ns):
+                ns = sim.composite
+        t_sim = None if ts is None else ts.composite
+        # no veto without appearance evidence that the box is still that other person (no usable crop, no snapshot)
+        withdrawn = ns is None or t_sim is None or t_sim >= ns + self._cfg.get("ambiguity_margin")
+        return {"tracklet": o.tracklet_id, "target_similarity": t_sim, "own_snapshot_similarity": ns,
+                "veto": not withdrawn}
+
     def _reacquire(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
                    pred_box: Optional[Box], gate_h: Optional[float], h: float, absence: float,
                    evals: List[CandidateEvaluation]) -> Dict[str, Any]:
@@ -1407,12 +1467,19 @@ class TargetTracker:
         cont = [e for e in evals if e.role == CONTINUATION and self._tracklet is not None
                 and e.tracklet_id == self._tracklet]
         excluded_known = []
+        nt_log: List[Dict[str, Any]] = []
         for o in res.observations:
             if not o.is_body or P.ALTERNATIVE in o.flags:
                 continue
             if o.tracklet_id in self._known_others:
                 excluded_known.append(o.tracklet_id)        # seen beside the confirmed target: not the target
                 continue
+            if c.get("not_target_memory_enabled"):
+                nt = self._nt_veto(cache, res, image, o)
+                if nt is not None:
+                    nt_log.append(nt)
+                    if nt["veto"]:
+                        continue                            # remembered as a different person: vetoed
             if self._tracklet is not None and o.tracklet_id == self._tracklet:
                 continue                                    # the current (failing) continuation is not re-tested
             if not self._in_gate(o.bbox, pred_box, gate_h, h):
@@ -1424,7 +1491,8 @@ class TargetTracker:
                          key=lambda e: (-e.composite, e.detection_index))
         out: Dict[str, Any] = {"accepted": None, "verifying": None, "started_frame": None, "evidence": None,
                                "log": {"candidates": len(cands), "passing": [e.detection_index for e in passing],
-                                       "excluded_known_others": sorted(excluded_known)}}
+                                       "excluded_known_others": sorted(excluded_known),
+                                       "not_target_memory": nt_log}}
         lookalikes = sorted([e for e in cands if self._looks_like_target(e) or
                              (e.composite is not None and e.composite >= c.get("appearance_floor"))],
                             key=lambda e: (-e.composite, e.detection_index))
