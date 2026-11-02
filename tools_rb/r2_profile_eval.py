@@ -26,8 +26,9 @@ Truth (frozen DEV labels; only the target is labelled; fixed before any profile 
     reacq_appearance_floor and >= every other body + ambiguity_margin). TRUE / WRONG = on the true box / another box;
     WRONG_TARGET_ABSENT = SUPPORTED on some box on a frame where the target is labelled not visible / unresolvable
     (open world); WRONG_TARGET_UNDETECTED = SUPPORTED on some box where the target is labelled visible and resolvable
-    but its true box is not detected as a body, or the frame is merged / human-uncertain (every SUPPORTED there is
-    counted as wrong-or-unverifiable).
+    on a labelled frame but its true box is not detected as a body, or the frame is merged / human-uncertain (every
+    SUPPORTED there is counted as wrong-or-unverifiable). Visible frames without a labelled box have no truth and are
+    excluded (frames_unlabelled_excluded).
   * PROFILE_joint scores the true box like the verdict (lower of temporal and current topk) and competitors like the
     verdict's rivals (higher of temporal and current; current only when no temporal). COMMON: the same comparison
     restricted to frames where every method has a true value and a same-kit competitor value.
@@ -147,7 +148,7 @@ def score(repo, out_dir, cids):
         with open(os.path.join(out_dir, cid + ".anchors.json")) as f:
             anc = json.load(f)
         frames = []                       # (rec, true_row, others, trusted)
-        absent, undetected = [], []
+        absent, undetected, unlabelled = [], [], []
         for r in recs:
             cf = r["frame"] + s
             pf = lab["per_frame"][cf] if cf < len(lab["per_frame"]) else None
@@ -164,8 +165,10 @@ def score(repo, out_dir, cids):
                 frames.append((r, true, [x for x in rows if x is not true], r["target"]["trusted"]))
             elif not_visible:
                 absent.append(r)
+            elif pf is not None and (pf["merged"] or pf["human_uncertain"] or hb is not None):
+                undetected.append(r)            # target in view (labelled box, or merged / uncertain) but not scored
             elif pf is not None:
-                undetected.append(r)
+                unlabelled.append(r)            # visible, no labelled box on this frame: no truth, excluded
         kits = [t["match"]["kit"] for _, t, _, _ in frames if t["match"] and t["match"]["kit"] is not None]
         kit_thr = float(np.percentile(kits, 10)) if kits else None
         out = {"anchors": len(anc["anchors"]), "anchor_aspects": [round(a["aspect"], 3) for a in anc["anchors"]],
@@ -232,6 +235,7 @@ def score(repo, out_dir, cids):
                 if srt[0] >= floor and (len(srt) == 1 or srt[1] <= srt[0] - margin):
                     v["PRE_WRONG_TARGET_UNDETECTED"] += 1
         out["frames_target_undetected"] = len(undetected)
+        out["frames_unlabelled_excluded"] = len(unlabelled)
         out["frames_target_absent"] = len(absent)
         out["verdicts"] = dict(v)
         report[cid] = out
