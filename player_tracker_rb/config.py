@@ -703,8 +703,9 @@ PARAMS: Tuple[Param, ...] = (
     _p("not_target_memory_enabled", "bool", "flag",
        "NOT_TARGET memory on or off. On: a KNOWN OTHER (recorded only beside the trusted, verified, settled target) is "
        "still excluded from reacquisition after a reacquisition is accepted, while its own tracklet continues "
-       "unbroken (no merge, size anomaly, contest, merge lineage; cleared on a cut) and its current crop does not "
-       "look more like the target than like its recorded self. A veto only: it never proves the target.", False, N,
+       "unbroken (no merge, size anomaly, contest, partial/edge box, gap reassociation, merge lineage; cleared on a "
+       "cut) and its current crop matches its recorded self (>= appearance_floor) better than the target bank by "
+       "ambiguity_margin. A veto only: it never proves the target, and a vetoed box still counts as a rival.", False, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "target",
        "NEW_R2 (R2 DEV NOT_TARGET memory). Off by default pending Nathan's integration decision.", None, None),
     _p("target_reverify_enabled", "bool", "flag",
