@@ -16,8 +16,8 @@ composite(the target's previous crop, the current crop of every OTHER body withi
 would be if that body replaced the target's box.
 
 Truth (frozen DEV labels): a tracklet is TARGET if most of its labelled-frame observations match the human box
-(IoU >= 0.5) and none is elsewhere; SAME-KIT impostor: its LAB similarity to the target's previous crop >= the 10th
-percentile of the TARGET tracklets' own LAB steps in that clip. Reported: SELF steps of TARGET tracklets (trusted
+(IoU >= 0.5) and none is elsewhere; SAME-KIT impostor: its LAB similarity to the target's previous crop is in the upper half
+of all impostor LAB values in that clip (the closest kits). Impostor quantiles include the upper tail (p90..max). Reported: SELF steps of TARGET tracklets (trusted
 continuation frames, all frames), and IMPOSTOR steps (same-kit, all), as quantiles; plus the separation at
 candidate thresholds (fraction of genuine steps below / impostor steps at or above).
 """
@@ -131,7 +131,7 @@ def run_clip(repo, clips_dir, out_dir, cid):
 def _q(xs):
     if not xs:
         return None
-    return {"n": len(xs), **{f"p{p}": float(np.percentile(xs, p)) for p in (0, 1, 5, 10, 50)}}
+    return {"n": len(xs), **{f"p{p}": float(np.percentile(xs, p)) for p in (0, 1, 5, 10, 50, 90, 95, 99, 100)}}
 
 
 def score(repo, out_dir, cids):
@@ -167,8 +167,11 @@ def score(repo, out_dir, cids):
                     selfs["target_trusted"].append(b["self"]["composite"])
             if r["target"]["tracklet"] in target_t:
                 imps += [x for x in r["impostors"] if x["composite"] is not None]
-        thr = float(np.percentile(selfs["target_lab"], 10)) if selfs["target_lab"] else None
-        sk = [x["composite"] for x in imps if thr is not None and x["lab"] >= thr]
+        # SAME-KIT impostor: LAB to the target's previous crop >= the 10th percentile of ALL impostor LAB values' upper
+        # half, i.e. the impostors in the top half by colour (kit) similarity (the closest kits in the clip)
+        labs = [x["lab"] for x in imps if x["lab"] is not None]
+        thr = float(np.percentile(labs, 50)) if labs else None
+        sk = [x["composite"] for x in imps if thr is not None and x["lab"] is not None and x["lab"] >= thr]
         out = {"target_tracklets": sorted(target_t), "same_kit_lab_threshold": thr,
                "self_target_all": _q(selfs["target_all"]), "self_target_trusted": _q(selfs["target_trusted"]),
                "impostor_same_kit": _q(sk), "impostor_all": _q([x["composite"] for x in imps])}
