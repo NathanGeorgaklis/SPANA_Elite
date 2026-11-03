@@ -1,0 +1,221 @@
+<!doctype html>
+<!-- SPANA engine v2-rebuild — REBUILT 2026-10 — NOT ORIGINAL SOURCE
+     R2 jersey-number human-truth annotation page (schema r2_jersey_labels_v1, see tools_rb/r2_jersey_labels.py).
+     Offline: open index.html from the jersey annotation pack folder. Shows only the clips' own keyframes:
+     NO tracker, detector or OCR output is ever shown. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jersey Annotator</title>
+<style>
+:root{--bg:#14161a;--panel:#1d2026;--line:#2c3038;--text:#e8eaee;--muted:#9aa1ad;--accent:#4fa3ff;--ok:#3fb950;--bad:#f85149;--warn:#d29922;--tgt:#ffd23f;--oth:#ff6bd6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+header{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:14px;margin:0 8px 0 0}
+select,input,button,textarea{font:inherit;color:var(--text);background:#262a31;border:1px solid var(--line);border-radius:4px;padding:3px 6px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#06121f}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;height:calc(100vh - 46px)}
+#stage{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+#canvasWrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000;position:relative}
+canvas#cv{max-width:100%;max-height:100%;cursor:crosshair}
+#zoom{position:absolute;right:8px;bottom:8px;border:1px solid var(--tgt);background:#000;image-rendering:pixelated}
+#strip{display:flex;gap:3px;padding:6px 10px;border-top:1px solid var(--line);flex-wrap:wrap}
+#strip button{min-width:44px;font-variant-numeric:tabular-nums;padding:2px 4px}
+#strip button.cur{outline:2px solid var(--accent)}
+#strip .done{border-color:var(--ok)}#strip .todo{border-color:var(--bad)}
+aside{overflow:auto;padding:10px 12px;background:var(--panel)}
+aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px}
+aside h2:first-child{margin-top:0}
+.row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.row label{min-width:92px;color:var(--muted)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:3px 7px;background:#262a31}
+.seg button.on{background:var(--accent);color:#06121f}
+.p{display:flex;gap:6px;align-items:center;margin:3px 0;flex-wrap:wrap}
+.p.active{outline:1px solid var(--oth);border-radius:4px}
+#msgs{white-space:pre-wrap;font:11px/1.35 ui-monospace,Menlo,monospace;color:var(--muted);max-height:220px;overflow:auto;background:#15171b;padding:6px;border-radius:4px}
+.hint{color:var(--muted);font-size:11px}
+.pill{display:inline-block;padding:1px 6px;border-radius:9px;font-size:11px;border:1px solid var(--line)}
+.pill.ok{border-color:var(--ok);color:var(--ok)}.pill.bad{border-color:var(--bad);color:var(--bad)}
+kbd{font:11px ui-monospace,Menlo,monospace;background:#262a31;border:1px solid var(--line);border-radius:3px;padding:0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jersey Annotator</h1>
+  <select id="clipSel" aria-label="Clip"></select>
+  <input id="annotator" placeholder="annotator name" size="14">
+  <button id="btnLoad">Load labels…</button><input id="fileIn" type="file" accept=".json" hidden>
+  <button id="btnSave" class="primary">Download labels</button>
+  <span id="clipInfo" class="hint"></span>
+</header>
+<main>
+<div id="stage">
+  <div id="canvasWrap"><canvas id="cv"></canvas><canvas id="zoom" width="240" height="240" title="target box at 3x"></canvas></div>
+  <div id="strip"></div>
+  <div class="hint" style="padding:0 10px 6px">Drag on the frame to draw the box of the selected layer. <kbd>←</kbd>/<kbd>→</kbd> keyframe, <kbd>C</kbd> copy previous box, <kbd>Del</kbd> delete box, <kbd>R</kbd> READABLE, <kbd>U</kbd> UNREADABLE.</div>
+</div>
+<aside>
+  <h2>Proposal (selection note only)</h2>
+  <div id="proposal" class="hint"></div>
+  <h2>Selected player (whole clip)</h2>
+  <div class="row"><label>Description</label><input id="tDesc" size="26" placeholder="e.g. dark-kit player walking away, left"></div>
+  <div class="row"><label>Team / kit</label><span class="seg" id="tTeam"></span></div>
+  <div class="row"><label>Expected number</label><input id="tNum" size="4" placeholder="1-99"></div>
+  <div class="row"><label>Number in clip</label><span class="seg" id="tVis"></span></div>
+  <h2>This keyframe</h2>
+  <div class="row"><label>Target</label><span class="seg" id="kVis"></span></div>
+  <div class="row"><label>Number</label><span class="seg" id="kNum"></span></div>
+  <div class="row"><label>Why unreadable</label><span class="seg" id="kWhy"></span></div>
+  <div class="row"><label>Uncertain</label><input type="checkbox" id="kUnc"> <span class="hint">HUMAN_UNCERTAIN (cannot tell)</span></div>
+  <div class="row"><label>Note</label><input id="kNote" size="26"></div>
+  <div class="row"><button id="bApplyRest">Copy this keyframe's states to all following unlabelled keyframes</button></div>
+  <h2>Box layer</h2>
+  <div class="row"><span class="seg" id="layerSeg"></span></div>
+  <h2>Nearby people (competitors)</h2>
+  <div id="people"></div>
+  <div class="row"><input id="pDesc" size="16" placeholder="description"><select id="pRel"><option>SAME_TEAM</option><option>OPPONENT</option><option>OTHER</option></select><input id="pNum" size="3" placeholder="no."><button id="bAddP">Add</button></div>
+  <div class="hint">Number: leave empty if never readable. Tick “readable here” on each keyframe where <b>their</b> number is readable. Boxes for people are optional.</div>
+  <h2>Distractors (one per line)</h2>
+  <textarea id="distr" rows="3" style="width:100%" placeholder="e.g. substitution board shows 9 at f150"></textarea>
+  <h2>Clip</h2>
+  <div class="row"><button id="bReject">Reject clip…</button><span id="rejInfo" class="hint"></span></div>
+  <div class="row"><button id="bCheck">Check labels</button><span id="checkPill"></span></div>
+  <div id="msgs"></div>
+  <p class="hint">Autosaves in this browser per clip. <b>Download labels</b> saves the file that will be validated, hashed and frozen by <code>tools_rb/r2_jersey_labels.py</code>.</p>
+</aside>
+</main>
+<script src="jersey_clips_manifest.js"></script>
+<script>
+"use strict";
+const SCHEMA="r2_jersey_labels_v1", TOOL="tools_rb/r2_jersey_annotator.html v1", UNL="UNLABELLED";
+const VIS=["VISIBLE","PARTIAL","HIDDEN","OUT_OF_FRAME"], NUM=["READABLE","UNREADABLE"], TEAMS=["A","B","OTHER"];
+const WHY=["FRONT_ON","SIDE_ON","OCCLUDED_BY_PERSON","OCCLUDED_OTHER","MOTION_BLUR","TOO_SMALL","PARTIAL_CROP","LIGHTING","FOLDED_SHIRT","OTHER"];
+const NV=["READABLE_IN_SOME_FRAMES","NEVER_VISIBLE"];
+const $=id=>document.getElementById(id);
+const clips=(window.JERSEY_CLIPS||[]);
+let clip=null, lab=null, ki=0, layer="TARGET", img=new Image(), drag=null;
+
+function blankKf(){return {visibility:UNL,box:null,number:UNL,reason:null,human_uncertain:false,note:""};}
+function newLabels(c){const kf={};for(const g of c.keyframes)kf[g]=blankKf();
+  return {schema:SCHEMA,clip_id:c.clip_id,clip_sha256:c.clip_sha256,fps:c.fps,frames:c.frames,width:c.width,height:c.height,
+    annotator:"",tool:TOOL,saved_utc:"",clip_rejected:null,
+    target:{description:"",team:UNL,expected_number:null,number_visibility:UNL},keyframes:kf,competitors:{},distractors:[]};}
+function key(c){return "r2jersey:"+c.clip_id+":"+c.clip_sha256;}
+function persist(){try{lab.annotator=$("annotator").value;localStorage.setItem(key(clip),JSON.stringify(lab));localStorage.setItem("r2:annotator",lab.annotator);}catch(e){}}
+function g(){return clip.keyframes[ki];}
+function kf(){return lab.keyframes[g()];}
+function frameUrl(fr){return "frames/"+clip.clip_id+"/f_"+String(fr).padStart(6,"0")+".png";}
+function msg(t){$("msgs").textContent=t;}
+// buttons are reused (never rebuilt when the value set is unchanged): a refresh fired by a text input's change event
+// during the mousedown/blur of a click must not destroy the button being clicked
+function seg(el,vals,get,set){const sig=vals.join("|");if(el.dataset.sig!==sig){el.innerHTML="";for(const v of vals){const b=document.createElement("button");b.textContent=v.replace(/_/g," ");b.dataset.v=v;el.appendChild(b);}el.dataset.sig=sig;}
+  for(const b of el.children){const v=b.dataset.v;b.onclick=()=>{set(v);persist();refresh();};b.className=get()===v?"on":"";}}
+function seen(x){return x.visibility==="VISIBLE"||x.visibility==="PARTIAL";}
+function kfDone(x){if(x.visibility===UNL)return false;if(!seen(x))return true;if(x.number===UNL)return false;if(x.number==="UNREADABLE"&&!x.reason)return false;return !!x.box||x.human_uncertain;}
+
+function setVis(v){const x=kf();x.visibility=v;if(!seen(x)){x.box=null;x.number="NOT_APPLICABLE";x.reason=null;}else if(x.number==="NOT_APPLICABLE")x.number=UNL;}
+function setNum(v){const x=kf();if(!seen(x)){msg("Set the target VISIBLE / PARTIAL first.");return;}x.number=v;if(v!=="UNREADABLE")x.reason=null;}
+function refresh(){if(!lab)return;const x=kf(),t=lab.target;
+  seg($("tTeam"),TEAMS,()=>t.team,v=>t.team=v);
+  seg($("tVis"),NV,()=>t.number_visibility,v=>{t.number_visibility=v;if(v==="NEVER_VISIBLE"){t.expected_number=null;$("tNum").value="";}});
+  seg($("kVis"),VIS,()=>x.visibility,setVis);
+  seg($("kNum"),NUM,()=>x.number,setNum);
+  seg($("kWhy"),WHY,()=>x.reason,v=>{if(x.number!=="UNREADABLE"){msg("Reason only for UNREADABLE.");return;}x.reason=v;});
+  $("kUnc").checked=!!x.human_uncertain;$("kNote").value=x.note||"";
+  $("tDesc").value=t.description||"";$("tNum").value=t.expected_number===null?"":t.expected_number;
+  $("distr").value=(lab.distractors||[]).join("\n");
+  $("rejInfo").textContent=lab.clip_rejected?("REJECTED: "+lab.clip_rejected):"";
+  seg($("layerSeg"),["TARGET",...Object.keys(lab.competitors)],()=>layer,v=>layer=v);
+  const pp=$("people");pp.innerHTML="";
+  for(const [pid,p] of Object.entries(lab.competitors)){const d=document.createElement("div");d.className="p"+(layer===pid?" active":"");
+    const rk=(p.readable_keyframes||[]).includes(g());
+    d.innerHTML=`<b>${pid}</b> ${p.relation} #${p.number===null?"?":p.number} — ${p.description.replace(/</g,"&lt;")} <label><input type="checkbox" ${rk?"checked":""}> readable here</label> <button>delete</button>`;
+    d.querySelector("input").onchange=e=>{const s=new Set(p.readable_keyframes||[]);e.target.checked?s.add(g()):s.delete(g());p.readable_keyframes=[...s].sort((a,b)=>a-b);persist();};
+    d.querySelector("button").onclick=()=>{if(confirm("Delete "+pid+"?")){delete lab.competitors[pid];if(layer===pid)layer="TARGET";persist();refresh();}};
+    pp.appendChild(d);}
+  const st=$("strip");st.innerHTML="";clip.keyframes.forEach((fr,i)=>{const b=document.createElement("button");const y=lab.keyframes[fr];
+    b.textContent=(y.number==="READABLE"?"R ":y.number==="UNREADABLE"?"U ":y.number==="NOT_APPLICABLE"?"– ":"")+fr;
+    b.className=(i===ki?"cur ":"")+(kfDone(y)?"done":"todo");b.onclick=()=>load(i);st.appendChild(b);});
+  draw();}
+function commitNum(){const el=$("tNum");if(document.activeElement===el)el.dispatchEvent(new Event("change"));}
+function load(i){commitNum();ki=Math.max(0,Math.min(clip.keyframes.length-1,i));img=new Image();img.onload=draw;img.src=frameUrl(g());refresh();}
+function boxesOf(l){return l==="TARGET"?null:(lab.competitors[l].boxes=lab.competitors[l].boxes||{});}
+function draw(){const cv=$("cv"),c=cv.getContext("2d");cv.width=clip.width;cv.height=clip.height;c.fillStyle="#000";c.fillRect(0,0,cv.width,cv.height);
+  if(img.complete&&img.naturalWidth)c.drawImage(img,0,0,cv.width,cv.height);
+  const x=kf();c.lineWidth=2;
+  for(const [pid,p] of Object.entries(lab.competitors)){const b=(p.boxes||{})[g()];if(b){c.strokeStyle="#ff6bd6";c.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);c.fillStyle="#ff6bd6";c.fillText(pid,b[0]+2,b[1]-3);}}
+  if(x.box){const b=x.box;c.strokeStyle="#ffd23f";c.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);}
+  if(drag&&drag.cur){const b=norm([...drag.start,...drag.cur]);c.strokeStyle="#fff";c.setLineDash([4,3]);c.strokeRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);c.setLineDash([]);}
+  const z=$("zoom"),zc=z.getContext("2d");zc.fillStyle="#000";zc.fillRect(0,0,z.width,z.height);
+  if(x.box&&img.complete&&img.naturalWidth){const b=x.box,w=b[2]-b[0],h=b[3]-b[1],s=Math.min(z.width/w,z.height/h);zc.imageSmoothingEnabled=false;
+    zc.drawImage(img,b[0],b[1],w,h,(z.width-w*s)/2,(z.height-h*s)/2,w*s,h*s);}
+  $("clipInfo").textContent=`${clip.source} · ${clip.fps} fps · keyframe ${ki+1}/${clip.keyframes.length} = clip frame ${g()} (${(g()/clip.fps).toFixed(2)} s)`;}
+function toImg(e){const cv=$("cv"),r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];}
+function norm(b){const x1=Math.max(0,Math.min(b[0],b[2])),y1=Math.max(0,Math.min(b[1],b[3])),x2=Math.min(clip.width,Math.max(b[0],b[2])),y2=Math.min(clip.height,Math.max(b[1],b[3]));return [Math.round(x1),Math.round(y1),Math.round(x2),Math.round(y2)];}
+function setBox(b){if(layer==="TARGET"){if(!seen(kf())){msg("Target is not VISIBLE / PARTIAL on this keyframe: no box.");return;}kf().box=b;}else boxesOf(layer)[g()]=b;persist();refresh();}
+function delBox(){if(layer==="TARGET")kf().box=null;else delete boxesOf(layer)[g()];persist();refresh();}
+function copyPrev(){for(let i=ki-1;i>=0;i--){const fr=clip.keyframes[i];const b=layer==="TARGET"?lab.keyframes[fr].box:(boxesOf(layer)[fr]);if(b){setBox([...b]);return;}}msg("No earlier box on this layer.");}
+$("cv").onmousedown=e=>{drag={start:toImg(e),cur:null};};
+$("cv").onmousemove=e=>{if(drag){drag.cur=toImg(e);draw();}};
+window.addEventListener("mouseup",e=>{if(!drag)return;const d=drag;drag=null;if(d.cur){const b=norm([...d.start,...d.cur]);if(b[2]-b[0]>=4&&b[3]-b[1]>=4)setBox(b);}draw();});
+document.addEventListener("keydown",e=>{if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName))return;
+  if(e.key==="ArrowRight")load(ki+1);else if(e.key==="ArrowLeft")load(ki-1);else if(e.key==="c"||e.key==="C")copyPrev();
+  else if(e.key==="Delete"||e.key==="Backspace")delBox();else if(e.key==="r"||e.key==="R"){setNum("READABLE");persist();refresh();}
+  else if(e.key==="u"||e.key==="U"){setNum("UNREADABLE");persist();refresh();}});
+$("kUnc").onchange=e=>{kf().human_uncertain=e.target.checked;persist();refresh();};
+$("kNote").oninput=e=>{kf().note=e.target.value;persist();};
+$("tDesc").oninput=e=>{lab.target.description=e.target.value;persist();};
+$("tNum").onchange=e=>{const v=e.target.value.trim();if(v===""){lab.target.expected_number=null;}else if(/^[1-9][0-9]?$/.test(v)){lab.target.expected_number=+v;if(lab.target.number_visibility==="NEVER_VISIBLE")lab.target.number_visibility=UNL;}else{msg("Expected number must be 1-99.");e.target.value=lab.target.expected_number??"";}persist();refresh();};
+$("distr").oninput=e=>{lab.distractors=e.target.value.split("\n").map(s=>s.trim()).filter(Boolean);persist();};
+$("bApplyRest").onclick=()=>{const x=kf();let n=0;for(let i=ki+1;i<clip.keyframes.length;i++){const y=lab.keyframes[clip.keyframes[i]];if(y.visibility===UNL&&y.number===UNL){y.visibility=x.visibility;y.number=x.number;y.reason=x.reason;n++;}}persist();refresh();msg(`Copied states to ${n} keyframes (boxes are not copied).`);};
+$("bAddP").onclick=()=>{const d=$("pDesc").value.trim(),nv=$("pNum").value.trim();if(!d){msg("Description needed.");return;}
+  if(nv&&!/^[1-9][0-9]?$/.test(nv)){msg("Number must be 1-99 or empty.");return;}
+  let i=1;while(lab.competitors["P"+i])i++;const pid="P"+i;
+  lab.competitors[pid]={description:d,relation:$("pRel").value,number:nv?+nv:null,readable_keyframes:[],boxes:{}};
+  $("pDesc").value="";$("pNum").value="";layer=pid;persist();refresh();};
+$("bReject").onclick=()=>{const r=prompt("Reason to reject this clip (empty = un-reject):",lab.clip_rejected||"");if(r===null)return;lab.clip_rejected=r.trim()||null;persist();refresh();};
+function problems(){const p=[],t=lab.target;if(!($("annotator").value||lab.annotator))p.push("annotator name missing");
+  if(lab.clip_rejected)return p;
+  if(!t.description.trim())p.push("selected player description missing");
+  if(!TEAMS.includes(t.team))p.push("team / kit not set");
+  if(!NV.includes(t.number_visibility))p.push("'Number in clip' not set");
+  if((t.number_visibility==="NEVER_VISIBLE")!==(t.expected_number===null))p.push("expected number must be empty exactly when NEVER VISIBLE");
+  let r=0;for(const fr of clip.keyframes){const x=lab.keyframes[fr],tag="keyframe "+fr+": ";
+    if(x.visibility===UNL){p.push(tag+"target visibility unlabelled");continue;}
+    if(seen(x)){if(x.number===UNL)p.push(tag+"number state unlabelled");if(!x.box&&!x.human_uncertain)p.push(tag+"target box missing");
+      if(x.number==="UNREADABLE"&&!x.reason)p.push(tag+"reason missing");
+      if(x.number==="READABLE"){r++;if(x.human_uncertain)p.push(tag+"READABLE cannot be uncertain");if(t.expected_number===null)p.push(tag+"READABLE but no expected number");}}}
+  if(t.number_visibility==="READABLE_IN_SOME_FRAMES"&&!r)p.push("no READABLE keyframe although 'Number in clip' says readable");
+  for(const [pid,c] of Object.entries(lab.competitors))if(c.relation==="SAME_TEAM"&&c.number!==null&&!(c.readable_keyframes||[]).length)p.push(pid+": tick the keyframes where their number is readable");
+  return p;}
+$("bCheck").onclick=()=>{const p=problems();$("checkPill").innerHTML=p.length?`<span class="pill bad">${p.length} problems</span>`:`<span class="pill ok">complete</span>`;msg(p.join("\n")||"No problems found (final validation: r2_jersey_labels.py).");};
+$("btnSave").onclick=()=>{commitNum();const pr=problems();
+  if(pr.length&&!confirm(pr.length+" problems remain (see Check labels). Download an INCOMPLETE draft anyway? It will not freeze."))return;
+  lab.annotator=$("annotator").value;lab.saved_utc=new Date().toISOString();lab.tool=TOOL;persist();
+  const out=JSON.parse(JSON.stringify(lab));for(const x of Object.values(out.keyframes)){if(x.visibility===UNL)x.visibility=null;if(x.number===UNL)x.number=null;}
+  if(out.target.team===UNL)out.target.team=null;if(out.target.number_visibility===UNL)out.target.number_visibility=null;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:"application/json"}));
+  a.download=clip.clip_id+".jersey_labels.json";a.click();msg("Downloaded "+a.download);};
+$("btnLoad").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{try{const L=JSON.parse(rd.result);
+  if(L.clip_id!==clip.clip_id||L.clip_sha256!==clip.clip_sha256){msg("That file is for "+L.clip_id+" / another clip hash.");return;}
+  for(const x of Object.values(L.keyframes)){if(x.visibility===null)x.visibility=UNL;if(x.number===null)x.number=UNL;}
+  if(L.target.team===null)L.target.team=UNL;if(L.target.number_visibility===null)L.target.number_visibility=UNL;
+  lab=L;persist();load(0);msg("Loaded "+fl.name);}catch(err){msg("Could not read: "+err);}};rd.readAsText(fl);};
+function openClip(i){clip=clips[i];let saved=null;try{saved=JSON.parse(localStorage.getItem(key(clip))||"null");}catch(e){}
+  if(saved&&(saved.schema!==SCHEMA||saved.clip_sha256!==clip.clip_sha256||Object.keys(saved.keyframes||{}).sort((a,b)=>a-b).join()!==clip.keyframes.join())){msg("Ignored an incompatible browser draft for this clip.");saved=null;}
+  lab=saved||newLabels(clip);layer="TARGET";
+  $("proposal").innerHTML=clip.proposed_target.replace(/</g,"&lt;")+"<br><b>You decide</b> who the selected player is. Reject the clip if no player is suitable.";
+  load(0);}
+try{$("annotator").value=localStorage.getItem("r2:annotator")||"";}catch(e){}
+$("annotator").onchange=persist;
+$("clipSel").innerHTML=clips.map((c,i)=>`<option value="${i}">${c.clip_id}</option>`).join("");
+$("clipSel").onchange=e=>openClip(+e.target.value);
+if(clips.length)openClip(0);else msg("No clips: jersey_clips_manifest.js missing. Open index.html from the pack folder.");
+</script>
+</body>
+</html>

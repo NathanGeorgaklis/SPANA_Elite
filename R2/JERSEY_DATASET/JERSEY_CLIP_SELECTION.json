@@ -1,0 +1,216 @@
+{
+ "schema": "r2_jersey_clip_selection_v1",
+ "protocol_version": "r2-protocol-1",
+ "selected_by": "Claude (main agent), from 320x180 contact-sheet thumbnails only; no model, OCR or tracker output was used",
+ "selected_utc": "2026-11-04",
+ "purpose": "R2 DEV jersey-number VALIDATION dataset (instruction: Nathan 2026-11-04 08:24). Separate from the frozen 25-clip R2 benchmark; changes none of its clips or labels.",
+ "rules": [
+  "DEV split blocks only (r2_protocol.split_of)",
+  "r2_protocol.check_window: length 5-15 s, excluded windows (Task 3R, GENERAL_BENCHMARK_V2, GOLD_DUEL_01) +60 s buffer",
+  "no overlap with any of the 25 R2 registry clips +/-30 s",
+  "holdout files never opened",
+  "proposed_target and classes are SELECTION NOTES, not truth: truth is Nathan's labels, frozen before any reader runs"
+ ],
+ "scan": {
+  "sheets": "~/Downloads/_spana_jersey_work/sheets_dev (DEV-only sampling: MCFC every 15 s, SYO every 20 s in chosen DEV blocks)",
+  "plan": "~/Downloads/_spana_jersey_work/dev_plan.json"
+ },
+ "clips": [
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J01",
+   "source": "MCFC_MIT",
+   "start_s": 2734.5,
+   "end_s": 2742.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit (MCFC) player walking away from camera, number visible on back at mid distance, sunlit; other dark-kit players nearby",
+   "classes": [
+    "BACK_VISIBLE",
+    "SAME_KIT_NEARBY",
+    "DISTANCE_MID",
+    "LOW_SUN"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J02",
+   "source": "MCFC_MIT",
+   "start_s": 2794.5,
+   "end_s": 2802.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-kit (MIT) player near camera, back to camera, number visible, low sun",
+   "classes": [
+    "BACK_VISIBLE",
+    "NEAR_CAMERA",
+    "LOW_SUN"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J03",
+   "source": "MCFC_MIT",
+   "start_s": 2809.5,
+   "end_s": 2817.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-kit player at left near touchline, back number visible; another light-kit player close",
+   "classes": [
+    "BACK_VISIBLE",
+    "SAME_KIT_NEARBY",
+    "IMAGE_EDGE"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J04",
+   "source": "MCFC_MIT",
+   "start_s": 2869.5,
+   "end_s": 2877.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit cluster near the goal area: several same-kit players together",
+   "classes": [
+    "SAME_KIT_CROWD",
+    "DISTANCE_FAR",
+    "PARTIAL_OCCLUSION"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J05",
+   "source": "MCFC_MIT",
+   "start_s": 2959.5,
+   "end_s": 2967.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit player in a contest with a light-kit opponent, staff on touchline in foreground",
+   "classes": [
+    "OPPONENT_CONTEST",
+    "OCCLUSION_FOREGROUND",
+    "TURN"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J06",
+   "source": "MCFC_MIT",
+   "start_s": 1947.0,
+   "end_s": 1955.0,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-kit player near camera with back turned",
+   "classes": [
+    "BACK_VISIBLE",
+    "NEAR_CAMERA"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J07",
+   "source": "MCFC_MIT",
+   "start_s": 3957.0,
+   "end_s": 3965.0,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit player close to camera duelling a light-kit opponent, motion blur",
+   "classes": [
+    "OPPONENT_CONTEST",
+    "MOTION_BLUR",
+    "NEAR_CAMERA"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J08",
+   "source": "MCFC_MIT",
+   "start_s": 6514.5,
+   "end_s": 6522.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit player standing near camera, back number visible, floodlit night",
+   "classes": [
+    "BACK_VISIBLE",
+    "NIGHT_FLOODLIT",
+    "NEAR_CAMERA"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J09",
+   "source": "MCFC_MIT",
+   "start_s": 6649.5,
+   "end_s": 6657.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-kit player walking towards camera (front-on: number likely unavailable), night",
+   "classes": [
+    "FRONT_ON",
+    "NIGHT_FLOODLIT",
+    "NEAR_CAMERA"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J10",
+   "source": "MCFC_MIT",
+   "start_s": 6829.5,
+   "end_s": 6837.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "substitution on the touchline: light-kit players beside an official holding a number board (confusing-number distractor)",
+   "classes": [
+    "NUMBER_BOARD_DISTRACTOR",
+    "SAME_KIT_NEARBY",
+    "NIGHT_FLOODLIT"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J11",
+   "source": "MCFC_MIT",
+   "start_s": 7129.5,
+   "end_s": 7137.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "dark-kit player near camera, back number visible, floodlit night",
+   "classes": [
+    "BACK_VISIBLE",
+    "NIGHT_FLOODLIT",
+    "NEAR_CAMERA"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J12",
+   "source": "MCFC_MIT",
+   "start_s": 7174.5,
+   "end_s": 7182.5,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-kit player side-on near the bench, with dark-kit players and staff around",
+   "classes": [
+    "SIDE_ON",
+    "IMAGE_EDGE",
+    "OCCLUSION_FOREGROUND",
+    "NIGHT_FLOODLIT"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J13",
+   "source": "SYO_MAR",
+   "start_s": 3907.0,
+   "end_s": 3915.0,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "blue (SYO) player close to camera with back number visible beside the referee (broadcast close-up)",
+   "classes": [
+    "BACK_VISIBLE",
+    "NEAR_CAMERA",
+    "BROADCAST_CLOSEUP"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J14",
+   "source": "SYO_MAR",
+   "start_s": 5547.0,
+   "end_s": 5555.0,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "blue player close to camera at an injury stoppage, other blue and light-blue players near",
+   "classes": [
+    "SAME_KIT_NEARBY",
+    "NEAR_CAMERA",
+    "PARTIAL_OCCLUSION"
+   ]
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J15",
+   "source": "SYO_MAR",
+   "start_s": 5787.0,
+   "end_s": 5795.0,
+   "proposed_seed_s": 3.0,
+   "proposed_target": "light-blue (MAR) players near camera, front/side-on",
+   "classes": [
+    "FRONT_ON",
+    "SAME_KIT_NEARBY",
+    "NEAR_CAMERA"
+   ]
+  }
+ ]
+}
