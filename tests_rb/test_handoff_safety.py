@@ -54,7 +54,7 @@ def banked_only_with_proven_step(tc, r):
 
 class TestHandoffSafety(unittest.TestCase):
     def test_a_different_same_kit_player_replacing_the_box_is_never_trusted(self):
-        for fps in FPS_SET:
+        for fps in (15.0, 30.0, 60.0):
             for cos in (0.7, 0.8, 0.85, 0.9):
                 with self.subTest(fps=fps, cos=cos):
                     fr, pp, n1 = substitution(fps, cos)
@@ -63,9 +63,13 @@ class TestHandoffSafety(unittest.TestCase):
                     r = SS.run(fr, pp, fps=fps, cfg=ON)
                     self.assertEqual(wrong_trusted(r), [])
                     self.assertTrue(r.bank_is_pure(), "no bank contamination")
-                    self.assertEqual(step_breaks(r), [n1], "continuity broken on the handoff frame")
-                    self.assertIn(r.frames[n1].rb_state, (T.AMBIGUOUS, T.REACQUIRING), "fail closed")
+                    # persistent break: the first substitute frame is PENDING (TRACKING, untrusted, unbanked), the
+                    # second clean failure suspends
+                    self.assertTrue(r.frames[n1].decision.get("continuity_pending"), "first failure is pending")
                     self.assertFalse(r.frames[n1].identity_trusted)
+                    self.assertNotEqual((r.frames[n1].decision.get("bank") or {}).get("status"), "ACCEPTED")
+                    self.assertEqual(step_breaks(r), [n1 + 1], "the break persisted on the next clean frame")
+                    self.assertIn(r.frames[n1 + 1].rb_state, (T.AMBIGUOUS, T.REACQUIRING), "fail closed")
                     self.assertTrue(all(not f.identity_trusted for f in r.frames[n1:]), "never trusted again")
                     banked_only_with_proven_step(self, r)
 
@@ -241,15 +245,82 @@ class TestHandoffSafety(unittest.TestCase):
                 fr.append(SS.SceneFrame({"GLITCH": SS.box_at(401, 400, 40, H)}))   # one odd crop at the target's box
                 fr += [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n3)]
                 r = SS.run(fr, people(("GLITCH", KIT_A, 0.7)), fps=fps, cfg=ON)
-                self.assertEqual(step_breaks(r), [n1])
-                resolved = [k for k, f in enumerate(r.frames) if (f.decision.get("continuity_step") or {}).get("resolved")]
-                self.assertEqual(len(resolved), 1)
-                self.assertEqual(resolved[0] - n1, ON.get("continuity_step_resolve_steps"),
-                                 "resolves after exactly continuity_step_resolve_steps passing crops")
-                self.assertTrue(all(r.frames[k].identity_trusted for k in range(resolved[0], len(fr))),
-                                "trusted again from the resolving frame")
+                # persistent break: one odd clean crop is only pending; the next clean crop restores continuity
+                self.assertEqual(step_breaks(r), [], "no suspension from one failed crop")
+                self.assertTrue(r.frames[n1].decision.get("continuity_pending"))
+                self.assertFalse(r.frames[n1].identity_trusted, "the pending frame is untrusted")
+                self.assertEqual(r.frames[n1].identity_uncertainty_reasons, (T.COMPETING_CANDIDATE,))
+                self.assertTrue((r.frames[n1 + 1].decision.get("continuity_step") or {}).get("pending_cleared"))
+                self.assertTrue(all(r.frames[k].identity_trusted for k in range(n1 + 1, len(fr))),
+                                "trusted again from the next clean frame")
                 self.assertEqual(r.tracker._handoff_suspect, set())
                 self.assertEqual(wrong_trusted(r), [])
+                banked_only_with_proven_step(self, r)
+
+    def test_no_known_other_is_recorded_on_a_pending_frame(self):
+        # a body first seen on the pending frame must not be ruled out as the target (identity is in doubt there)
+        fps = 30.0
+        n1 = int(1.5 * fps)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+        fr.append(SS.SceneFrame({"GLITCH": SS.box_at(401, 400, 40, H), "NEW": SS.box_at(900, 400, 40, H)}))
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(5)]
+        seen = {}
+
+        def obs(k, res, img, tf, tt, ext):
+            if k == n1:
+                seen["new"] = [o.tracklet_id for o in res.observations
+                               if o.tracklet_id and round((o.bbox[0] + o.bbox[2]) / 2) == 900]
+                seen["known"] = set(tt._known_others)
+        r = SS.run(fr, people(("GLITCH", KIT_A, 0.7), ("NEW", KIT_B, 0.2)), fps=fps, cfg=ON, observer=obs)
+        self.assertTrue(r.frames[n1].decision.get("continuity_pending"))
+        self.assertTrue(seen["new"], "control: the new body has a tracklet on the pending frame")
+        self.assertFalse(set(seen["new"]) & seen["known"])
+
+    def test_a_two_frame_appearance_dip_of_the_true_target_suspends_then_resolves(self):
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                n1, n3 = int(1.5 * fps), int(1.5 * fps)
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+                fr += [SS.SceneFrame({"GLITCH": SS.box_at(401, 400, 40, H)}) for _ in range(2)]   # two odd crops
+                fr += [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n3)]
+                r = SS.run(fr, people(("GLITCH", KIT_A, 0.7)), fps=fps, cfg=ON)
+                self.assertEqual(step_breaks(r), [n1 + 1], "a 2-frame break persists: suspended")
+                resolved = [k for k, f in enumerate(r.frames) if (f.decision.get("continuity_step") or {}).get("resolved")]
+                self.assertEqual(len(resolved), 1, "then resolved by the pre-break reference")
+                self.assertEqual(resolved[0] - (n1 + 1), ON.get("continuity_step_resolve_steps"))
+                self.assertTrue(all(not r.frames[k].identity_trusted for k in range(n1, resolved[0])))
+                self.assertTrue(all(r.frames[k].identity_trusted for k in range(resolved[0], len(fr))))
+                self.assertEqual(wrong_trusted(r), [])
+                self.assertTrue(r.bank_is_pure())
+                banked_only_with_proven_step(self, r)
+
+    def test_an_unclean_frame_between_two_failures_keeps_the_break_pending(self):
+        # failure, then an unclean (edge-touching / partial) crop, then a second clean failure: still suspended
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                n1 = int(1.5 * fps)
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+                fr.append(SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}))
+                fr.append(SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H), "P": SS.box_at(425, 400, 40, H)}))
+                fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(int(1.5 * fps))]
+                r = SS.run(fr, people(("LOOK", KIT_A, 0.85), ("P", KIT_B, 0.2)), fps=fps, cfg=ON)
+                self.assertEqual(wrong_trusted(r), [])
+                self.assertTrue(r.bank_is_pure())
+                self.assertFalse(r.frames[n1 + 1].identity_trusted, "the unclean frame stays untrusted")
+                self.assertTrue(all(not f.identity_trusted for f in r.frames[n1:]), "never trusted again")
+
+    def test_target_partial_at_the_image_edge_is_not_a_break(self):
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                n = int(4.0 * fps)
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(max(15.0, 300 - 300 * k / fps) if k < n // 2 else
+                                                         15.0 + 300 * (k - n // 2) / fps, 400, 40, H)})
+                      for k in range(n)]
+                r = SS.run(fr, people(), fps=fps, cfg=ON, pose_gain=0.6)
+                off = SS.run(fr, people(), fps=fps, cfg=OFF, pose_gain=0.6)
+                self.assertEqual(step_breaks(r), [])
+                self.assertEqual(wrong_trusted(r), [])
+                self.assertLessEqual(len(trusted(off)) - len(trusted(r)), 2, "at most a pending frame or two")
 
     def test_a_multi_view_target_replaced_by_a_same_kit_substitute_is_never_trusted(self):
         # review of the (withdrawn) recovery stage 9acf2c5, HIGH-1: the target shows two banked views, then a same-kit
