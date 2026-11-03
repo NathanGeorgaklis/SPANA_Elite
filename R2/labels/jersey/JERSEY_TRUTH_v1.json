@@ -1,0 +1,28 @@
+{
+ "schema": "spana_r2_jersey_truth_v1",
+ "source": "Nathan Georgaklis via AskUserQuestion (2026-11-04, before any jersey reader was run)",
+ "created_utc": "2026-11-03T21:20:22Z",
+ "note": "Target jersey number per DEV clip. NEVER_VISIBLE: the target's number cannot be seen anywhere in the clip (any number read on the target is a false read).",
+ "clips": {
+  "R2_MCFC_MIT_C006": {
+   "target_number": null,
+   "visibility": "NEVER_VISIBLE"
+  },
+  "R2_MCFC_MIT_C034": {
+   "target_number": null,
+   "visibility": "NEVER_VISIBLE"
+  },
+  "R2_SYO_MAR_C016": {
+   "target_number": null,
+   "visibility": "NEVER_VISIBLE"
+  }
+ },
+ "not_provided": [
+  "R2_MCFC_MIT_C016",
+  "R2_MCFC_MIT_C020",
+  "R2_MCFC_MIT_C033",
+  "R2_SYO_MAR_C004",
+  "R2_SYO_MAR_C012",
+  "R2_SYO_MAR_C021"
+ ]
+}
