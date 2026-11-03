@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2ho-3"   # r2ho-3: +continuity_recover_s, +continuity_recover_rival_h, +continuity_suspend_max_s (handoff recovery); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2ho-2"   # r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -916,20 +916,6 @@ PARAMS: Tuple[Param, ...] = (
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
        _HAND_EV + "; 1 so the drop test applies from the second step (review MEDIUM-1); a false break only suspends",
        1, 1000),
-    _p("continuity_recover_s", "float", "s",
-       "Handoff recovery: a suspension recovers only after a run of consecutive passing clean frames lasting at least "
-       "this long (bank match >= reacq_appearance_floor and within ambiguity_margin of the pre-break bank level, "
-       "continuous, every nearby rival separated).", 0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
-       _HAND_EV + "; recovery stage (DEV: nearby same-kit runs passing <= 2 frames)", 0.0, 60.0),
-    _p("continuity_recover_rival_h", "float", "h",
-       "Handoff recovery: every other body within this many body heights must be scorable and at least "
-       "ambiguity_margin below the recovering crop's bank match.", 3.0, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
-       "identity", _HAND_EV + "; as the DEV measurement's neighbourhood", 0.0, 100.0),
-    _p("continuity_suspend_max_s", "float", "s",
-       "Handoff recovery: a suspension on a still-followed tracklet lasts at most this long (AMBIGUOUS, untrusted, "
-       "unbanked), then ages out and the tracklet becomes handoff-suspect.", 3.0, N, "DESIGN_CHOICE", UNV,
-       "BEHAVIOURAL", "identity", _HAND_EV + "; replaces max_ambiguous_s only while the suspension is followed",
-       0.0, 60.0),
     _p("continuity_step_resolve_steps", "int", "steps",
        "Handoff safety: a suspension resolves only after this many consecutive clean crops pass the step test "
        "against the pre-break reference and baseline.", 3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",
