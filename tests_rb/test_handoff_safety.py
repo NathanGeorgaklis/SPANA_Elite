@@ -8,6 +8,8 @@
 """Same-frame identity handoff safety (target.py: continuity_step_*), synthetic scenes at 15 / 30 fps."""
 import unittest
 
+import numpy as np
+
 from player_tracker_rb import target as T
 from player_tracker_rb.config import TrackerConfig
 from tests_rb import _synth_scene as SS
@@ -251,6 +253,86 @@ class TestHandoffSafety(unittest.TestCase):
                 self.assertEqual(r.tracker._handoff_suspect, set())
                 self.assertEqual(wrong_trusted(r), [])
 
+    # ---- recovery of false suspensions (R2 DEV suspended-target recovery) ------------------------------------
+    def _view_switch(self, fps, *, extra=None, blink_every=None):
+        """The trusted target shows two views (narrow / wide, both banked), then switches abruptly to the wide view and
+        keeps it: the step against the narrow reference fails, the bank still knows the view."""
+        n1, n2 = int(2.0 * fps), int(3.0 * fps)
+        fr = []
+        for k in range(n1):
+            w = 30 + 30 * (0.5 - 0.5 * np.cos(2 * np.pi * k / (1.0 * fps)))     # narrow <-> wide, banked
+            fr.append(SS.SceneFrame({"TARGET": SS.box_at(400, 400, w, H), **(extra or {})}))
+        fr.append(SS.SceneFrame({"TARGET": SS.box_at(400, 400, 30, H), **(extra or {})}))   # narrow
+        for k in range(n2):
+            drop = ("TARGET",) if blink_every and k % blink_every == blink_every - 1 else ()
+            fr.append(SS.SceneFrame({"TARGET": SS.box_at(400, 400, 60, H), **(extra or {})}, drop=drop))
+        return fr, n1 + 1
+
+    def test_a_false_suspension_on_a_banked_view_recovers_after_a_sustained_run(self):
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr, sw = self._view_switch(fps)
+                r = SS.run(fr, people(), fps=fps, cfg=ON, pose_gain=0.9)
+                br = step_breaks(r)
+                self.assertTrue(br and br[0] >= sw, "the abrupt view switch suspends")
+                rec = [k for k, f in enumerate(r.frames)
+                       if ((f.decision.get("continuity_step") or {}).get("recovery") or {}).get("recovered")]
+                self.assertTrue(rec, "recovered")
+                delay = (rec[0] - br[0]) / fps
+                self.assertGreaterEqual(delay + 1e-9, ON.get("continuity_recover_s") - 1 / fps,
+                                        "one strong frame never recovers")
+                self.assertTrue(all(r.frames[k].identity_trusted for k in range(rec[0], len(fr))))
+                self.assertTrue(all(not r.frames[k].identity_trusted for k in range(br[0], rec[0])))
+                self.assertEqual(r.tracker._handoff_suspect, set())
+                self.assertTrue(r.bank_is_pure())
+                banked_only_with_proven_step(self, r)
+
+    def test_recovery_is_blocked_while_a_same_kit_rival_is_not_separated(self):
+        for fps in FPS_SET:
+            with self.subTest(fps=fps):
+                fr, sw = self._view_switch(fps, extra={"LOOK": SS.box_at(520, 400, 60, H)})
+                r = SS.run(fr, people(("LOOK", KIT_A, 0.97)), fps=fps, cfg=ON, pose_gain=0.9)
+                rec = [k for k, f in enumerate(r.frames)
+                       if ((f.decision.get("continuity_step") or {}).get("recovery") or {}).get("recovered")]
+                self.assertEqual(rec, [])
+                self.assertEqual(wrong_trusted(r), [])
+                self.assertTrue(r.bank_is_pure())
+
+    def test_a_recovery_run_is_restarted_by_any_hidden_frame(self):
+        fps = 30.0
+        every = int(ON.get("continuity_recover_s") * fps) - 2                # blinks shorter than one full run
+        fr, sw = self._view_switch(fps, blink_every=every)
+        r = SS.run(fr, people(), fps=fps, cfg=ON, pose_gain=0.9)
+        rec = [k for k, f in enumerate(r.frames)
+               if ((f.decision.get("continuity_step") or {}).get("recovery") or {}).get("recovered")]
+        self.assertEqual(rec, [], "a run interrupted by a hidden frame never completes")
+
+    def test_substitutes_never_recover(self):
+        for fps in FPS_SET:
+            for cos in (0.7, 0.8, 0.85, 0.9):
+                with self.subTest(fps=fps, cos=cos):
+                    fr, pp, n1 = substitution(fps, cos)
+                    fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(int(3.0 * fps))]
+                    r = SS.run(fr, pp, fps=fps, cfg=ON)
+                    rec = [k for k, f in enumerate(r.frames)
+                           if ((f.decision.get("continuity_step") or {}).get("recovery") or {}).get("recovered")]
+                    self.assertEqual(rec, [])
+                    self.assertEqual(wrong_trusted(r), [])
+                    self.assertTrue(r.bank_is_pure())
+
+    def test_an_unrecovered_suspension_ages_out_at_continuity_suspend_max_s(self):
+        fps = 30.0
+        fr, pp, n1 = substitution(fps, 0.8)
+        fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(int(4.0 * fps))]
+        r = SS.run(fr, pp, fps=fps, cfg=ON)
+        unr = [k for k, f in enumerate(r.frames) if f.decision.get("handoff_unresolved")]
+        self.assertTrue(unr)
+        self.assertAlmostEqual((unr[0] - n1) / fps, ON.get("continuity_suspend_max_s"), delta=2 / fps)
+        self.assertIn(r.frames[unr[0]].rb_state, (T.LOST, T.REACQUIRING))
+        self.assertFalse(r.frames[unr[0]].identity_trusted)
+        self.assertIn(r.tracker._tracklet, (None,) + tuple(
+            f.observation_tracklet_id for f in r.frames[unr[0]:unr[0] + 1]))
+
     def test_a_cut_resets_the_step_reference(self):
         from player_tracker_rb import camera as C
         fps = 30.0
@@ -296,6 +378,109 @@ class TestHandoffSafety(unittest.TestCase):
                     self.assertTrue(r.bank_is_pure())
         finally:
             T.TargetTracker._confusable_contrast = real
+
+
+class TestRecoveryUnit(unittest.TestCase):
+    """_recovery_frame / _handoff_step with controlled features (stub extractor keyed by box centre x)."""
+
+    def setUp(self):
+        from player_tracker_rb import population as P
+        from player_tracker_rb.appearance import AppearanceFeature, CropQuality, l2_normalise
+        from player_tracker_rb.detector import PersonCandidate
+        self.P = P
+        rng = np.random.default_rng(3)
+        lab = rng.random((2, 64))
+        self.lab = lab / lab.sum(axis=1, keepdims=True)
+        self.E = np.eye(16)
+        self.AF, self.CQ, self.norm = AppearanceFeature, CropQuality, l2_normalise
+        self.by_x = {}
+        outer = self
+
+        class Stub:
+            def extract(self, image, box, *, others, merged_suspected=False):
+                return outer.by_x[round((box[0] + box[2]) / 2)]
+        self.pop = P.Population(ON, SS.W, SS.H)
+        self.tt = T.TargetTracker(ON, self.pop, Stub())
+        self.tt._bank.samples = [self.feat(1.0)]
+        self.Cand = PersonCandidate
+
+    def feat(self, comp, axis=1, usable=True):
+        """A feature whose composite to the bank's sample is `comp` (same LAB: composite = 0.35 + 0.65 * cos)."""
+        cos = (comp - ON.get("composite_weight_lab")) / ON.get("composite_weight_embedding")
+        e = cos * self.E[0] + np.sqrt(max(0.0, 1 - cos * cos)) * self.E[axis]
+        q = self.CQ(H, 1.0, 0.0, 1.0, usable, ())
+        return self.AF(lab=self.lab if usable else None, embedding=self.norm(e) if usable else None, quality=q)
+
+    def frame(self, bodies):
+        """bodies: list of (x, feature); returns a FrameResult with one observation per body."""
+        cands = []
+        for x, f in bodies:
+            self.by_x[x] = f
+            cands.append(self.Cand(SS.box_at(x, 400, 40, H), 0.9, False, "synthetic"))
+        from player_tracker_rb import population as P
+        pop = P.Population(ON, SS.W, SS.H)                     # a fresh population per frame set
+        self.tt._pop = pop
+        pop.update(0, 0.0, cands, SS.identity_motion(SS.FIRST_FRAME))
+        return pop.update(1, 1 / 30.0, cands, SS.motion_from_matrix([[1, 0, 0], [0, 1, 0]], SS.W, SS.H))
+
+    def h(self, level=1.0):
+        return {"bank_level": level, "run_t0": None, "run_n": 0, "run_feat": None, "passes": 0, "base": None,
+                "tracklet": None, "t0": 0.0}
+
+    def obs_at(self, res, x):
+        return next(o for o in res.observations if round((o.bbox[0] + o.bbox[2]) / 2) == x)
+
+    def test_floor_level_rival_and_continuity_each_fail_a_frame(self):
+        cases = {
+            "BELOW_REACQ_FLOOR": dict(target=0.84, level=0.86),
+            "BELOW_PRE_BREAK_LEVEL": dict(target=0.90, level=0.97),
+            "RIVAL_NOT_SEPARATED": dict(target=0.95, level=0.96, rival=0.92),
+            "RIVAL_UNSCORABLE": dict(target=0.95, level=0.96, rival=None),
+            "RUN_DISCONTINUOUS": dict(target=0.95, level=0.96, run_feat=0.6),
+        }
+        for why, cs in cases.items():
+            with self.subTest(why=why):
+                self.by_x = {}
+                tf = self.feat(cs["target"])
+                bodies = [(400, tf)]
+                if "rival" in cs:
+                    bodies.append((480, self.feat(cs["rival"], axis=2) if cs["rival"] is not None
+                                   else self.feat(0.9, usable=False)))
+                res = self.frame(bodies)
+                hd = self.h(cs["level"])
+                if "run_feat" in cs:
+                    hd.update({"run_t0": 0.0, "run_n": 2, "run_feat": self.feat(cs["run_feat"], axis=3)})
+                rec = self.tt._recovery_frame({}, res, None, self.obs_at(res, 400), tf, hd)
+                expect = "RIVAL_NOT_SEPARATED" if why == "RIVAL_UNSCORABLE" else why
+                self.assertIn(expect, rec["why"], rec)
+                self.assertEqual(hd["run_n"], 0, "a failing frame restarts the run")
+        self.by_x = {}
+        tf = self.feat(0.95)
+        res = self.frame([(400, tf), (480, self.feat(0.85, axis=2))])
+        rec = self.tt._recovery_frame({}, res, None, self.obs_at(res, 400), tf, self.h(0.96))
+        self.assertEqual(rec["why"], [], "control: a separated, strong, continuous frame passes")
+        self.assertEqual(rec["run_n"], 1)
+        self.assertFalse(rec["recovered"], "one strong frame never recovers")
+
+    def test_an_unclean_frame_restarts_the_run_and_a_rival_blocks_the_glitch_path(self):
+        import dataclasses
+        P = self.P
+        self.by_x = {}
+        tf = self.feat(0.99)
+        res = self.frame([(400, tf), (480, self.feat(0.98, axis=2))])   # an unseparated rival nearby
+        tv = res.tracklet(self.obs_at(res, 400).tracklet_id)
+        tt = self.tt
+        tt._step_ref = (tv.tracklet_id, 0.0, tf, 0)
+        tt._handoff = dict(self.h(0.99), tracklet=tv.tracklet_id, passes=2, run_t0=0.0, run_n=5, run_feat=tf)
+        rec = tt._handoff_step({}, res, None, tv)
+        self.assertEqual(rec.get("passes"), 3, "the step against the pre-break reference passes")
+        self.assertFalse(rec["resolved"], "the glitch path never resolves beside an unseparated rival")
+        o = self.obs_at(res, 400)
+        bad = dataclasses.replace(res, observations=tuple(dataclasses.replace(x, flags=x.flags + (P.PARTIAL,))
+                                                          if x.index == o.index else x for x in res.observations))
+        tt._handoff.update({"run_t0": 0.0, "run_n": 5, "run_feat": tf})
+        tt._handoff_step({}, bad, None, bad.tracklet(tv.tracklet_id))
+        self.assertEqual(tt._handoff["run_n"], 0, "an unclean frame restarts the recovery run")
 
 
 if __name__ == "__main__":

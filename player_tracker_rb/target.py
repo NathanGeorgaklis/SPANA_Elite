@@ -156,8 +156,17 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     APPEARANCE_STEP): its frames are AMBIGUOUS (COMPETING_CANDIDATE), never trusted, never banked, no known others
     are recorded, and it cannot be reacquired; the reference and baseline are frozen. The suspension RESOLVES only
     after continuity_step_resolve_steps consecutive clean crops pass the step test against that PRE-break reference
-    and baseline (a one-frame pose / blur glitch of the true target); it then continues as before, re-settling for
-    known others. Otherwise it ends by ordinary aging (max_ambiguous_s -> LOST) or when another body is accepted,
+    and baseline, with no unseparated rival (a one-frame pose / blur glitch of the true target), OR by sustained
+    RECOVERY: a run of consecutive clean frames lasting >= continuity_recover_s and >= continuity_step_resolve_steps
+    frames, each of which matches the trusted bank at reacq_appearance_floor AND within ambiguity_margin of the
+    frozen PRE-BREAK BANK LEVEL (the median bank composite of the verified target's continuation frames over the
+    last continuity_step_window_s before the break; none -> no recovery), is continuous with the run's previous crop
+    (composite >= reacq_appearance_floor), and has every other body within continuity_recover_rival_h heights
+    scorable and at least ambiguity_margin below it (any failing, unclean or hidden frame restarts the run; one
+    strong frame never recovers). Either way it continues as before, re-settling for known others; nothing is
+    banked on the resolving frame. While the suspended tracklet is followed, the suspension ages on its own clock
+    (continuity_suspend_max_s from the break, instead of max_ambiguous_s; always AMBIGUOUS, untrusted, unbanked).
+    Otherwise it ends by aging (-> LOST) or when another body is accepted,
     and the tracklet becomes HANDOFF-SUSPECT for its lifetime: no reacquisition onto it, no confirm, and no F5
     re-verification can contrast-verify an episode on it (review HIGH-2: a substitute must not regain trust by
     beating a third confusable body). The target bank is offered a sample on a continuation frame only if this
@@ -450,6 +459,7 @@ class TargetTracker:
         self._step_proven = False
         self._handoff: Optional[Dict[str, Any]] = None       # an unresolved handoff suspension on the tracklet
         self._handoff_suspect: Set[str] = set()              # tracklets whose handoff never resolved
+        self._bank_lvl: List[Tuple[float, float]] = []       # (t, bank composite) of verified continuation frames
         self._lost_gate0: Optional[Tuple[float, float]] = None   # F9: (time, gate) when the LOST search started
         self._seed_pending: Optional[Dict[str, Any]] = None       # F2: deferred seed anchor (tracklet, t0, why)
         self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
@@ -1086,7 +1096,7 @@ class TargetTracker:
             self._sizes, self._last_h = [], None              # scale from another shot means nothing here
             self._reverify = None                             # physical continuity cannot span a cut (F5)
             self._step_ref, self._step_hist = None, []         # nor can an appearance step
-            self._handoff = None
+            self._handoff, self._bank_lvl = None, []
             log["camera"] = "CONTINUITY_BROKEN"
         elif self._motion is not None:
             self._motion = self._mm.apply_camera(self._motion, cam)
@@ -1167,6 +1177,8 @@ class TargetTracker:
                     self._step_proven = True
             elif self._handoff is not None and tv is not None:
                 suspended = True                         # still suspended while its box is hidden
+                h0 = self._handoff
+                h0["run_t0"], h0["run_n"], h0["run_feat"] = None, 0, None   # a recovery run must be consecutive
             if continuity_broken or suspended:
                 state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]
             elif tv is not None and tv.observed:
@@ -1189,6 +1201,10 @@ class TargetTracker:
                 if not details:
                     state, chosen = TRACKING, ev
                     conf_trusted = self._confidence_trusted(ev)
+                    if self._contrast_verified and ev.composite is not None:
+                        # recovery reference: how well the verified target matches its own trusted bank
+                        win = c.get("continuity_step_window_s")
+                        self._bank_lvl = [x for x in self._bank_lvl if sec_le(t - x[0], win)] + [(t, ev.composite)]
                 else:
                     state = AMBIGUOUS
                     reasons = sorted({_DETAIL_TO_REASON.get(d, COMPETING_CANDIDATE) for d in details})
@@ -1221,7 +1237,13 @@ class TargetTracker:
                         state, reasons, occluders, merged_flag = s2, r2, occ2, m2
 
         # ---- aging (D14) ------------------------------------------------------------------------------------
-        if state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None:
+        if self._handoff is not None and state in (OCCLUDED, AMBIGUOUS) and self._tracklet == self._handoff["tracklet"]:
+            # handoff recovery (module doc): a suspension on a still-followed tracklet lasts at most
+            # continuity_suspend_max_s (always untrusted and unbanked), then ages out as usual
+            if sec_gt(t - self._handoff["t0"], c.get("continuity_suspend_max_s")):
+                state, reasons = LOST, sorted(set(reasons) | {AGED_OUT})
+                self._tracklet = None
+        elif state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None:
             limit = c.get("max_occluded_s") if state == OCCLUDED else c.get("max_ambiguous_s")
             if sec_gt(t - self._last_confirm_t, limit):
                 state, reasons = LOST, sorted(set(reasons) | {AGED_OUT})
@@ -1519,6 +1541,8 @@ class TargetTracker:
         rec: Dict[str, Any] = {"tested": False, "broken": False, "suspended": h is not None, "resolved": False,
                                "consecutive": False, "clean": clean}
         if not clean:
+            if h is not None:
+                h["run_t0"], h["run_n"], h["run_feat"] = None, 0, None   # a recovery run needs consecutive clean frames
             return rec                                       # no evidence this frame; the reference is kept
         if ref is None:
             if h is None:
@@ -1543,7 +1567,9 @@ class TargetTracker:
         if h is not None:
             h["passes"] = h["passes"] + 1 if ok else 0
             rec["passes"] = h["passes"]
-            if h["passes"] >= c.get("continuity_step_resolve_steps"):
+            rec["recovery"] = self._recovery_frame(cache, res, image, o, feat, h)
+            glitch = h["passes"] >= c.get("continuity_step_resolve_steps") and not rec["recovery"]["rivals"]
+            if glitch or rec["recovery"]["recovered"]:
                 self._handoff = None
                 rec.update({"suspended": False, "resolved": True, "consecutive": False})
                 self._step_ref = (tv.tracklet_id, t, feat, res.rel_frame)
@@ -1554,8 +1580,62 @@ class TargetTracker:
             self._step_ref = (tv.tracklet_id, t, feat, res.rel_frame)
         else:
             rec.update({"broken": True, "suspended": True})
-            self._handoff = {"tracklet": tv.tracklet_id, "t0": t, "base": base, "passes": 0}
+            lvl = [x[1] for x in self._bank_lvl if sec_le(t - x[0], c.get("continuity_step_window_s"))]
+            self._handoff = {"tracklet": tv.tracklet_id, "t0": t, "base": base, "passes": 0,
+                             "bank_level": float(np.median(lvl)) if lvl else None,
+                             "run_t0": None, "run_n": 0, "run_feat": None}
         return rec
+
+    def _recovery_frame(self, cache: Dict[int, AppearanceFeature], res: P.FrameResult, image: np.ndarray,
+                        o: P.Observation, feat: AppearanceFeature, h: Dict[str, Any]) -> Dict[str, Any]:
+        """Handoff RECOVERY (module docstring): one clean frame of the suspended tracklet. It passes only if its crop
+        matches the trusted bank at reacq_appearance_floor AND within ambiguity_margin of the frozen pre-break bank
+        level, is continuous with the run's previous crop, and every other body within continuity_recover_rival_h
+        heights is scorable and at least ambiguity_margin below it. Recovery needs a run of consecutive passing
+        frames lasting >= continuity_recover_s and >= continuity_step_resolve_steps frames."""
+        c = self._cfg
+        t = res.time_s
+        floor, m = c.get("reacq_appearance_floor"), c.get("ambiguity_margin")
+        best, _ = self._bank.best_match(feat)
+        b = None if best is None else best.composite
+        why = []
+        if b is None or h["bank_level"] is None:
+            why.append("NO_BANK_EVIDENCE")
+        else:
+            if b < floor:
+                why.append("BELOW_REACQ_FLOOR")
+            if h["bank_level"] - b >= m:
+                why.append("BELOW_PRE_BREAK_LEVEL")
+        if h["run_feat"] is not None:
+            cont = compare(feat, h["run_feat"], c).composite
+            if cont is None or cont < floor:
+                why.append("RUN_DISCONTINUOUS")
+        bh = _wh(o.bbox)[1]
+        grp = self._group(res, o.index)
+        rivals = []
+        for x in res.observations:
+            if not x.is_body or x.index in grp:
+                continue
+            dist = math.hypot(centre(x.bbox)[0] - centre(o.bbox)[0], centre(x.bbox)[1] - centre(o.bbox)[1])
+            if bh <= 0 or dist / bh > c.get("continuity_recover_rival_h"):
+                continue
+            xs, _ = self._bank.best_match(self._feature(cache, res, image, x.index))
+            if xs is None or xs.composite is None or b is None or xs.composite > b - m:
+                rivals.append(x.index)
+        if rivals:
+            why.append("RIVAL_NOT_SEPARATED")
+        if why:
+            # this frame fails: a new run may start only from a passing frame
+            h["run_t0"], h["run_n"], h["run_feat"] = None, 0, None
+        else:
+            if h["run_t0"] is None:
+                h["run_t0"] = t
+            h["run_n"] += 1
+            h["run_feat"] = feat
+        recovered = not why and h["run_n"] >= c.get("continuity_step_resolve_steps") and \
+            sec_ge(t - h["run_t0"], c.get("continuity_recover_s"))
+        return {"bank": b, "bank_level": h["bank_level"], "why": why, "rivals": rivals, "run_n": h["run_n"],
+                "run_s": None if h["run_t0"] is None else t - h["run_t0"], "recovered": recovered}
 
     def _nt_prune(self, res: P.FrameResult) -> None:
         """NOT_TARGET memory upkeep (module docstring): drop every entry on a camera continuity break, and an entry

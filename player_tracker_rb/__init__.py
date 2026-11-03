@@ -12,4 +12,4 @@ player_tracker, player_tracker_mo, event_engine_v1 or anything under recovered/ 
 Stages: R1-A (config, output_schema), R1-B (video_io, provenance), R1-C (detector), R1-D (appearance), R1-E
 (population, motion, camera), R1-F (target identity), R1-G (run_rb: the integrated Pass-1 pipeline).
 """
-__version__ = "0.17.1-r2ho"   # R2 DEV remediation F1 + F3 + F3c (population safety) + F5 (post-anomaly re-verification, off) + F8 (camera scale corroboration) + F9 (LOST search gate) + F4/F6 (time-boundary comparisons) + F2 (deferred seed anchor) + identity layer (diagnostic, not used by target trust) + NOT_TARGET memory (off) + target reference profile (diagnostic) + same-frame handoff safety (on)
+__version__ = "0.18.0-r2ho"   # R2 DEV remediation F1 + F3 + F3c (population safety) + F5 (post-anomaly re-verification, off) + F8 (camera scale corroboration) + F9 (LOST search gate) + F4/F6 (time-boundary comparisons) + F2 (deferred seed anchor) + identity layer (diagnostic, not used by target trust) + NOT_TARGET memory (off) + target reference profile (diagnostic) + same-frame handoff safety (on)

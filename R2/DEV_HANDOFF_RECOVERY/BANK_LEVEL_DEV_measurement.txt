@@ -1,0 +1,4 @@
+R2_MCFC_MIT_C006 genuine frames 101 pass 0.149 | impostor frames 208 pass 0.0 | impostor max consecutive passing run 0 [0, 0, 0, 0, 0]
+R2_MCFC_MIT_C020 genuine frames 508 pass 0.988 | impostor frames 1310 pass 0.0 | impostor max consecutive passing run 0 [0, 0, 0, 0, 0]
+R2_MCFC_MIT_C033 genuine frames 297 pass 0.387 | impostor frames 820 pass 0.0 | impostor max consecutive passing run 0 [0, 0, 0, 0, 0]
+R2_SYO_MAR_C012 genuine frames 233 pass 0.0 | impostor frames 3200 pass 0.0009 | impostor max consecutive passing run 2 [0, 0, 0, 1, 2]
