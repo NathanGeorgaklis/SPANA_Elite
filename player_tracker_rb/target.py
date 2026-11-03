@@ -153,11 +153,14 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     composite similarity to the reference. A step FAILS if it is below reacq_appearance_floor, or at least
     ambiguity_margin below the median of the tracklet's passed steps over continuity_step_window_s (when at least
     continuity_step_min_steps exist). A FIRST failed step is only PENDING (decision log continuity_pending): that
-    frame stays TRACKING but is untrusted (COMPETING_CANDIDATE), records no known others and is never banked, and
-    the reference and baseline stay frozen; unclean and hidden frames keep it pending. The NEXT clean crop is tested
-    against the same pre-failure reference and baseline: if it passes, continuity is restored and tracking continues
-    normally; if it also fails, the break has persisted for 2 consecutive clean frames and the tracklet is SUSPENDED
-    (decision log continuity_broken = APPEARANCE_STEP): its frames are AMBIGUOUS (COMPETING_CANDIDATE), never trusted, never banked, no known others
+    frame, and any unclean frame while pending, is AMBIGUOUS (COMPETING_CANDIDATE) -- untrusted, never banked, no
+    confirm bookkeeping (no contrast verification, known others, motion / size update, confirmation time; it ages
+    by max_ambiguous_s) -- but the tracklet is kept, it is not reacquirable, and it is NOT suspended; the reference
+    and baseline stay frozen. The NEXT clean crop is tested against the same pre-failure reference and baseline: if
+    it passes, continuity is restored and tracking continues normally on the tracklet; if it also fails, the break
+    persisted for 2 consecutive clean frames and the tracklet is SUSPENDED. A failure within
+    continuity_step_window_s of the previous failure on the same tracklet suspends at once (an unstable box is not
+    a one-frame glitch). Suspension (decision log continuity_broken = APPEARANCE_STEP): its frames are AMBIGUOUS (COMPETING_CANDIDATE), never trusted, never banked, no known others
     are recorded, and it cannot be reacquired; the reference and baseline are frozen. The suspension RESOLVES only
     after continuity_step_resolve_steps consecutive clean crops pass the step test against that PRE-break reference
     and baseline (a one-frame pose / blur glitch of the true target); it then continues as before, re-settling for
@@ -458,6 +461,7 @@ class TargetTracker:
         # the next clean crop either restores continuity or fails again (then: suspension)
         self._step_pending: Optional[Dict[str, Any]] = None
         self._pending_now = False
+        self._step_last_fail: Optional[Tuple[str, float]] = None   # (tracklet, time) of the last failed clean step
         self._lost_gate0: Optional[Tuple[float, float]] = None   # F9: (time, gate) when the LOST search started
         self._seed_pending: Optional[Dict[str, Any]] = None       # F2: deferred seed anchor (tracklet, t0, why)
         self._pc_detail: Optional[Dict[str, Any]] = None     # F5 log: the body behind the last withholding reason
@@ -1095,7 +1099,7 @@ class TargetTracker:
             self._sizes, self._last_h = [], None              # scale from another shot means nothing here
             self._reverify = None                             # physical continuity cannot span a cut (F5)
             self._step_ref, self._step_hist = None, []         # nor can an appearance step
-            self._handoff, self._step_pending = None, None
+            self._handoff, self._step_pending, self._step_last_fail = None, None, None
             log["camera"] = "CONTINUITY_BROKEN"
         elif self._motion is not None:
             self._motion = self._mm.apply_camera(self._motion, cam)
@@ -1180,7 +1184,9 @@ class TargetTracker:
                     self._step_proven = True
             elif self._handoff is not None and tv is not None:
                 suspended = True                         # still suspended while its box is hidden
-            if continuity_broken or suspended:
+            if self._pending_now:
+                log["continuity_pending"] = True         # persistent-break check: one frame of doubt (module doc)
+            if continuity_broken or suspended or self._pending_now:
                 state, reasons = AMBIGUOUS, [COMPETING_CANDIDATE]
             elif tv is not None and tv.observed:
                 # ---- ordinary association: continuation of the target's tracklet ----------------------------
@@ -1306,9 +1312,7 @@ class TargetTracker:
             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
             log["episode_contrast_verified"] = self._contrast_verified
             det_idx = chosen.detection_index
-            trusted = self._contrast_verified and not self._pending_now
-            if self._pending_now:
-                log["continuity_pending"] = True                 # persistent-break check pending
+            trusted = self._contrast_verified
             conf = conf_trusted if trusted else min(conf_trusted, c.get("untrusted_identity_confidence_ceiling"))
             self._last_trusted_conf = conf
         else:
@@ -1323,10 +1327,8 @@ class TargetTracker:
             # the anomaly marker belongs to the target's current tracklet only: once the target has left it (LOST,
             # cut, closed, reacquired elsewhere) a later return is already a new episode (review round 4 L1)
             self._anomaly_tracklet = None
-        untr = (COMPETING_CANDIDATE,) if self._pending_now else \
-            ((INSUFFICIENT_CONTRAST,) if not self._contrast_verified else ())
         frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
-                            trusted=trusted, untrusted_tracking_reasons=untr or (INSUFFICIENT_CONTRAST,),
+                            trusted=trusted,
                             contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)
         self._prev_t = t
         return frame
@@ -1577,13 +1579,18 @@ class TargetTracker:
                 self._step_pending = None
             self._step_hist.append((t, d))
             self._step_ref = (tv.tracklet_id, t, feat, res.rel_frame)
-        elif pend is None:
-            # a FIRST failed clean step: pending (untrusted, unbanked); the reference and baseline stay frozen
+        elif pend is None and not (self._step_last_fail is not None and self._step_last_fail[0] == tv.tracklet_id
+                                   and sec_le(t - self._step_last_fail[1], c.get("continuity_step_window_s"))):
+            # a FIRST failed clean step: pending (one AMBIGUOUS frame, never banked); reference and baseline frozen
             rec["pending"] = True
             self._step_pending = {"tracklet": tv.tracklet_id, "t0": t, "base": base, "frame": res.rel_frame}
+            self._step_last_fail = (tv.tracklet_id, t)
         else:
             # the break persisted on the next clean crop: suspend exactly as before
-            rec.update({"broken": True, "suspended": True, "pending_since_frame": pend["frame"]})
+            # the break persisted on the next clean crop, or repeated within continuity_step_window_s: suspend
+            rec.update({"broken": True, "suspended": True,
+                        "pending_since_frame": None if pend is None else pend["frame"]})
+            self._step_last_fail = (tv.tracklet_id, t)
             self._step_pending = None
             self._handoff = {"tracklet": tv.tracklet_id, "t0": t, "base": base, "passes": 0}
         return rec

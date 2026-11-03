@@ -276,6 +276,79 @@ class TestHandoffSafety(unittest.TestCase):
         self.assertTrue(seen["new"], "control: the new body has a tracklet on the pending frame")
         self.assertFalse(set(seen["new"]) & seen["known"])
 
+    def test_review_high1_a_pending_frame_never_contrast_verifies_the_episode(self):
+        # review of 059387d HIGH-1: an unverified substitute episode (S reacquired after the target left), a same-kit
+        # body C nearby; one frame shows the target's crop in S's box (step fails: pending). The pending frame must not
+        # verify the episode (it beat C with the TARGET's crop); S must never become trusted
+        for fps in (8.0, 15.0, 30.0, 60.0):
+            with self.subTest(fps=fps):
+                pp = SS.make_people([("TARGET", KIT_A, 1.0), ("S", KIT_A, 0.8), ("C", KIT_A, 0.8)])
+                n = int(fps)
+                fr = [SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, H)}) for _ in range(n)]
+                fr += [SS.SceneFrame({}) for _ in range(int(1.5 * fps))]
+                fr += [SS.SceneFrame({"S": SS.box_at(500, 400, 40, H)}) for _ in range(int(3 * fps))]
+                m = int(fps)
+                fr += [SS.SceneFrame({"S": SS.box_at(500, 400, 40, H), "C": SS.box_at(1100 - 470 * k / m, 400, 40, H)})
+                       for k in range(m + 1)]
+                kx = len(fr)
+                fr.append(SS.SceneFrame({"TARGET": SS.box_at(500, 400, 40, H), "C": SS.box_at(630, 400, 40, H)}))
+                fr += [SS.SceneFrame({"S": SS.box_at(500, 400, 40, H), "C": SS.box_at(630, 400, 40, H)})
+                       for _ in range(int(2 * fps))]
+                r = SS.run(fr, pp, fps=fps, cfg=ON)
+                self.assertNotEqual(r.frames[kx].rb_state, T.TRACKING, "a pending frame is never TRACKING")
+                self.assertEqual(wrong_trusted(r), [])
+                self.assertTrue(r.bank_is_pure())
+                self.assertEqual(r.tracker._known_others, set())
+
+    def test_review_medium2_an_alternating_substitute_suspends(self):
+        for fps in FPS_SET:
+            for pat in (("SA", "SB"), ("SA", "TARGET"), ("TARGET", "SA")):
+                with self.subTest(fps=fps, pat=pat):
+                    pp = SS.make_people([("TARGET", KIT_A, 1.0), ("SA", KIT_A, 0.7), ("SB", KIT_A, 0.9)])
+                    n1 = int(1.5 * fps)
+                    fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+                    fr += [SS.SceneFrame({pat[k % 2]: SS.box_at(402, 400, 40, H)}) for k in range(int(1.5 * fps))]
+                    r = SS.run(fr, pp, fps=fps, cfg=ON)
+                    self.assertEqual(wrong_trusted(r), [])
+                    self.assertTrue(r.bank_is_pure())
+                    self.assertTrue(step_breaks(r), "a repeated failure within the window suspends")
+
+    def test_an_unclean_pending_stretch_stays_untrusted_and_ages(self):
+        # first failure, then the box stays unclean (touching the image edge): pending frames are AMBIGUOUS, untrusted,
+        # confirm bookkeeping frozen, and the target ages out by max_ambiguous_s
+        fps = 30.0
+        n1 = int(1.5 * fps)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(60, 400, 40, H)}) for _ in range(n1)]
+        fr.append(SS.SceneFrame({"LOOK": SS.box_at(62, 400, 40, H)}))
+        fr += [SS.SceneFrame({"LOOK": SS.box_at(12, 400, 40, H)}) for _ in range(int(2.0 * fps))]   # at the edge
+        r = SS.run(fr, people(("LOOK", KIT_A, 0.85)), fps=fps, cfg=ON)
+        self.assertEqual(wrong_trusted(r), [])
+        self.assertTrue(r.bank_is_pure())
+        self.assertTrue(all(f.rb_state != T.TRACKING or not f.identity_trusted for f in r.frames[n1:]))
+        t_last = r.frames[n1 - 1].time_s
+        tracking_late = [k for k in range(n1, len(fr)) if r.frames[k].rb_state == T.TRACKING
+                         and r.frames[k].time_s - t_last > ON.get("max_ambiguous_s") + 2 / fps]
+        self.assertTrue(all(not r.frames[k].identity_trusted for k in tracking_late))
+        self.assertTrue(any(f.rb_state in (T.LOST, T.REACQUIRING) for f in r.frames[n1:]), "ages out")
+
+    def test_a_pending_state_never_crosses_a_tracklet_change(self):
+        fps = 30.0
+        n1 = int(1.5 * fps)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
+        fr.append(SS.SceneFrame({"GLITCH": SS.box_at(401, 400, 40, H)}))
+        r = SS.run(fr, people(("GLITCH", KIT_A, 0.7)), fps=fps, cfg=ON)
+        tt = r.tracker
+        self.assertIsNotNone(tt._step_pending)
+        from types import SimpleNamespace
+        other = SimpleNamespace(tracklet_id="T999", detection_index=0)
+        tt._step_ref = ("T999", 0.0, tt._step_ref[2], 0)
+        res = r.pops[-1]
+        o = res.observations[0]
+        import dataclasses
+        res2 = dataclasses.replace(res, observations=(dataclasses.replace(o, tracklet_id="T999"),) + res.observations[1:])
+        tt._handoff_step({}, res2, SS.render(fr[-1], people(("GLITCH", KIT_A, 0.7))), other)
+        self.assertTrue(tt._step_pending is None or tt._step_pending["tracklet"] == "T999")
+
     def test_a_two_frame_appearance_dip_of_the_true_target_suspends_then_resolves(self):
         for fps in FPS_SET:
             with self.subTest(fps=fps):
