@@ -1,0 +1,231 @@
+{
+ "schema": "r2_jersey_labels_v1",
+ "clip_id": "R2_JERSEY_SYO_MAR_J15",
+ "clip_sha256": "772141ea90ec42d80b529142e795f61c6b8095fa30a4410b9ed4109d8d95c866",
+ "fps": 30,
+ "frames": 240,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_jersey_annotator.html v1",
+ "saved_utc": "2026-11-04T07:33:54.646Z",
+ "clip_rejected": null,
+ "target": {
+  "description": "light blue 11",
+  "team": "B",
+  "expected_number": 11,
+  "number_visibility": "READABLE_IN_SOME_FRAMES"
+ },
+ "keyframes": {
+  "0": {
+   "visibility": "VISIBLE",
+   "box": [
+    144,
+    160,
+    360,
+    533
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "15": {
+   "visibility": "VISIBLE",
+   "box": [
+    231,
+    177,
+    395,
+    511
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "30": {
+   "visibility": "VISIBLE",
+   "box": [
+    287,
+    174,
+    449,
+    495
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "45": {
+   "visibility": "VISIBLE",
+   "box": [
+    338,
+    186,
+    505,
+    494
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "60": {
+   "visibility": "VISIBLE",
+   "box": [
+    433,
+    196,
+    582,
+    483
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "75": {
+   "visibility": "VISIBLE",
+   "box": [
+    504,
+    193,
+    617,
+    480
+   ],
+   "number": "UNREADABLE",
+   "reason": "SIDE_ON",
+   "human_uncertain": false,
+   "note": ""
+  },
+  "90": {
+   "visibility": "VISIBLE",
+   "box": [
+    563,
+    216,
+    679,
+    482
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "105": {
+   "visibility": "VISIBLE",
+   "box": [
+    591,
+    233,
+    720,
+    473
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "120": {
+   "visibility": "VISIBLE",
+   "box": [
+    656,
+    246,
+    739,
+    480
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "135": {
+   "visibility": "VISIBLE",
+   "box": [
+    675,
+    255,
+    785,
+    486
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "150": {
+   "visibility": "VISIBLE",
+   "box": [
+    712,
+    258,
+    810,
+    488
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "165": {
+   "visibility": "VISIBLE",
+   "box": [
+    741,
+    256,
+    814,
+    480
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "180": {
+   "visibility": "VISIBLE",
+   "box": [
+    716,
+    276,
+    813,
+    480
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "195": {
+   "visibility": "VISIBLE",
+   "box": [
+    740,
+    277,
+    835,
+    471
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "210": {
+   "visibility": "VISIBLE",
+   "box": [
+    800,
+    293,
+    896,
+    469
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  },
+  "225": {
+   "visibility": "VISIBLE",
+   "box": [
+    847,
+    305,
+    920,
+    495
+   ],
+   "number": "READABLE",
+   "reason": null,
+   "human_uncertain": false,
+   "note": ""
+  }
+ },
+ "competitors": {},
+ "distractors": []
+}

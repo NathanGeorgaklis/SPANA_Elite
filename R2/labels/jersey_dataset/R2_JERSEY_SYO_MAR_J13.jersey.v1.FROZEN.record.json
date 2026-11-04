@@ -1,0 +1,31 @@
+{
+ "clip_id": "R2_JERSEY_SYO_MAR_J13",
+ "clip_sha256": "1f2ac69fbb1709a3bdd2ee1e5645d69a82e52e2ea8ac84add8a323ebf6ab9106",
+ "frozen_file": "R2_JERSEY_SYO_MAR_J13.jersey.v1.FROZEN.json",
+ "frozen_utc": "2026-11-04T07:40:22Z",
+ "label_schema": "r2_jersey_labels_v1",
+ "reason": null,
+ "registry_sha256": "ed5e1861cc7e4cda46351325a6eaa425688c1f0779aa92f0c3e11ab275ceefb1",
+ "schema": "r2_jersey_freeze_record_v1",
+ "sha256": "a1c50574e3e9ba9c712abf12219ba6fa9a8e0a5a05e0aa587615fcf55630d9eb",
+ "source_file": "R2_JERSEY_SYO_MAR_J13.jersey_labels.json",
+ "summary": {
+  "clip_id": "R2_JERSEY_SYO_MAR_J13",
+  "distractors": 0,
+  "duplicate_number": false,
+  "expected_number": 18,
+  "human_uncertain": 0,
+  "keyframes": 16,
+  "not_visible": 5,
+  "number_visibility": "READABLE_IN_SOME_FRAMES",
+  "readable": 9,
+  "same_team_competitor_numbers": [],
+  "same_team_number_clash": false,
+  "unreadable": 2,
+  "unreadable_reasons": {
+   "SIDE_ON": 2
+  }
+ },
+ "supersedes": null,
+ "version": 1
+}

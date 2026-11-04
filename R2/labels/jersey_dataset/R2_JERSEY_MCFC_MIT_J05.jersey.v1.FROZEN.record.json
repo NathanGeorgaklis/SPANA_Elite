@@ -1,0 +1,29 @@
+{
+ "clip_id": "R2_JERSEY_MCFC_MIT_J05",
+ "clip_sha256": "71b8c0d974d31cbb5f7d60372a943f8e893781defd993069e932a78402f26028",
+ "frozen_file": "R2_JERSEY_MCFC_MIT_J05.jersey.v1.FROZEN.json",
+ "frozen_utc": "2026-11-04T07:40:22Z",
+ "label_schema": "r2_jersey_labels_v1",
+ "reason": null,
+ "registry_sha256": "ed5e1861cc7e4cda46351325a6eaa425688c1f0779aa92f0c3e11ab275ceefb1",
+ "schema": "r2_jersey_freeze_record_v1",
+ "sha256": "88e7c3a45345528a69f35560c04b293d84828528a6aa6fc39fe23ed17fbfd5f5",
+ "source_file": "R2_JERSEY_MCFC_MIT_J05.jersey_labels.json",
+ "summary": {
+  "clip_id": "R2_JERSEY_MCFC_MIT_J05",
+  "distractors": 0,
+  "duplicate_number": false,
+  "expected_number": 6,
+  "human_uncertain": 0,
+  "keyframes": 16,
+  "not_visible": 0,
+  "number_visibility": "READABLE_IN_SOME_FRAMES",
+  "readable": 16,
+  "same_team_competitor_numbers": [],
+  "same_team_number_clash": false,
+  "unreadable": 0,
+  "unreadable_reasons": {}
+ },
+ "supersedes": null,
+ "version": 1
+}

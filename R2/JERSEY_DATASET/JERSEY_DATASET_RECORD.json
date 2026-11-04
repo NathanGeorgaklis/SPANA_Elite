@@ -1,0 +1,338 @@
+{
+ "coverage": {
+  "clips_never_visible": 0,
+  "clips_with_duplicate_number": 0,
+  "clips_with_same_team_competitor_numbers": 0,
+  "human_uncertain": 0,
+  "keyframes": 240,
+  "not_visible": 27,
+  "readable": 167,
+  "unreadable": 46
+ },
+ "dataset_sha256": "1d9669dd9bc6f58b7b7cc6aa11ecd54060cc6c6ba347076143a73807bf784e15",
+ "files": [
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J01.jersey.v1.FROZEN.json",
+   "sha256": "a0707125391e11aec1ad198db0411bbd109de330b7e32a83be607bb5b08072d8"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J02.jersey.v1.FROZEN.json",
+   "sha256": "4ae01d3eea5a5904b312392dbf2303f89060b674613e0c51f5ddfa38ae9d0b69"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J03.jersey.v1.FROZEN.json",
+   "sha256": "f4c172ca0f20cc371fb2f5288440edc2949cda4cd1f04c6877f811dacaab2897"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J04.jersey.v1.FROZEN.json",
+   "sha256": "8a549f6d9ce86cab78a5c35644f4fdab5da477d1b2c3dc48cc8f71a7e48205ed"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J05.jersey.v1.FROZEN.json",
+   "sha256": "88e7c3a45345528a69f35560c04b293d84828528a6aa6fc39fe23ed17fbfd5f5"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J06.jersey.v1.FROZEN.json",
+   "sha256": "45a1ef7c13749f8ba2022ca4e3be74669c2ec9ee46360b10181e23276ea10c49"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J07.jersey.v1.FROZEN.json",
+   "sha256": "8c3699d486544b9208ce9c110b80d9ca06a785a37c5bc1925124926d3cfd71e5"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J08.jersey.v1.FROZEN.json",
+   "sha256": "981d126b2d246b3991c0a8b01d956cbb40f39b8c185966e167fa8f940dc4b7fd"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J09.jersey.v1.FROZEN.json",
+   "sha256": "954698833b00b858078380bb0ce4a9a970ebfd350c4a2afca9e89c521bac229e"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J10.jersey.v1.FROZEN.json",
+   "sha256": "fb2e399c82c3df1ebbcca59d68bcaa582532d0e311fc98bb4b5715a9907b7a71"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J11.jersey.v1.FROZEN.json",
+   "sha256": "545294b7858610def71326204c043363684ca867cacb67621d28ce9c84411ce0"
+  },
+  {
+   "file": "R2_JERSEY_MCFC_MIT_J12.jersey.v1.FROZEN.json",
+   "sha256": "916f6923038001c65c19106821f982fed6ca869b0aa704bfc954e547094eb3b5"
+  },
+  {
+   "file": "R2_JERSEY_SYO_MAR_J13.jersey.v1.FROZEN.json",
+   "sha256": "a1c50574e3e9ba9c712abf12219ba6fa9a8e0a5a05e0aa587615fcf55630d9eb"
+  },
+  {
+   "file": "R2_JERSEY_SYO_MAR_J14.jersey.v1.FROZEN.json",
+   "sha256": "9cffa0a3fe3f3b6dddca6c8ec7c38b0903a9d3c869a580a8772dc27fb9def692"
+  },
+  {
+   "file": "R2_JERSEY_SYO_MAR_J15.jersey.v1.FROZEN.json",
+   "sha256": "101461bd9985dfcae33c8597ab3f0afb72c1d5a9b544938f3878a8826e16775b"
+  }
+ ],
+ "keyframe_s": 0.5,
+ "label_schema": "r2_jersey_labels_v1",
+ "n_clips": 15,
+ "n_rejected": 0,
+ "per_clip": [
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J01",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 7,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 16,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 0,
+   "unreadable_reasons": {}
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J02",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 17,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 16,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 0,
+   "unreadable_reasons": {}
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J03",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 7,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 3,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 13,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 0,
+   "unreadable_reasons": {}
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J04",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 5,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 13,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 3,
+   "unreadable_reasons": {
+    "FRONT_ON": 2,
+    "SIDE_ON": 1
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J05",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 6,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 16,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 0,
+   "unreadable_reasons": {}
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J06",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 3,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 6,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 10,
+   "unreadable_reasons": {
+    "FRONT_ON": 8,
+    "OCCLUDED_OTHER": 1,
+    "SIDE_ON": 1
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J07",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 2,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 6,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 6,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 4,
+   "unreadable_reasons": {
+    "OCCLUDED_BY_PERSON": 1,
+    "SIDE_ON": 3
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J08",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 47,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 7,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 9,
+   "unreadable_reasons": {
+    "FOLDED_SHIRT": 1,
+    "SIDE_ON": 8
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J09",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 6,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 6,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 5,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 5,
+   "unreadable_reasons": {
+    "SIDE_ON": 5
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J10",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 12,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 15,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 1,
+   "unreadable_reasons": {
+    "SIDE_ON": 1
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J11",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 9,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 5,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 10,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 1,
+   "unreadable_reasons": {
+    "OCCLUDED_BY_PERSON": 1
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J12",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 23,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 2,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 11,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 3,
+   "unreadable_reasons": {
+    "SIDE_ON": 3
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J13",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 18,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 5,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 9,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 2,
+   "unreadable_reasons": {
+    "SIDE_ON": 2
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J14",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 14,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 9,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 7,
+   "unreadable_reasons": {
+    "FRONT_ON": 2,
+    "OCCLUDED_BY_PERSON": 1,
+    "SIDE_ON": 4
+   }
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J15",
+   "distractors": 0,
+   "duplicate_number": false,
+   "expected_number": 11,
+   "human_uncertain": 0,
+   "keyframes": 16,
+   "not_visible": 0,
+   "number_visibility": "READABLE_IN_SOME_FRAMES",
+   "readable": 15,
+   "same_team_competitor_numbers": [],
+   "same_team_number_clash": false,
+   "unreadable": 1,
+   "unreadable_reasons": {
+    "SIDE_ON": 1
+   }
+  }
+ ],
+ "registry_sha256": "ed5e1861cc7e4cda46351325a6eaa425688c1f0779aa92f0c3e11ab275ceefb1",
+ "schema": "r2_jersey_dataset_record_v1",
+ "superseded": []
+}
