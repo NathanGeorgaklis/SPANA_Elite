@@ -131,3 +131,42 @@ visible-needs-box, and the exists-check is backed by exclusive-create.
 
 **Browser test:** `tests_rb/test_r2_jersey_annotator_browser.py` drives the page in headless Chromium and validates
 the downloaded file. It covers a page bug it found: a click lost when a text field's change event rebuilt the buttons.
+
+## v2 region layer (2026-11-04; Nathan 18:44, refined 18:52) — tooling ready, labels PENDING
+
+**Rules:**
+- **Shirt (jersey) number primary; shorts number optional supporting evidence**, used only when genuinely present and
+  readable. Absent or unreadable shorts never count against identity.
+- Frozen v1 is unchanged. v2 is an additive layer:
+  - region truth for the selected player on all 15 clips (Nathan's answer);
+  - competitors on J04, J10, J14, with shirt and shorts numbers recorded separately;
+  - non-player distractor boxes.
+
+**Tooling:**
+- Schema `r2_jersey_regions_v2`: `tools_rb/r2_jersey_regions.py`.
+  - Each layer is bound to its frozen v1 by sha256, and every disagreement with v1 must be explained in a
+    `V1_CONFLICT:` note.
+  - Freezes are versioned, read-only byte copies with freeze records.
+  - The dataset v2 record covers v1 + v2.
+- Page: `tools_rb/r2_jersey_region_annotator.html`, built into the pack as `regions.html` by
+  `tools_rb/r2_jersey_region_pack.py`:
+  - regions.html sha256 `174f0585…ab5ea`;
+  - manifest sha256 `db8788e8…d0e1`.
+- Guide: `JERSEY_REGIONS_LABELLING_GUIDE.md`.
+- Labels go to `~/Downloads/labels_incoming/jersey_v2/`.
+
+**Evaluation plan:** `READER_EVAL_PREREGISTRATION.md`, fixed before any reader output exists.
+
+**Review (2026-11-04):**
+- Code review findings fixed:
+  - shorts scored against the shirt number;
+  - Q2 conditions that could pass by default or be chosen after the results;
+  - undefined counting rules;
+  - region truth required on uncertain v1 frames;
+  - the conflict override available to competitors;
+  - numbers settable without a readable region;
+  - a bool keyframe accepted;
+  - the page re-crediting the annotator, and the P key copying numbers.
+- Test audit: 46 of 70 mutants survived the first tests. After the new tests, 63 of 66 applicable mutants are killed.
+  The 3 survivors break guards that other guards shadow: an exists-check before exclusive-create, a copy-hash check,
+  and a registry check that the v1 loader also enforces.
