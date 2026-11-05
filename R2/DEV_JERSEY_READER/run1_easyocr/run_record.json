@@ -1,0 +1,28 @@
+{
+ "git_commit": "358a294bf50b59cad17bf5f9821d6694898017b5",
+ "git_dirty": false,
+ "command": [
+  "tools_rb/r2_jersey_reader_eval.py",
+  "score",
+  "/home/claude/r2jr/run1"
+ ],
+ "results_sha256": "0b8d6bfb370bb146a475b5fbd1b50fe458386fc4033e96bcb1fc3dbc520dbf14",
+ "raw_reads_sha256": "ed938afc99aeeed0dde159d78cfc7421d79924e01779b4b2968e62687a8edf8c",
+ "units_sha256": "a093b3f80f49e035c3c83c5eb0d040029cf266b04b120356b72b6eb298568f7c",
+ "scorer_pip_freeze": [
+  "coloredlogs==15.0.1",
+  "flatbuffers==25.12.19",
+  "humanfriendly==10.0",
+  "iniconfig==2.3.1",
+  "mpmath==1.3.0",
+  "numpy==2.2.6",
+  "onnxruntime==1.23.2",
+  "opencv-python-headless==5.0.0.93",
+  "packaging==26.3",
+  "pluggy==1.7.0",
+  "protobuf==7.36.2",
+  "Pygments==2.21.0",
+  "pytest==9.2.0",
+  "sympy==1.14.0"
+ ]
+}

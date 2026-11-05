@@ -1,0 +1,1861 @@
+{
+ "__reader__": {
+  "name": "EasyOCR",
+  "source": "https://github.com/JaidedAI/EasyOCR (PyPI easyocr)",
+  "licence": "Apache-2.0 (library); english_g2 training data UNKNOWN",
+  "pins": {
+   "easyocr_version": "1.7.2",
+   "craft_mlt_25k.pth": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+   "english_g2.pth": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8"
+  },
+  "params": {
+   "lang_list": [
+    "en"
+   ],
+   "gpu": false,
+   "allowlist": "0123456789",
+   "detail": 1,
+   "paragraph": false,
+   "input": "file path of the PNG crop of the human person box (EasyOCR's canonical loading: RGB for detection, greyscale for recognition); no resize / padding by this script"
+  },
+  "torch": "2.15.0+cpu",
+  "cv2": "5.0.0",
+  "python": "3.13.17",
+  "platform": "Linux-6.18.44-fc-v236-x86_64-with-glibc2.39",
+  "pip_freeze": [
+   "beautifulsoup4==4.15.0",
+   "certifi==2026.10.23",
+   "charset-normalizer==3.5.2",
+   "coloredlogs==15.0.1",
+   "easyocr==1.7.2",
+   "filelock==4.2.4",
+   "flatbuffers==25.12.19",
+   "fsspec==2026.9.0",
+   "gdown==6.5.1",
+   "humanfriendly==10.0",
+   "idna==3.20",
+   "ImageIO==2.38.1",
+   "Jinja2==3.1.6",
+   "lazy-loader==0.6",
+   "MarkupSafe==3.0.3",
+   "mpmath==1.3.0",
+   "networkx==3.7",
+   "ninja==1.13.2",
+   "numpy==2.2.6",
+   "onnxruntime==1.23.2",
+   "opencv-python-headless==5.0.0.93",
+   "packaging==26.3",
+   "pillow==13.0.0",
+   "protobuf==7.36.2",
+   "pyclipper==1.4.0",
+   "PySocks==1.7.1",
+   "python-bidi==0.6.12",
+   "PyYAML==6.0.3",
+   "requests==2.34.2",
+   "scikit-image==0.26.0",
+   "scipy==1.18.1",
+   "setuptools==78.1.0",
+   "shapely==2.2.0",
+   "soupsieve==3.0.4",
+   "sympy==1.14.0",
+   "tifffile==2026.10.15",
+   "torch==2.15.0+cpu",
+   "torchreid==0.2.5",
+   "torchvision==0.29.2+cpu",
+   "tqdm==4.70.1",
+   "typing_extensions==4.16.0",
+   "urllib3==2.8.0"
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|0": {
+  "results": [
+   [
+    "11",
+    0.1477200426411349,
+    [
+     0.0,
+     7.0,
+     54.0,
+     44.0
+    ]
+   ],
+   [
+    "049",
+    0.048292526295702395,
+    [
+     0.0,
+     39.0,
+     27.0,
+     51.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|60": {
+  "results": [
+   [
+    "01",
+    0.25942554792219985,
+    [
+     63.0,
+     9.0,
+     85.0,
+     25.0
+    ]
+   ],
+   [
+    "00",
+    0.541232083953039,
+    [
+     59.0,
+     21.0,
+     85.0,
+     37.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|90": {
+  "results": [
+   [
+    "92",
+    0.06552371820985066,
+    [
+     1.0,
+     3.0,
+     29.0,
+     19.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|150": {
+  "results": [
+   [
+    "871",
+    0.04459055894255516,
+    [
+     61.0,
+     29.0,
+     124.0,
+     62.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|180": {
+  "results": [
+   [
+    "7",
+    0.9997017605975458,
+    [
+     50.0,
+     66.0,
+     78.0,
+     96.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|330": {
+  "results": [
+   [
+    "4026",
+    0.25312164425849915,
+    [
+     83.0,
+     1.0,
+     127.0,
+     19.0
+    ]
+   ],
+   [
+    "6831",
+    0.060906220227479935,
+    [
+     75.0,
+     9.0,
+     143.0,
+     47.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|360": {
+  "results": [
+   [
+    "",
+    0.0,
+    [
+     0.0,
+     0.0,
+     36.0,
+     28.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|390": {
+  "results": [
+   [
+    "21",
+    0.06732357317035607,
+    [
+     0.0,
+     0.0,
+     48.0,
+     24.0
+    ]
+   ],
+   [
+    "044",
+    0.1324447663376845,
+    [
+     0.0,
+     25.0,
+     47.0,
+     37.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|420": {
+  "results": [
+   [
+    "80",
+    0.1275764438842808,
+    [
+     79.0,
+     0.0,
+     143.0,
+     19.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J01|TARGET|450": {
+  "results": [
+   [
+    "3",
+    0.33955160155628406,
+    [
+     0.0,
+     4.0,
+     42.0,
+     28.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J02|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|60": {
+  "results": [
+   [
+    "4",
+    0.4242518032904208,
+    [
+     0.0,
+     30.0,
+     22.0,
+     54.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|120": {
+  "results": [
+   [
+    "42",
+    0.2817907473362606,
+    [
+     27.0,
+     15.0,
+     61.0,
+     29.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|180": {
+  "results": [
+   [
+    "",
+    0.0,
+    [
+     0.0,
+     6.0,
+     66.0,
+     34.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|210": {
+  "results": [
+   [
+    "01",
+    0.26741108199540325,
+    [
+     70.0,
+     2.0,
+     117.0,
+     28.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|240": {
+  "results": [
+   [
+    "28",
+    0.6046948902427165,
+    [
+     92.0,
+     10.0,
+     122.0,
+     34.0
+    ]
+   ],
+   [
+    "7",
+    0.9999909401145146,
+    [
+     57.0,
+     65.0,
+     77.0,
+     91.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J03|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|180": {
+  "results": [
+   [
+    "5",
+    0.9999997615814351,
+    [
+     35.0,
+     53.0,
+     51.0,
+     75.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|210": {
+  "results": [
+   [
+    "5",
+    0.9999903440708557,
+    [
+     33.0,
+     49.0,
+     47.0,
+     71.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|240": {
+  "results": [
+   [
+    "5",
+    0.999998569489037,
+    [
+     33.0,
+     59.0,
+     47.0,
+     81.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|270": {
+  "results": [
+   [
+    "5",
+    0.9999976158156301,
+    [
+     31.0,
+     41.0,
+     45.0,
+     63.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|300": {
+  "results": [
+   [
+    "985",
+    0.060249913612187955,
+    [
+     0.0,
+     43.0,
+     27.0,
+     59.0
+    ]
+   ],
+   [
+    "25",
+    0.10154010745336403,
+    [
+     0.0,
+     61.0,
+     21.0,
+     75.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|0": {
+  "results": [
+   [
+    "10",
+    0.9999922449886813,
+    [
+     38.0,
+     44.0,
+     68.0,
+     68.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C1|150": {
+  "results": [
+   [
+    "10",
+    0.543195136972639,
+    [
+     20.0,
+     44.0,
+     52.0,
+     72.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|60": {
+  "results": [
+   [
+    "6",
+    0.9609924319937733,
+    [
+     25.0,
+     39.0,
+     43.0,
+     61.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|150": {
+  "results": [
+   [
+    "6",
+    0.9986770954854229,
+    [
+     18.0,
+     42.0,
+     44.0,
+     70.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|180": {
+  "results": [
+   [
+    "6",
+    0.9996281016001376,
+    [
+     26.0,
+     48.0,
+     58.0,
+     80.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J04|C2|210": {
+  "results": [
+   [
+    "6",
+    0.9973095894204107,
+    [
+     22.0,
+     50.0,
+     50.0,
+     80.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|0": {
+  "results": [
+   [
+    "6",
+    0.9738160306815189,
+    [
+     64.0,
+     72.0,
+     88.0,
+     98.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|150": {
+  "results": [
+   [
+    "6",
+    0.984214158193538,
+    [
+     36.0,
+     74.0,
+     62.0,
+     106.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|240": {
+  "results": [
+   [
+    "6",
+    0.8737525864495552,
+    [
+     45.0,
+     65.0,
+     65.0,
+     89.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|300": {
+  "results": [
+   [
+    "6",
+    0.9930620549071456,
+    [
+     48.0,
+     62.0,
+     74.0,
+     90.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|330": {
+  "results": [
+   [
+    "6",
+    0.995201873403758,
+    [
+     46.0,
+     54.0,
+     70.0,
+     84.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|420": {
+  "results": [
+   [
+    "6",
+    0.9452586745428704,
+    [
+     42.0,
+     52.0,
+     68.0,
+     80.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J05|TARGET|450": {
+  "results": [
+   [
+    "6",
+    0.9913316093451527,
+    [
+     52.0,
+     48.0,
+     76.0,
+     76.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J06|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|270": {
+  "results": [
+   [
+    "2",
+    0.9999940395444042,
+    [
+     37.0,
+     59.0,
+     53.0,
+     85.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|360": {
+  "results": [
+   [
+    "2",
+    0.9999969005608733,
+    [
+     57.0,
+     59.0,
+     77.0,
+     89.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J07|C1|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J08|TARGET|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J09|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|0": {
+  "results": [
+   [
+    "02",
+    0.25548527128313553,
+    [
+     49.0,
+     97.0,
+     93.0,
+     113.0
+    ]
+   ],
+   [
+    "12",
+    0.999833524007332,
+    [
+     44.0,
+     114.0,
+     100.0,
+     166.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|30": {
+  "results": [
+   [
+    "0354",
+    0.12787726521492004,
+    [
+     56.0,
+     86.0,
+     104.0,
+     107.0
+    ]
+   ],
+   [
+    "112",
+    0.5543259836600798,
+    [
+     50.0,
+     104.0,
+     104.0,
+     154.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|60": {
+  "results": [
+   [
+    "05",
+    0.2360251762236515,
+    [
+     50.0,
+     78.0,
+     93.0,
+     98.0
+    ]
+   ],
+   [
+    "12",
+    0.9999469796762668,
+    [
+     45.0,
+     95.0,
+     95.0,
+     139.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|90": {
+  "results": [
+   [
+    "07",
+    0.6475800510427656,
+    [
+     59.0,
+     83.0,
+     99.0,
+     99.0
+    ]
+   ],
+   [
+    "12",
+    0.6228344845795993,
+    [
+     55.0,
+     99.0,
+     105.0,
+     141.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|120": {
+  "results": [
+   [
+    "08",
+    0.10962687088997458,
+    [
+     63.0,
+     69.0,
+     85.0,
+     83.0
+    ]
+   ],
+   [
+    "12",
+    0.9998052028237034,
+    [
+     57.0,
+     81.0,
+     103.0,
+     123.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|210": {
+  "results": [
+   [
+    "13",
+    0.5313534296517689,
+    [
+     41.0,
+     79.0,
+     83.0,
+     123.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|240": {
+  "results": [
+   [
+    "121",
+    0.8630475908461306,
+    [
+     39.0,
+     83.0,
+     85.0,
+     125.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|270": {
+  "results": [
+   [
+    "07",
+    0.3423963479100586,
+    [
+     39.0,
+     71.0,
+     65.0,
+     85.0
+    ]
+   ],
+   [
+    "12",
+    0.9990489624340488,
+    [
+     33.0,
+     83.0,
+     79.0,
+     125.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|300": {
+  "results": [
+   [
+    "12",
+    0.9997159420591012,
+    [
+     79.0,
+     91.0,
+     123.0,
+     131.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|330": {
+  "results": [
+   [
+    "121",
+    0.7039166687240094,
+    [
+     57.0,
+     45.0,
+     97.0,
+     83.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|360": {
+  "results": [
+   [
+    "12",
+    0.9998555236603355,
+    [
+     51.0,
+     59.0,
+     93.0,
+     101.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|390": {
+  "results": [
+   [
+    "12",
+    0.9953443522836123,
+    [
+     61.0,
+     73.0,
+     103.0,
+     117.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|420": {
+  "results": [
+   [
+    "12",
+    0.9916265385039508,
+    [
+     63.0,
+     71.0,
+     103.0,
+     113.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|TARGET|450": {
+  "results": [
+   [
+    "112",
+    0.39848965406417847,
+    [
+     67.0,
+     89.0,
+     111.0,
+     131.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|300": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|330": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|360": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|390": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|420": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J10|C1|450": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|240": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|270": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J11|TARGET|300": {
+  "results": [
+   [
+    "5",
+    0.9999948740071183,
+    [
+     0.0,
+     129.0,
+     35.0,
+     177.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|150": {
+  "results": [
+   [
+    "23",
+    0.5610393235810512,
+    [
+     57.0,
+     81.0,
+     103.0,
+     125.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|180": {
+  "results": [
+   [
+    "2",
+    0.9792122586077312,
+    [
+     75.0,
+     79.0,
+     113.0,
+     119.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|210": {
+  "results": [
+   [
+    "23",
+    0.754104375130007,
+    [
+     48.0,
+     92.0,
+     108.0,
+     146.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|240": {
+  "results": [
+   [
+    "23",
+    0.9999971340155042,
+    [
+     28.0,
+     86.0,
+     90.0,
+     134.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|270": {
+  "results": [
+   [
+    "23",
+    0.9985826731473516,
+    [
+     51.0,
+     89.0,
+     107.0,
+     133.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|300": {
+  "results": [
+   [
+    "23",
+    0.9999568418999045,
+    [
+     55.0,
+     87.0,
+     109.0,
+     131.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|330": {
+  "results": [
+   [
+    "1",
+    0.0842073541172148,
+    [
+     28.0,
+     12.0,
+     54.0,
+     20.0
+    ]
+   ],
+   [
+    "23",
+    0.9836715671649496,
+    [
+     65.0,
+     69.0,
+     115.0,
+     105.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|360": {
+  "results": [
+   [
+    "23",
+    0.986870268210824,
+    [
+     27.0,
+     63.0,
+     79.0,
+     105.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|390": {
+  "results": [
+   [
+    "23",
+    0.9999946052076528,
+    [
+     35.0,
+     71.0,
+     79.0,
+     107.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|420": {
+  "results": [
+   [
+    "03",
+    0.11382344093897125,
+    [
+     25.0,
+     29.0,
+     55.0,
+     43.0
+    ]
+   ],
+   [
+    "23",
+    0.9999984827137908,
+    [
+     38.0,
+     62.0,
+     76.0,
+     94.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_MCFC_MIT_J12|TARGET|450": {
+  "results": [
+   [
+    "23",
+    0.9999648497092857,
+    [
+     60.0,
+     58.0,
+     96.0,
+     88.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|60": {
+  "results": [
+   [
+    "18",
+    0.7919731295887567,
+    [
+     47.0,
+     139.0,
+     141.0,
+     227.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|75": {
+  "results": [
+   [
+    "18",
+    0.959730238452564,
+    [
+     65.0,
+     133.0,
+     149.0,
+     217.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|90": {
+  "results": [
+   [
+    "18",
+    0.9801527356805334,
+    [
+     72.0,
+     128.0,
+     156.0,
+     204.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|105": {
+  "results": [
+   [
+    "4",
+    0.17728411656210952,
+    [
+     130.0,
+     100.0,
+     152.0,
+     108.0
+    ]
+   ],
+   [
+    "18",
+    0.6545269000413305,
+    [
+     78.0,
+     104.0,
+     160.0,
+     176.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|120": {
+  "results": [
+   [
+    "18",
+    0.770721368944414,
+    [
+     54.0,
+     128.0,
+     130.0,
+     202.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|135": {
+  "results": [
+   [
+    "18",
+    0.3452123837404397,
+    [
+     71.0,
+     107.0,
+     135.0,
+     169.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|150": {
+  "results": [
+   [
+    "48",
+    0.5993731375416552,
+    [
+     62.0,
+     114.0,
+     118.0,
+     174.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|165": {
+  "results": [
+   [
+    "18",
+    0.9902951249351747,
+    [
+     35.0,
+     91.0,
+     99.0,
+     157.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|180": {
+  "results": [
+   [
+    "18",
+    0.9818284887227349,
+    [
+     38.0,
+     98.0,
+     100.0,
+     154.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|195": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J13|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|15": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|30": {
+  "results": [
+   [
+    "14",
+    0.9910364719383421,
+    [
+     22.0,
+     86.0,
+     80.0,
+     136.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|45": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|75": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|90": {
+  "results": [
+   [
+    "14",
+    0.9996064554137145,
+    [
+     46.0,
+     98.0,
+     108.0,
+     154.0
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|105": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|135": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|165": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|195": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|TARGET|225": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|75": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|90": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|105": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|120": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|135": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|150": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|165": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|180": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|195": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|210": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J14|C1|225": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|0": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|15": {
+  "results": [
+   [
+    "11",
+    0.3770851964053461,
+    [
+     60.0,
+     68.0,
+     110.0,
+     120.0
+    ]
+   ],
+   [
+    "147",
+    0.046260205387634735,
+    [
+     62.01572879300612,
+     115.10557280900008,
+     102.98427120699388,
+     136.89442719099992
+    ]
+   ]
+  ]
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|30": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|45": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|60": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|75": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|90": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|105": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|120": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|135": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|150": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|165": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|180": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|195": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|210": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|TARGET|225": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|15": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|30": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|45": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|60": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|75": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|90": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|105": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|150": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|165": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|180": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|195": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|210": {
+  "results": []
+ },
+ "R2_JERSEY_SYO_MAR_J15|C1|225": {
+  "results": []
+ }
+}
