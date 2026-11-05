@@ -277,9 +277,11 @@ class FileSafety(PipelineBase):
         det, emb = self.scripted()
         R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d, debug=True,
               config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
-        finals = {os.path.basename(p) for p in paths.values()}
+        # the identity-checkpoint file is written only in human-assisted mode (a checkpoint_resolver); none here
+        finals = {os.path.basename(p) for k, p in paths.items() if k != "checkpoints"}
         for listing in seen:
-            self.assertFalse(set(listing) & finals, f"a final name existed mid-run: {listing}")
+            self.assertFalse(set(listing) & (finals | {os.path.basename(paths["checkpoints"])}),
+                             f"a final name existed mid-run: {listing}")
             self.assertTrue(all(name.endswith(R.PARTIAL_SUFFIX) for name in listing))
         self.assertEqual(set(os.listdir(d)), finals)
 
