@@ -40,6 +40,11 @@ import time
 PROTOCOLS = ("SILENT", "CENTRE", "SHOULDER", "JITTER", "WRONG", "WRONG_HIDDEN")
 VIS_OK = ("VISIBLE", "PARTIAL")
 IOU_OK = 0.5
+# Revision (2026-11-06, after the first CENTRE scores): the human keyframe boxes are deliberately loose, so a tight
+# detector box of the SAME body can score IoU < 0.5 (J02 clip frame 150: #17, IoU 0.40, verified by eye). A box is a
+# MATCH if IoU >= IOU_OK, or if it lies mostly inside the human box, is at least half its height, and its centre is
+# inside it. Both the strict-IoU and the containment-aware counts are reported.
+CONTAIN_OK, HEIGHT_RATIO_OK = 0.7, 0.5
 WRONG_MAX_IOU = 0.3
 SHOULDER = (0.25, 0.22)
 JITTER_SIGMA = 0.15
@@ -51,6 +56,24 @@ def _iou(a, b):
     i = ix * iy
     u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - i
     return i / u if u > 0 else 0.0
+
+
+def _contain(a, b):
+    """Fraction of a's area inside b."""
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    aa = (a[2] - a[0]) * (a[3] - a[1])
+    return (ix * iy) / aa if aa > 0 else 0.0
+
+
+def match(box, human, strict=False):
+    if _iou(box, human) >= IOU_OK:
+        return True
+    if strict:
+        return False
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    return _contain(box, human) >= CONTAIN_OK and (box[3] - box[1]) >= HEIGHT_RATIO_OK * (human[3] - human[1]) \
+        and human[0] <= cx <= human[2] and human[1] <= cy <= human[3]
 
 
 def fixtures(repo, only=None):
@@ -207,7 +230,7 @@ def score_clip(repo, root, c, v1, grid, seed):
         t = [x for x in fr["tracks"] if x.get("selected_player")][0]
         sel[fr["frame"]] = (bool(t["v2"]["identity_trusted"]), t["bbox"])
     n_vis = correct = wrong = abstain = unc = 0
-    wrong_frames = []
+    wrong_frames, strict = [], {"correct": 0, "wrong": 0}
     for g in grid:
         if g <= seed:
             continue
@@ -221,7 +244,9 @@ def score_clip(repo, root, c, v1, grid, seed):
             continue
         if tr["visible"]:
             n_vis += 1
-            if trusted and _iou(box, tr["box"]) >= IOU_OK:
+            if trusted:
+                strict["correct" if match(box, tr["box"], strict=True) else "wrong"] += 1
+            if trusted and match(box, tr["box"]):
                 correct += 1
             elif trusted:
                 wrong += 1
@@ -230,10 +255,11 @@ def score_clip(repo, root, c, v1, grid, seed):
                 abstain += 1
         elif trusted:
             wrong += 1
+            strict["wrong"] += 1
             wrong_frames.append(g)
     cps = json.load(open(paths["checkpoints"]))["checkpoints"] if os.path.exists(paths["checkpoints"]) else []
     taps = {"answered": 0, "accepted": 0, "refused": 0, "declined": 0, "by_reason": {}}
-    wrong_accepted = []
+    wrong_accepted, wrong_accepted_strict = [], 0
     for cp in cps:
         for a in cp["answers"]:
             if a["decision"] == "NOT_VISIBLE":
@@ -243,7 +269,9 @@ def score_clip(repo, root, c, v1, grid, seed):
             if a["outcome"] == "ACCEPTED":
                 taps["accepted"] += 1
                 tr = target_truth(v1, seed + a["frame"])
-                ok = tr is not None and tr["visible"] and _iou(a["box"], tr["box"]) >= IOU_OK
+                ok = tr is not None and tr["visible"] and match(a["box"], tr["box"])
+                if not (tr is not None and tr["visible"] and match(a["box"], tr["box"], strict=True)):
+                    wrong_accepted_strict += 1
                 if not ok:
                     wrong_accepted.append({"frame": a["frame"], "clip_frame": seed + a["frame"], "box": a["box"],
                                            "truth": None if tr is None else tr["visibility"]})
@@ -254,6 +282,8 @@ def score_clip(repo, root, c, v1, grid, seed):
     st = [cp["status"] for cp in cps]
     return {"outcome": "SCORED", "seed_frame": seed, "keyframes_visible": n_vis, "trusted_correct": correct,
             "trusted_wrong": wrong, "wrong_keyframes": wrong_frames, "abstained": abstain, "uncertain_skipped": unc,
+            "strict_iou": {"trusted_correct": strict["correct"], "trusted_wrong": strict["wrong"],
+                           "wrong_accepted_selections": wrong_accepted_strict},
             "coverage": round(correct / n_vis, 3) if n_vis else None,
             "checkpoints": {"opened": len(cps), "reseeded": st.count("RESEEDED"), "declined": st.count("DECLINED"),
                             "auto_resolved": st.count("AUTO_RESOLVED"), "open_at_end": st.count("OPEN")},
@@ -286,6 +316,8 @@ def score(repo, out_root, out_json):
              "taps_refused": sum(r["taps"]["refused"] for r in sc),
              "declined": sum(r["taps"]["declined"] for r in sc),
              "wrong_accepted_selections": sum(len(r["wrong_accepted_selections"]) for r in sc),
+             "strict_iou": {k: sum(r["strict_iou"][k] for r in sc)
+                            for k in ("trusted_correct", "trusted_wrong", "wrong_accepted_selections")},
              "refused_by_reason": {}}
         for r in sc:
             for k, v in r["taps"]["by_reason"].items():

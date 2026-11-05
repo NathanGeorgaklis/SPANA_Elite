@@ -190,3 +190,12 @@ class TestSimulatedTapUser(unittest.TestCase):
                          {"decision": "TAP", "point": [520.0, 150.0]}, "taps the nearest other player while hidden")
         self.assertEqual(TD._reason_class("TAP_AMBIGUOUS: x"), "TAP_AMBIGUOUS")
         self.assertEqual(TD._reason_class("ambiguous selection: y"), "PRECHECK_AMBIGUOUS")
+
+    def test_match_rule_containment_aware(self):
+        from tools_rb import r2_tap_dev as TD
+        human = [794, 307, 859, 413]
+        tight = [809, 318, 845, 397]                 # J02 f150: same body, IoU 0.40
+        self.assertFalse(TD.match(tight, human, strict=True))
+        self.assertTrue(TD.match(tight, human))
+        self.assertFalse(TD.match([700, 307, 760, 413], human), "a neighbour outside the box never matches")
+        self.assertFalse(TD.match([800, 380, 850, 413], human), "a small part box (< half height) is not the body")
