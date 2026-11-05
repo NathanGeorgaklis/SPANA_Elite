@@ -1,0 +1,43 @@
+......................................................................................... [  9%]
+..........................................sss................x [ 16%]
+.................................................x...................... [ 23%]
+............................................................ [ 30%]
+........................................... [ 34%]
+.......xx.xx........x..............................................................F [ 43%]
+.................................. [ 47%]
+.................................................................... [ 54%]
+.....................sss [ 57%]
+ss.......................................... [ 62%]
+........................................................................ [ 69%]
+.................................................xx................................................x...................................... [ 84%]
+................................................. [ 89%]
+........x..................................... [ 94%]
+...............................................s                                             [100%]
+=================================== FAILURES ===================================
+_____ FileSafety.test_outputs_appear_under_final_names_only_when_complete ______
+
+self = <tests_rb.test_pipeline_run.FileSafety testMethod=test_outputs_appear_under_final_names_only_when_complete>
+
+    def test_outputs_appear_under_final_names_only_when_complete(self):
+        d = self.out_dir("publish")
+        paths = R.output_paths(d, self.video)
+        seen = []
+    
+        def hook(f, sizes):
+            seen.append(sorted(os.listdir(d)))
+        det, emb = self.scripted()
+        R.run(self.video, self.start, list(self.frames[self.start].scene.boxes["TARGET"]), out_dir=d, debug=True,
+              config_overrides=SCRIPTED, detector=det, embedder=emb, on_frame=hook)
+        finals = {os.path.basename(p) for p in paths.values()}
+        for listing in seen:
+            self.assertFalse(set(listing) & finals, f"a final name existed mid-run: {listing}")
+            self.assertTrue(all(name.endswith(R.PARTIAL_SUFFIX) for name in listing))
+>       self.assertEqual(set(os.listdir(d)), finals)
+E       AssertionError: Items in the second set but not the first:
+E       'clip_rb_identity_checkpoints.json'
+
+tests_rb/test_pipeline_run.py:284: AssertionError
+=========================== short test summary info ============================
+FAILED tests_rb/test_pipeline_run.py::FileSafety::test_outputs_appear_under_final_names_only_when_complete
+1 failed, 912 passed, 9 skipped, 11 xfailed, 1759 subtests passed in 1261.78s (0:21:01)
+SUITE_EXIT 1

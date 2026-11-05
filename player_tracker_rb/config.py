@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2jn-1"   # r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2cp-1"   # r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -116,6 +116,7 @@ _HAND_EV = ("NEW_R2 (R2 DEV same-frame identity handoff safety; thresholds reuse
             "ambiguity_margin; tools_rb/r2_handoff_diag.py DEV measurement)")
 _JERSEY_EV = "NEW_R2 (R2 DEV target jersey-number evidence, diagnostic only; not used by the tracker)"
 _PROF_EV = "NEW_R2 (R2 DEV target reference profile, diagnostic only; not used by the tracker)"
+_CKPT_EV = "NEW_R2 (R2 DEV human-assisted target reacquisition, Nathan 2026-11-05 20:22; checkpoint.py)"
 
 PARAMS: Tuple[Param, ...] = (
     # ---- contract (historical Pass-1 JSON, kept bit-for-bit in meaning) -----------------------
@@ -933,6 +934,13 @@ PARAMS: Tuple[Param, ...] = (
        "Jersey evidence: a number is CONFIRMED only from >= identity_number_min_reads agreeing readings spanning at "
        "least this long and no reading of another number.", 0.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "jersey",
        _JERSEY_EV, 0.0, 60.0),
+    # ---- human-assisted reacquisition (NEW_R2; checkpoint.py; active only when a checkpoint resolver is given) --
+    _p("checkpoint_unresolved_s", "float", "s",
+       "Human-assisted reacquisition: an IDENTITY_CHECKPOINT opens once the target's identity has been untrusted "
+       "continuously for this long (and again this long after a declined checkpoint). Equal to max_ambiguous_s + "
+       "reacq_window_s: the longest the automatic path needs to age an uncertain state out and verify a "
+       "reacquisition candidate.", 1.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "checkpoint",
+       _CKPT_EV + "; max_ambiguous_s (1.0) + reacq_window_s (0.5)", 0.0, 3600.0),
     # ---- target reference profile (NEW_R2, diagnostic only; target_profile.py; not used by the tracker) ------
     _p("profile_max_anchors", "int", "anchors",
        "Target reference profile: at most this many diverse trusted anchors (the most redundant non-seed anchor is "

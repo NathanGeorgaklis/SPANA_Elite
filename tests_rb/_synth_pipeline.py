@@ -186,7 +186,7 @@ def run_clip(frames: Sequence[ClipFrame], people: Dict[str, Person], work_dir: s
              seed_name: str = "TARGET", overrides: Optional[Dict[str, Any]] = None, visible_min: float = 0.35,
              debug: bool = True, name: str = "clip", fps: float = FPS,
              on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None,
-             video_path: Optional[str] = None, pose_gain: float = 0.0) -> E2E:
+             video_path: Optional[str] = None, pose_gain: float = 0.0, checkpoint_resolver=None) -> E2E:
     """Write the clip, run the production pipeline on it, and load everything it wrote."""
     os.makedirs(work_dir, exist_ok=True)
     video = video_path or write_clip(os.path.join(work_dir, name + ".avi"), frames, people, fps)
@@ -200,7 +200,8 @@ def run_clip(frames: Sequence[ClipFrame], people: Dict[str, Person], work_dir: s
     sizes: List[Tuple[int, Dict[str, int]]] = []
     summary = R.run(video, start_frame, seed_box, out_dir=out_dir, debug=debug, config_overrides=ov,
                     detector=detector, embedder=SignatureEmbedding(people, pose_gain),
-                    on_frame=(lambda f, s: sizes.append((f, s))) if on_frame is None else on_frame)
+                    on_frame=(lambda f, s: sizes.append((f, s))) if on_frame is None else on_frame,
+                    checkpoint_resolver=checkpoint_resolver)
     paths = R.output_paths(out_dir, video)
     with open(paths["results"], encoding="ascii") as fh:
         doc = json.load(fh)

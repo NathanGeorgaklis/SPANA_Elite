@@ -71,6 +71,7 @@ from . import __version__ as TRACKER_VERSION
 from . import output_schema as S
 from . import population as P
 from . import provenance as PV
+from . import checkpoint as CK
 from . import target as T
 from .appearance import AppearanceExtractor, EmbeddingBackend
 from .camera import CUT, CameraMotionEstimator
@@ -80,6 +81,7 @@ from .video_io import SequentialVideoReader, ThumbsDigest
 
 RESULTS_SUFFIX = "_mo_tracking_results.json"
 DECISION_LOG_SUFFIX = "_rb_decision_log.jsonl"
+CHECKPOINTS_SUFFIX = "_rb_identity_checkpoints.json"
 PARTIAL_SUFFIX = ".rb_partial"
 # Fields that hold wall-clock facts; everything else must be byte-identical between runs on the same inputs.
 WALL_CLOCK_FIELDS: Tuple[Tuple[str, ...], ...] = (("summary", "processing_time_s"),
@@ -455,7 +457,7 @@ class _DocumentChecks:
 # ---------------------------------------------------------------------------------------------
 # The run
 # ---------------------------------------------------------------------------------------------
-def possibly_target(tracker: T.TargetTracker, tf: T.TargetFrame, res: P.FrameResult,
+def possibly_target(tracker: Any, tf: T.TargetFrame, res: P.FrameResult,
                     cfg: TrackerConfig) -> Set[str]:
     """Population tracklets that are, or may physically be, the target this frame (project rule 28):
       * the tracklet of an observed (TRACKING) target box, and the target's own tracklets that are not observed;
@@ -496,7 +498,8 @@ def output_paths(out_dir: str, video_path: str) -> Dict[str, str]:
     base = os.path.splitext(os.path.basename(video_path))[0]
     return {"results": os.path.join(out_dir, base + RESULTS_SUFFIX),
             "provenance": PV.sidecar_path(out_dir, video_path),
-            "decision_log": os.path.join(out_dir, base + DECISION_LOG_SUFFIX)}
+            "decision_log": os.path.join(out_dir, base + DECISION_LOG_SUFFIX),
+            "checkpoints": os.path.join(out_dir, base + CHECKPOINTS_SUFFIX)}
 
 
 def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_number: Optional[str] = None,
@@ -505,14 +508,18 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
         embedder: Optional[EmbeddingBackend] = None, expected_sha256: Optional[str] = None,
         git: Callable[[], Tuple[str, bool]] = PV.git_state, clock: Callable[[], str] = PV.utc_now_iso,
         timer: Callable[[], float] = time.perf_counter,
-        on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None) -> Dict[str, Any]:
+        on_frame: Optional[Callable[[int, Dict[str, int]], None]] = None,
+        checkpoint_resolver: Optional[CK.Resolver] = None) -> Dict[str, Any]:
     """Run the R1 Pass-1 tracker on one clip and write its outputs into out_dir. Returns the summary dict.
 
     The historical run_mo signature minus `resume` (no resume exists, F15). `jersey_number` must be None: the
     generic tracker reads no numbers. `max_frames` caps the frames processed after the seed (None: to the end).
     `detector`/`embedder` may be passed in only if they are the backends the config names (build_backends).
     `expected_sha256` pins the source video (fixture hash); a mismatch refuses the run. `on_frame(frame, sizes)`
-    is a read-only diagnostics hook receiving the sizes of all state kept between frames (long-run checks)."""
+    is a read-only diagnostics hook receiving the sizes of all state kept between frames (long-run checks).
+    `checkpoint_resolver` (NEW_R2, opt-in) turns on human-assisted reacquisition (checkpoint.py): identity checkpoints
+    are written to <video>_rb_identity_checkpoints.json (sha256 in the provenance sidecar). None: the tracker runs
+    exactly as without checkpoints and no checkpoint file is written."""
     if jersey_number is not None:
         raise RunRefusedError("jersey_number is not supported: the R1 tracker is generic (no number reading)")
     if out_dir is None or not os.path.isdir(out_dir):
@@ -525,7 +532,8 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
     except ConfigError as e:
         raise RunRefusedError(f"config: {e}") from e
     paths = output_paths(out_dir, video_path)
-    mine = [paths["results"], paths["provenance"]] + ([paths["decision_log"]] if debug else [])
+    mine = [paths["results"], paths["provenance"]] + ([paths["decision_log"]] if debug else []) + \
+        ([paths["checkpoints"]] if checkpoint_resolver is not None else [])
     for p in mine:
         for q in (p, p + PARTIAL_SUFFIX, p + PARTIAL_SUFFIX + ".doc"):
             if os.path.exists(q):
@@ -549,7 +557,10 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
             fps = info.fps
             est = CameraMotionEstimator(cfg)
             pop = P.Population(cfg, info.frame_width, info.frame_height)
-            tracker = T.TargetTracker(cfg, pop, AppearanceExtractor(cfg, emb))
+            if checkpoint_resolver is None:
+                tracker = T.TargetTracker(cfg, pop, AppearanceExtractor(cfg, emb))
+            else:
+                tracker = CK.IdentityCheckpointer(cfg, pop, AppearanceExtractor(cfg, emb), checkpoint_resolver)
             seed = reader.seed
             cands = det.detect(seed.image)
             cam = est.update(seed.image, [d.bbox for d in cands], 1.0 / fps)
@@ -618,6 +629,16 @@ def run(video_path: str, start_frame: int, init_box: Sequence[float], jersey_num
         if log_fh is not None:
             log_fh.close()
             files.publish(log_tmp, paths["decision_log"])
+        if checkpoint_resolver is not None:
+            ck_tmp = paths["checkpoints"] + PARTIAL_SUFFIX
+            if os.path.exists(ck_tmp):
+                raise RunRefusedError(f"refusing to overwrite existing file {ck_tmp}")
+            with files.open_new(ck_tmp) as fh:
+                fh.write(S.dumps_canonical(tracker.as_record()))
+            files.publish(ck_tmp, paths["checkpoints"])
+            with open(paths["checkpoints"], "rb") as fh:
+                sidecar["identity_checkpoints_file"] = os.path.basename(paths["checkpoints"])
+                sidecar["identity_checkpoints_sha256"] = hashlib.sha256(fh.read()).hexdigest()
         sidecar["results_file"] = os.path.basename(paths["results"])
         sidecar["results_sha256"] = doc.finish(summary, finals)
         side_tmp = paths["provenance"] + PARTIAL_SUFFIX
@@ -676,7 +697,7 @@ def _pct(counts: Counter, dp: int) -> Dict[str, float]:
 
 
 def _summary(cfg: TrackerConfig, info: Any, start_frame: int, prov: Dict[str, Any], b: _RecordBuilder,
-             tracker: T.TargetTracker, hist_states: Counter, rb_states: Counter, elapsed_s: float,
+             tracker: Any, hist_states: Counter, rb_states: Counter, elapsed_s: float,
              last_frame_ids: Set[str]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     n = sum(hist_states.values())
     tid = cfg.get("target_track_id")
