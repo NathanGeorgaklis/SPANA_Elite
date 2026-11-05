@@ -1,0 +1,2145 @@
+{
+ "aggregate": {
+  "CENTRE": {
+   "checkpoints_opened": 13,
+   "checkpoints_per_clip": 1.44,
+   "clips_scored": 9,
+   "coverage": 0.181,
+   "declined": 3,
+   "keyframes_visible": 116,
+   "refused_by_reason": {
+    "DEFERRED_ANCHOR": 5,
+    "PRECHECK_AMBIGUOUS": 34,
+    "SEED_VALIDATION": 1,
+    "TAP_AMBIGUOUS": 6,
+    "TAP_MERGED": 11
+   },
+   "reseeded": 3,
+   "strict_iou": {
+    "trusted_correct": 19,
+    "trusted_wrong": 2,
+    "wrong_accepted_selections": 2
+   },
+   "taps_accepted": 3,
+   "taps_answered": 60,
+   "taps_refused": 57,
+   "trusted_correct": 21,
+   "trusted_wrong": 0,
+   "wrong_accepted_selections": 0
+  },
+  "JITTER": {
+   "checkpoints_opened": 13,
+   "checkpoints_per_clip": 1.44,
+   "clips_scored": 9,
+   "coverage": 0.181,
+   "declined": 3,
+   "keyframes_visible": 116,
+   "refused_by_reason": {
+    "DEFERRED_ANCHOR": 5,
+    "PRECHECK_AMBIGUOUS": 30,
+    "SEED_VALIDATION": 1,
+    "TAP_AMBIGUOUS": 8,
+    "TAP_MERGED": 11,
+    "TAP_OFF_PLAYER": 2
+   },
+   "reseeded": 3,
+   "strict_iou": {
+    "trusted_correct": 19,
+    "trusted_wrong": 2,
+    "wrong_accepted_selections": 2
+   },
+   "taps_accepted": 3,
+   "taps_answered": 60,
+   "taps_refused": 57,
+   "trusted_correct": 21,
+   "trusted_wrong": 0,
+   "wrong_accepted_selections": 0
+  },
+  "SHOULDER": {
+   "checkpoints_opened": 13,
+   "checkpoints_per_clip": 1.44,
+   "clips_scored": 9,
+   "coverage": 0.172,
+   "declined": 3,
+   "keyframes_visible": 116,
+   "refused_by_reason": {
+    "DEFERRED_ANCHOR": 4,
+    "PRECHECK_AMBIGUOUS": 21,
+    "SEED_VALIDATION": 1,
+    "TAP_AMBIGUOUS": 11,
+    "TAP_MERGED": 11,
+    "TAP_OFF_PLAYER": 10
+   },
+   "reseeded": 2,
+   "strict_iou": {
+    "trusted_correct": 19,
+    "trusted_wrong": 1,
+    "wrong_accepted_selections": 1
+   },
+   "taps_accepted": 2,
+   "taps_answered": 60,
+   "taps_refused": 58,
+   "trusted_correct": 20,
+   "trusted_wrong": 0,
+   "wrong_accepted_selections": 0
+  },
+  "SILENT": {
+   "checkpoints_opened": 9,
+   "checkpoints_per_clip": 1.0,
+   "clips_scored": 9,
+   "coverage": 0.155,
+   "declined": 0,
+   "keyframes_visible": 116,
+   "refused_by_reason": {},
+   "reseeded": 0,
+   "strict_iou": {
+    "trusted_correct": 18,
+    "trusted_wrong": 0,
+    "wrong_accepted_selections": 0
+   },
+   "taps_accepted": 0,
+   "taps_answered": 0,
+   "taps_refused": 0,
+   "trusted_correct": 18,
+   "trusted_wrong": 0,
+   "wrong_accepted_selections": 0
+  },
+  "WRONG": {
+   "checkpoints_opened": 12,
+   "checkpoints_per_clip": 1.33,
+   "clips_scored": 9,
+   "coverage": 0.155,
+   "declined": 3,
+   "keyframes_visible": 116,
+   "refused_by_reason": {
+    "DEFERRED_ANCHOR": 5,
+    "PRECHECK_AMBIGUOUS": 30,
+    "SEED_VALIDATION": 1,
+    "TAP_AMBIGUOUS": 13,
+    "TAP_MERGED": 13
+   },
+   "reseeded": 1,
+   "strict_iou": {
+    "trusted_correct": 18,
+    "trusted_wrong": 1,
+    "wrong_accepted_selections": 1
+   },
+   "taps_accepted": 1,
+   "taps_answered": 63,
+   "taps_refused": 62,
+   "trusted_correct": 18,
+   "trusted_wrong": 1,
+   "wrong_accepted_selections": 1
+  },
+  "WRONG_HIDDEN": {
+   "checkpoints_opened": 11,
+   "checkpoints_per_clip": 1.22,
+   "clips_scored": 9,
+   "coverage": 0.181,
+   "declined": 0,
+   "keyframes_visible": 116,
+   "refused_by_reason": {
+    "DEFERRED_ANCHOR": 5,
+    "PRECHECK_AMBIGUOUS": 37,
+    "SEED_VALIDATION": 1,
+    "TAP_AMBIGUOUS": 7,
+    "TAP_MERGED": 15
+   },
+   "reseeded": 3,
+   "strict_iou": {
+    "trusted_correct": 19,
+    "trusted_wrong": 2,
+    "wrong_accepted_selections": 2
+   },
+   "taps_accepted": 3,
+   "taps_answered": 68,
+   "taps_refused": 65,
+   "trusted_correct": 21,
+   "trusted_wrong": 0,
+   "wrong_accepted_selections": 0
+  }
+ },
+ "iou_ok": 0.5,
+ "keyframe_grid_s": 0.5,
+ "per_clip": {
+  "CENTRE": {
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "TAP_MERGED": 8
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 1,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 9
+     },
+     "declined": 1,
+     "refused": 9
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.133,
+    "events": 3,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 2,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 3
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 7,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 9,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 6,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 5,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 6
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 8
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 2,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 4,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 1,
+      "SEED_VALIDATION": 1,
+      "TAP_AMBIGUOUS": 2
+     },
+     "declined": 2,
+     "refused": 4
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 7,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 3,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  },
+  "JITTER": {
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "TAP_MERGED": 8
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 1,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 8,
+      "TAP_OFF_PLAYER": 1
+     },
+     "declined": 1,
+     "refused": 9
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.133,
+    "events": 3,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 2,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 3
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 6,
+      "TAP_MERGED": 1,
+      "TAP_OFF_PLAYER": 1
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 9,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 6,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 5,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 6
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 6,
+      "TAP_AMBIGUOUS": 2
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 2,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 4,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 1,
+      "SEED_VALIDATION": 1,
+      "TAP_AMBIGUOUS": 2
+     },
+     "declined": 2,
+     "refused": 4
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 7,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 3,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  },
+  "SHOULDER": {
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "TAP_MERGED": 6,
+      "TAP_OFF_PLAYER": 2
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 1,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 7,
+      "TAP_AMBIGUOUS": 2
+     },
+     "declined": 1,
+     "refused": 9
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.067,
+    "events": 3,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 2,
+      "TAP_MERGED": 2,
+      "TAP_OFF_PLAYER": 1
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 3,
+      "TAP_OFF_PLAYER": 5
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 9,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 6,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 4,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 6
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 4,
+      "TAP_AMBIGUOUS": 3,
+      "TAP_OFF_PLAYER": 1
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 2,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 4,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 1,
+      "SEED_VALIDATION": 1,
+      "TAP_AMBIGUOUS": 2
+     },
+     "declined": 2,
+     "refused": 4
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 7,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 3,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 2,
+      "TAP_OFF_PLAYER": 1
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  },
+  "SILENT": {
+   "R2_JERSEY_MCFC_MIT_J01": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: seed box is ambiguous: another body (detection 9, IoU 0.08, 1.00 inside) could be the seed person: anchor not deferred"
+   },
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 15,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J04": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: seed box is ambiguous: another body (detection 10, IoU 0.15, 0.92 inside) could be the seed person: anchor not deferred"
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.067,
+    "events": 3,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 9,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J08": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: the seed crop cannot anchor the target appearance bank: ['PARTLY_COVERED_BY_OTHER']"
+   },
+   "R2_JERSEY_MCFC_MIT_J09": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: no detection overlaps the seed box by IoU >= 0.5 (best 0.395) and none is contained, centred, body-sized and on the seed box's feet line"
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 15,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J12": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: seed box is ambiguous: 2 detections are contained in it"
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J14": {
+    "outcome": "RUN_REFUSED",
+    "reason": "seed refused: seed anchor not reached (no bank-clean crop of the seed body within seed_anchor_max_s); seed-frame refusals ['NOT_ISOLATED']"
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "88768bbe08d9f11599a684ca024088d03d067284",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  },
+  "WRONG": {
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 15,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 12,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 9,
+      "TAP_AMBIGUOUS": 2,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 12
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 1,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 9,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "PRECHECK_AMBIGUOUS": 5,
+      "TAP_AMBIGUOUS": 2,
+      "TAP_MERGED": 1
+     },
+     "declined": 1,
+     "refused": 9
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.067,
+    "events": 3,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "TAP_AMBIGUOUS": 4,
+      "TAP_MERGED": 3
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "PRECHECK_AMBIGUOUS": 5,
+      "TAP_MERGED": 2
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 8,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.0,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 3,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 2
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 1,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [
+     {
+      "box": [
+       206.51983784560682,
+       289.8456221606716,
+       247.6853289711046,
+       391.7249667141453
+      ],
+      "clip_frame": 360,
+      "frame": 180,
+      "truth": "VISIBLE"
+     }
+    ],
+    "wrong_keyframes": [
+     360
+    ]
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 15,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 12,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "PRECHECK_AMBIGUOUS": 9,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 12
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 2,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 4,
+     "by_reason": {
+      "SEED_VALIDATION": 1,
+      "TAP_AMBIGUOUS": 3
+     },
+     "declined": 2,
+     "refused": 4
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 7,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 1,
+      "PRECHECK_AMBIGUOUS": 1,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 4
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  },
+  "WRONG_HIDDEN": {
+   "R2_JERSEY_MCFC_MIT_J02": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "TAP_MERGED": 8
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J03": {
+    "abstained": 12,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 12,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 12,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 10,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 12
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J05": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 1,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.133,
+    "events": 3,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 1,
+     "wrong_accepted_selections": 1
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 8,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 2,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 3
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J06": {
+    "abstained": 13,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.133,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 2,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 8,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 7,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 2,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J07": {
+    "abstained": 9,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.0,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 9,
+    "outcome": "SCORED",
+    "seed_frame": 180,
+    "strict_iou": {
+     "trusted_correct": 0,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 6,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 5,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 6
+    },
+    "trusted_correct": 0,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J10": {
+    "abstained": 14,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 2,
+     "reseeded": 1
+    },
+    "coverage": 0.067,
+    "events": 1,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 1,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 1,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 8
+     },
+     "declined": 0,
+     "refused": 8
+    },
+    "trusted_correct": 1,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_MCFC_MIT_J11": {
+    "abstained": 7,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.3,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 3,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 9,
+     "by_reason": {
+      "PRECHECK_AMBIGUOUS": 3,
+      "SEED_VALIDATION": 1,
+      "TAP_AMBIGUOUS": 2,
+      "TAP_MERGED": 3
+     },
+     "declined": 0,
+     "refused": 9
+    },
+    "trusted_correct": 3,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J13": {
+    "abstained": 3,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 0,
+     "opened": 0,
+     "reseeded": 0
+    },
+    "coverage": 0.7,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 10,
+    "outcome": "SCORED",
+    "seed_frame": 60,
+    "strict_iou": {
+     "trusted_correct": 7,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 0,
+     "by_reason": {},
+     "declined": 0,
+     "refused": 0
+    },
+    "trusted_correct": 7,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   },
+   "R2_JERSEY_SYO_MAR_J15": {
+    "abstained": 10,
+    "checkpoints": {
+     "auto_resolved": 0,
+     "declined": 0,
+     "open_at_end": 1,
+     "opened": 1,
+     "reseeded": 0
+    },
+    "coverage": 0.333,
+    "events": 0,
+    "git_commit": "7ddd3e95fd8f81ac08cf86d50ecfef8b4460b2eb",
+    "keyframes_visible": 15,
+    "outcome": "SCORED",
+    "seed_frame": 0,
+    "strict_iou": {
+     "trusted_correct": 5,
+     "trusted_wrong": 0,
+     "wrong_accepted_selections": 0
+    },
+    "taps": {
+     "accepted": 0,
+     "answered": 7,
+     "by_reason": {
+      "DEFERRED_ANCHOR": 3,
+      "PRECHECK_AMBIGUOUS": 2,
+      "TAP_AMBIGUOUS": 1,
+      "TAP_MERGED": 1
+     },
+     "declined": 0,
+     "refused": 7
+    },
+    "trusted_correct": 5,
+    "trusted_wrong": 0,
+    "uncertain_skipped": 0,
+    "wrong_accepted_selections": [],
+    "wrong_keyframes": []
+   }
+  }
+ },
+ "schema": "r2_tap_dev_scores_v1"
+}
