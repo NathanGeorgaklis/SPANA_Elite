@@ -62,11 +62,39 @@ from . import population as P
 from . import target as T
 
 OPEN, AUTO_RESOLVED, DECLINED, RESEEDED = "OPEN", "AUTO_RESOLVED", "DECLINED", "RESEEDED"
-SELECT, NOT_VISIBLE = "SELECT", "NOT_VISIBLE"
+SELECT, NOT_VISIBLE, TAP = "SELECT", "NOT_VISIBLE", "TAP"
 USER_RESEED = "USER_CONFIRMED_RESEED"
 # resolver(checkpoint_view, frame_result) -> None (no answer this frame) | {"decision": "NOT_VISIBLE"} |
-#                                            {"decision": "SELECT", "box": [x1, y1, x2, y2]}
+#                                            {"decision": "SELECT", "box": [x1, y1, x2, y2]} |
+#                                            {"decision": "TAP", "point": [x, y]}   (the product's click / tap)
 Resolver = Callable[[Dict[str, Any], P.FrameResult], Optional[Dict[str, Any]]]
+
+
+def snap_tap(res: P.FrameResult, x: float, y: float, group) -> Tuple[Optional[P.Observation], str]:
+    """The product's interaction (Nathan 2026-11-06): a click / tap, not a drawn box. Snap the point to exactly one
+    existing body detection, else refuse. Rules (all fixed; nothing about the re-seed itself is relaxed):
+      * the point must lie inside at least one body detection, else TAP_OFF_PLAYER;
+      * every detection containing the point must belong to ONE nested group (one physical body with its part /
+        alternative boxes); two or more groups (overlapping / merged region / crowd) is TAP_AMBIGUOUS;
+      * within that group the snapped detection is the group's root (the host box) -- the deferred-seed body rules in
+        the re-seed pre-check then still require it to have its own track and no other track nested in it;
+      * a MERGED_SUSPECTED / IN_MERGED_REGION detection is TAP_MERGED.
+    Returns (detection, "") or (None, reason)."""
+    inside = [o for o in res.observations if o.is_body and o.bbox[0] <= x <= o.bbox[2] and o.bbox[1] <= y <= o.bbox[3]]
+    if not inside:
+        return None, "TAP_OFF_PLAYER: the point is not on any detected player"
+    groups = {}
+    for o in inside:
+        g = frozenset(group(res, o.index))
+        groups.setdefault(g, []).append(o)
+    if len(groups) > 1:
+        return None, f"TAP_AMBIGUOUS: the point lies inside {len(groups)} overlapping players"
+    g = next(iter(groups))
+    root = min(g, key=lambda i: (res.observations[i].nested_in is not None, i))
+    o = res.observations[root]
+    if P.MERGED_SUSPECTED in o.flags or P.IN_MERGED_REGION in o.flags:
+        return None, "TAP_MERGED: the tapped detection may hold more than one person"
+    return o, ""
 
 
 def _candidates(res: P.FrameResult) -> List[Dict[str, Any]]:
@@ -165,6 +193,23 @@ class IdentityCheckpointer:
             self._close(DECLINED, f, t)
             self._arm_t = t
             return tf
+        if ans.get("decision") == TAP:
+            pt = ans.get("point")
+            ok_pt = isinstance(pt, (list, tuple)) and len(pt) == 2 and \
+                all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in pt)
+            rec["tap"] = [float(v) for v in pt] if ok_pt else None
+            if not ok_pt:
+                rec.update(outcome="REFUSED", reason="malformed answer (TAP needs a finite [x, y] point)")
+                return tf
+            probe = T.TargetTracker(self._cfg, self._pop, self._ext)
+            o, why = snap_tap(res, rec["tap"][0], rec["tap"][1], probe._group)
+            if o is None:
+                rec.update(outcome="REFUSED", reason=why)
+                return tf
+            rec["snapped"] = {"detection_index": o.index, "tracklet_id": o.tracklet_id,
+                              "box": [float(v) for v in o.bbox], "flags": sorted(o.flags)}
+            rec["box"] = rec["snapped"]["box"]
+            return self._reseed(res, image, tf, rec)
         if ans.get("decision") != SELECT or rec["box"] is None:
             rec["outcome"] = "REFUSED"
             rec["reason"] = "malformed answer (expected SELECT with 4 finite numbers of positive size, or NOT_VISIBLE)"
