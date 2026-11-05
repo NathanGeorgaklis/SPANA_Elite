@@ -1,0 +1,65 @@
+{
+ "base_v1_sha256": "f4c172ca0f20cc371fb2f5288440edc2949cda4cd1f04c6877f811dacaab2897",
+ "clip_id": "R2_JERSEY_MCFC_MIT_J03",
+ "frozen_file": "R2_JERSEY_MCFC_MIT_J03.regions.v2.FROZEN.json",
+ "frozen_utc": "2026-11-05T06:39:38Z",
+ "label_schema": "r2_jersey_regions_v2",
+ "reason": null,
+ "registry_sha256": "ed5e1861cc7e4cda46351325a6eaa425688c1f0779aa92f0c3e11ab275ceefb1",
+ "schema": "r2_jersey_regions_freeze_record_v1",
+ "sha256": "8c01ce2dc7184763d98d4fdde79f6308052427776af5cc31b444beb64e986353",
+ "source_file": "R2_JERSEY_MCFC_MIT_J03.regions_v2.json",
+ "summary": {
+  "clip_id": "R2_JERSEY_MCFC_MIT_J03",
+  "competitor_shares_target_number": false,
+  "competitors": {
+   "either": 0,
+   "jersey_readable": 0,
+   "person_keyframes": 0,
+   "shorts_only": 0,
+   "shorts_readable": 0
+  },
+  "distractors": 0,
+  "n_competitors": 0,
+  "region_states": {
+   "JERSEY_BACK": {
+    "NOT_VISIBLE": 0,
+    "NO_NUMBER": 0,
+    "READABLE": 13,
+    "UNREADABLE": 0
+   },
+   "JERSEY_FRONT": {
+    "NOT_VISIBLE": 0,
+    "NO_NUMBER": 13,
+    "READABLE": 0,
+    "UNREADABLE": 0
+   },
+   "SHORTS_LEFT": {
+    "NOT_VISIBLE": 0,
+    "NO_NUMBER": 13,
+    "READABLE": 0,
+    "UNREADABLE": 0
+   },
+   "SHORTS_RIGHT": {
+    "NOT_VISIBLE": 0,
+    "NO_NUMBER": 0,
+    "READABLE": 0,
+    "UNREADABLE": 13
+   }
+  },
+  "same_team_competitors": [],
+  "target": {
+   "either": 13,
+   "jersey_readable": 13,
+   "person_keyframes": 13,
+   "shorts_only": 0,
+   "shorts_readable": 0
+  },
+  "target_jersey_number": 7,
+  "target_shorts_differs_from_jersey": false,
+  "target_shorts_number": null,
+  "v1_conflict_notes": 0
+ },
+ "supersedes": null,
+ "version": 2
+}

@@ -1,0 +1,440 @@
+{
+ "schema": "r2_jersey_regions_v2",
+ "clip_id": "R2_JERSEY_MCFC_MIT_J06",
+ "clip_sha256": "06cf8afcf8e79783e1d5e52fe64ac24aa10f6853a471c4a09acd8d443ada3856",
+ "fps": 60,
+ "frames": 480,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_jersey_region_annotator.html v1",
+ "saved_utc": "2026-11-05T06:26:49.703Z",
+ "base_v1": {
+  "file": "R2_JERSEY_MCFC_MIT_J06.jersey.v1.FROZEN.json",
+  "sha256": "45a1ef7c13749f8ba2022ca4e3be74669c2ec9ee46360b10181e23276ea10c49"
+ },
+ "target": {
+  "shorts_number": null,
+  "regions": {
+   "0": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "30": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "60": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "90": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "120": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "150": {
+    "JERSEY_BACK": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "PARTIAL_CROP",
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "180": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 3,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "210": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "240": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "270": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "300": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "330": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "360": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "390": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "420": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "450": {
+    "JERSEY_BACK": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   }
+  }
+ },
+ "competitors": {},
+ "competitors_note": "",
+ "distractors": []
+}

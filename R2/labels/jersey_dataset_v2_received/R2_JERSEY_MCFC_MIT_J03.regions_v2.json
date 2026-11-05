@@ -1,0 +1,362 @@
+{
+ "schema": "r2_jersey_regions_v2",
+ "clip_id": "R2_JERSEY_MCFC_MIT_J03",
+ "clip_sha256": "17ca4e32ef240449520099e2a303ac4066417aa92ef9e5d3058a5797fb278f57",
+ "fps": 60,
+ "frames": 480,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_jersey_region_annotator.html v1",
+ "saved_utc": "2026-11-05T05:11:28.164Z",
+ "base_v1": {
+  "file": "R2_JERSEY_MCFC_MIT_J03.jersey.v1.FROZEN.json",
+  "sha256": "f4c172ca0f20cc371fb2f5288440edc2949cda4cd1f04c6877f811dacaab2897"
+ },
+ "target": {
+  "shorts_number": null,
+  "regions": {
+   "0": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "30": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "60": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "90": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "120": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "150": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "180": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "210": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "240": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "270": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "390": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "420": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   },
+   "450": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 7,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    }
+   }
+  }
+ },
+ "competitors": {},
+ "competitors_note": "",
+ "distractors": []
+}

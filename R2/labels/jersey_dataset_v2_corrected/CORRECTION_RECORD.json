@@ -1,0 +1,78 @@
+{
+ "instruction": "Nathan, 2026-11-05 (answer to AskUserQuestion): 'Yes, clear those 8' -- clear the 8 leftover shorts-number fields that have no READABLE shorts region (shorts marked NO_NUMBER / UNREADABLE / NOT_VISIBLE); keep received files; change nothing else.",
+ "verified": "only shorts_number fields differ (programmatic equality check after nulling every shorts_number)",
+ "changes": [
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J01",
+   "person": "target",
+   "field": "shorts_number",
+   "old": 7,
+   "new": null,
+   "received_sha256": "1ea450a21fa687f0255824a09694a8aca568dd2cb9a678eb18c29ef300b99a46",
+   "corrected_sha256": "df0e0c78e7b7ac18ca4aaf73bb7ba4d10e1c2c58441461dc70094370bbc46d21"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J02",
+   "person": "target",
+   "field": "shorts_number",
+   "old": 17,
+   "new": null,
+   "received_sha256": "330e4e78c6053ef4dea6e3399ef2697a3bbc60f0e94e1288c7ade3f2b8284081",
+   "corrected_sha256": "0497871b821b234088f64aaac15a229a5fd5512e6508dcd4ac1d946792d2210d"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J04",
+   "person": "target",
+   "field": "shorts_number",
+   "old": 5,
+   "new": null,
+   "received_sha256": "7cc49a5df3de4037496f0989b7860c587f27aeaff8d537b85a12ddd9cd362afe",
+   "corrected_sha256": "8a01b602639ca2e52858b9333b9a02cdaa4bf1a5edc6fd992f8279fff0916987"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J04",
+   "person": "C1",
+   "field": "shorts_number",
+   "old": 10,
+   "new": null,
+   "received_sha256": "7cc49a5df3de4037496f0989b7860c587f27aeaff8d537b85a12ddd9cd362afe",
+   "corrected_sha256": "8a01b602639ca2e52858b9333b9a02cdaa4bf1a5edc6fd992f8279fff0916987"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J04",
+   "person": "C2",
+   "field": "shorts_number",
+   "old": 6,
+   "new": null,
+   "received_sha256": "7cc49a5df3de4037496f0989b7860c587f27aeaff8d537b85a12ddd9cd362afe",
+   "corrected_sha256": "8a01b602639ca2e52858b9333b9a02cdaa4bf1a5edc6fd992f8279fff0916987"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J06",
+   "person": "target",
+   "field": "shorts_number",
+   "old": 3,
+   "new": null,
+   "received_sha256": "cb13d4f2ce9f5434c4141d50db6831fc9ab6cf1a72462005492e779822da0e23",
+   "corrected_sha256": "7bad350900c62d62e69b4dc2894cfe6026efea49ec478d327ff76ddcf268e02d"
+  },
+  {
+   "clip_id": "R2_JERSEY_MCFC_MIT_J10",
+   "person": "C1",
+   "field": "shorts_number",
+   "old": 9,
+   "new": null,
+   "received_sha256": "0f687e713302d5841a9c2b8da0ca80c4b6cb2c07c640f569491d6f0214a3b429",
+   "corrected_sha256": "b9fcc381fe97357eda3d4ab477d0cc812edf0336d191fafc5e9b19d58cd63f62"
+  },
+  {
+   "clip_id": "R2_JERSEY_SYO_MAR_J14",
+   "person": "C1",
+   "field": "shorts_number",
+   "old": 7,
+   "new": null,
+   "received_sha256": "32b7bf1ef2a3cfd4c8fc3c46a4dc3532f8061688f5c5b777c6ef070897374b10",
+   "corrected_sha256": "398344e8e43b6967e5201922e8b8d4db6dc4792f0fc88b1bebbc69f023319304"
+  }
+ ]
+}

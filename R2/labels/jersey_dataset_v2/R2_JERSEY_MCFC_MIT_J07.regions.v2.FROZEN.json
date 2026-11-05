@@ -1,0 +1,623 @@
+{
+ "schema": "r2_jersey_regions_v2",
+ "clip_id": "R2_JERSEY_MCFC_MIT_J07",
+ "clip_sha256": "6d42e8bd2b8d7a4255d313e45c8b49d618b9901e3a46a24e463b78aea6c151b3",
+ "fps": 60,
+ "frames": 480,
+ "width": 1280,
+ "height": 720,
+ "annotator": "Nathan Georgaklis",
+ "tool": "tools_rb/r2_jersey_region_annotator.html v1",
+ "saved_utc": "2026-11-05T06:31:17.726Z",
+ "base_v1": {
+  "file": "R2_JERSEY_MCFC_MIT_J07.jersey.v1.FROZEN.json",
+  "sha256": "8c3699d486544b9208ce9c110b80d9ca06a785a37c5bc1925124926d3cfd71e5"
+ },
+ "target": {
+  "shorts_number": null,
+  "regions": {
+   "180": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "210": {
+    "JERSEY_BACK": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "OCCLUDED_BY_PERSON",
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "240": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "270": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "300": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "330": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "360": {
+    "JERSEY_BACK": {
+     "state": "READABLE",
+     "number": 2,
+     "reason": null,
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "390": {
+    "JERSEY_BACK": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "420": {
+    "JERSEY_BACK": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   },
+   "450": {
+    "JERSEY_BACK": {
+     "state": "UNREADABLE",
+     "number": null,
+     "reason": "ANGLE",
+     "note": ""
+    },
+    "JERSEY_FRONT": {
+     "state": "NO_NUMBER",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_LEFT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    },
+    "SHORTS_RIGHT": {
+     "state": "NOT_VISIBLE",
+     "number": null,
+     "reason": null,
+     "note": ""
+    }
+   }
+  }
+ },
+ "competitors": {
+  "C1": {
+   "description": "dark kit 7",
+   "relation": "OPPONENT",
+   "jersey_number": 7,
+   "shorts_number": 7,
+   "keyframes": {
+    "180": {
+     "visibility": "VISIBLE",
+     "box": [
+      565,
+      289,
+      688,
+      610
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "210": {
+     "visibility": "VISIBLE",
+     "box": [
+      359,
+      310,
+      472,
+      599
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "UNREADABLE",
+       "number": null,
+       "reason": "ANGLE",
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "240": {
+     "visibility": "VISIBLE",
+     "box": [
+      376,
+      318,
+      466,
+      589
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "270": {
+     "visibility": "VISIBLE",
+     "box": [
+      436,
+      316,
+      533,
+      549
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "300": {
+     "visibility": "VISIBLE",
+     "box": [
+      499,
+      301,
+      583,
+      521
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "330": {
+     "visibility": "VISIBLE",
+     "box": [
+      508,
+      298,
+      612,
+      494
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "360": {
+     "visibility": "VISIBLE",
+     "box": [
+      444,
+      281,
+      559,
+      480
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "READABLE",
+       "number": 7,
+       "reason": null,
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "390": {
+     "visibility": "VISIBLE",
+     "box": [
+      512,
+      288,
+      603,
+      462
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "UNREADABLE",
+       "number": null,
+       "reason": "ANGLE",
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "420": {
+     "visibility": "VISIBLE",
+     "box": [
+      908,
+      279,
+      1018,
+      375
+     ],
+     "human_uncertain": false,
+     "regions": {
+      "JERSEY_BACK": {
+       "state": "UNREADABLE",
+       "number": null,
+       "reason": "ANGLE",
+       "note": ""
+      },
+      "JERSEY_FRONT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_LEFT": {
+       "state": "NO_NUMBER",
+       "number": null,
+       "reason": null,
+       "note": ""
+      },
+      "SHORTS_RIGHT": {
+       "state": "NOT_VISIBLE",
+       "number": null,
+       "reason": null,
+       "note": ""
+      }
+     }
+    },
+    "450": {
+     "visibility": "OUT_OF_FRAME",
+     "box": null,
+     "human_uncertain": false,
+     "regions": null
+    }
+   }
+  }
+ },
+ "competitors_note": "",
+ "distractors": []
+}
