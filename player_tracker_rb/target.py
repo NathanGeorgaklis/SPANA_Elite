@@ -143,7 +143,8 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
     updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
     banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
-  * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; ON unless continuity_step_enabled is False): geometry alone cannot
+  * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; OFF by default since the R2 production consolidation, enabled by
+    continuity_step_enabled; DEV: -3 false frames, -427 trusted frames): geometry alone cannot
     tell a continuing target from a different player who takes its box (the population continues the tracklet; the
     bank test passes for a same-kit player above appearance_floor). The target tracklet keeps a REFERENCE: its last
     CLEAN crop (usable, uncontaminated, and not OVERLAPS_OTHER / CONTAINS_OTHER / NESTED / PARTIAL /

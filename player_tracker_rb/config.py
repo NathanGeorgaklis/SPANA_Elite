@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2cp-1"   # r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2prod-1"   # r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -903,8 +903,11 @@ PARAMS: Tuple[Param, ...] = (
        "stay continuous; a failed step (below reacq_appearance_floor, or ambiguity_margin below its recent median) "
        "SUSPENDS the tracklet (AMBIGUOUS, never trusted or banked) until continuity_step_resolve_steps consecutive "
        "clean crops match the pre-break reference, else it ages out and the tracklet is never contrast-verified "
-       "again; a continuation frame offers a bank sample only after a passed consecutive step.", True, N, "DESIGN_CHOICE", UNV,
-       "BEHAVIOURAL", "identity", _HAND_EV, None, None),
+       "again; a continuation frame offers a bank sample only after a passed consecutive step. PRODUCTION DEFAULT OFF "
+       "(R2 consolidation, Nathan 2026-11-06 10:12): on the complete DEV benchmark the rule removed one 3-frame "
+       "false-identity flicker (C006) and cost 427 trusted frames, all on the true target (coverage 0.426 -> 0.266); "
+       "kept as an optional safety mode.", False, N, "DESIGN_CHOICE", UNV,
+       "BEHAVIOURAL", "identity", _HAND_EV + "; production default OFF from R2/PRODUCTION_TRACKER", None, None),
     _p("continuity_step_max_gap_s", "float", "s",
        "Handoff safety: a passed step counts as bank-proof only against a reference from the previous frame or at "
        "most this old (consecutive observations); older references are still tested for continuity.", 0.1, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",

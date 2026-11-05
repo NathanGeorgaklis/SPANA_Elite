@@ -21,7 +21,8 @@ from tests_rb import _synth_scene as SS
 KIT_A, KIT_B = (200, 60, 40), (40, 60, 200)
 H = 100.0
 FPS = 30.0
-CFG = TrackerConfig.default()
+# the false-suspension scenarios need the handoff rule (optional mode; production default OFF)
+CFG = TrackerConfig.with_overrides({"continuity_step_enabled": True})
 WIN = CFG.get("checkpoint_unresolved_s")
 
 
@@ -274,7 +275,7 @@ class TestIdentityCheckpoint(unittest.TestCase):
 
     def test_auto_recovery_closes_an_open_checkpoint(self):
         # the dip resolves automatically after the checkpoint opened: AUTO_RESOLVED, nothing re-seeded
-        cfg = TrackerConfig.with_overrides({"checkpoint_unresolved_s": 0.0})
+        cfg = TrackerConfig.with_overrides({"checkpoint_unresolved_s": 0.0, "continuity_step_enabled": True})
         n1 = int(1.5 * FPS)
         fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
         fr += [SS.SceneFrame({"GLITCH": SS.box_at(401, 400, 40, H)}) for _ in range(2)]
@@ -382,7 +383,7 @@ class TestReviewFindings(unittest.TestCase):
 
     def test_no_checkpoint_while_the_initial_seed_anchor_is_pending(self):
         # the initial seed touches the image edge (deferrable): its anchor is pending for a few frames
-        cfg = TrackerConfig.with_overrides({"checkpoint_unresolved_s": 0.0})
+        cfg = TrackerConfig.with_overrides({"checkpoint_unresolved_s": 0.0, "continuity_step_enabled": True})
         n = int(1.0 * FPS)
         fr = [SS.SceneFrame({"TARGET": SS.box_at(19 + 3 * k, 400, 40, H)}) for k in range(n)]
         r = run(fr, people(), Oracle(lambda f, d: None), cfg=cfg)

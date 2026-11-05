@@ -40,9 +40,11 @@ class CheckpointRun(unittest.TestCase):
         return answer
 
     def test_reseed_keeps_the_contract_and_writes_the_checkpoint_file(self):
-        e = run_clip(self.frames, self.people, os.path.join(self.tmp, "on"), name="on",
+        # the same-kit same-spot swap is only suspended by the handoff rule (optional mode; production default OFF)
+        ov = {"continuity_step_enabled": True}
+        e = run_clip(self.frames, self.people, os.path.join(self.tmp, "on"), name="on", overrides=ov,
                      checkpoint_resolver=self.resolver())
-        base = run_clip(self.frames, self.people, os.path.join(self.tmp, "off"), name="off")
+        base = run_clip(self.frames, self.people, os.path.join(self.tmp, "off"), name="off", overrides=ov)
         ev = e.summary["v2"]["reacquisition_events"]
         self.assertEqual([x["evidence"].get("source") for x in ev].count(CK.USER_RESEED), 1)
         with open(e.paths["checkpoints"]) as fh:

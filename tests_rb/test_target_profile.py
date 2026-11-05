@@ -441,7 +441,10 @@ class TestTrackerResidualSameKitSubstitution(unittest.TestCase):
         n1, n2 = int(1.5 * fps), int(1.5 * fps)
         fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H)}) for _ in range(n1)]
         fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 40, H)}) for _ in range(n2)]
-        return run(fr, people(("LOOK", KIT_A, cos)), fps)
+        # the same-frame same-spot substitution is caught only by the handoff rule, an optional mode since the R2
+        # production consolidation (default OFF on complete-DEV evidence); the experimental profile is tested with it
+        return run(fr, people(("LOOK", KIT_A, cos)), fps,
+                   cfg=TrackerConfig.with_overrides({"continuity_step_enabled": True}))
 
     def test_tracker_never_trusts_a_same_kit_substitute(self):
         # fixed by the same-frame handoff safety rule (continuity_step_*; tests_rb/test_handoff_safety.py)

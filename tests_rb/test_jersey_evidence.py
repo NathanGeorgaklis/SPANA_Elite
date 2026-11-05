@@ -182,7 +182,10 @@ class TestConsensus(unittest.TestCase):
                 n1, n2 = int(1.5 * fps), int(1.5 * fps)
                 fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 48, H)}) for _ in range(n1)]
                 fr += [SS.SceneFrame({"LOOK": SS.box_at(402, 400, 48, H)}) for _ in range(n2)]
-                r, out, ev = run(fr, people(("LOOK", KIT_A, 0.85)), fps, OwnerReader({"TARGET": 7, "LOOK": 9}), 7)
+                # the handoff rule is an optional mode since the R2 production consolidation (default OFF on
+                # complete-DEV evidence); this experimental scenario is defined with it on
+                r, out, ev = run(fr, people(("LOOK", KIT_A, 0.85)), fps, OwnerReader({"TARGET": 7, "LOOK": 9}), 7,
+                                 cfg=TrackerConfig.with_overrides({"continuity_step_enabled": True}))
                 after = [row for k, o in enumerate(out) if k >= n1 for row in o.values()]
                 self.assertTrue(after)
                 self.assertTrue(all(x["evidence"] != J.SUPPORT for x in after), "never SUPPORT after the swap")

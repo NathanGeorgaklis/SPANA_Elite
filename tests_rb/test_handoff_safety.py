@@ -14,8 +14,8 @@ from tests_rb import _synth_scene as SS
 
 KIT_A, KIT_B = (200, 60, 40), (40, 60, 200)
 H = 100.0
-ON = TrackerConfig.default()
-OFF = TrackerConfig.with_overrides({"continuity_step_enabled": False})
+ON = TrackerConfig.with_overrides({"continuity_step_enabled": True})     # optional mode (production default OFF)
+OFF = TrackerConfig.default()
 FPS_SET = (30.0, 15.0)
 
 
