@@ -117,10 +117,9 @@ class ExclusionNeverAppliesWhenSeparationIsNotProven(unittest.TestCase):
                 hand = SS.run(fr, people(("LOOK", KIT_A, cos)), cfg=TrackerConfig.with_overrides(
                     {"continuity_step_enabled": True}))
                 self.assertEqual(wrong_trusted(hand), [])
-                k0 = len(fr) - 1
-                ev = [e for e in on.frames[k0].decision.get("candidates", []) if e["role"] == T.CONTINUATION]
-                if ev:
-                    self.assertEqual(ev[0]["excluded_competitors"], [])
+                for k in range(n1, len(fr)):
+                    for e in on.frames[k].decision.get("candidates", []):
+                        self.assertEqual(e.get("excluded_competitors", []), [], (k, e))
 
     def test_look_alike_appearing_after_the_last_trusted_frame_competes(self):
         """LOOK is first seen while the target is already untrusted: no continuity certificate -> full contrast."""
@@ -132,9 +131,15 @@ class ExclusionNeverAppliesWhenSeparationIsNotProven(unittest.TestCase):
         r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON)
         self.assertEqual(wrong_trusted(r), [])
         k0 = int(1.0 * FPS)
-        ev = [e for e in r.frames[k0].decision.get("candidates", []) if e["role"] == T.CONTINUATION]
-        if ev:
-            self.assertEqual(ev[0]["excluded_competitors"], [])
+        # the target comes back as a reacquisition with LOOK beside it: two same-kit candidates, never trusted,
+        # nothing excluded in any evaluation (a reacquisition never excludes; no trusted anchor exists after k0)
+        seen = 0
+        for k in range(k0, n):
+            self.assertFalse(r.frames[k].identity_trusted, k)
+            for e in r.frames[k].decision.get("candidates", []):
+                seen += 1
+                self.assertEqual(e["excluded_competitors"], [], (k, e["role"]))
+        self.assertGreater(seen, 0, "candidates must have been evaluated after LOOK appears")
 
     def test_two_equally_plausible_candidates_stay_ambiguous(self):
         """The target vanishes and two same-kit bodies appear where it was: a reacquisition, never excluded."""
@@ -156,6 +161,92 @@ class ExclusionNeverAppliesWhenSeparationIsNotProven(unittest.TestCase):
         r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON)
         self.assertEqual(wrong_trusted(r), [])
         self._assert_fail_closed(r, n1)
+
+
+class ReviewCases(unittest.TestCase):
+    """Review R2-SEP findings: unverified episodes, the deferred-seed window, a held target frame, the exact gap,
+    a rival inside the candidate's nested group, and a rival whose tracklet id changes."""
+
+    def _cont(self, r, k):
+        return [e for e in r.frames[k].decision.get("candidates", []) if e["role"] == T.CONTINUATION]
+
+    def test_unverified_episode_never_excludes_and_never_becomes_trusted_on_a_rival(self):
+        """Target lost; same-kit L1 reacquired alone (UNVERIFIED episode); same-kit L2 walks in to 0.6 h, never
+        within 0.25 h; then a beatable confusable Q appears. With the exclusion the episode must still not verify
+        itself on L1 (review finding 1)."""
+        n1, n2, n3, n4, n5 = int(1.0 * FPS), int(1.5 * FPS), int(1.0 * FPS), int(1.0 * FPS), int(2.0 * FPS)
+        L1 = SS.box_at(400, 400, 40, H)
+        Q = SS.box_at(400 - 40 - 0.6 * H - 20, 400, 40, H)
+
+        def L2(gap):
+            return SS.box_at(400 + 40 + gap * H + 20, 400, 40, H)
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H), "L2": L2(2.2)}) for _ in range(n1)]
+        fr += [SS.SceneFrame({"L2": L2(2.2)}) for _ in range(n2)]
+        fr += [SS.SceneFrame({"L1": L1, "L2": L2(2.2)}) for _ in range(n3)]
+        fr += [SS.SceneFrame({"L1": L1, "L2": L2(2.2 - 1.6 * (k + 1) / n4)}) for k in range(n4)]
+        fr += [SS.SceneFrame({"L1": L1, "L2": L2(0.6), "Q": Q}) for _ in range(n5)]
+        pp = people(("L1", KIT_A, 0.9), ("L2", KIT_A, 0.9), ("Q", KIT_A, 0.86))
+        on, off = SS.run(fr, pp, cfg=ON), SS.run(fr, pp, cfg=OFF)
+        self.assertEqual(wrong_trusted(on), [])
+        self.assertEqual(wrong_trusted(on), wrong_trusted(off))
+        for k in range(n1 + n2, len(fr)):
+            for e in self._cont(on, k):
+                if not on.frames[k].decision.get("episode_contrast_verified"):
+                    self.assertEqual(e["excluded_competitors"], [], k)
+
+    def test_deferred_seed_window_voids_the_certificate(self):
+        """Seed deferred (partial box at the image edge); during the pending window the same-kit rival stands
+        0.05 h away; after the anchor the rival moves apart. It must compete in full (review finding 2)."""
+        n1, n2 = int(0.3 * FPS), int(2.0 * FPS)
+        tb = (0.0, 350.0, 36.0, 450.0)                       # touches the left image edge: deferrable seed
+        fr = [SS.SceneFrame({"TARGET": tb, "LOOK": SS.box_at(36 + 0.05 * H + 20, 400, 40, H)}) for _ in range(n1)]
+        fr += [SS.SceneFrame({"TARGET": SS.box_at(60 + 2 * k, 400, 40, H),
+                              "LOOK": SS.box_at(60 + 2 * k + 40 + 0.6 * H + 20, 400, 40, H)}) for k in range(n2)]
+        try:
+            r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON, seed_box=tb)
+        except T.SeedError:
+            return                                            # a refused seed is also fail-closed
+        self.assertEqual(wrong_trusted(r), [])
+        first_anchor = next((k for k, f in enumerate(r.frames) if f.identity_trusted), None)
+        if first_anchor is not None:
+            k = first_anchor + 1
+            for e in self._cont(r, k):
+                self.assertEqual(e["excluded_competitors"], [], (k, e))
+
+    def test_one_held_target_frame_voids_the_certificate(self):
+        n = int(3 * FPS)
+        fr = alongside(n, gap_h=0.6)
+        k_hold = int(1.5 * FPS)
+        fr[k_hold] = SS.SceneFrame(dict(fr[k_hold].boxes), drop=("TARGET",))
+        r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON)
+        self.assertEqual(wrong_trusted(r), [])
+        for k in range(k_hold + 1, min(k_hold + 4, n)):
+            for e in self._cont(r, k):
+                self.assertEqual(e["excluded_competitors"], [], k)
+
+    def test_exact_gap_counts_as_contact(self):
+        n = int(2 * FPS)
+        gap = ON.get("separation_min_gap_h")
+        fr = [SS.SceneFrame({"TARGET": SS.box_at(400, 400, 40, H),
+                             "LOOK": (420.0 + gap * H, 350.0, 460.0 + gap * H, 450.0)}) for _ in range(n)]
+        r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON)
+        self.assertEqual(wrong_trusted(r), [])
+        for k in range(1, n):
+            for e in self._cont(r, k):
+                self.assertEqual(e["excluded_competitors"], [], k)
+
+    def test_rival_tracklet_id_change_voids_the_certificate(self):
+        """LOOK is undetected for a few frames (its tracklet closes and a new one is born): never excluded after."""
+        n = int(4 * FPS)
+        fr = alongside(n, gap_h=0.6)
+        for k in range(int(1.0 * FPS), int(1.0 * FPS) + int(ON.get("population_closed_memory_s") * FPS) + 5):
+            fr[k] = SS.SceneFrame(dict(fr[k].boxes), drop=("LOOK",))
+        r = SS.run(fr, people(("LOOK", KIT_A, 0.9)), cfg=ON)
+        self.assertEqual(wrong_trusted(r), [])
+        k_back = int(1.0 * FPS) + int(ON.get("population_closed_memory_s") * FPS) + 5
+        for k in range(k_back, min(k_back + 5, n)):
+            for e in self._cont(r, k):
+                self.assertEqual(e["excluded_competitors"], [], k)
 
 
 if __name__ == "__main__":
