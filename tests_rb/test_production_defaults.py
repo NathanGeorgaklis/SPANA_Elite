@@ -32,8 +32,8 @@ class ProductionDefaults(unittest.TestCase):
                                   "%s imports experimental module %s" % (mod.__name__, name))
 
     def test_version_tags(self):
-        self.assertEqual(CONFIG_REGISTRY_VERSION, "r2prod-1")
-        self.assertTrue(__version__.startswith("1.0.0-r2prod"), __version__)
+        self.assertEqual(CONFIG_REGISTRY_VERSION, "r2wp-1")
+        self.assertTrue(__version__.startswith("1.1.0-r2wp"), __version__)
 
 
 if __name__ == "__main__":

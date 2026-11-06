@@ -24,6 +24,12 @@ Per frame (update), in order:
      a larger one makes the larger CONTAINS_OTHER (never an appearance sample); if it is also at least
      population_part_box_min_height_ratio of the larger box's height it is NESTED (a part-body or alternative box
      of the same person); a much smaller box inside is a farther body that the larger occludes, tracked normally.
+     WEAK PART (NEW_R2, R2 user test): a detection scored <= population_weak_part_score_ratio x a larger one's score,
+     lying >= population_weak_part_min_containment inside it, shorter than it, no wider than
+     population_weak_part_max_width_ratio x its width and centred within population_weak_part_max_centre_offset x
+     its width of its centre, is NESTED in it too (flag WEAK_PART): a detector part box that pokes out of its
+     host. It starts no tracklet and is not second-body corroboration for its host; it stays an observation and a
+     competitor. A credible second person (comparable score, beside or taller than the host) stays a body.
      Nothing is deleted for overlapping: nested boxes stay observations and competitors.
   2. Association (geometry only). A live tracklet may take a detection (nested or not) if IoU(predicted box,
      detection) >= population_match_iou_min and the motion check passes (motion.py: bounded speed and scale; a
@@ -153,6 +159,7 @@ CONTACT_DURING_GAP = "CONTACT_DURING_GAP"
 CAMERA_UNCOMPENSATED = "CAMERA_UNCOMPENSATED"
 NESTED = "NESTED"                         # lies inside a larger detection (alternative box or hidden body)
 ALTERNATIVE = "ALTERNATIVE"               # an alternative box of a nested group: no tracklet, still a competitor
+WEAK_PART = "WEAK_PART"                   # NESTED by the weak-part rule (pokes out of its host; weak score, aligned)
 CONTAINS_OTHER = "CONTAINS_OTHER"         # contains a nested detection: never an appearance sample
 IN_MERGED_REGION = "IN_MERGED_REGION"
 MERGE_LINEAGE = "MERGE_LINEAGE"            # born from an unresolved merge: may hold two bodies; never a bank sample     # overlaps where a merged detection was seen within population_max_unmatched_s
@@ -609,18 +616,39 @@ class Population:
             cont_dd = containment(np.asarray([boxes[i] for i in bodies]), np.asarray([boxes[i] for i in bodies]))
             area = {i: _wh(boxes[i])[0] * _wh(boxes[i])[1] for i in bodies}
             contains_any: Set[int] = set()
+            weak_part: Set[int] = set()
             for a, j in enumerate(bodies):
                 inside = [(cont_dd[a, b], -i) for b, i in enumerate(bodies)
                           if i != j and area[i] > area[j] and cont_dd[a, b] >= c.get("population_nested_containment")]
-                contains_any |= {-x[1] for x in inside}
+                # NEW_R2 (R2 user test, nested-part stage): a WEAK PART box straddling its host's edge. A detector
+                # part box (legs, torso) scored far below the body it belongs to, lying mostly on that body, no
+                # taller and barely wider than it and centred on it, is that body's part even though it pokes out
+                # of the host box (so its containment misses population_nested_containment). Left as a body it
+                # starts a phantom tracklet, which then "disappears" into its host and makes a false MULTI_CLAIM
+                # merge, or touches the host and corroborates a size-only merge (real 1080p footage: a 0.12-score
+                # leg box 0.71 inside a 0.66-score body closed the target as merged). A credible second person
+                # (score comparable to the host's, or beside it, or taller) is not a weak part and stays a body.
+                wj, hj = _wh(boxes[j])
+                weak_hosts = [(cont_dd[a, b], -i) for b, i in enumerate(bodies)
+                              if i != j and area[i] > area[j]
+                              and cont_dd[a, b] >= c.get("population_weak_part_min_containment")
+                              and dets[j].score <= c.get("population_weak_part_score_ratio") * dets[i].score
+                              and hj < _wh(boxes[i])[1]
+                              and wj <= c.get("population_weak_part_max_width_ratio") * _wh(boxes[i])[0]
+                              and abs((boxes[j][0] + boxes[j][2]) - (boxes[i][0] + boxes[i][2])) / 2.0
+                              <= c.get("population_weak_part_max_centre_offset") * _wh(boxes[i])[0]]
+                contains_any |= {-x[1] for x in inside} | {-x[1] for x in weak_hosts}
                 # only a box tall enough to be a part of its host's body is NESTED (an alternative observation);
                 # a much smaller box inside is another, farther body that the host occludes
-                hosts = [x for x in inside if _wh(boxes[j])[1] >= c.get("population_part_box_min_height_ratio")
-                         * _wh(boxes[-x[1]])[1]]
+                hosts = [x for x in inside + weak_hosts
+                         if _wh(boxes[j])[1] >= c.get("population_part_box_min_height_ratio") * _wh(boxes[-x[1]])[1]]
                 if hosts:
                     nested_in[j] = -max(hosts)[1]
+                    if not any(-x[1] == nested_in[j] for x in inside):
+                        weak_part.add(j)
         else:
             contains_any = set()
+            weak_part = set()
         contains_other = set(contains_any)
 
         def group_of(i: int) -> int:
@@ -1192,6 +1220,8 @@ class Population:
                     fl.append(DUPLICATE_ABSORBED)
                 if nested_in[i] is not None:
                     fl.append(NESTED)
+                    if i in weak_part:
+                        fl.append(WEAK_PART)
                 if i in alternative:
                     fl.append(ALTERNATIVE)
                 if i in contains_other:
