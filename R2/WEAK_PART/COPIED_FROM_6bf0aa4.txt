@@ -1,0 +1,1 @@
+clips C006 C020 C034 C038 C004 C016(SYO) C021 C032 copied from wp_6bf0aa4: no WEAK_PART with an edge-clipped host in their decision logs, so the e093570 rule is byte-identical there (deterministic pipeline)

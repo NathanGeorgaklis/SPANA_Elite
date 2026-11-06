@@ -1,0 +1,13 @@
+R2_MCFC_MIT_C006       frames  300  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 554
+R2_MCFC_MIT_C016       frames  240  weak-part boxes not nested    3 (on 3 frames; 3 carry a tracklet; 1 on the target)  already nested 169
+R2_MCFC_MIT_C020       frames  570  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 62
+R2_MCFC_MIT_C033       frames  600  weak-part boxes not nested    4 (on 4 frames; 4 carry a tracklet; 2 on the target)  already nested 953
+R2_MCFC_MIT_C034       frames  570  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 321
+R2_SYO_MAR_C004        frames  300  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 374
+R2_SYO_MAR_C012        frames  255  weak-part boxes not nested    2 (on 2 frames; 1 carry a tracklet; 0 on the target)  already nested 1245
+R2_SYO_MAR_C016        frames  210  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 166
+R2_SYO_MAR_C021        frames  300  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 250
+UT_G1_SU_API_A         frames  300  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 369
+UT_G2_NWS_SDR_A        frames  600  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 2998
+UT_G2_NWS_SDR_D        frames  600  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 892
+UT_G3_SFC_SGC_C        frames  300  weak-part boxes not nested    0 (on 0 frames; 0 carry a tracklet; 0 on the target)  already nested 242
