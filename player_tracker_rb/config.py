@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2wp-1"   # r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2sep-1"   # r2sep-1: physical-separation contrast exclusion (separation_exclusion_enabled, separation_min_gap_h); r2wp-1: r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -112,6 +112,12 @@ UNV = "UNVALIDATED"
 # The registry. Ordered by group. Each name is unique (enforced at import time).
 # ---------------------------------------------------------------------------------------------
 _IDENT_EV = "NEW_R2 (R2 DEV persistent identity layer, diagnostic only; not used by target trust)"
+_SEP_EV = ("R2 same-kit contrast stage (Nathan 2026-11-07 08:22). Native 1080p user test, frozen tracker: G1_A "
+           "45 INSUFFICIENT_CONTRAST frames (contrast 0.074 vs margin 0.08) with the same-kit teammate observed on "
+           "its own tracklet 0.57-0.59 body heights away, no overlap, continuously since the last trusted frame; "
+           "G3_C (rival 0.03-0.07 h away, touching) and G2_F (rival overlapping, IoU 0.07-0.10) stay ambiguous; "
+           "G1_C fails the appearance floor as well. 0.25 h gap is a design choice; UNVALIDATED beyond DEV + user "
+           "test.")
 _WEAK_EV = ("R2 user test, native 1080p (2026-11-07): G1_A f166 a 0.12-score leg box 0.71 inside the 0.66-score "
             "target body, 1.11 x its width, centre offset 0.14, started tracklet T116 which closed the target as a "
             "MULTI_CLAIM merge; development-clip part boxes measured 0.36-0.58 of host height, side-by-side bodies "
@@ -450,6 +456,18 @@ PARAMS: Tuple[Param, ...] = (
     _p("contrastive_margin", "float", "similarity difference",
        "Target similarity minus the best competitor similarity on the same box must be >= this.", 0.08, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", "D08 test 2; R1 approval §18", 0.0, 1.0),
+    _p("separation_exclusion_enabled", "bool", "flag",
+       "PHYSICAL SEPARATION (NEW_R2, R2 same-kit contrast stage): a banked competitor observed this frame on its "
+       "own tracklet outside the candidate's group, continuously observed and apart from the target (never "
+       "overlapping or within separation_min_gap_h, no unobserved frame, no cut, target tracklet observed every "
+       "frame) since the target was last confirmed is dropped from a CONTINUATION's contrast: two continuously and "
+       "separately observed bodies cannot have exchanged identities. The margin is unchanged.", True, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _SEP_EV, None, None),
+    _p("separation_min_gap_h", "float", "h",
+       "Two observed boxes closer than this (edge to edge, in target body heights), or overlapping, count as "
+       "contact for the physical-separation exclusion: from then on the competitor competes in full until the "
+       "target is confirmed again with the bodies apart.", 0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
+       "identity", _SEP_EV, 0.0, 2.0),
     _p("ambiguity_margin", "float", "similarity difference",
        "The best target candidate must beat the second-best target candidate by >= this.", 0.06, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",

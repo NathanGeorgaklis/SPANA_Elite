@@ -143,6 +143,18 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     INSUFFICIENT_CONTRAST, confidence min(formula, untrusted_identity_confidence_ceiling); the target bank is not
     updated (EPISODE_UNVERIFIED) and no body is recorded as a known other. Event evidence: contrast_available (any
     banked competitor contrasted) and contrast_verified (a confusable one); decision log: episode_contrast_verified;
+  * PHYSICAL SEPARATION (NEW_R2, R2 same-kit contrast stage, separation_exclusion_enabled): the contrast test asks
+    whether this crop is more like the target's bank than a competitor's. Two same-kit bodies give contrasts of
+    0.03-0.07 whichever body the crop holds, so a teammate standing apart made the true target untrusted for good
+    (native 1080p G1_A: 45 frames at contrast 0.074 < 0.08 with the teammate 0.57 body heights away, then LOST).
+    Contrast cannot separate same kits; physical continuity can: a competitor that is observed this frame on its
+    own tracklet, on a box outside the candidate's group, and that has been continuously observed and apart from
+    the target (no overlap, never within separation_min_gap_h, no unobserved frame, no camera cut, target tracklet
+    observed on every frame) since the target was last confirmed, is dropped from a CONTINUATION's contrast: two
+    continuously and separately observed bodies cannot have exchanged identities. It applies only when the
+    candidate already passes gate, motion, appearance floor and merge tests; the margin itself is unchanged; a
+    hidden, newly seen, touching, crossing or occluded competitor competes in full, so a crossing, a substitution
+    and a two-candidate ambiguity stay fail-closed. Evaluations log excluded_competitors.
   * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; OFF by default since the R2 production consolidation, enabled by
     continuity_step_enabled; DEV: -3 false frames, -427 trusted frames): geometry alone cannot
     tell a continuing target from a different player who takes its box (the population continues the tracklet; the
@@ -318,6 +330,7 @@ class CandidateEvaluation:
     unknown_contacts: Tuple[str, ...]
     passed: bool
     details: Tuple[str, ...]
+    excluded_competitors: Tuple[str, ...] = ()    # banked competitors physically separate since the last confirmation
 
     @property
     def composite(self) -> Optional[float]:
@@ -329,7 +342,8 @@ class CandidateEvaluation:
                 "motion": self.motion, "quality_flags": list(self.quality_flags),
                 "target_similarity": self.target_similarity, "best_competitor": self.best_competitor,
                 "best_competitor_similarity": self.best_competitor_similarity, "contrast": self.contrast,
-                "margin": self.margin, "unknown_contacts": list(self.unknown_contacts), "passed": self.passed,
+                "margin": self.margin, "unknown_contacts": list(self.unknown_contacts),
+                "excluded_competitors": list(self.excluded_competitors), "passed": self.passed,
                 "details": list(self.details)}
 
 
@@ -482,6 +496,14 @@ class TargetTracker:
         self._tracklet_since_t: Optional[float] = None       # when the target was first confirmed on its tracklet
         self._failed = False                                 # a refused seed leaves the tracker unusable
         self._last_confirm_t: Optional[float] = None
+        # PHYSICAL SEPARATION (NEW_R2, R2 same-kit contrast stage): per live tracklet, the last time it was NOT a
+        # separately observed body with respect to the target (unobserved, born, or within separation_min_gap_h of
+        # the target's observed box); and the last time the target's own tracklet continuity broke (unobserved,
+        # changed, camera cut). A banked competitor is excluded from a CONTINUATION's contrast only while both have
+        # been continuously observed and apart since the last confirmed frame (module doc).
+        self._sep_event: Dict[str, float] = {}
+        self._target_gap_t: Optional[float] = None
+        self._sep_tracklet: Optional[str] = None
         self._last_confirm_frame: Optional[int] = None
         self._last_trusted_conf = 0.0
         self._uncertain_from: Optional[Tuple[int, float]] = None
@@ -707,6 +729,25 @@ class TargetTracker:
                 cs, _ = cp.bank.best_match(feat)
                 if cs is not None and cs.composite is not None and (best_sim is None or cs.composite > best_sim):
                     best_ref, best_sim = cp.ref, cs.composite
+        excluded: List[str] = []
+        if role == CONTINUATION and c.get("separation_exclusion_enabled") and not details and feat.usable:
+            # PHYSICAL SEPARATION (NEW_R2): a banked competitor observed this frame on its own tracklet, on a box
+            # outside this candidate's group, that has been continuously observed and apart from the target since
+            # the target was last confirmed (no overlap, no approach within separation_min_gap_h, no gap, no cut,
+            # and the target's own tracklet observed on every frame since) cannot be the body in this box: two
+            # continuously and separately observed bodies cannot have exchanged identities. Only then is its bank
+            # dropped from the contrast. A hidden, new, touching or crossing competitor still competes in full.
+            kept_ref, kept_sim = None, None
+            for cp in comps:
+                if cp.ref == best_ref or (cp.bank is not None and len(cp.bank) > 0):
+                    if self._physically_separate(cp, res, i):
+                        excluded.append(cp.ref)
+                    elif feat.usable and cp.bank is not None and len(cp.bank) > 0:
+                        cs, _ = cp.bank.best_match(feat)
+                        if cs is not None and cs.composite is not None and (kept_sim is None or cs.composite > kept_sim):
+                            kept_ref, kept_sim = cp.ref, cs.composite
+            if excluded:
+                best_ref, best_sim = kept_ref, kept_sim
         contrast = None
         if sim is not None and sim.composite is not None and best_sim is not None:
             contrast = sim.composite - best_sim
@@ -719,7 +760,53 @@ class TargetTracker:
             distance_h=dist_h, merged=merged, motion=mrec, quality_flags=tuple(feat.quality.flags),
             target_similarity=None if sim is None else sim.as_record(), best_competitor=best_ref,
             best_competitor_similarity=best_sim, contrast=contrast, margin=margin, unknown_contacts=tuple(unknown),
-            passed=not details, details=tuple(details))
+            excluded_competitors=tuple(excluded), passed=not details, details=tuple(details))
+
+    def _physically_separate(self, cp: "P.Competitor", res: P.FrameResult, i: int) -> bool:
+        """True when competitor cp is a body observed this frame on its own tracklet, outside candidate i's group,
+        and both it and the target have been continuously observed and apart since the last confirmed frame."""
+        lt = self._last_confirm_t
+        if lt is None or cp.kind != P.OBSERVATION or not cp.tracklet_id or cp.tracklet_id == self._tracklet:
+            return False
+        # events AT the confirmation frame are allowed: that frame was confirmed with the competitor competing in
+        # full (or by the human seed), so continuity is anchored there; anything after it voids the certificate
+        if self._target_gap_t is None or self._target_gap_t > lt:
+            return False
+        ev_t = self._sep_event.get(cp.tracklet_id)
+        if ev_t is None or ev_t > lt:
+            return False
+        grp = self._group(res, i)
+        view = next((v for v in res.tracklets if v.tracklet_id == cp.tracklet_id), None)
+        return view is not None and view.observed and view.detection_index is not None \
+            and view.detection_index not in grp
+
+    def _update_separation(self, res: P.FrameResult, tv: Optional["P.TrackletView"], cut: bool) -> None:
+        """Per-frame bookkeeping for the physical-separation exclusion (called before any evaluation)."""
+        t = res.time_s
+        c = self._cfg
+        live = {v.tracklet_id for v in res.tracklets}
+        for k in [k for k in self._sep_event if k not in live]:
+            del self._sep_event[k]
+        if cut or tv is None or not tv.observed or tv.observed_box is None or tv.tracklet_id != self._sep_tracklet:
+            self._target_gap_t = t
+            self._sep_tracklet = tv.tracklet_id if tv is not None else None
+        tb = None if tv is None or not tv.observed else tv.observed_box
+        h = None if tb is None else max(1.0, tb[3] - tb[1])
+        gap = c.get("separation_min_gap_h")
+        for v in res.tracklets:
+            if v.tracklet_id == self._tracklet:
+                continue
+            if tb is None or not v.observed or v.observed_box is None:
+                self._sep_event[v.tracklet_id] = t        # born, unobserved, or the target itself unobserved
+                continue
+            ob = v.observed_box
+            gx = max(0.0, max(tb[0], ob[0]) - min(tb[2], ob[2]))
+            gy = max(0.0, max(tb[1], ob[1]) - min(tb[3], ob[3]))
+            touching = gx == 0.0 and gy == 0.0
+            if touching or math.hypot(gx, gy) < gap * h:
+                self._sep_event[v.tracklet_id] = t        # overlap or approach: identities could have crossed
+            elif v.tracklet_id not in self._sep_event:
+                self._sep_event[v.tracklet_id] = t        # first sight: continuity starts now
 
     def _could_be_target(self, box: Box, h: float, t: float) -> bool:
         """Scale plausibility: could a box of this height be the target's body now? Same bound as the motion
@@ -962,6 +1049,11 @@ class TargetTracker:
             info["seed_anchor"] = {"status": "PENDING", "tracklet": tid, "refusals": sorted(bank["refusals"])}
             trusted = False
         self._last_frame = res.rel_frame
+        # physical separation: continuity is anchored at the seed frame for the seed tracklet and every body seen
+        tv0 = next((v for v in res.tracklets if v.tracklet_id == self._tracklet), None)
+        self._sep_tracklet = self._tracklet
+        self._target_gap_t = res.time_s                      # continuity starts at the seed (same t as the confirmation)
+        self._update_separation(res, tv0, False)
         if trusted:
             fr = self._frame(res, TRACKING, (), o.index, ev, 1.0, False, info)
         else:
@@ -1142,11 +1234,13 @@ class TargetTracker:
         reidentified = False
 
         if cut:
+            self._update_separation(res, None, True)
             state, reasons = LOST, [CAMERA_CUT]
         else:
             views = {v.tracklet_id: v for v in res.tracklets}
             closed = {cl.tracklet_id: cl for cl in res.closed}
             tv = views.get(self._tracklet) if self._tracklet else None
+            self._update_separation(res, tv, cut)
             continuity_broken = False
             if tv is not None and tv.observed:
                 if P.SIZE_ANOMALY in res.observations[tv.detection_index].flags:
