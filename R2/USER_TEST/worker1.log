@@ -1,0 +1,13 @@
+UT_G1_SU_API_A start 17:25:30 seed 9 [228.4, 230.5, 252.0, 286.3]
+UT_G1_SU_API_A COMPLETED  545.0 s
+UT_G1_SU_API_C start 17:34:35 seed 4 [115.2, 145.5, 130.0, 165.9]
+UT_G1_SU_API_C RUN_REFUSED seed refused: the seed crop is not usable: ('LOW_RESOLUTION',) 2.6 s
+UT_G2_NWS_SDR_A start 17:34:38 seed 19 [333.8, 164.5, 351.8, 213.1]
+UT_G2_NWS_SDR_A COMPLETED  649.5 s
+UT_G2_NWS_SDR_B start 17:45:27 seed 12 [488.7, 124.3, 502.2, 158.3]
+UT_G2_NWS_SDR_B RUN_REFUSED seed refused: the seed crop is not usable: () 2.0 s
+UT_G2_NWS_SDR_D start 17:45:29 seed 5 [327.6, 136.6, 346.8, 187.5]
+UT_G2_NWS_SDR_D COMPLETED  533.6 s
+UT_G2_NWS_SDR_E start 17:54:23 seed 13 [179.6, 217.8, 237.5, 359.1]
+UT_G2_NWS_SDR_E RUN_REFUSED seed refused: seed anchor not reached (no bank-clean crop of the seed body within seed_anchor_max_s); seed-frame refusals ['NOT_ISOLATED', 'PARTIAL', 'TOUCHES_IMAGE_EDGE'] 45.6 s
+W1_EXIT=0

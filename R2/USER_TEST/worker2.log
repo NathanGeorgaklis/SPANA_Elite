@@ -1,0 +1,13 @@
+UT_G2_NWS_SDR_F start 17:25:34 seed 5 [296.6, 127.8, 339.9, 230.6]
+UT_G2_NWS_SDR_F COMPLETED  562.4 s
+UT_G2_NWS_SDR_G start 17:34:56 seed 3 [310.0, 156.2, 336.3, 191.4]
+UT_G2_NWS_SDR_G RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['LOW_QUALITY'] 2.2 s
+UT_G3_SFC_SGC_A start 17:34:58 seed 13 [360.6, 164.1, 380.7, 208.5]
+UT_G3_SFC_SGC_A COMPLETED  738.4 s
+UT_G3_SFC_SGC_B start 17:47:17 seed 8 [467.5, 155.8, 484.0, 192.5]
+UT_G3_SFC_SGC_B RUN_REFUSED seed refused: the seed crop is not usable: ('OCCLUDED_BY_OTHER',) 2.0 s
+UT_G3_SFC_SGC_C start 17:47:19 seed 1 [198.3, 141.4, 215.8, 185.8]
+UT_G3_SFC_SGC_C RUN_REFUSED seed refused: the seed crop is not usable: () 2.2 s
+UT_G3_SFC_SGC_D start 17:47:21 seed 23 [507.0, 198.1, 553.0, 249.4]
+UT_G3_SFC_SGC_D COMPLETED  610.0 s
+W2_EXIT=0
