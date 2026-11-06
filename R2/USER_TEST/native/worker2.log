@@ -1,0 +1,11 @@
+UT_G2_NWS_SDR_F start 23:17:56 seed 5 [889.9, 385.1, 1019.1, 690.6]
+UT_G2_NWS_SDR_F COMPLETED  1435.5 s
+UT_G2_NWS_SDR_G start 23:41:51 seed 3 [932.5, 474.3, 1008.4, 595.0]
+UT_G2_NWS_SDR_G RUN_REFUSED seed refused: the seed crop cannot anchor the target appearance bank: ['PARTLY_COVERED_BY_OTHER'] 2.7 s
+UT_G3_SFC_SGC_A start 23:41:54 seed 18 [1076.3, 502.5, 1140.6, 624.8]
+UT_G3_SFC_SGC_A RUN_REFUSED seed refused: seed anchor not reached (the seed body's tracklet T009 was not observed); seed-frame refusals ['NOT_ISOLATED'] 7.5 s
+UT_G3_SFC_SGC_B start 23:42:01 seed 8 [1403.3, 467.2, 1451.5, 574.5]
+UT_G3_SFC_SGC_B RUN_REFUSED seed refused: seed anchor not reached (the seed body's crop no longer matches the seed crop (composite 0.819 < reacq_appearance_floor 0.85)); seed-frame refusals ['NOT_ISOLATED'] 7.3 s
+UT_G3_SFC_SGC_C start 23:42:09 seed 1 [595.0, 425.0, 646.7, 554.9]
+UT_G3_SFC_SGC_C COMPLETED  905.2 s
+W2_EXIT=0

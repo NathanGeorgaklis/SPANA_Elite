@@ -1,0 +1,13 @@
+UT_G1_SU_API_A start 23:17:52 seed 10 [687.6, 692.9, 762.8, 851.3]
+UT_G1_SU_API_A COMPLETED  680.2 s
+UT_G1_SU_API_C start 23:29:12 seed 10 [344.6, 435.0, 386.2, 497.9]
+UT_G1_SU_API_C COMPLETED  744.8 s
+UT_G2_NWS_SDR_A start 23:41:37 seed 19 [1000.2, 496.1, 1055.4, 639.2]
+UT_G2_NWS_SDR_A COMPLETED  1616.3 s
+UT_G2_NWS_SDR_B start 00:08:33 seed 10 [1461.7, 371.1, 1507.4, 473.2]
+UT_G2_NWS_SDR_B COMPLETED  985.1 s
+UT_G2_NWS_SDR_D start 00:24:58 seed 4 [976.9, 408.0, 1045.1, 558.2]
+UT_G2_NWS_SDR_D COMPLETED  1184.5 s
+UT_G2_NWS_SDR_E start 00:44:42 seed 15 [528.3, 651.4, 712.3, 1077.5]
+UT_G2_NWS_SDR_E RUN_REFUSED seed refused: seed anchor not reached (no bank-clean crop of the seed body within seed_anchor_max_s); seed-frame refusals ['NOT_ISOLATED'] 98.2 s
+W1_EXIT=0

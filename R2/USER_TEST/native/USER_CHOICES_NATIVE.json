@@ -1,0 +1,13 @@
+{
+ "UT_G1_SU_API_A": 10,
+ "UT_G1_SU_API_C": 10,
+ "UT_G2_NWS_SDR_A": 19,
+ "UT_G2_NWS_SDR_B": 10,
+ "UT_G2_NWS_SDR_D": 4,
+ "UT_G2_NWS_SDR_E": 15,
+ "UT_G2_NWS_SDR_F": 5,
+ "UT_G2_NWS_SDR_G": 3,
+ "UT_G3_SFC_SGC_A": 18,
+ "UT_G3_SFC_SGC_B": 8,
+ "UT_G3_SFC_SGC_C": 1
+}
