@@ -1,0 +1,4 @@
+youtube_game_1 = https://www.youtube.com/watch?v=43Z1ZlBdVTo  "NPL Men's NSW - Sydney United 58 FC v APIA Leichhardt FC" duration 7857 s (360p file: 7856.5 s)  itag 137 avc1 1920x1080 30 fps ~3287 kbps
+youtube_game_2 = https://www.youtube.com/watch?v=dIJucho_IV8  "NPL Men's NSW - NWS Spirit FC v SD Raiders FC" duration 8526 s (360p file: 8525.4 s)  itag 299 avc1 1920x1080 60 fps ~4231 kbps
+youtube_game_3 = https://www.youtube.com/watch?v=XOiNDpghkno  "NPL Men's NSW - Sydney FC v St George City FA" duration 7866 s (360p file: 7865.9 s)  itag 137 avc1 1920x1080 30 fps ~2891 kbps
+sections: yt-dlp 2026.10.21 --download-sections "*(t-8)-(t+14)" (keyframe-aligned, stream copy); exact 10 s windows re-cut by content alignment to the 360p clips

@@ -176,9 +176,10 @@ def seeds(repo, clips_dir, out_root):
                        "ambiguous_pairs": amb,
                        "note": "UI grouping only; the tracker receives the raw representative box unchanged"},
                       f, indent=1)
-        big = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        up = 2 if img.shape[1] <= 960 else 1          # upscale small frames so numbers are legible
+        big = cv2.resize(img, None, fx=up, fy=up, interpolation=cv2.INTER_CUBIC) if up != 1 else img.copy()
         for s_ in sel:
-            x1, y1, x2, y2 = [int(round(v * 2)) for v in s_["bbox"]]
+            x1, y1, x2, y2 = [int(round(v * up)) for v in s_["bbox"]]
             col = RED if s_["possible_second_person"] else ORANGE
             cv2.rectangle(big, (x1, y1), (x2, y2), col, 1)
             label = str(s_["select"]) + ("?" if s_["possible_second_person"] else "")

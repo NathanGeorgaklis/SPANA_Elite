@@ -1,0 +1,110 @@
+{
+ "UT_G1_SU_API_A": {
+  "native_select": 10,
+  "iou": 0.84,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 158
+ },
+ "UT_G1_SU_API_C": {
+  "native_select": 10,
+  "iou": 0.87,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 63
+ },
+ "UT_G2_NWS_SDR_A": {
+  "native_select": 19,
+  "iou": 0.96,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 143
+ },
+ "UT_G2_NWS_SDR_B": {
+  "native_select": 10,
+  "iou": 0.86,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 102
+ },
+ "UT_G2_NWS_SDR_D": {
+  "native_select": 4,
+  "iou": 0.81,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 150
+ },
+ "UT_G2_NWS_SDR_E": {
+  "native_select": 15,
+  "iou": 0.94,
+  "second_iou": 0.08,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 426
+ },
+ "UT_G2_NWS_SDR_F": {
+  "native_select": 5,
+  "iou": 0.99,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 306
+ },
+ "UT_G2_NWS_SDR_G": {
+  "native_select": 3,
+  "iou": 0.77,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 121
+ },
+ "UT_G3_SFC_SGC_A": {
+  "native_select": 18,
+  "iou": 0.83,
+  "second_iou": 0.14,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 122
+ },
+ "UT_G3_SFC_SGC_B": {
+  "native_select": 8,
+  "iou": 0.95,
+  "second_iou": 0.1,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 107
+ },
+ "UT_G3_SFC_SGC_C": {
+  "native_select": 1,
+  "iou": 0.96,
+  "second_iou": 0.0,
+  "kind": "SINGLE",
+  "second_person_flag": false,
+  "confirmed": true,
+  "h_px": 130
+ },
+ "UT_G3_SFC_SGC_D": {
+  "native_select": 28,
+  "iou": 0.96,
+  "second_iou": 0.53,
+  "kind": "SINGLE",
+  "second_person_flag": true,
+  "confirmed": false,
+  "h_px": 152
+ }
+}

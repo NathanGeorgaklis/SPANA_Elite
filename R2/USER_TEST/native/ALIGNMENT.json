@@ -1,0 +1,110 @@
+{
+ "UT_G1_SU_API_A": {
+  "section": "UT_G1_SU_API_A_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 3.377,
+  "runner_up_mad": 4.513,
+  "frames": 300,
+  "section_frames": 661
+ },
+ "UT_G1_SU_API_C": {
+  "section": "UT_G1_SU_API_C_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 4.272,
+  "runner_up_mad": 24.854,
+  "frames": 300,
+  "section_frames": 661
+ },
+ "UT_G2_NWS_SDR_A": {
+  "section": "UT_G2_NWS_SDR_A_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 3.316,
+  "runner_up_mad": 11.968,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G2_NWS_SDR_B": {
+  "section": "UT_G2_NWS_SDR_B_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 2.666,
+  "runner_up_mad": 7.649,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G2_NWS_SDR_D": {
+  "section": "UT_G2_NWS_SDR_D_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 1.893,
+  "runner_up_mad": 4.53,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G2_NWS_SDR_E": {
+  "section": "UT_G2_NWS_SDR_E_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 3.342,
+  "runner_up_mad": 14.873,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G2_NWS_SDR_F": {
+  "section": "UT_G2_NWS_SDR_F_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 2.586,
+  "runner_up_mad": 4.804,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G2_NWS_SDR_G": {
+  "section": "UT_G2_NWS_SDR_G_sect.mp4",
+  "fps": 60.0,
+  "start_frame_in_section": 480,
+  "match_mad": 1.873,
+  "runner_up_mad": 13.644,
+  "frames": 600,
+  "section_frames": 1321
+ },
+ "UT_G3_SFC_SGC_A": {
+  "section": "UT_G3_SFC_SGC_A_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 3.022,
+  "runner_up_mad": 14.113,
+  "frames": 300,
+  "section_frames": 661
+ },
+ "UT_G3_SFC_SGC_B": {
+  "section": "UT_G3_SFC_SGC_B_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 2.974,
+  "runner_up_mad": 10.877,
+  "frames": 300,
+  "section_frames": 661
+ },
+ "UT_G3_SFC_SGC_C": {
+  "section": "UT_G3_SFC_SGC_C_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 2.905,
+  "runner_up_mad": 13.794,
+  "frames": 300,
+  "section_frames": 661
+ },
+ "UT_G3_SFC_SGC_D": {
+  "section": "UT_G3_SFC_SGC_D_sect.mp4",
+  "fps": 30.0,
+  "start_frame_in_section": 240,
+  "match_mad": 3.404,
+  "runner_up_mad": 12.393,
+  "frames": 300,
+  "section_frames": 661
+ }
+}
