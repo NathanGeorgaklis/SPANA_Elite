@@ -28,7 +28,8 @@ Per frame (update), in order:
      lying >= population_weak_part_min_containment inside it, shorter than it, no wider than
      population_weak_part_max_width_ratio x its width and centred within population_weak_part_max_centre_offset x
      its width of its centre, is NESTED in it too (flag WEAK_PART): a detector part box that pokes out of its
-     host. It starts no tracklet and is not second-body corroboration for its host; it stays an observation and a
+     host; never against a host that touches the image edge (a clipped box is not a whole body). It starts no
+     tracklet and is not second-body corroboration for its host; it stays an observation and a
      competitor (for overlap / isolation; like every unassigned nested box it is ALTERNATIVE, not a reacquisition
      rival). It never feeds the hidden-body rule 4b. A credible second person (comparable score, beside or taller
      than the host) stays a body. KNOWN LIMIT: a part box that scored above the ratio on the frame it was born
@@ -633,9 +634,13 @@ class Population:
                 # merge, or touches the host and corroborates a size-only merge (real 1080p footage: a 0.12-score
                 # leg box 0.71 inside a 0.66-score body closed the target as merged). A credible second person
                 # (score comparable to the host's, or beside it, or taller) is not a weak part and stays a body.
+                # Never against a host clipped by the image edge: a clipped box is not the whole body, so
+                # "shorter, no wider, centred, poking out" means nothing there, and a weakly detected second person
+                # at the edge must stay a body (720p DEV C033 f106: the clipped target box held the other player's
+                # upper body at score 0.38).
                 wj, hj = _wh(boxes[j])
                 weak_hosts = [(cont_dd[a, b], -i) for b, i in enumerate(bodies)
-                              if i != j and area[i] > area[j]
+                              if i != j and area[i] > area[j] and not self._touches_edge(boxes[i])
                               and cont_dd[a, b] >= c.get("population_weak_part_min_containment")
                               and dets[j].score <= c.get("population_weak_part_score_ratio") * dets[i].score
                               and hj < _wh(boxes[i])[1]

@@ -135,6 +135,15 @@ class CredibleSecondPersonStaysABody(unittest.TestCase):
         self._body(host, (288.0, 318.0, 310.0, 442.0), 0.12, "taller, narrower, smaller area")
         self._body(host, box_at(300, 380, 44, 70), 0.2, "1.4 x the host width")
 
+    def test_no_weak_part_against_a_host_at_the_image_edge(self):
+        """A clipped host is not a whole body: a weak box inside it stays a body (720p DEV C033 f106 regression)."""
+        host = (W - 36.0, 302.0, float(W), 418.0)            # 36 x 116 touching the right edge
+        part = (W - 34.0, 300.0, float(W), 386.0)            # 0.74 inside the host, weak score
+        res = run(_frames(12, host, (part, 0.12)), FPS, CFG).results[-1]
+        self.assertNotIn(P.WEAK_PART, res.observations[1].flags)
+        if P.NESTED not in res.observations[1].flags and P.DUPLICATE_SUPPRESSED not in res.observations[1].flags:
+            self.assertEqual(len(_tracklets_on(res, 1)), 1)
+
     def test_genuine_overlap_still_fails_closed(self):
         """Two credible bodies overlapping: unchanged (both tracked; the population may merge them as before)."""
         host = box_at(300, 360, 32, 116)
