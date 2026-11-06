@@ -795,6 +795,10 @@ class TargetTracker:
                     _cover(other.bbox, o.bbox) >= c.get("population_nested_containment"):
                 refusals.append(P.CONTAINS_OTHER)
                 break
+        # a WEAK_PART box inside this one (review R2-WP finding 3): the host still confirms identity on it, but a
+        # weak box the population could not tell from a crouched person is never banked (rule 32: no contamination)
+        if any(other.index in grp and other.index != i and P.WEAK_PART in other.flags for other in res.observations):
+            refusals.append("WEAK_PART_INSIDE")
         max_iou = float(box_iou_matrix(np.asarray([o.bbox]), np.asarray(others)).max()) if others else 0.0
         if max_iou > c.get("bank_contact_iou"):
             refusals.append("NOT_ISOLATED")

@@ -29,7 +29,12 @@ Per frame (update), in order:
      population_weak_part_max_width_ratio x its width and centred within population_weak_part_max_centre_offset x
      its width of its centre, is NESTED in it too (flag WEAK_PART): a detector part box that pokes out of its
      host. It starts no tracklet and is not second-body corroboration for its host; it stays an observation and a
-     competitor. A credible second person (comparable score, beside or taller than the host) stays a body.
+     competitor (for overlap / isolation; like every unassigned nested box it is ALTERNATIVE, not a reacquisition
+     rival). It never feeds the hidden-body rule 4b. A credible second person (comparable score, beside or taller
+     than the host) stays a body. KNOWN LIMIT: a part box that scored above the ratio on the frame it was born
+     already has a tracklet, and that tracklet may still take the box later and produce the old MULTI_CLAIM merge
+     (fail closed). The score ratio is meaningful for the pinned detector's score distribution only: re-validate
+     it when the detector backend changes.
      Nothing is deleted for overlapping: nested boxes stay observations and competitors.
   2. Association (geometry only). A live tracklet may take a detection (nested or not) if IoU(predicted box,
      detection) >= population_match_iou_min and the motion check passes (motion.py: bounded speed and scale; a
@@ -1159,7 +1164,10 @@ class Population:
             if i is not None:
                 hb = boxes[i]
                 hh = hb[3] - hb[1]
-                now_c = [boxes[j] for j in bodies if j != i and nested_in[j] == i
+                # a WEAK_PART (review R2-WP finding 1) is by its own premise the host's part, never a hidden person:
+                # it feeds neither the contained list nor CONTAINED_BODY_VANISHED (accepted twin: a crouched person
+                # detected that weakly, poking out of the host, is not caught by 4b either)
+                now_c = [boxes[j] for j in bodies if j != i and nested_in[j] == i and j not in weak_part
                          and hb[3] - boxes[j][3] <= feet_gap * hh]
                 since_c = []
                 if now_c and tr.contained and tr.contained_host is not None:

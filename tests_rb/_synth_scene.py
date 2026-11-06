@@ -113,12 +113,14 @@ class SceneFrame:
     merge: Sequence[Tuple[str, str]] = ()                 # pairs detected as ONE box
     camera: Optional[CameraMotion] = None
     parts: Sequence[Tuple[str, Tuple[float, float, float, float]]] = ()   # extra part-body boxes of a person
+    part_score: float = 0.9                               # detector score of those part boxes (R2-WP tests)
 
 
 @dataclass
 class Detection:
     box: Tuple[float, float, float, float]
     owners: Tuple[str, ...]
+    score: float = 0.9                                     # detector score given to the population
 
 
 def render(fr: SceneFrame, people: Dict[str, Person], width: int = W, height: int = H,
@@ -175,7 +177,7 @@ def detect(fr: SceneFrame, visible_min: float = 0.35, width: int = W, height: in
         dets.append(Detection(cb, (name,)))
     for name, pb in fr.parts:                             # a detector's extra part-body box of a present person
         if name in fr.boxes:
-            dets.append(Detection(tuple(float(v) for v in pb), (name,)))
+            dets.append(Detection(tuple(float(v) for v in pb), (name,), fr.part_score))
     return dets
 
 
@@ -225,7 +227,7 @@ def run(frames: Sequence[SceneFrame], people: Dict[str, Person], *, seed_name: s
     for k, fr in enumerate(frames):
         img = render(fr, people, width, height)
         ds = detect(fr, visible_min, width, height)
-        cands = [PersonCandidate(d.box, 0.9, d.box[0] <= 2 or d.box[2] >= width - 2, "synthetic") for d in ds]
+        cands = [PersonCandidate(d.box, d.score, d.box[0] <= 2 or d.box[2] >= width - 2, "synthetic") for d in ds]
         if k == 0:
             cam = identity_motion(FIRST_FRAME)
         else:
