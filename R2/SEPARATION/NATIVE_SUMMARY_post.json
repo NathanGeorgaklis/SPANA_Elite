@@ -1,0 +1,1515 @@
+{
+ "UT_G1_SU_API_A": {
+  "episodes": [
+   {
+    "from": 1,
+    "state": "TRACKING",
+    "to": 158,
+    "tracklet": "T003",
+    "trusted": true
+   },
+   {
+    "from": 159,
+    "state": "AMBIGUOUS",
+    "to": 159,
+    "tracklet": "T003",
+    "trusted": false
+   },
+   {
+    "from": 160,
+    "state": "TRACKING",
+    "to": 160,
+    "tracklet": "T003",
+    "trusted": true
+   },
+   {
+    "from": 161,
+    "state": "AMBIGUOUS",
+    "to": 161,
+    "tracklet": "T003",
+    "trusted": false
+   },
+   {
+    "from": 162,
+    "state": "TRACKING",
+    "to": 163,
+    "tracklet": "T003",
+    "trusted": true
+   },
+   {
+    "from": 164,
+    "state": "AMBIGUOUS",
+    "to": 165,
+    "tracklet": "T003",
+    "trusted": false
+   },
+   {
+    "from": 166,
+    "state": "TRACKING",
+    "to": 178,
+    "tracklet": "T003",
+    "trusted": true
+   },
+   {
+    "from": 179,
+    "state": "AMBIGUOUS",
+    "to": 180,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 181,
+    "state": "AMBIGUOUS",
+    "to": 181,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 182,
+    "state": "AMBIGUOUS",
+    "to": 183,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 184,
+    "state": "AMBIGUOUS",
+    "to": 184,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 185,
+    "state": "AMBIGUOUS",
+    "to": 208,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 209,
+    "state": "LOST",
+    "to": 233,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 234,
+    "state": "LOST",
+    "to": 234,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 235,
+    "state": "LOST",
+    "to": 242,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 243,
+    "state": "REACQUIRING",
+    "to": 259,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 260,
+    "state": "LOST",
+    "to": 271,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 272,
+    "state": "LOST",
+    "to": 273,
+    "tracklet": "T217",
+    "trusted": false
+   },
+   {
+    "from": 274,
+    "state": "LOST",
+    "to": 274,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 275,
+    "state": "LOST",
+    "to": 275,
+    "tracklet": "T217",
+    "trusted": false
+   },
+   {
+    "from": 276,
+    "state": "LOST",
+    "to": 277,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 278,
+    "state": "LOST",
+    "to": 279,
+    "tracklet": "T129",
+    "trusted": false
+   },
+   {
+    "from": 280,
+    "state": "LOST",
+    "to": 282,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 283,
+    "state": "LOST",
+    "to": 286,
+    "tracklet": "T179",
+    "trusted": false
+   },
+   {
+    "from": 287,
+    "state": "LOST",
+    "to": 287,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 288,
+    "state": "LOST",
+    "to": 288,
+    "tracklet": "T179",
+    "trusted": false
+   },
+   {
+    "from": 289,
+    "state": "LOST",
+    "to": 290,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 291,
+    "state": "LOST",
+    "to": 291,
+    "tracklet": "T179",
+    "trusted": false
+   },
+   {
+    "from": 292,
+    "state": "LOST",
+    "to": 296,
+    "tracklet": "T131",
+    "trusted": false
+   },
+   {
+    "from": 297,
+    "state": "LOST",
+    "to": 298,
+    "tracklet": "T217",
+    "trusted": false
+   },
+   {
+    "from": 299,
+    "state": "LOST",
+    "to": 299,
+    "tracklet": "T291",
+    "trusted": false
+   }
+  ],
+  "fps": 30.0,
+  "frames": 299,
+  "outcome": "COMPLETED",
+  "rb_state_pct": {
+   "AMBIGUOUS": 11.4,
+   "LOST": 24.7,
+   "REACQUIRING": 5.7,
+   "TRACKING": 58.2
+  },
+  "reacquisition_events": [],
+  "reason": null,
+  "seed_candidate": 10,
+  "state_frames": {
+   "AMBIGUOUS": 34,
+   "LOST": 74,
+   "REACQUIRING": 17,
+   "TRACKING": 174
+  },
+  "trusted_fraction": 0.582,
+  "trusted_frames": 174
+ },
+ "UT_G1_SU_API_C": {
+  "episodes": [
+   {
+    "from": 1,
+    "state": "TRACKING",
+    "to": 1,
+    "tracklet": "T018",
+    "trusted": true
+   },
+   {
+    "from": 2,
+    "state": "AMBIGUOUS",
+    "to": 6,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 7,
+    "state": "TRACKING",
+    "to": 7,
+    "tracklet": "T018",
+    "trusted": true
+   },
+   {
+    "from": 8,
+    "state": "AMBIGUOUS",
+    "to": 15,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 16,
+    "state": "TRACKING",
+    "to": 34,
+    "tracklet": "T018",
+    "trusted": true
+   },
+   {
+    "from": 35,
+    "state": "AMBIGUOUS",
+    "to": 35,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 36,
+    "state": "TRACKING",
+    "to": 37,
+    "tracklet": "T018",
+    "trusted": true
+   },
+   {
+    "from": 38,
+    "state": "AMBIGUOUS",
+    "to": 38,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 39,
+    "state": "TRACKING",
+    "to": 39,
+    "tracklet": "T018",
+    "trusted": true
+   },
+   {
+    "from": 40,
+    "state": "AMBIGUOUS",
+    "to": 69,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 70,
+    "state": "LOST",
+    "to": 70,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 71,
+    "state": "LOST",
+    "to": 100,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 101,
+    "state": "LOST",
+    "to": 101,
+    "tracklet": "T523",
+    "trusted": false
+   },
+   {
+    "from": 102,
+    "state": "LOST",
+    "to": 104,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 105,
+    "state": "LOST",
+    "to": 105,
+    "tracklet": "T018",
+    "trusted": false
+   },
+   {
+    "from": 106,
+    "state": "LOST",
+    "to": 118,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 119,
+    "state": "LOST",
+    "to": 119,
+    "tracklet": "T574",
+    "trusted": false
+   },
+   {
+    "from": 120,
+    "state": "LOST",
+    "to": 136,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 137,
+    "state": "LOST",
+    "to": 137,
+    "tracklet": "T359",
+    "trusted": false
+   },
+   {
+    "from": 138,
+    "state": "LOST",
+    "to": 145,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 146,
+    "state": "LOST",
+    "to": 146,
+    "tracklet": "T635",
+    "trusted": false
+   },
+   {
+    "from": 147,
+    "state": "LOST",
+    "to": 299,
+    "tracklet": null,
+    "trusted": false
+   }
+  ],
+  "fps": 30.0,
+  "frames": 299,
+  "outcome": "COMPLETED",
+  "rb_state_pct": {
+   "AMBIGUOUS": 15.1,
+   "LOST": 76.9,
+   "TRACKING": 8.0
+  },
+  "reacquisition_events": [],
+  "reason": null,
+  "seed_candidate": 10,
+  "state_frames": {
+   "AMBIGUOUS": 45,
+   "LOST": 230,
+   "TRACKING": 24
+  },
+  "trusted_fraction": 0.08,
+  "trusted_frames": 24
+ },
+ "UT_G2_NWS_SDR_F": {
+  "episodes": [
+   {
+    "from": 1,
+    "state": "TRACKING",
+    "to": 14,
+    "tracklet": "T003",
+    "trusted": true
+   },
+   {
+    "from": 15,
+    "state": "AMBIGUOUS",
+    "to": 44,
+    "tracklet": "T003",
+    "trusted": false
+   },
+   {
+    "from": 45,
+    "state": "AMBIGUOUS",
+    "to": 49,
+    "tracklet": "T023",
+    "trusted": false
+   },
+   {
+    "from": 50,
+    "state": "AMBIGUOUS",
+    "to": 66,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 67,
+    "state": "AMBIGUOUS",
+    "to": 74,
+    "tracklet": "T030",
+    "trusted": false
+   },
+   {
+    "from": 75,
+    "state": "LOST",
+    "to": 75,
+    "tracklet": "T030",
+    "trusted": false
+   },
+   {
+    "from": 76,
+    "state": "LOST",
+    "to": 78,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 79,
+    "state": "LOST",
+    "to": 83,
+    "tracklet": "T034",
+    "trusted": false
+   },
+   {
+    "from": 84,
+    "state": "LOST",
+    "to": 84,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 85,
+    "state": "LOST",
+    "to": 85,
+    "tracklet": "T038",
+    "trusted": false
+   },
+   {
+    "from": 86,
+    "state": "LOST",
+    "to": 114,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 115,
+    "state": "LOST",
+    "to": 147,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 148,
+    "state": "LOST",
+    "to": 148,
+    "tracklet": "T054",
+    "trusted": false
+   },
+   {
+    "from": 149,
+    "state": "LOST",
+    "to": 204,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 205,
+    "state": "LOST",
+    "to": 211,
+    "tracklet": "T061",
+    "trusted": false
+   },
+   {
+    "from": 212,
+    "state": "LOST",
+    "to": 212,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 213,
+    "state": "LOST",
+    "to": 213,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 214,
+    "state": "LOST",
+    "to": 214,
+    "tracklet": "T061",
+    "trusted": false
+   },
+   {
+    "from": 215,
+    "state": "LOST",
+    "to": 215,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 216,
+    "state": "LOST",
+    "to": 216,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 217,
+    "state": "LOST",
+    "to": 217,
+    "tracklet": "T061",
+    "trusted": false
+   },
+   {
+    "from": 218,
+    "state": "LOST",
+    "to": 227,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 228,
+    "state": "LOST",
+    "to": 236,
+    "tracklet": "T061",
+    "trusted": false
+   },
+   {
+    "from": 237,
+    "state": "LOST",
+    "to": 264,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 265,
+    "state": "LOST",
+    "to": 265,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 266,
+    "state": "LOST",
+    "to": 268,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 269,
+    "state": "LOST",
+    "to": 269,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 270,
+    "state": "LOST",
+    "to": 324,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 325,
+    "state": "LOST",
+    "to": 325,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 326,
+    "state": "LOST",
+    "to": 326,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 327,
+    "state": "LOST",
+    "to": 332,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 333,
+    "state": "LOST",
+    "to": 335,
+    "tracklet": "T047",
+    "trusted": false
+   },
+   {
+    "from": 336,
+    "state": "LOST",
+    "to": 343,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 344,
+    "state": "LOST",
+    "to": 344,
+    "tracklet": "T092",
+    "trusted": false
+   },
+   {
+    "from": 345,
+    "state": "LOST",
+    "to": 353,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 354,
+    "state": "LOST",
+    "to": 358,
+    "tracklet": "T077",
+    "trusted": false
+   },
+   {
+    "from": 359,
+    "state": "LOST",
+    "to": 361,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 362,
+    "state": "LOST",
+    "to": 364,
+    "tracklet": "T077",
+    "trusted": false
+   },
+   {
+    "from": 365,
+    "state": "LOST",
+    "to": 382,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 383,
+    "state": "LOST",
+    "to": 383,
+    "tracklet": "T077",
+    "trusted": false
+   },
+   {
+    "from": 384,
+    "state": "LOST",
+    "to": 406,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 407,
+    "state": "LOST",
+    "to": 553,
+    "tracklet": "T103",
+    "trusted": false
+   },
+   {
+    "from": 554,
+    "state": "LOST",
+    "to": 554,
+    "tracklet": "T128",
+    "trusted": false
+   },
+   {
+    "from": 555,
+    "state": "LOST",
+    "to": 572,
+    "tracklet": "T103",
+    "trusted": false
+   },
+   {
+    "from": 573,
+    "state": "LOST",
+    "to": 574,
+    "tracklet": "T128",
+    "trusted": false
+   },
+   {
+    "from": 575,
+    "state": "LOST",
+    "to": 599,
+    "tracklet": "T103",
+    "trusted": false
+   }
+  ],
+  "fps": 60.0,
+  "frames": 599,
+  "outcome": "COMPLETED",
+  "rb_state_pct": {
+   "AMBIGUOUS": 10.0,
+   "LOST": 87.6,
+   "TRACKING": 2.3
+  },
+  "reacquisition_events": [],
+  "reason": null,
+  "seed_candidate": 5,
+  "state_frames": {
+   "AMBIGUOUS": 60,
+   "LOST": 525,
+   "TRACKING": 14
+  },
+  "trusted_fraction": 0.023,
+  "trusted_frames": 14
+ },
+ "UT_G3_SFC_SGC_C": {
+  "episodes": [
+   {
+    "from": 1,
+    "state": "TRACKING",
+    "to": 17,
+    "tracklet": "T007",
+    "trusted": true
+   },
+   {
+    "from": 18,
+    "state": "AMBIGUOUS",
+    "to": 24,
+    "tracklet": "T007",
+    "trusted": false
+   },
+   {
+    "from": 25,
+    "state": "OCCLUDED",
+    "to": 29,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 30,
+    "state": "AMBIGUOUS",
+    "to": 47,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 48,
+    "state": "LOST",
+    "to": 60,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 61,
+    "state": "LOST",
+    "to": 63,
+    "tracklet": "T198",
+    "trusted": false
+   },
+   {
+    "from": 64,
+    "state": "LOST",
+    "to": 66,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 67,
+    "state": "LOST",
+    "to": 67,
+    "tracklet": "T198",
+    "trusted": false
+   },
+   {
+    "from": 68,
+    "state": "LOST",
+    "to": 77,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 78,
+    "state": "LOST",
+    "to": 80,
+    "tracklet": "T198",
+    "trusted": false
+   },
+   {
+    "from": 81,
+    "state": "LOST",
+    "to": 88,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 89,
+    "state": "LOST",
+    "to": 89,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 90,
+    "state": "LOST",
+    "to": 90,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 91,
+    "state": "LOST",
+    "to": 91,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 92,
+    "state": "LOST",
+    "to": 92,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 93,
+    "state": "LOST",
+    "to": 93,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 94,
+    "state": "LOST",
+    "to": 95,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 96,
+    "state": "LOST",
+    "to": 96,
+    "tracklet": "T295",
+    "trusted": false
+   },
+   {
+    "from": 97,
+    "state": "LOST",
+    "to": 98,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 99,
+    "state": "LOST",
+    "to": 99,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 100,
+    "state": "LOST",
+    "to": 100,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 101,
+    "state": "LOST",
+    "to": 102,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 103,
+    "state": "LOST",
+    "to": 103,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 104,
+    "state": "LOST",
+    "to": 108,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 109,
+    "state": "LOST",
+    "to": 110,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 111,
+    "state": "LOST",
+    "to": 111,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 112,
+    "state": "LOST",
+    "to": 113,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 114,
+    "state": "LOST",
+    "to": 115,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 116,
+    "state": "LOST",
+    "to": 120,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 121,
+    "state": "LOST",
+    "to": 121,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 122,
+    "state": "LOST",
+    "to": 123,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 124,
+    "state": "LOST",
+    "to": 126,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 127,
+    "state": "LOST",
+    "to": 127,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 128,
+    "state": "LOST",
+    "to": 131,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 132,
+    "state": "LOST",
+    "to": 132,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 133,
+    "state": "LOST",
+    "to": 133,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 134,
+    "state": "LOST",
+    "to": 134,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 135,
+    "state": "LOST",
+    "to": 135,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 136,
+    "state": "LOST",
+    "to": 136,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 137,
+    "state": "LOST",
+    "to": 151,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 152,
+    "state": "LOST",
+    "to": 152,
+    "tracklet": "T432",
+    "trusted": false
+   },
+   {
+    "from": 153,
+    "state": "LOST",
+    "to": 159,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 160,
+    "state": "LOST",
+    "to": 160,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 161,
+    "state": "LOST",
+    "to": 165,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 166,
+    "state": "LOST",
+    "to": 166,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 167,
+    "state": "LOST",
+    "to": 171,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 172,
+    "state": "LOST",
+    "to": 172,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 173,
+    "state": "LOST",
+    "to": 175,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 176,
+    "state": "LOST",
+    "to": 180,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 181,
+    "state": "LOST",
+    "to": 186,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 187,
+    "state": "LOST",
+    "to": 193,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 194,
+    "state": "LOST",
+    "to": 194,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 195,
+    "state": "LOST",
+    "to": 197,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 198,
+    "state": "LOST",
+    "to": 198,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 199,
+    "state": "LOST",
+    "to": 199,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 200,
+    "state": "LOST",
+    "to": 200,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 201,
+    "state": "LOST",
+    "to": 202,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 203,
+    "state": "LOST",
+    "to": 203,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 204,
+    "state": "LOST",
+    "to": 204,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 205,
+    "state": "LOST",
+    "to": 205,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 206,
+    "state": "LOST",
+    "to": 206,
+    "tracklet": "T476",
+    "trusted": false
+   },
+   {
+    "from": 207,
+    "state": "LOST",
+    "to": 209,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 210,
+    "state": "LOST",
+    "to": 210,
+    "tracklet": "T476",
+    "trusted": false
+   },
+   {
+    "from": 211,
+    "state": "LOST",
+    "to": 211,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 212,
+    "state": "LOST",
+    "to": 212,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 213,
+    "state": "LOST",
+    "to": 214,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 215,
+    "state": "LOST",
+    "to": 215,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 216,
+    "state": "LOST",
+    "to": 216,
+    "tracklet": "T264",
+    "trusted": false
+   },
+   {
+    "from": 217,
+    "state": "LOST",
+    "to": 217,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 218,
+    "state": "LOST",
+    "to": 218,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 219,
+    "state": "LOST",
+    "to": 219,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 220,
+    "state": "LOST",
+    "to": 220,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 221,
+    "state": "LOST",
+    "to": 221,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 222,
+    "state": "LOST",
+    "to": 223,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 224,
+    "state": "LOST",
+    "to": 224,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 225,
+    "state": "LOST",
+    "to": 226,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 227,
+    "state": "LOST",
+    "to": 241,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 242,
+    "state": "LOST",
+    "to": 242,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 243,
+    "state": "LOST",
+    "to": 245,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 246,
+    "state": "LOST",
+    "to": 247,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 248,
+    "state": "LOST",
+    "to": 252,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 253,
+    "state": "LOST",
+    "to": 255,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 256,
+    "state": "LOST",
+    "to": 260,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 261,
+    "state": "LOST",
+    "to": 261,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 262,
+    "state": "LOST",
+    "to": 262,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 263,
+    "state": "LOST",
+    "to": 264,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 265,
+    "state": "LOST",
+    "to": 266,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 267,
+    "state": "LOST",
+    "to": 267,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 268,
+    "state": "LOST",
+    "to": 268,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 269,
+    "state": "LOST",
+    "to": 269,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 270,
+    "state": "LOST",
+    "to": 270,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 271,
+    "state": "LOST",
+    "to": 271,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 272,
+    "state": "LOST",
+    "to": 272,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 273,
+    "state": "LOST",
+    "to": 273,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 274,
+    "state": "LOST",
+    "to": 274,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 275,
+    "state": "LOST",
+    "to": 276,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 277,
+    "state": "LOST",
+    "to": 284,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 285,
+    "state": "LOST",
+    "to": 286,
+    "tracklet": "T649",
+    "trusted": false
+   },
+   {
+    "from": 287,
+    "state": "LOST",
+    "to": 287,
+    "tracklet": null,
+    "trusted": false
+   },
+   {
+    "from": 288,
+    "state": "LOST",
+    "to": 288,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 289,
+    "state": "LOST",
+    "to": 289,
+    "tracklet": "T218",
+    "trusted": false
+   },
+   {
+    "from": 290,
+    "state": "LOST",
+    "to": 297,
+    "tracklet": "T455",
+    "trusted": false
+   },
+   {
+    "from": 298,
+    "state": "LOST",
+    "to": 298,
+    "tracklet": "T649",
+    "trusted": false
+   },
+   {
+    "from": 299,
+    "state": "LOST",
+    "to": 299,
+    "tracklet": "T455",
+    "trusted": false
+   }
+  ],
+  "fps": 30.0,
+  "frames": 299,
+  "outcome": "COMPLETED",
+  "rb_state_pct": {
+   "AMBIGUOUS": 8.4,
+   "LOST": 84.3,
+   "OCCLUDED": 1.7,
+   "TRACKING": 5.7
+  },
+  "reacquisition_events": [],
+  "reason": null,
+  "seed_candidate": 1,
+  "state_frames": {
+   "AMBIGUOUS": 25,
+   "LOST": 252,
+   "OCCLUDED": 5,
+   "TRACKING": 17
+  },
+  "trusted_fraction": 0.057,
+  "trusted_frames": 17
+ }
+}
