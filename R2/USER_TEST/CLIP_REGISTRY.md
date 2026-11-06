@@ -6,7 +6,7 @@ logic / threshold / config change; no DEV or EVAL footage.
 Sources (Nathan's Mac, `~/Downloads`; chosen by Nathan from the options offered): `youtube_game_1.mp4`
 (Sydney United 58 v APIA Leichhardt, day, very wide camera), `youtube_game_2.mp4` (NWS Spirit v SD Raiders, floodlit,
 closer camera), `youtube_game_3.mp4` (Sydney FC v St George City, floodlit, wide). All three: 640x360, 30 fps —
-a new resolution and frame rate for the tracker (DEV: 1920x1080 / 60 fps). None of them is an R2 DEV or EVAL source.
+a new resolution and frame rate for the tracker (DEV: 1280x720 / 60 fps). None of them is an R2 DEV or EVAL source.
 Their provenance was not reviewed in R0 (R0_TESTS_AND_MODELS X20): acceptable for user testing, not for benchmark
 truth. Task 3R windows (R06 g2 2381 s, R07 g3 1821 s, R08 g2 7148 s, R09 g1 1264 s) were avoided with a 60 s buffer
 (only the time-range lines of the Task 3R extract log were read, as in R2 pre-registration).

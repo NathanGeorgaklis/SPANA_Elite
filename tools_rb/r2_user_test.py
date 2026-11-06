@@ -11,10 +11,12 @@
     python3 tools_rb/r2_user_test.py render REPO CLIPS_DIR OUT_DIR [CLIP_ID ...]   # visual MP4 per completed run
     python3 tools_rb/r2_user_test.py summarise REPO OUT_DIR OUT_JSON
 
-seeds: for every clip, runs the production detector on the first frame and writes <clip>_seed_still.png with every
-person candidate numbered (2x upscale), plus <clip>_seed_candidates.json. The user replies with the number of the
-target per clip (CHOICES_JSON: {"<clip_id>": <number>, ...}); the chosen box is the seed (the box the user picked,
-unchanged). Nothing about the tracker changes: it receives (video, seed_frame 0, box) exactly as in production.
+seeds: for every clip, runs the production detector on the first frame and writes <clip>_seed_candidates.json (all
+raw candidates, unchanged) and <clip>_seed_selection.json + <clip>_seed_still.png: one selectable box per physical
+person where that is safe (ui_groups: duplicate full-body boxes IoU >= 0.60 and top-aligned nested upper-body boxes
+collapse into one group; heavy overlaps 0.40-0.60 and nested boxes that are not an upper body stay separate and are
+marked "?" = possible second person). The user replies with the selectable number per clip (CHOICES_JSON:
+{"<clip_id>": <number>, ...}); the seed is the group's representative RAW detector box, unchanged. Nothing about the tracker changes: it receives (video, seed_frame 0, box) exactly as in production.
 run: TrackerConfig.default() only (no overrides accepted here), clean git tree, sha256 of the clip pinned in the
      registry, debug decision log on. Refusals are recorded, never worked around.
 render: per frame draws the target box (green = identity trusted, orange = untrusted TRACKING/AMBIGUOUS/REACQUIRING,
@@ -23,6 +25,7 @@ render: per frame draws the target box (green = identity trusted, orange = untru
 """
 import glob
 import hashlib
+import itertools
 import json
 import os
 import subprocess
@@ -68,6 +71,78 @@ def _registry(clips_dir):
     return reg
 
 
+# ---- selection-screen grouping (UI only; raw detections are kept unchanged and the tracker never sees groups) ----
+# Nathan 2026-11-06 17:02: one selectable box per physical person wherever SAFELY possible; never collapse boxes if
+# two people may be present. Geometry is scale-normalised (ratios of the boxes themselves), no pixel constants.
+UI_DUPLICATE_IOU = 0.60          # two bodies this overlapped are one person (detector NMS is 0.65, so survivors are <0.65)
+UI_AMBIGUOUS_IOU = 0.40          # 0.40-0.60: could be two people in contact -> both kept, flagged
+UI_NESTED_CONTAINMENT = 0.90     # inner box area inside the host
+UI_PART_TOP_ALIGN = 0.15         # inner top within this fraction of host height from the host top = upper body
+UI_PART_MIN_WIDTH_RATIO = 0.60   # upper-body part spans most of the host width; a narrow inner box may be a 2nd person
+UI_REP_SCORE_RATIO = 0.50        # representative = tallest member scoring >= this x the group's best score
+
+
+def _ov(a, b):
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    i = ix * iy
+    A = (a[2] - a[0]) * (a[3] - a[1])
+    B = (b[2] - b[0]) * (b[3] - b[1])
+    return (i / (A + B - i) if A + B - i > 0 else 0.0), (i / A if A else 0.0), (i / B if B else 0.0)
+
+
+def ui_groups(rows):
+    """Union-find over raw candidates. Returns (groups, ambiguous_pairs, notes). Each group: {"members": [n...],
+    "rep": n, "kind": SINGLE|DUPLICATE|NESTED_PART}. Ambiguous pairs (possible two people) stay separate groups."""
+    by = {r["n"]: r for r in rows}
+    parent = {r["n"]: r["n"] for r in rows}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    kinds, amb = {}, []
+    for a, b in itertools.combinations(rows, 2):
+        ba, bb = a["bbox"], b["bbox"]
+        io, ca, cb = _ov(ba, bb)
+        ha, hb = ba[3] - ba[1], bb[3] - bb[1]
+        if io >= UI_DUPLICATE_IOU:
+            parent[find(a["n"])] = find(b["n"])
+            kinds[(a["n"], b["n"])] = "DUPLICATE"
+            continue
+        inner, host, c_in = (a, b, ca) if ca >= cb else (b, a, cb)
+        if c_in >= UI_NESTED_CONTAINMENT and (inner["bbox"][3] - inner["bbox"][1]) < (host["bbox"][3] - host["bbox"][1]):
+            hh = host["bbox"][3] - host["bbox"][1]
+            hw = host["bbox"][2] - host["bbox"][0]
+            top_aligned = (inner["bbox"][1] - host["bbox"][1]) <= UI_PART_TOP_ALIGN * hh
+            wide = (inner["bbox"][2] - inner["bbox"][0]) >= UI_PART_MIN_WIDTH_RATIO * hw
+            if top_aligned and wide:
+                parent[find(a["n"])] = find(b["n"])
+                kinds[(a["n"], b["n"])] = "NESTED_PART"
+            else:
+                amb.append({"pair": [a["n"], b["n"]], "why": "NESTED_NOT_UPPER_BODY", "containment": round(c_in, 2)})
+            continue
+        if io >= UI_AMBIGUOUS_IOU:
+            amb.append({"pair": [a["n"], b["n"]], "why": "HEAVY_OVERLAP", "iou": round(io, 2)})
+    groups = {}
+    for r in rows:
+        groups.setdefault(find(r["n"]), []).append(r["n"])
+    out = []
+    for g, members in groups.items():
+        best = max(by[m]["score"] for m in members)
+        eligible = [m for m in members if by[m]["score"] >= UI_REP_SCORE_RATIO * best]
+        rep = max(eligible, key=lambda m: (by[m]["bbox"][3] - by[m]["bbox"][1], by[m]["score"]))
+        kind = "SINGLE" if len(members) == 1 else (
+            "NESTED_PART" if all(kinds.get((x, y), kinds.get((y, x))) == "NESTED_PART"
+                                 for x, y in itertools.combinations(sorted(members), 2)
+                                 if kinds.get((x, y), kinds.get((y, x)))) else "DUPLICATE")
+        out.append({"members": sorted(members), "rep": rep, "kind": kind})
+    out.sort(key=lambda g: (by[g["rep"]]["bbox"][0], by[g["rep"]]["bbox"][1]))
+    return out, amb
+
+
 def seeds(repo, clips_dir, out_root):
     sys.path.insert(0, repo)
     import cv2
@@ -89,19 +164,32 @@ def seeds(repo, clips_dir, out_root):
         with open(os.path.join(out_root, cid + "_seed_candidates.json"), "w") as f:
             json.dump({"clip_id": cid, "seed_frame": 0, "frame_size": [img.shape[1], img.shape[0]],
                        "candidates": rows}, f, indent=1)
+        groups, amb = ui_groups(rows)
+        by = {r["n"]: r for r in rows}
+        amb_members = {n for p in amb for n in p["pair"]}
+        sel = []
+        for k, g in enumerate(groups, 1):
+            sel.append({"select": k, "rep_candidate": g["rep"], "bbox": by[g["rep"]]["bbox"], "kind": g["kind"],
+                        "raw_members": g["members"], "possible_second_person": g["rep"] in amb_members})
+        with open(os.path.join(out_root, cid + "_seed_selection.json"), "w") as f:
+            json.dump({"clip_id": cid, "seed_frame": 0, "raw_candidates": len(rows), "selectable": sel,
+                       "ambiguous_pairs": amb,
+                       "note": "UI grouping only; the tracker receives the raw representative box unchanged"},
+                      f, indent=1)
         big = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-        for r in rows:
-            x1, y1, x2, y2 = [int(round(v * 2)) for v in r["bbox"]]
-            cv2.rectangle(big, (x1, y1), (x2, y2), ORANGE, 1)
-            label = str(r["n"])
+        for s_ in sel:
+            x1, y1, x2, y2 = [int(round(v * 2)) for v in s_["bbox"]]
+            col = RED if s_["possible_second_person"] else ORANGE
+            cv2.rectangle(big, (x1, y1), (x2, y2), col, 1)
+            label = str(s_["select"]) + ("?" if s_["possible_second_person"] else "")
             (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
             ty = y1 - 4 if y1 - th - 6 > 0 else y2 + th + 4
             cv2.rectangle(big, (x1, ty - th - 4), (x1 + tw + 6, ty + 2), BLACK, -1)
             cv2.putText(big, label, (x1 + 3, ty - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.6, WHITE, 2)
-        cv2.putText(big, f"{cid}  frame 0  ({len(rows)} candidates)", (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                    WHITE, 2)
+        cv2.putText(big, f"{cid}  frame 0  {len(sel)} selectable ({len(rows)} raw)  ?=possible 2nd person",
+                    (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, WHITE, 2)
         cv2.imwrite(os.path.join(out_root, cid + "_seed_still.png"), big)
-        print(cid, len(rows), "candidates", flush=True)
+        print(cid, len(rows), "raw ->", len(sel), "selectable;", len(amb), "ambiguous pairs", flush=True)
 
 
 def run(repo, clips_dir, choices_json, out_root, only=None):
@@ -125,17 +213,18 @@ def run(repo, clips_dir, choices_json, out_root, only=None):
             continue
         if cid not in reg:
             raise SystemExit(f"{cid}: no sha256 in SHA256SUMS.txt (fail closed)")
-        cj = os.path.join(out_root, "seeds", cid + "_seed_candidates.json")
+        cj = os.path.join(out_root, "seeds", cid + "_seed_selection.json")
         with open(cj) as f:
-            cands = {r["n"]: r for r in json.load(f)["candidates"]}
+            sel = {r["select"]: r for r in json.load(f)["selectable"]}
         n = choices[cid]
-        if n not in cands:
-            raise SystemExit(f"{cid}: candidate {n} does not exist")
-        box = cands[n]["bbox"]
+        if n not in sel:
+            raise SystemExit(f"{cid}: selectable box {n} does not exist")
+        box = sel[n]["bbox"]           # the raw detector box of the group's representative, unchanged
         os.makedirs(od, exist_ok=True)
         t0 = time.time()
         print(cid, "start", time.strftime("%H:%M:%S"), "seed", n, box, flush=True)
-        done = {"clip_id": cid, "split": "USER_TEST", "seed_frame": 0, "seed_candidate": n, "seed_bbox": box,
+        done = {"clip_id": cid, "split": "USER_TEST", "seed_frame": 0, "seed_candidate": n,
+                "seed_raw_candidate": sel[n]["rep_candidate"], "seed_bbox": box,
                 "clip_sha256": reg[cid], "git_commit": head, "git_dirty": dirty}
         try:
             R.run(path, 0, box, out_dir=od, debug=True, expected_sha256=reg[cid])
