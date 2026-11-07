@@ -163,9 +163,10 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     (TrackletView.anomaly_isolated) and the continuation passes every other test, the frame is AMBIGUOUS
     (MERGED_DETECTION_SUSPECTED) as before - never trusted or banked - but it is HELD, not aged: the ambiguity
     timer does not run because nothing competes for the box and the tracklet is continuous (decision log
-    size_anomaly_held). When the anomaly ends isolated, the tracklet continues as a new UNVERIFIED episode (a body
-    the detector never saw could have been inside the union; review round 3 H1), trusted again only once
-    contrast-verified. An anomaly that a second body touches, or that ends non-isolated, keeps the previous
+    size_anomaly_held). When the anomaly ends isolated, the tracklet continues UNVERIFIED (a body the detector never
+    saw could have been inside the union; review round 3 H1): same episode number (not a reacquisition; the output
+    contract binds episode increments to reacquisition events), contrast verification reset, trusted again only
+    once contrast-verified. An anomaly that a second body touches, or that ends non-isolated, keeps the previous
     behaviour (merge / continuity broken); the population no longer escalates an untouched anomaly on duration.
     The hold needs no rival in the gate (a look-alike box blocks it); the unverified episode reports
     INSUFFICIENT_CONTRAST (it is unverified for want of contrast) and starts the post-reacquisition bank quarantine
@@ -1294,8 +1295,10 @@ class TargetTracker:
                     # banked until contrast-verified, exactly like a reacquisition accepted without contrast.
                     self._anomaly_tracklet = None
                     if self._contrast_verified:
+                        # the verification status resets; the episode number does not change (the output contract
+                        # binds episode increments to reacquisition events, and this is not a reacquisition: the
+                        # tracklet never broke). Decision log: size_anomaly_ended + episode_contrast_verified False.
                         self._contrast_verified = False
-                        self._episode += 1
                         self._known_others = set()
                     # like a reacquisition accepted without contrast (review R2-STR 2): the post-reacquisition bank
                     # quarantine and the known-other settling timer start now

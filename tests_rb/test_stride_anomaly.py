@@ -186,7 +186,8 @@ class TargetLevel(unittest.TestCase):
         ended = [k for k, f in enumerate(r.frames) if f.decision.get("size_anomaly_ended")]
         self.assertEqual(len(ended), 1)
         k0 = ended[0]
-        self.assertEqual(r.frames[k0].target_episode, r.frames[0].target_episode + 1)
+        self.assertEqual(r.frames[k0].target_episode, r.frames[0].target_episode)   # not a reacquisition
+        self.assertFalse(r.frames[k0].decision.get("episode_contrast_verified"))
         for f in r.frames[k0:]:
             self.assertFalse(f.identity_trusted)
             self.assertNotEqual((f.decision.get("bank") or {}).get("status"), "ACCEPTED")

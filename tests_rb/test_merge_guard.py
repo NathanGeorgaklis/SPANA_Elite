@@ -320,7 +320,8 @@ class TestTargetLevel(unittest.TestCase):
         # review round 3 H1 + R2 stride stage: after an ISOLATED anomaly the tracklet continues (no reacquisition)
         # but as a new UNVERIFIED episode: untrusted, never banked, until contrast-verified
         self.assertEqual(r.states()[-10:], [T.TRACKING] * 10, "the body is followed again (not poisoned)")
-        self.assertGreaterEqual(r.frames[-1].target_episode, 2)
+        self.assertEqual(r.frames[-1].target_episode, r.frames[0].target_episode, "not a reacquisition")
+        self.assertFalse(r.frames[-1].decision.get("episode_contrast_verified"))
         self.assertFalse(any(f.decision.get("continuity_broken") == "SIZE_ANOMALY_ENDED" for f in r.frames))
         self.assertTrue(any(f.decision.get("size_anomaly_ended") == "ISOLATED_UNVERIFIED_EPISODE" for f in r.frames))
         self.assertFalse(any(f.reidentified_this_frame for f in r.frames), "no reacquisition was needed")
@@ -450,8 +451,9 @@ class TestReviewRound4(unittest.TestCase):
             self.assertFalse(r.frames[k].identity_trusted)
         ended = [k for k, f in enumerate(r.frames) if f.decision.get("size_anomaly_ended")]
         self.assertEqual(len(ended), 1)
-        self.assertEqual(r.frames[ended[0]].target_episode, r.frames[29].target_episode + 1)
-        self.assertEqual(len({r.frames[k].target_episode for k in range(ended[0], len(ws))}), 1)
+        self.assertEqual(len({f.target_episode for f in r.frames}), 1, "no reacquisition, no new episode number")
+        for k in range(ended[0], len(ws)):
+            self.assertFalse(r.frames[k].identity_trusted)
         self.assertTrue(r.bank_is_pure())
         self.assertEqual(r.swaps(), [])
 
