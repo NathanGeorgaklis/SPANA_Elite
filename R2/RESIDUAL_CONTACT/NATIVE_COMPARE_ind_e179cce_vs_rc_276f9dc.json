@@ -1,0 +1,192 @@
+{
+ "UT_G2_NWS_SDR_D": {
+  "pre": {
+   "frames": 600,
+   "trusted": 102,
+   "cov": 0.17,
+   "lost": 346,
+   "lost_pct": 57.7,
+   "first_lost": 254,
+   "merged_suspected_target": 25,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 21,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 109,
+    "AMBIGUOUS": 47,
+    "REACQUIRING": 98,
+    "LOST": 346
+   },
+   "trusted_tracklets": {
+    "T003": 102
+   },
+   "reasons": {
+    "COMPETING_CANDIDATE": 466,
+    "AGED_OUT": 376,
+    "MERGED_DETECTION_SUSPECTED": 352,
+    "BELOW_APPEARANCE_FLOOR": 154,
+    "INSUFFICIENT_CONTRAST": 108,
+    "REACQUISITION_UNVERIFIED": 98,
+    "OCCLUDER_OVERLAP": 7
+   }
+  },
+  "post": {
+   "frames": 600,
+   "trusted": 102,
+   "cov": 0.17,
+   "lost": 346,
+   "lost_pct": 57.7,
+   "first_lost": 254,
+   "merged_suspected_target": 25,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 25,
+   "size_anomaly_ended": {
+    "ISOLATED_UNVERIFIED_EPISODE": 1
+   },
+   "states": {
+    "TRACKING": 139,
+    "AMBIGUOUS": 47,
+    "REACQUIRING": 68,
+    "LOST": 346
+   },
+   "trusted_tracklets": {
+    "T003": 102
+   },
+   "reasons": {
+    "COMPETING_CANDIDATE": 436,
+    "AGED_OUT": 376,
+    "MERGED_DETECTION_SUSPECTED": 352,
+    "BELOW_APPEARANCE_FLOOR": 154,
+    "INSUFFICIENT_CONTRAST": 138,
+    "REACQUISITION_UNVERIFIED": 68,
+    "OCCLUDER_OVERLAP": 7
+   }
+  }
+ },
+ "UT_G2_NWS_SDR_A": {
+  "pre": {
+   "frames": 600,
+   "trusted": 77,
+   "cov": 0.128,
+   "lost": 411,
+   "lost_pct": 68.5,
+   "first_lost": 137,
+   "merged_suspected_target": 50,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 39,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 77,
+    "AMBIGUOUS": 60,
+    "LOST": 411,
+    "REACQUIRING": 52
+   },
+   "trusted_tracklets": {
+    "T002": 77
+   },
+   "reasons": {
+    "MERGED_DETECTION_SUSPECTED": 523,
+    "AGED_OUT": 463,
+    "INSUFFICIENT_CONTRAST": 328,
+    "COMPETING_CANDIDATE": 161,
+    "BELOW_APPEARANCE_FLOOR": 102,
+    "REACQUISITION_UNVERIFIED": 52,
+    "OCCLUDER_OVERLAP": 23
+   }
+  },
+  "post": {
+   "frames": 600,
+   "trusted": 77,
+   "cov": 0.128,
+   "lost": 411,
+   "lost_pct": 68.5,
+   "first_lost": 137,
+   "merged_suspected_target": 50,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 39,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 77,
+    "AMBIGUOUS": 60,
+    "LOST": 411,
+    "REACQUIRING": 52
+   },
+   "trusted_tracklets": {
+    "T002": 77
+   },
+   "reasons": {
+    "MERGED_DETECTION_SUSPECTED": 523,
+    "AGED_OUT": 463,
+    "INSUFFICIENT_CONTRAST": 328,
+    "COMPETING_CANDIDATE": 161,
+    "BELOW_APPEARANCE_FLOOR": 102,
+    "REACQUISITION_UNVERIFIED": 52,
+    "OCCLUDER_OVERLAP": 23
+   }
+  }
+ },
+ "UT_G1_SU_API_A": {
+  "pre": {
+   "frames": 300,
+   "trusted": 175,
+   "cov": 0.583,
+   "lost": 74,
+   "lost_pct": 24.7,
+   "first_lost": 209,
+   "merged_suspected_target": 0,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 0,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 175,
+    "AMBIGUOUS": 34,
+    "LOST": 74,
+    "REACQUIRING": 17
+   },
+   "trusted_tracklets": {
+    "T003": 175
+   },
+   "reasons": {
+    "COMPETING_CANDIDATE": 121,
+    "INSUFFICIENT_CONTRAST": 102,
+    "AGED_OUT": 91,
+    "BELOW_APPEARANCE_FLOOR": 50,
+    "REACQUISITION_UNVERIFIED": 17,
+    "MERGED_DETECTION_SUSPECTED": 12
+   }
+  },
+  "post": {
+   "frames": 300,
+   "trusted": 179,
+   "cov": 0.597,
+   "lost": 86,
+   "lost_pct": 28.7,
+   "first_lost": 214,
+   "merged_suspected_target": 0,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 0,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 179,
+    "AMBIGUOUS": 35,
+    "LOST": 86
+   },
+   "trusted_tracklets": {
+    "T003": 179
+   },
+   "reasons": {
+    "INSUFFICIENT_CONTRAST": 121,
+    "AGED_OUT": 86,
+    "BELOW_APPEARANCE_FLOOR": 38,
+    "MERGED_DETECTION_SUSPECTED": 13,
+    "COMPETING_CANDIDATE": 1
+   }
+  }
+ }
+}
