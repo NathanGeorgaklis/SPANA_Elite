@@ -158,6 +158,15 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     last TRUSTED confirmation (an unverified episode has not established that the tracklet's body is the target);
     a clipped (PARTIAL / edge) target box and the deferred-seed window void the certificate; a rival excluded on a
     frame is never recorded as a known other on that frame. Evaluations log excluded_competitors.
+  * ISOLATED SIZE ANOMALY (NEW_R2, R2 stride stage): a sprinting body's box widens 1.6-1.8 x within a stride at
+    constant height. While the population holds such a box as a SIZE_ANOMALY that no second body has touched
+    (TrackletView.anomaly_isolated) and the continuation passes every other test, the frame is AMBIGUOUS
+    (MERGED_DETECTION_SUSPECTED) as before - never trusted or banked - but it is HELD, not aged: the ambiguity
+    timer does not run because nothing competes for the box and the tracklet is continuous (decision log
+    size_anomaly_held). When the anomaly ends isolated, the tracklet continues as a new UNVERIFIED episode (a body
+    the detector never saw could have been inside the union; review round 3 H1), trusted again only once
+    contrast-verified. An anomaly that a second body touches, or that ends non-isolated, keeps the previous
+    behaviour (merge / continuity broken); the population no longer escalates an untouched anomaly on duration.
   * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; OFF by default since the R2 production consolidation, enabled by
     continuity_step_enabled; DEV: -3 false frames, -427 trusted frames): geometry alone cannot
     tell a continuing target from a different player who takes its box (the population continues the tracklet; the
@@ -1250,6 +1259,7 @@ class TargetTracker:
         evals: List[CandidateEvaluation] = []
         conf_trusted: Optional[float] = None
         reidentified = False
+        anomaly_untrusted = False
 
         if cut:
             self._update_separation(res, None, True)
@@ -1268,6 +1278,21 @@ class TargetTracker:
                         self._reverify = {"origin": self._tracklet, "spot": None, "t_end": None,
                                           "phase": "ANOMALY", "t0": None, "box0": None}
                     self._anomaly_tracklet = self._tracklet
+                elif self._anomaly_tracklet == self._tracklet and tv.anomaly_ended_isolated and \
+                        not c.get("target_reverify_enabled"):
+                    # (with the experimental F5 re-verification enabled the previous path is kept: continuity
+                    # broken, F5 WAIT/RUN re-verifies the return by sustained evidence; decision pending)
+                    # NEW_R2 (R2 stride stage): the anomaly ended with no second body having touched the box at any
+                    # of its frames (no observation, predicted or remembered box). The tracklet continues (no
+                    # reacquisition needed), but a body the detector never saw could still have been inside the
+                    # box (review round 3 H1), so what follows is a new UNVERIFIED episode: untrusted and never
+                    # banked until contrast-verified, exactly like a reacquisition accepted without contrast.
+                    self._anomaly_tracklet = None
+                    if self._contrast_verified:
+                        self._contrast_verified = False
+                        self._episode += 1
+                        self._known_others = set()
+                    log["size_anomaly_ended"] = "ISOLATED_UNVERIFIED_EPISODE"
                 elif self._anomaly_tracklet == self._tracklet:
                     # NEW_R2: the target's own tracklet carried a size anomaly (possibly an unseen second body in
                     # its box) that has now ended. Geometry cannot say which body the tracklet holds now, so its
@@ -1325,6 +1350,18 @@ class TargetTracker:
                 if not details:
                     state, chosen = TRACKING, ev
                     conf_trusted = self._confidence_trusted(ev)
+                elif details == ["MERGED"] and tv.anomaly_isolated and \
+                        P.SIZE_ANOMALY in res.observations[ev.detection_index].flags and \
+                        P.MERGED_SUSPECTED not in res.observations[ev.detection_index].flags:
+                    # NEW_R2 (R2 stride stage): the target's own continuous tracklet carries a size anomaly that no
+                    # second body has touched, and everything else (gate, motion, appearance, contrast) passes.
+                    # AMBIGUOUS as before (geometry cannot tell a stride from an unseen second body; never trusted
+                    # or banked), but the ambiguity timer does not run: nothing competes for the box and the
+                    # tracklet is continuous, so the frame is held, not aged into LOST. Any touch escalates as before.
+                    state, anomaly_untrusted = AMBIGUOUS, True
+                    reasons = [MERGED_DETECTION_SUSPECTED]
+                    contested_box, det_idx = ev.box, ev.detection_index
+                    merged_flag = True
                 else:
                     state = AMBIGUOUS
                     reasons = sorted({_DETAIL_TO_REASON.get(d, COMPETING_CANDIDATE) for d in details})
@@ -1357,7 +1394,7 @@ class TargetTracker:
                         state, reasons, occluders, merged_flag = s2, r2, occ2, m2
 
         # ---- aging (D14) ------------------------------------------------------------------------------------
-        if state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None:
+        if state in (OCCLUDED, AMBIGUOUS) and self._last_confirm_t is not None and not anomaly_untrusted:
             limit = c.get("max_occluded_s") if state == OCCLUDED else c.get("max_ambiguous_s")
             if sec_gt(t - self._last_confirm_t, limit):
                 state, reasons = LOST, sorted(set(reasons) | {AGED_OUT})
@@ -1425,6 +1462,8 @@ class TargetTracker:
             log["reverify"] = self._reverify_step(res, image, cache, state, chosen, h)
             if log["reverify"].get("status") == "REVERIFIED":
                 conf_trusted = self._confidence_trusted(chosen)
+        if anomaly_untrusted:
+            log["size_anomaly_held"] = True                  # isolated anomaly: held, not aged (module doc)
         if state == TRACKING:
             log["bank"] = self._confirm(res, image, chosen, conf_trusted, cache)
             log["episode_contrast_verified"] = self._contrast_verified
@@ -1448,7 +1487,8 @@ class TargetTracker:
             self._anomaly_tracklet = None
         frame = self._frame(res, state, tuple(sorted(set(reasons))), det_idx, chosen, conf, reidentified, log,
                             trusted=trusted,
-                            contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred)
+                            contested_box=contested_box, occluders=occluders, merged=merged_flag, pred=pred,
+                            untrusted_tracking_reasons=(INSUFFICIENT_CONTRAST,))
         self._prev_t = t
         return frame
 

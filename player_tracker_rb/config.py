@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2sep-1"   # r2sep-1: physical-separation contrast exclusion (separation_exclusion_enabled, separation_min_gap_h); r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2str-1"   # r2str-1: merged_corroboration_min_cover + isolated anomaly keeps continuity; r2sep-1: r2sep-1: physical-separation contrast exclusion (separation_exclusion_enabled, separation_min_gap_h); r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -112,6 +112,12 @@ UNV = "UNVALIDATED"
 # The registry. Ordered by group. Each name is unique (enforced at import time).
 # ---------------------------------------------------------------------------------------------
 _IDENT_EV = "NEW_R2 (R2 DEV persistent identity layer, diagnostic only; not used by target trust)"
+_STRIDE_EV = ("R2 stride stage (Nathan 2026-11-07 10:34). Native 1080p60 G2_D f102: the sprinting target's box "
+              "(width 50 -> 87 px within a stride, height constant) reached 1.6 x its 1 s median area and was "
+              "corroborated into a merge by a 5 x 5 px corner contact with an unrelated two-player box; G2_A f77: "
+              "the same stride on an isolated body (width 45 -> 83, area 1.56 x) became an uncorroborated SIZE_ANOMALY "
+              "that ended 0.5 s later, after which continuity was broken (reacquisition only, never re-trusted). "
+              "0.05 is a design choice; UNVALIDATED beyond DEV + user test.")
 _SEP_EV = ("R2 same-kit contrast stage (Nathan 2026-11-07 08:22). Native 1080p user test, frozen tracker: G1_A "
            "45 INSUFFICIENT_CONTRAST frames (contrast 0.074 vs margin 0.08) with the same-kit teammate observed on "
            "its own tracklet 0.57-0.59 body heights away, no overlap, continuously since the last trusted frame; "
@@ -668,6 +674,11 @@ PARAMS: Tuple[Param, ...] = (
        "(two bodies side by side are about x2).", 2.5, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged",
        "NEW_R2 (R2 DEV remediation F3). Development footage: a single isolated body's pose widened its box up to x1.65 "
        "its 1 s median area at constant height; F2 historical merged box x3.1", 1.0, 100.0),
+    _p("merged_corroboration_min_cover", "float", "fraction of the smaller box's area",
+       "SECOND-BODY CORROBORATION (NEW_R2, R2 stride stage): a box touching a merge-sized box corroborates a second "
+       "body only if the two share at least this fraction of the smaller box's area; a corner clip of a few pixels "
+       "from an unrelated box is not a body. Applies to observations, predicted boxes and memory boxes alike.",
+       0.05, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merge", _STRIDE_EV, 0.0, 1.0),
     _p("merged_anomaly_max_s", "float", "s",
        "A SIZE_ANOMALY (single body, no possible second body, below merged_uncorroborated_area_ratio) that has not "
        "ended after this long, and whose box is not near its held single-body size, is treated as a merge "

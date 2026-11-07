@@ -282,9 +282,10 @@ class TestMerged(Base):
         self.check_all(rn)
 
     def test_area_ratio_single_claimant(self):
-        # R2 DEV remediation F3 (NEW_R2): with no possible second body touching the box, size-only evidence is first a
-        # SIZE_ANOMALY (abstained on: not an appearance sample; the tracklet is not closed), and becomes a merge with
-        # its AREA_RATIO reason once it lasts merged_anomaly_max_s. Previously the merge was immediate.
+        # R2 DEV remediation F3 (NEW_R2): with no possible second body touching the box, size-only evidence is a
+        # SIZE_ANOMALY (abstained on: not an appearance sample; the tracklet is not closed). R2 stride stage
+        # (2026-11-07): with no second-person indication it stays an anomaly however long - duration alone no longer
+        # makes it a merge (previously: a merge with its AREA_RATIO reason after merged_anomaly_max_s).
         a = box_at(400, 360, 32, 80)
         frames = [Frame([cand(a)], [("TARGET",)]) for _ in range(12)]
         big = box_at(400, 360, 60, 90)                               # area x2.1 in one frame
@@ -297,8 +298,9 @@ class TestMerged(Base):
         self.assertFalse(v.bank_eligible)
         self.assertIn(P.SIZE_ANOMALY, v.bank_refusals)
         o = rn.results[-1].observations[0]
-        self.assertIn(P.AREA_RATIO, o.merge_reasons)
-        self.assertIsNone(o.tracklet_id)
+        self.assertIn(P.SIZE_ANOMALY, o.flags)
+        self.assertNotIn(P.MERGED_SUSPECTED, o.flags)
+        self.assertEqual(o.tracklet_id, first.tracklet_id, "the tracklet is kept open through an isolated anomaly")
 
     def test_aspect_wide_side_by_side(self):
         a = box_at(400, 360, 32, 80)
@@ -309,8 +311,16 @@ class TestMerged(Base):
         rn = run(frames, cfg=TrackerConfig.with_overrides({"merged_area_ratio": 10.0,
                                                            "merged_uncorroborated_area_ratio": 10.0}))
         self.assertIn(P.SIZE_ANOMALY, rn.results[12].observations[0].flags)
-        # the merge is confirmed on the frame the anomaly has lasted exactly merged_anomaly_max_s (R2 F4/F6: frame
-        # times within the float tolerance of a limit are equal to it), and for the size test alone
+        # R2 stride stage: an aspect anomaly with no second-person indication is held, never a merge on duration;
+        # with a credible body-sized box nested in it (an indication) the merge is confirmed on the frame the anomaly
+        # has lasted exactly merged_anomaly_max_s (R2 F4/F6: frame times within the float tolerance of a limit are
+        # equal to it), and for the size test alone
+        self.assertFalse(any(P.MERGED_SUSPECTED in r.observations[0].flags for r in rn.results))
+        frames2 = [Frame([cand(a)], [("TARGET",)]) for _ in range(12)]
+        frames2 += [Frame([cand(wide), cand((wide[2] - 28, wide[1] + 2, wide[2] - 1, wide[3] - 1))],
+                          [("TARGET", "PERSON_A"), ("PERSON_A",)]) for _ in range(hold)]
+        rn = run(frames2, cfg=TrackerConfig.with_overrides({"merged_area_ratio": 10.0,
+                                                            "merged_uncorroborated_area_ratio": 10.0}))
         first = next(k for k, r in enumerate(rn.results) if P.MERGED_SUSPECTED in r.observations[0].flags)
         self.assertAlmostEqual(rn.results[first].time_s - rn.results[12].time_s,
                                TrackerConfig.default().get("merged_anomaly_max_s"), delta=1e-9)

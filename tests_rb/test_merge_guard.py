@@ -72,35 +72,55 @@ class TestSingleBodySizeChange(unittest.TestCase):
                 self.assertIn(P.SIZE_ANOMALY, v.bank_refusals)
 
     def test_a_persistent_wide_box_never_becomes_a_clean_single_body(self):
-        # review H1: the reference must not adopt the wide size; a wide box that persists becomes a merge
+        # review H1: the reference must not adopt the wide size. R2 stride stage (Nathan 2026-11-07 10:34): a wide
+        # box that persists with NO second-person indication (no touch, no credible body-sized nested box) stays a
+        # SIZE_ANOMALY - never clean, never banked, but not a merge either: duration alone is not evidence of a
+        # second body, and the tracklet stays open
         boxes = widening(30, 15, n_hold=int(2.0 * FPS))
         rn = run([Frame([cand(b)], [("TARGET",)]) for b in boxes], fps=FPS)
         codes = "".join(code(r.observations[0]) for r in rn.results[30:])
         first_a = codes.index("A")
         self.assertNotIn(".", codes[first_a:], "once anomalous, the wide box is never a clean single body again")
-        self.assertTrue(codes.endswith("M" * 10), "a persistent anomaly becomes a merge")
+        self.assertNotIn("M", codes, "an untouched anomaly never becomes a merge on duration alone")
+        self.assertEqual(len({r.observations[0].tracklet_id for r in rn.results}), 1)
+        for r in rn.results[30 + first_a:]:
+            self.assertFalse(r.tracklet(r.observations[0].tracklet_id).bank_eligible)
+            self.assertTrue(r.tracklet(r.observations[0].tracklet_id).anomaly_isolated)
 
     def test_escalation_time_is_frame_rate_free(self):
-        # review H3: the same physical sequence classifies the same in seconds at any frame rate
+        # review H3: the same physical sequence classifies the same in seconds at any frame rate. R2 stride stage:
+        # escalation on duration needs a second-person indication, here a credible body-sized box nested in the
+        # union (review H2 geometry); the anomaly then becomes a merge merged_anomaly_max_s after its onset
         onsets = {}
         for fps in (25.0, 30.0, 60.0):
             k = fps / 30.0
             boxes = widening(int(30 * k), int(15 * k), n_hold=int(2.0 * fps))
-            rn = run([Frame([cand(b)], [("TARGET",)]) for b in boxes], fps=fps)
-            codes = [code(r.observations[0]) for r in rn.results]
+            frames = []
+            for b in boxes:
+                dets, owners = [cand(b)], [("TARGET",)]
+                if b[2] - b[0] > 40.0:                       # the union holds the other person's own tall box
+                    dets.append(cand((b[2] - 30, b[1] + 2, b[2] - 1, b[3] - 1)))
+                    owners.append(("PERSON_A",))
+                frames.append(Frame(dets, owners))
+            rn = run(frames, fps=fps)
+            codes = [code(widest(r)) for r in rn.results]
             onsets[fps] = (codes.index("A") / fps, codes.index("M") / fps)
             self.assertAlmostEqual(onsets[fps][1] - onsets[fps][0], MAX_S, delta=2.0 / fps)
         a = [v[0] for v in onsets.values()]
         self.assertLess(max(a) - min(a), 0.1, onsets)
 
-    def test_abrupt_jump_with_no_seen_second_body_is_abstained_then_merged(self):
+    def test_abrupt_jump_with_no_seen_second_body_is_abstained_not_merged(self):
+        # R2 stride stage: an abrupt jump with no second-person indication is abstained on for as long as it lasts
+        # (never clean, never banked) and is not escalated to a merge by time alone
         a = box_at(400, 360, 32, 80)
         frames = [Frame([cand(a)], [("TARGET",)]) for _ in range(12)]
         frames += [Frame([cand(box_at(410, 360, 58, 82))], [("TARGET", "PERSON_A")])
                    for _ in range(int(math.ceil(MAX_S * FPS)) + 3)]
         rn = run(frames, fps=FPS)
-        self.assertNotEqual(code(rn.results[12].observations[0]), ".", "never a clean single body")
-        self.assertEqual(code(rn.results[-1].observations[0]), "M")
+        codes = "".join(code(r.observations[0]) for r in rn.results[12:])
+        self.assertNotIn(".", codes, "never a clean single body")
+        self.assertNotIn("M", codes)
+        self.assertEqual(codes, "A" * len(codes))
 
     def test_growth_no_single_body_explains_is_a_merge_at_once(self):
         cap = CFG.get("merged_uncorroborated_area_ratio")
@@ -131,8 +151,10 @@ class TestIntermittentAnomaly(unittest.TestCase):
     def check(self, codes):
         first = codes.index("A")
         self.assertNotIn(".", codes[first:], "an anomaly never ends on intermittent frames of a union")
-        self.assertTrue(codes.endswith("M" * 20), "a persistent union becomes a merge")
-        self.assertLessEqual(codes.index("M") - first, int(math.ceil(MAX_S * FPS)) + 1)
+        # R2 stride stage: a union with no second-person indication stays an anomaly (never clean, never banked)
+        # however long; it is not escalated to a merge by duration alone
+        self.assertNotIn("M", codes, "no second-person indication: never a merge on duration alone")
+        self.assertEqual(set(codes[first:]), {"A"})
 
     def test_union_alternating_wide_and_less_wide(self):
         self.check(self._union_run(lambda k: 2.0 if k % 2 == 0 else 1.45))
@@ -295,13 +317,18 @@ class TestTargetLevel(unittest.TestCase):
         for k in anomalous:
             self.assertFalse(r.frames[k].identity_trusted, f"frame {k}: never trusted on a size anomaly")
             self.assertNotEqual(r.frames[k].decision.get("bank", {}).get("status"), "ACCEPTED")
-        # review round 3 H1: after the anomaly the tracklet's continuity is not identity evidence; the target comes
-        # back through reacquisition as a new episode (here unverified: no confusable competitor to contrast)
+        # review round 3 H1 + R2 stride stage: after an ISOLATED anomaly the tracklet continues (no reacquisition)
+        # but as a new UNVERIFIED episode: untrusted, never banked, until contrast-verified
         self.assertEqual(r.states()[-10:], [T.TRACKING] * 10, "the body is followed again (not poisoned)")
         self.assertGreaterEqual(r.frames[-1].target_episode, 2)
-        self.assertTrue(any(f.decision.get("continuity_broken") == "SIZE_ANOMALY_ENDED" for f in r.frames))
+        self.assertFalse(any(f.decision.get("continuity_broken") == "SIZE_ANOMALY_ENDED" for f in r.frames))
+        self.assertTrue(any(f.decision.get("size_anomaly_ended") == "ISOLATED_UNVERIFIED_EPISODE" for f in r.frames))
+        self.assertFalse(any(f.reidentified_this_frame for f in r.frames), "no reacquisition was needed")
+        for f in r.frames[-10:]:
+            self.assertFalse(f.identity_trusted, "unverified episode: untrusted until contrast-verified")
         self.assertTrue(r.bank_is_pure())
         self.assertEqual(r.swaps(), [])
+        self.assertNotIn(T.LOST, r.states())
 
     def test_unseen_same_kit_body_after_a_union_is_never_trusted(self):
         # review round 3 H1: an undetected same-kit person comes out from behind the target (a union for 0.5 s), then
@@ -403,19 +430,28 @@ class TestReviewRound4(unittest.TestCase):
         self.assertIn("A", base[0])
         self.assertEqual(self._after_cut(True), base)
 
-    def test_target_lost_during_an_anomaly_returns_through_one_reacquisition(self):
+    def test_target_held_through_a_long_isolated_anomaly_without_reacquisition(self):
+        # review round 4 (rewritten for the R2 stride stage): a x1.4 box held for 1.5 s with no second-person
+        # indication used to age the target to LOST and return it through one reacquisition. Now the isolated
+        # anomaly is HELD (AMBIGUOUS, timer stopped), never LOST, and the tracklet continues after it as one new
+        # unverified episode with no reacquisition
         b = lambda w: SS.box_at(300, 400, w, 100)
         ws = [40.0] * 30 + [40 + 52 * (k + 1) / 15 for k in range(15)] + [92.0] * 3   # merge-sized union
-        ws += [56.0] * 45                       # x1.4 held: neither clears nor escalates; target ages to LOST
+        ws += [56.0] * 45                       # x1.4 held: neither clears nor escalates
         ws += [40.0] * 60
         r = SS.run([SS.SceneFrame({"TARGET": b(w)}) for w in ws], self.PPL)
-        reacq = [k for k, f in enumerate(r.frames) if f.reidentified_this_frame]
-        self.assertEqual(len(reacq), 1, f"one return, not a re-broken one: {reacq}")
-        self.assertEqual([k for k, f in enumerate(r.frames) if k > reacq[0] and f.decision.get("continuity_broken")],
-                         [])
-        self.assertGreater(r.frames[reacq[0]].target_episode, r.frames[29].target_episode,
-                           "the return is a new (unverified) episode")
-        self.assertEqual(len({r.frames[k].target_episode for k in range(reacq[0], len(ws))}), 1)
+        self.assertEqual([k for k, f in enumerate(r.frames) if f.reidentified_this_frame], [])
+        self.assertNotIn(T.LOST, r.states())
+        self.assertEqual([k for k, f in enumerate(r.frames) if f.decision.get("continuity_broken")], [])
+        held = [k for k, f in enumerate(r.frames) if f.decision.get("size_anomaly_held")]
+        self.assertGreater(len(held), 45)
+        for k in held:
+            self.assertEqual(r.frames[k].rb_state, T.AMBIGUOUS)
+            self.assertFalse(r.frames[k].identity_trusted)
+        ended = [k for k, f in enumerate(r.frames) if f.decision.get("size_anomaly_ended")]
+        self.assertEqual(len(ended), 1)
+        self.assertEqual(r.frames[ended[0]].target_episode, r.frames[29].target_episode + 1)
+        self.assertEqual(len({r.frames[k].target_episode for k in range(ended[0], len(ws))}), 1)
         self.assertTrue(r.bank_is_pure())
         self.assertEqual(r.swaps(), [])
 
