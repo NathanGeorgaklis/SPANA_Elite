@@ -81,7 +81,7 @@ class PopulationLevel(unittest.TestCase):
 
     def test_cover_boundary(self):
         """An overlap of exactly merged_corroboration_min_cover of the smaller box corroborates; just below does not."""
-        for frac, expect_m in ((COVER * 1.05, True), (COVER * 0.5, False)):
+        for frac, expect_m in ((COVER * 1.05, True), (COVER, True), (COVER * 0.9, False), (COVER * 0.5, False)):
             with self.subTest(frac=frac):
                 boxes = stride(30, 1, period_s=1.4)
                 frames = []
@@ -109,6 +109,45 @@ class PopulationLevel(unittest.TestCase):
         rn = run(frames, fps=FPS)
         codes = "".join(code(max(r.observations, key=lambda o: (o.bbox[2] - o.bbox[0]))) for r in rn.results)
         self.assertIn("M", codes)
+
+    def test_credible_crouched_nested_body_on_the_feet_line_still_escalates(self):
+        # review R2-STR 1: a credible nested box shorter than 0.75 of the host but standing on its feet line (a
+        # crouched person who could stand up) is a second-person indication: merge after MAX_S, as before
+        for frac in (0.4, 0.55, 0.7):
+            with self.subTest(height_fraction=frac):
+                boxes = [box_at(300, 400, 40, 100)] * 30
+                boxes += [box_at(300 + 16 * (k + 1) / 10, 400, 40 + 32 * (k + 1) / 10, 100) for k in range(10)]
+                boxes += [box_at(316, 400, 72, 100)] * (int(math.ceil(MAX_S * FPS)) + 10)
+                frames = []
+                for b in boxes:
+                    dets, owners = [cand(b)], [("TARGET",)]
+                    if b[2] - b[0] > 56.0:
+                        hh = b[3] - b[1]
+                        dets.append(cand((b[2] - 30, b[3] - frac * hh, b[2] - 1, b[3] - 1), 0.9))
+                        owners.append(("PERSON_A",))
+                    frames.append(Frame(dets, owners))
+                rn = run(frames, fps=FPS)
+                codes = "".join(code(max(r.observations, key=lambda o: (o.bbox[2] - o.bbox[0]))) for r in rn.results)
+                self.assertIn("M", codes, codes)
+
+    def test_contact_through_a_hidden_tracklets_predicted_box_is_an_indication(self):
+        # a second body walks up, is lost by the detector while its predicted box overlaps the anomaly box: the
+        # anomaly is not isolated and still escalates on duration
+        boxes = [box_at(300, 400, 40, 100)] * 30
+        boxes += [box_at(300 + 16 * (k + 1) / 10, 400, 40 + 32 * (k + 1) / 10, 100) for k in range(10)]
+        boxes += [box_at(316, 400, 72, 100)] * (int(math.ceil(MAX_S * FPS)) + 20)
+        frames = []
+        for k, b in enumerate(boxes):
+            dets, owners = [cand(b)], [("TARGET",)]
+            if k < 44:                                                       # a second body approaching, then undetected
+                dets.append(cand(box_at(420 - 2.0 * k, 400, 40, 100)))
+                owners.append(("PERSON_B",))
+            frames.append(Frame(dets, owners))
+        rn = run(frames, fps=FPS)
+        last = rn.results[-1]
+        self.assertTrue(any(P.MERGED_SUSPECTED in o.flags for o in last.observations)
+                        or not any(v.anomaly_isolated for v in last.tracklets),
+                        "contact via a hidden tracklet must not leave the anomaly isolated")
 
     def test_edge_clipped_target_box_neither_ends_nor_escalates(self):
         boxes = stride(30, 1, period_s=1.4, cx=40.0)                       # at the left image edge (clipped boxes)
@@ -140,6 +179,32 @@ class TargetLevel(unittest.TestCase):
         self.assertFalse(any(f.reidentified_this_frame for f in r.frames))
         self.assertEqual(r.states()[-10:], [T.TRACKING] * 10)
         self.assertTrue(r.bank_is_pure())
+
+    def test_after_an_isolated_anomaly_the_episode_is_unverified_and_untrusted(self):
+        boxes = stride(30, 1, period_s=1.4) + [box_at(300, 400, 40, 100)] * 40
+        r = self._run(boxes)
+        ended = [k for k, f in enumerate(r.frames) if f.decision.get("size_anomaly_ended")]
+        self.assertEqual(len(ended), 1)
+        k0 = ended[0]
+        self.assertEqual(r.frames[k0].target_episode, r.frames[0].target_episode + 1)
+        for f in r.frames[k0:]:
+            self.assertFalse(f.identity_trusted)
+            self.assertNotEqual((f.decision.get("bank") or {}).get("status"), "ACCEPTED")
+
+    def test_one_hidden_frame_during_a_hold_does_not_trust_anyone(self):
+        boxes = stride(30, 1, period_s=1.4) + [box_at(300, 400, 40, 100)] * 40
+        fr = [SS.SceneFrame({"TARGET": b}, drop=("TARGET",) if k == 45 else ()) for k, b in enumerate(boxes)]
+        r = SS.run(fr, self.PPL)
+        self.assertEqual(r.swaps(), [])
+        self.assertTrue(r.bank_is_pure())
+
+    def test_f5_flag_keeps_the_previous_path(self):
+        cfg = TrackerConfig.with_overrides({"target_reverify_enabled": True})
+        boxes = stride(30, 1, period_s=1.4) + [box_at(300, 400, 40, 100)] * 40
+        r = self._run(boxes, cfg=cfg)
+        self.assertFalse(any(f.decision.get("size_anomaly_held") for f in r.frames))
+        self.assertFalse(any(f.decision.get("size_anomaly_ended") for f in r.frames))
+        self.assertEqual(r.swaps(), [])
 
     def test_crouch_jump_turn_pose_changes_never_break_identity(self):
         # crouch (height halves, width constant), jump (box moves up), turn (width 0.6 x): none is merge-sized

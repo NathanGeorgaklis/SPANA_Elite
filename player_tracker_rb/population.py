@@ -70,8 +70,8 @@ Per frame (update), in order:
      merged_anomaly_max_s, is a merge (SUSTAINED_SIZE_ANOMALY); partial or edge boxes neither end nor escalate it.
      Corroboration (NEW_R2, R2 stride stage) needs a real overlap: boxes share >= merged_corroboration_min_cover of
      the smaller box's area (a corner clip is not a body). An anomaly with no second-person INDICATION - no touch
-     and no credible body-sized nested box (>= population_partial_height_ratio of its height, not a WEAK_PART) at
-     any of its frames - is ISOLATED (TrackletView.anomaly_isolated): it never escalates on duration alone
+     and no credible nested box that could be a person (not a WEAK_PART; as tall as the body or standing on its
+     feet line within population_hidden_feet_gap_max) at any of its frames - is ISOLATED (TrackletView.anomaly_isolated): it never escalates on duration alone
      (merged_anomaly_max_s applies once an indication exists; merged_uncorroborated_area_ratio still applies), and
      when it ends it ends ISOLATED
      (anomaly_ended_isolated): one body's stride or pose as far as geometry can tell. target.py follows an isolated
@@ -752,7 +752,7 @@ class Population:
             if ix <= 0.0 or iy <= 0.0:
                 return False
             small = min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))
-            return small <= 0.0 or ix * iy >= min_cover * small
+            return small > 0.0 and ix * iy >= min_cover * small
 
         own_tid = {i: assigned_d.get(i) for i in bodies}
         second_body: Dict[int, bool] = {}
@@ -768,11 +768,17 @@ class Population:
         # second-person INDICATION for anomaly escalation (NEW_R2, R2 stride stage): a touch, or a body-sized
         # nested box with a credible score inside it (tall same-body alternative boxes are common, but a WEAK_PART
         # is a part; a credible box as tall as the body may be a second person hidden in the union, review H2)
+        # (review R2-STR 1): the indication is any credible nested box that could be a person in the union - as
+        # tall as the body (population_partial_height_ratio) OR standing on the host's feet line within
+        # population_hidden_feet_gap_max of its height (the population's own hidden-person criterion, F3c: a
+        # crouched person who could stand up). A WEAK_PART is a part.
         body_nested: Dict[int, bool] = {}
+        feet_tol = c.get("population_hidden_feet_gap_max")
         for i in bodies:
             hi_ = _wh(boxes[i])[1]
             body_nested[i] = any(nested_in[j] == i and j not in weak_part
-                                 and _wh(boxes[j])[1] >= c.get("population_partial_height_ratio") * hi_
+                                 and (_wh(boxes[j])[1] >= c.get("population_partial_height_ratio") * hi_
+                                      or boxes[i][3] - boxes[j][3] <= feet_tol * hi_)
                                  for j in bodies)
         size_anomaly: Set[int] = set()
         anomaly_hold: Dict[int, Tuple[bool, bool]] = {}   # i -> (merge-sized now, near single size now)

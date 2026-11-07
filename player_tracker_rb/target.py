@@ -167,6 +167,11 @@ IDENTITY CONFIDENCE (identity_confidence_rb, range [0, 1], UNCALIBRATED):
     the detector never saw could have been inside the union; review round 3 H1), trusted again only once
     contrast-verified. An anomaly that a second body touches, or that ends non-isolated, keeps the previous
     behaviour (merge / continuity broken); the population no longer escalates an untouched anomaly on duration.
+    The hold needs no rival in the gate (a look-alike box blocks it); the unverified episode reports
+    INSUFFICIENT_CONTRAST (it is unverified for want of contrast) and starts the post-reacquisition bank quarantine
+    and the known-other settling timer. KNOWN LIMITS: _last_confirm_t stays at the last confirmation during a hold,
+    so once a hold has lasted longer than max_ambiguous_s any other failing detail (a missed detection) goes to
+    LOST at once; a second person detected only as a WEAK_PART of the union is never an indication.
   * SAME-FRAME HANDOFF SAFETY (NEW_R2, R2 DEV; OFF by default since the R2 production consolidation, enabled by
     continuity_step_enabled; DEV: -3 false frames, -427 trusted frames): geometry alone cannot
     tell a continuing target from a different player who takes its box (the population continues the tracklet; the
@@ -1292,6 +1297,10 @@ class TargetTracker:
                         self._contrast_verified = False
                         self._episode += 1
                         self._known_others = set()
+                    # like a reacquisition accepted without contrast (review R2-STR 2): the post-reacquisition bank
+                    # quarantine and the known-other settling timer start now
+                    self._reacq_t = t
+                    self._tracklet_since_t = t
                     log["size_anomaly_ended"] = "ISOLATED_UNVERIFIED_EPISODE"
                 elif self._anomaly_tracklet == self._tracklet:
                     # NEW_R2: the target's own tracklet carried a size anomaly (possibly an unseen second body in
@@ -1343,14 +1352,15 @@ class TargetTracker:
                                                      pred_box=pred_box, gate_h=gate_h, h=h, absence_s=absence))
                 evals.extend(others)
                 details = list(ev.details)
-                rivals = self._rivals(others, ev) if ev.passed else []
+                rivals = self._rivals(others, ev) if ev.passed or details == ["MERGED"] else []
                 if rivals:
                     details.append(RIVAL_CANDIDATE)
                     log["continuation_rivals"] = [e.detection_index for e in rivals]
                 if not details:
                     state, chosen = TRACKING, ev
                     conf_trusted = self._confidence_trusted(ev)
-                elif details == ["MERGED"] and tv.anomaly_isolated and \
+                elif details == ["MERGED"] and not rivals and tv.anomaly_isolated and \
+                        not c.get("target_reverify_enabled") and \
                         P.SIZE_ANOMALY in res.observations[ev.detection_index].flags and \
                         P.MERGED_SUSPECTED not in res.observations[ev.detection_index].flags:
                     # NEW_R2 (R2 stride stage): the target's own continuous tracklet carries a size anomaly that no
