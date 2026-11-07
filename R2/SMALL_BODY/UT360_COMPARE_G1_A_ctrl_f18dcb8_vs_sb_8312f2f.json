@@ -1,0 +1,67 @@
+{
+ "UT_G1_SU_API_A": {
+  "pre": {
+   "frames": 300,
+   "trusted": 30,
+   "cov": 0.1,
+   "lost": 164,
+   "lost_pct": 54.7,
+   "first_lost": 90,
+   "merged_suspected_target": 0,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 0,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 30,
+    "AMBIGUOUS": 60,
+    "LOST": 164,
+    "REACQUIRING": 46
+   },
+   "trusted_tracklets": {
+    "T004": 30
+   },
+   "reasons": {
+    "LOW_QUALITY_CROP": 257,
+    "AGED_OUT": 210,
+    "REACQUISITION_UNVERIFIED": 46,
+    "BELOW_APPEARANCE_FLOOR": 17,
+    "MERGED_DETECTION_SUSPECTED": 2,
+    "INSUFFICIENT_CONTRAST": 1
+   }
+  },
+  "post": {
+   "frames": 300,
+   "trusted": 153,
+   "cov": 0.51,
+   "lost": 98,
+   "lost_pct": 32.7,
+   "first_lost": 202,
+   "merged_suspected_target": 1,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 0,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 153,
+    "AMBIGUOUS": 19,
+    "OCCLUDED": 18,
+    "REACQUIRING": 12,
+    "LOST": 98
+   },
+   "trusted_tracklets": {
+    "T004": 153
+   },
+   "reasons": {
+    "NO_CANDIDATE_IN_GATE": 110,
+    "MERGED_DETECTION_SUSPECTED": 105,
+    "AGED_OUT": 98,
+    "BELOW_APPEARANCE_FLOOR": 33,
+    "INSUFFICIENT_CONTRAST": 31,
+    "OCCLUDER_OVERLAP": 19,
+    "REACQUISITION_UNVERIFIED": 12,
+    "COMPETING_CANDIDATE": 6
+   }
+  }
+ }
+}

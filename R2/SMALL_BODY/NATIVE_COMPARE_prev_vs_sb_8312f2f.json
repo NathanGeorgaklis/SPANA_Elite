@@ -1,0 +1,66 @@
+{
+ "UT_G2_NWS_SDR_A": {
+  "pre": {
+   "frames": 600,
+   "trusted": 77,
+   "cov": 0.128,
+   "lost": 411,
+   "lost_pct": 68.5,
+   "first_lost": 137,
+   "merged_suspected_target": 50,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 39,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 77,
+    "AMBIGUOUS": 60,
+    "LOST": 411,
+    "REACQUIRING": 52
+   },
+   "trusted_tracklets": {
+    "T002": 77
+   },
+   "reasons": {
+    "MERGED_DETECTION_SUSPECTED": 523,
+    "AGED_OUT": 463,
+    "INSUFFICIENT_CONTRAST": 328,
+    "COMPETING_CANDIDATE": 161,
+    "BELOW_APPEARANCE_FLOOR": 102,
+    "REACQUISITION_UNVERIFIED": 52,
+    "OCCLUDER_OVERLAP": 23
+   }
+  },
+  "post": {
+   "frames": 600,
+   "trusted": 77,
+   "cov": 0.128,
+   "lost": 411,
+   "lost_pct": 68.5,
+   "first_lost": 137,
+   "merged_suspected_target": 50,
+   "size_anomaly_target_obs": 0,
+   "merged_flag_target_obs": 0,
+   "size_anomaly_held": 39,
+   "size_anomaly_ended": {},
+   "states": {
+    "TRACKING": 77,
+    "AMBIGUOUS": 60,
+    "LOST": 411,
+    "REACQUIRING": 52
+   },
+   "trusted_tracklets": {
+    "T002": 77
+   },
+   "reasons": {
+    "MERGED_DETECTION_SUSPECTED": 523,
+    "AGED_OUT": 463,
+    "INSUFFICIENT_CONTRAST": 328,
+    "COMPETING_CANDIDATE": 161,
+    "BELOW_APPEARANCE_FLOOR": 102,
+    "REACQUISITION_UNVERIFIED": 52,
+    "OCCLUDER_OVERLAP": 23
+   }
+  }
+ }
+}
