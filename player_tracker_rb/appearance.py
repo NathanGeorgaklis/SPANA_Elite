@@ -182,14 +182,16 @@ def _soft_hist3(values: np.ndarray, bins: int) -> np.ndarray:
 
 def lab_descriptor(crop: np.ndarray, cfg: TrackerConfig) -> Optional[np.ndarray]:
     """Two L1-normalised soft LAB histograms (upper band, lower band), stacked as shape (2, bins**3). None if a band
-    has fewer than lab_min_band_pixels pixels. Bands are fractions of the crop height; only the central
-    lab_center_width_fraction of the width is used."""
+    has fewer than lab_min_band_pixels pixels or fewer than lab_min_band_columns central columns. Bands are
+    fractions of the crop height; only the central lab_center_width_fraction of the width is used."""
     if crop is None or crop.ndim != 3 or crop.size == 0 or crop.dtype != np.uint8:
         return None
     h, w = crop.shape[:2]
     keep = cfg.get("lab_center_width_fraction")
     cx1 = int(round(w * (1.0 - keep) / 2))
     cx2 = max(cx1 + 1, int(round(w * (1.0 + keep) / 2)))
+    if cx2 - cx1 < cfg.get("lab_min_band_columns"):
+        return None                                                    # a strip is not a colour sample (R2-SB M3)
     lab = cv2.cvtColor(np.ascontiguousarray(crop), cv2.COLOR_BGR2LAB)
     bins = cfg.get("lab_bins_per_channel")
     hists = []

@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
-CONFIG_REGISTRY_VERSION = "r2str-1"   # r2str-1: merged_corroboration_min_cover + isolated anomaly keeps continuity; r2sep-1: r2sep-1: physical-separation contrast exclusion (separation_exclusion_enabled, separation_min_gap_h); r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
+CONFIG_REGISTRY_VERSION = "r2sb-1"   # r2sb-1: lab_min_band_pixels 150->50, +lab_min_band_columns 6 (R2 small-body appearance stage; measured, no identity threshold change); r2str-1: merged_corroboration_min_cover + isolated anomaly keeps continuity; r2sep-1: r2sep-1: physical-separation contrast exclusion (separation_exclusion_enabled, separation_min_gap_h); r2wp-1: weak-part nesting rule (4 population_weak_part_* params); r2prod-1: continuity_step_enabled default True->False (R2 production consolidation; no new parameters); r2cp-1: +checkpoint_unresolved_s (R2 DEV human-assisted reacquisition); r2jn-1: +jersey_* (R2 DEV jersey-number evidence, diagnostic); r2ho-2: +continuity_step_resolve_steps, min_steps 3->1 (handoff review); r2ho-1: +continuity_step_* (R2 DEV same-frame handoff safety); r2tp-1: +profile_* (R2 DEV target reference profile, diagnostic); r2nt-1: +not_target_memory_enabled (R2 DEV NOT_TARGET memory); r2id-1: +identity_* (R2 DEV persistent identity layer, diagnostic); r2f2-1: +seed_anchor_max_s (R2 DEV F2); r2f9-1: +gate_lost_growth_h_per_s (R2 DEV F9); r2f8-2: +camera_scale_check_long_window_s, +camera_scale_release_ratio (F8 review); r2f8-1: +camera_scale_check_* (R2 DEV F8); r2f5-2: +target_reverify_enabled, +target_reverify_max_s (R2 DEV F5 review); r2f5-1: +target_reverify_window_s, +target_reverify_min_travel_h (R2 DEV F5); r2c-2: +population_hidden_min_s (R2 DEV F3c review); r2c-1: +population_region_fill_min, +population_hidden_feet_gap_max (R2 DEV F3c); r2a-1: +seed_contain_* (R2 DEV F1), +merged_uncorroborated_area_ratio, +merged_anomaly_max_s, +merged_anomaly_clear_area_ratio, +merged_anomaly_clear_s (R2 DEV F3); r1f-2: -population_merge_emerge_pad_h, +target_known_other_min_s (R1-F review)
 
 # Unit constants (definitions, not tunable behaviour).
 MS_PER_SECOND = 1000.0
@@ -401,9 +401,31 @@ PARAMS: Tuple[Param, ...] = (
        "BEHAVIOURAL", "bank", "R1-D review finding 2 (a large close occluder passed the IoU test at 30% coverage)",
        0.0, 1.0),
     _p("lab_min_band_pixels", "int", "pixels",
-       "A LAB colour band with fewer pixels than this gives no LAB descriptor (histogram too sparse to compare).",
-       150, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
-       "R1-D review finding 9 (a 24 px crop gives ~70 pixels over 512 bins)", 1, 100000),
+       "A LAB colour band with fewer pixels than this gives no LAB descriptor (histogram too sparse to compare). "
+       "The smallest lower-band size (lab_lower_band, 0.30 of the height) at which the per-clip measurement shows "
+       "the colour cue behaving as on large bodies: a body about 30 px tall and 10 px wide (9 rows x 6 central "
+       "columns, see lab_min_band_columns). crop_min_height_px (24 px) remains the conservative absolute floor. "
+       "Note: with the previous 150 the LAB floor was also, by accident, the bank's size floor (a 1:3-1:4 body needed "
+       "~50-58 px for LAB); the designed bank floor, bank_min_crop_quality x crop_good_height_px = 38.4 px, now "
+       "applies as designed.",
+       50, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
+       "R2 small-body appearance stage (2026-11-07): measured per clip on 8 user-test clips (5 at 360p, 3 at "
+       "1080p), crops >= crop_min_height_px, binned by the lower band (R2/SMALL_BODY/LAB_BAND_PROBE_per_clip.json): "
+       "in the 50-150 band-pixel bins the other-tracklet veto rate (< lab_floor) and p95 match the same clip's "
+       ">= 150 bins (no clip shows a loss), same-tracklet vetoes are 0.000 and same-kit p5 0.67-0.90 everywhere; "
+       "the 28-50 bin rests on one clip (n=103) and a +-1 px box error is a quarter of a 4-column band, so it is "
+       "not admitted. The previous 150 (R1-D review finding 9, a sparsity concern) made 25-45 px bodies at 360p "
+       "FEATURE_NOT_USABLE (G1_A 117 of 171 target frames) although both cues behaved as at larger sizes",
+       1, 100000),
+    _p("lab_min_band_columns", "int", "pixel columns",
+       "A LAB colour band narrower than this many central columns gives no LAB descriptor: a one- or two-column "
+       "strip (a sliver at the frame edge, a post, a body mostly hidden behind another) is not a colour sample "
+       "whatever its pixel count, and the detector's +-1 px box error must stay a small share of the band (one "
+       "sixth at this floor). The central lab_center_width_fraction of a 10 px wide body.",
+       6, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "appearance",
+       "R2 small-body appearance stage review (R2-SB M3, H2): a 94 x 3 crop reached lab_min_band_pixels with one "
+       "column; on a 24 x 6 crop a 1 px box offset plus one shared row lifted an incompatible kit pair to 0.315",
+       1, 1000),
     _p("embedding_norm_tolerance", "float", "absolute difference from 1",
        "Embeddings must be unit length within this tolerance; otherwise the backend is broken (fail closed).",
        1e-6, N, "DESIGN_CHOICE", "NOT_APPLICABLE", "RUNTIME", "appearance", "R1-D review finding 10", 0.0, 0.1),

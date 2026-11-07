@@ -1,0 +1,6 @@
+7,8c7,8
+< leave_and_return           fci=0(COMP) swaps=0 wrong=0 p4=0 cov=0.228 amb=0.013 occ=0 lost=0 unv=0.57 delay=[] iou=1.0 reacq=['NOT_REACQUIRED']
+< wrong_reacquisition        fci=0(COMP) swaps=0 wrong=0 p4=0 cov=0.947 amb=0.053 occ=0 lost=0 unv=0 delay=[] iou=1.0 reacq=['NOT_AVAILABLE_IN_WINDOW']
+---
+> leave_and_return           fci=0(COMP) swaps=0 wrong=0 p4=0 cov=0.241 amb=0 occ=0 lost=0 unv=0.57 delay=[] iou=1.0 reacq=['NOT_REACQUIRED']
+> wrong_reacquisition        fci=0(COMP) swaps=0 wrong=0 p4=0 cov=1.0 amb=0 occ=0 lost=0 unv=0 delay=[] iou=1.0 reacq=['NOT_AVAILABLE_IN_WINDOW']

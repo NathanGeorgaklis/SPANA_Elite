@@ -132,6 +132,133 @@ class TestLab(unittest.TestCase):
         self.assertGreater(A.lab_similarity(t, A.lab_descriptor(PERSON_A, c)), 0.8)    # colour cannot separate
         self.assertLess(A.lab_similarity(t, A.lab_descriptor(PERSON_B, c)), c.get("lab_floor"))   # colour rejects
 
+    # ---- R2 small-body appearance stage (2026-11-07): the LAB band floor follows the crop floor ----------------
+    def test_lab_available_on_the_smallest_measured_body(self):
+        # the floor is the smallest lower band the per-clip measurement supports: ~30 px tall, 10 px wide
+        c = cfg()
+        d = A.lab_descriptor(person(RED, WHITE, h=30, w=10, noise=2), c)
+        self.assertIsNotNone(d)
+        np.testing.assert_allclose(d.sum(axis=1), [1.0, 1.0])
+        self.assertIsNotNone(A.lab_descriptor(person(RED, WHITE, h=36, w=12, noise=2), c))
+
+    def test_lab_floor_matches_its_stated_geometry(self):
+        # lab_min_band_pixels = lower band rows at 30 px (9) x lab_min_band_columns (6, the central 60 % of 10 px)
+        c = cfg()
+        lo, hi = c.get("lab_lower_band")
+        rows = int(round(30 * hi)) - int(round(30 * lo))
+        keep = c.get("lab_center_width_fraction")
+        cols = int(round(10 * (1 + keep) / 2)) - int(round(10 * (1 - keep) / 2))
+        self.assertEqual(cols, c.get("lab_min_band_columns"))
+        self.assertLessEqual(c.get("lab_min_band_pixels"), rows * cols)
+        self.assertGreater(c.get("lab_min_band_pixels"), (rows - 1) * cols)
+        self.assertGreater(c.get("lab_min_band_pixels"), 28, "the 4-column geometric minimum is not admitted")
+
+    def test_sparser_band_than_the_floor_gives_no_descriptor(self):
+        c = cfg()
+        h = c.get("crop_min_height_px")
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=h, w=3, noise=0), c))     # 2 columns
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=8, w=8, noise=0), c))     # 2 x 5 = 10 < floor
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=h, w=6, noise=0), c))     # 4 columns (28 px)
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=26, w=10, noise=0), c))   # 8 x 6 = 48 < floor
+
+    def test_a_strip_is_not_a_colour_sample(self):
+        # review R2-SB M3: one- or two-column crops reach the pixel floor by height alone
+        c = cfg()
+        for h, w in ((94, 3), (47, 4), (200, 2)):
+            with self.subTest(size=(h, w)):
+                self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=h, w=w, noise=0), c))
+
+    def test_column_floor_boundary(self):
+        c = cfg()
+        cols = c.get("lab_min_band_columns")
+        keep = c.get("lab_center_width_fraction")
+        # the narrowest width giving `cols` central columns, and one px narrower
+        w_ok = next(w for w in range(2, 40) if int(round(w * (1 + keep) / 2)) - int(round(w * (1 - keep) / 2)) >= cols)
+        self.assertIsNotNone(A.lab_descriptor(person(RED, WHITE, h=40, w=w_ok, noise=0), c))
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=40, w=w_ok - 1, noise=0), c))
+
+    def test_floor_applies_to_the_lower_band_too(self):
+        # upper band 0.35 h passes, lower band 0.30 h fails: no descriptor (the floor is per band, not first band)
+        c = cfg()
+        found = False
+        for h in range(c.get("crop_min_height_px"), 60):
+            w = 10
+            keep = c.get("lab_center_width_fraction")
+            cols = int(round(w * (1 + keep) / 2)) - int(round(w * (1 - keep) / 2))
+            up = (int(round(h * c.get("lab_upper_band")[1])) - int(round(h * c.get("lab_upper_band")[0]))) * cols
+            lo = (int(round(h * c.get("lab_lower_band")[1])) - int(round(h * c.get("lab_lower_band")[0]))) * cols
+            if up >= c.get("lab_min_band_pixels") > lo:
+                self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=h, w=w, noise=0), c))
+                found = True
+        self.assertTrue(found, "no geometry with upper pass / lower fail")
+
+    def test_box_offset_and_shared_rows_on_the_smallest_admitted_crop(self):
+        # review R2-SB H2: a 1 px off-centre box and a shared-colour (skin) row inside the lower band on the
+        # smallest admitted crop (30 x 10); incompatible kits must still be vetoed, same kit must still match
+        c = cfg()
+        h, w = 30, 10
+
+        def body(shirt, shorts, seed):
+            img = person(shirt, shorts, h=h, w=w, seed=seed, noise=2)
+            img[int(h * 0.76):int(h * 0.80), :] = (150, 170, 210)                 # a skin row in the lower band
+            return np.roll(img, 1, axis=1)                                      # the box is 1 px off-centre
+        t = A.lab_descriptor(body(RED, WHITE, 1), c)
+        self.assertGreater(A.lab_similarity(t, A.lab_descriptor(body(RED, WHITE, 2), c)), 0.8)
+        self.assertLess(A.lab_similarity(t, A.lab_descriptor(body(BLUE, BLACK, 3), c)), c.get("lab_floor"))
+
+    def test_the_rejected_geometry_would_have_lost_the_veto(self):
+        # documents why 24 x 6 (28 px, 4 columns) is not admitted: the same offset + shared row reaches lab_floor
+        c = cfg(lab_min_band_pixels=28, lab_min_band_columns=4)
+        h, w = 24, 6
+
+        def body(shirt, shorts, seed):
+            img = person(shirt, shorts, h=h, w=w, seed=seed, noise=2)
+            img[int(h * 0.76):int(h * 0.80), :] = (150, 170, 210)
+            return np.roll(img, 1, axis=1)
+        s = A.lab_similarity(A.lab_descriptor(body(RED, WHITE, 1), c), A.lab_descriptor(body(BLUE, BLACK, 3), c))
+        self.assertGreaterEqual(s, c.get("lab_floor"))
+
+    def test_constant_crop_descriptor_is_finite_and_normalised(self):
+        c = cfg()
+        d = A.lab_descriptor(np.full((40, 14, 3), 120, np.uint8), c)
+        self.assertTrue(np.all(np.isfinite(d)))
+        np.testing.assert_allclose(d.sum(axis=1), [1.0, 1.0])
+
+    def test_tiny_crops_keep_kit_discrimination(self):
+        # synthetic tiny / blurred / partial / clean bodies: colour separates kits and keeps same-kit high
+        c = cfg()
+        for h, w in ((30, 10), (36, 12), (40, 14)):
+            with self.subTest(size=(h, w)):
+                t = A.lab_descriptor(person(RED, WHITE, h=h, w=w, seed=1), c)
+                same = A.lab_descriptor(person(RED, WHITE, h=h, w=w, seed=2), c)
+                other = A.lab_descriptor(person(BLUE, BLACK, h=h, w=w, seed=3), c)
+                self.assertGreater(A.lab_similarity(t, same), 0.8)
+                self.assertLess(A.lab_similarity(t, other), c.get("lab_floor"))
+
+    def test_blurred_tiny_crop_matches_its_sharp_self(self):
+        import cv2
+        c = cfg()
+        sharp = person(RED, WHITE, h=30, w=10, seed=1)
+        blurred = cv2.GaussianBlur(sharp, (3, 3), 0)
+        self.assertGreater(A.lab_similarity(A.lab_descriptor(sharp, c), A.lab_descriptor(blurred, c)), 0.8)
+
+    def test_partial_tiny_crop_is_judged_on_what_it_shows(self):
+        # the lower half of a 30 px body (shorts only in the "shirt" band): colour must not claim the same kit
+        c = cfg()
+        full = person(RED, WHITE, h=64, w=20, seed=1)
+        lower_half = full[32:, :]
+        s = A.lab_similarity(A.lab_descriptor(full, c), A.lab_descriptor(lower_half, c))
+        self.assertLess(s, 0.8)
+
+    def test_a_genuinely_poor_crop_is_not_made_usable(self):
+        # the resolution floor, not the LAB floor, decides usability: a 20 px crop stays LOW_RESOLUTION / invalid
+        c = cfg()
+        q = A.assess_crop((100, 100, 106, 120), 640, 360, c, others=[])
+        self.assertFalse(q.valid)
+        f = A.AppearanceExtractor(c, A.ScriptedEmbedding([[1, 0]])).extract(
+            np.zeros((360, 640, 3), np.uint8), (100, 100, 106, 120), others=[])
+        self.assertFalse(f.usable)
+
     def test_background_sides_ignored(self):
         c = cfg()
         a = person(RED, WHITE, bg=(40, 140, 40))
@@ -151,9 +278,12 @@ class TestLab(unittest.TestCase):
                     self.assertGreaterEqual(s, 0.8)
 
     def test_too_few_pixels_gives_no_descriptor(self):
+        # R2 small-body stage: the floor follows the crop floor (24 px, side-on body); a 24 x 10 crop now has a
+        # descriptor (lower band 7 x 6 = 42 pixels); a crop below the resolution floor does not
         c = cfg()
-        tiny = person(RED, WHITE, h=24, w=10)
-        self.assertIsNone(A.lab_descriptor(tiny, c))
+        self.assertIsNotNone(A.lab_descriptor(person(RED, WHITE, h=30, w=10), c))
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=24, w=10), c))            # 7 x 6 = 42 < 50
+        self.assertIsNone(A.lab_descriptor(person(RED, WHITE, h=12, w=6), c))
 
     def test_missing_and_bad_descriptor(self):
         self.assertIsNone(A.lab_similarity(None, A.lab_descriptor(TARGET, cfg())))
