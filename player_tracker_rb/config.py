@@ -472,8 +472,10 @@ PARAMS: Tuple[Param, ...] = (
     _p("separation_min_gap_h", "float", "h",
        "Two observed boxes closer than this (edge to edge, in target body heights), or overlapping, count as "
        "contact for the physical-separation exclusion: from then on the competitor competes in full until the "
-       "target is confirmed again with the bodies apart.", 0.25, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL",
-       "identity", _SEP_EV, 0.0, 2.0),
+       "target is confirmed again with the bodies apart. Second use (R2 residual same-kit stage, population): a "
+       "box touching an active SIZE_ANOMALY whose feet line is farther than this (in host body heights) from the "
+       "host's feet line is at another depth - not a contact - unless its feet are not seen.", 0.25, N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity", _SEP_EV, 0.0, 2.0),
     _p("ambiguity_margin", "float", "similarity difference",
        "The best target candidate must beat the second-best target candidate by >= this.", 0.06, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "identity",

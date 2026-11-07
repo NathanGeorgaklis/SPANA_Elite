@@ -75,7 +75,11 @@ Per frame (update), in order:
      poking out) and could be a person (as tall as the body or standing on its feet line within
      population_hidden_feet_gap_max); a touching box (detection, predicted or memory box) is credible when it is
      not a SLIVER: its w/h is >= merged_aspect_band[0] x the host's held single-body w/h (a limb or edge fragment
-     is no whole person; a hidden person emerging as a sliver counts once its box is body-shaped). Ordinary
+     is no whole person; a hidden person emerging as a sliver counts once its box is body-shaped), and when it is
+     not DEPTH-APART (R2 residual same-kit stage): its feet line within separation_min_gap_h x the host's height
+     of the host's (bodies in contact stand on nearly the same ground line; a pair of players near the host's
+     head in the image, G2_D, is behind him), unless its feet are not seen - a partial or edge-clipped box, or a
+     box the host covers by >= population_contact_cover_min (legs hidden behind him): those count. Ordinary
      corroboration of a merge-sized box (second_body: any real overlap, D11) is unchanged. An isolated anomaly never escalates on duration alone
      (merged_anomaly_max_s applies once an indication exists; merged_uncorroborated_area_ratio still applies), and
      when it ends it ends ISOLATED
@@ -115,7 +119,10 @@ Per frame (update), in order:
      observed and is now seen nowhere (no detection overlapping, by population_match_iou_min, where it would be had it moved with the box) while the
      box goes on, the hidden person may have taken the box's place (e.g. stood up in front): the tracklet ends as
      a contested link (CONTACT_AMBIGUITY; the box starts a new tracklet with it as possible predecessor).
-     Only a body seen inside the box continuously (moving with it) for population_hidden_min_s counts.
+     Only a body seen inside the box continuously (moving with it) for population_hidden_min_s counts, and only a
+     CREDIBLE one (R2 residual same-kit stage): scored above population_weak_part_score_ratio x its host, inside or
+     poking out - a weak leg box that the detector drops for a frame is not a person who stood up (real 1080p
+     G1_A f179).
   5. Births. Any other unassigned detection starts a new tracklet. Hidden tracklets whose predicted box it covers
      (>= population_contact_cover_min) are recorded as possible predecessors (and the new id as their possible
      successor). The hidden tracklet is NOT closed: it may be a different person still hidden behind someone.
@@ -335,6 +342,8 @@ class ClosedTracklet:
     bank: AppearanceBank = field(compare=False, repr=False)
     last_box_source: str = LAST_PREDICTED
     merge_lineage: bool = False
+    last_partial: bool = False       # the last observed box was partial (feet not seen; the motion reference's
+                                     # partial state, carried into a predicted last box); internal, not logged
 
     def as_record(self) -> Dict[str, Any]:
         return {"tracklet_id": self.tracklet_id, "reason": self.reason, "closed_frame": self.closed_frame,
@@ -444,6 +453,7 @@ class _Tracklet:
     first_box: Optional[Box] = None          # NEW_R2 F3c: the box it was born on (outsider test for merged regions)
     contained: Tuple[Box, ...] = ()          # NEW_R2 F3c: NESTED bodies inside its box when last observed
     contained_since: Tuple[float, ...] = ()  # NEW_R2 F3c: since when each has been seen inside it continuously
+    contained_credible: Tuple[bool, ...] = ()   # R2 residual stage: credible as a person on any frame of its stay
     contained_host: Optional[Box] = None     # NEW_R2 F3c: its own box on that observation
 
 
@@ -558,7 +568,8 @@ class Population:
     def _close(self, tr: _Tracklet, reason: str, frame: int, t: float, last_box: Box, position_valid: bool,
                closed: List[ClosedTracklet], source: str) -> None:
         ct = ClosedTracklet(tr.tid, reason, frame, t, last_box, tr.last_obs_frame, position_valid,
-                            tuple(tr.successors), tr.bank, source, tr.merge_lineage)
+                            tuple(tr.successors), tr.bank, source, tr.merge_lineage,
+                            bool(tr.motion.ref_partial))
         closed.append(ct)
 
     def _birth(self, box: Box, frame: int, t: float, partial: bool, predecessors: Sequence[str],
@@ -836,14 +847,46 @@ class Population:
             w_, h_ = _wh(b)
             return h_ > 0.0 and (w_ / h_) < lo_aspect * (ref[0] / ref[1])
 
+        # (R2 residual same-kit stage, real 1080p G2_D f102-130 / G2_A f125): a box that overlaps the host's box
+        # in the image but stands on a feet line far from the host's (a pair of players 0.92-0.98 body heights
+        # higher: behind him, near his head) is not in contact with him - two bodies in contact stand on nearly the
+        # same ground line. The feet-line gap is the two bodies' separation in depth; the project's one notion of
+        # "physically separate" is a gap of separation_min_gap_h body heights (the separation certificate), so a
+        # touching box is credible only with |feet gap| <= separation_min_gap_h x the host's height (a player
+        # stepping forward is ~0.1-0.2 h; population_hidden_feet_gap_max, 0.1, is the one-box nested criterion and
+        # would dismiss real contacts). Unless its feet are not seen: a partial or edge-clipped box, or a box the
+        # host covers by >= population_contact_cover_min (a player directly behind him with his legs hidden by him
+        # has a high box bottom too, and his box lies mostly inside the host's; a far body's box is barely covered,
+        # G2_D 1-7 %): fails closed.
+        def _depth_apart(b: Box, host: Box, partial_: bool) -> bool:
+            if partial_ or self._touches_edge(b):
+                return False
+            ix = min(host[2], b[2]) - max(host[0], b[0])
+            iy = min(host[3], b[3]) - max(host[1], b[1])
+            area_b = (b[2] - b[0]) * (b[3] - b[1])
+            if area_b <= 0.0 or (ix > 0.0 and iy > 0.0 and ix * iy >= c.get("population_contact_cover_min") * area_b):
+                return False
+            return abs(host[3] - b[3]) > c.get("separation_min_gap_h") * (host[3] - host[1])
+
+        # feet-not-seen for a touching detection, known before the merge loop (review R2-RC M2: the per-box
+        # `partial` dict is filled inside that loop, so it must not be read there): edge-clipped, or shorter than
+        # population_partial_height_ratio x its own tracklet's full height
+        short_or_edge = {j: bool(edge[j]) or dets[j].touches_image_edge
+                         or (j in assigned_d and _wh(boxes[j])[1]
+                             < c.get("population_partial_height_ratio") * full_h[assigned_d[j]])
+                         for j in bodies}
+
         def credible_touch(i: int, ref: Optional[Tuple[float, float]]) -> bool:
             bi = boxes[i]
             return (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) and not _sliver(boxes[j], ref)
+                        and not _depth_apart(boxes[j], bi, short_or_edge[j])
                         for j in bodies)
                     or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) and not _sliver(pbox[tr.tid], ref)
+                           and not _depth_apart(pbox[tr.tid], bi, bool(tr.motion.ref_partial))
                            for tr in live)
                     or any(m_.tracklet_id != own_tid[i] and m_.position_valid and _touch(bi, m_.last_box)
-                           and not _sliver(m_.last_box, ref) for m_ in self._memory))
+                           and not _sliver(m_.last_box, ref) and not _depth_apart(m_.last_box, bi, m_.last_partial)
+                           for m_ in self._memory))
 
         indication: Dict[int, bool] = {}       # credible second-person indication for body i (anomaly path)
         touch_cred: Dict[int, bool] = {}       # credible touch alone (immediate escalation of an active anomaly)
@@ -1067,9 +1110,14 @@ class Population:
             # only a body seen inside the box for at least population_hidden_min_s counts: a part box that
             # flickers for a frame or two is a detector artefact far more often than a hidden person, and a person
             # crouched inside the box is seen there for longer before they stand up
+            # (R2 residual same-kit stage) only a contained body CREDIBLE as a person on some frame of its stay
+            # counts: scored above population_weak_part_score_ratio x its host, or as tall as the body
+            # (population_partial_height_ratio); a weak short box is the host's own leg box (real 1080p G1_A
+            # f179: 0.13-0.37 x his score, dropped for one detector frame, ended his tracklet)
+            cred_flags = tr.contained_credible or (True,) * len(tr.contained)
             prev = [(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy)
-                    for b, since in zip(tr.contained, tr.contained_since)
-                    if sec_ge(t - since, hidden_min_s)]     # inside from `since` until it was missed now
+                    for b, since, cred in zip(tr.contained, tr.contained_since, cred_flags)
+                    if cred and sec_ge(t - since, hidden_min_s)]     # inside from `since` until it was missed now
             if not prev:
                 continue
             # still there = some other detection (duplicates included) overlapping where it would be by
@@ -1300,22 +1348,40 @@ class Population:
                 # a WEAK_PART (review R2-WP finding 1) is by its own premise the host's part, never a hidden person:
                 # it feeds neither the contained list nor CONTAINED_BODY_VANISHED (accepted twin: a crouched person
                 # detected that weakly, poking out of the host, is not caught by 4b either)
-                now_c = [boxes[j] for j in bodies if j != i and nested_in[j] == i and j not in weak_part
-                         and hb[3] - boxes[j][3] <= feet_gap * hh]
-                since_c = []
+                # (R2 residual same-kit stage, real 1080p G1_A f179): the same premise applies to a weak part box
+                # lying wholly inside its host - the target's own leg box (0.13-0.37 x his score, on his feet
+                # line, inside for 0.3 s) vanished for one detector frame and ended his tracklet as a possible
+                # replacement, with the teammate tracked apart on his own box. A contained body is credible only
+                # above population_weak_part_score_ratio x the host's score (accepted twin: a crouched person
+                # detected that weakly is not caught by 4b either; its own box is still a competitor).
+                # Every feet-line nested body stays in the contained list (its stay is continuous whatever its
+                # score on one frame; review R2-RC H2); whether it was ever CREDIBLE - scored above
+                # population_weak_part_score_ratio x the host or as tall as the body (review R2-RC H1: a tall
+                # occluded person scores low) - is carried as a flag and decides at the vanish check.
+                now_idx = [j for j in bodies if j != i and nested_in[j] == i and j not in weak_part
+                           and hb[3] - boxes[j][3] <= feet_gap * hh]
+                now_c = [boxes[j] for j in now_idx]
+                now_cred = [dets[j].score > c.get("population_weak_part_score_ratio") * dets[i].score
+                            or _wh(boxes[j])[1] >= c.get("population_partial_height_ratio") * hh for j in now_idx]
+                since_c, cred_c = [], []
                 if now_c and tr.contained and tr.contained_host is not None:
                     h0 = tr.contained_host
                     ddx = (hb[0] + hb[2]) / 2.0 - (h0[0] + h0[2]) / 2.0
                     ddy = hb[3] - h0[3]
                     moved = np.asarray([(b[0] + ddx, b[1] + ddy, b[2] + ddx, b[3] + ddy) for b in tr.contained])
                     iou = box_iou_matrix(np.asarray(now_c), moved)
+                    prev_cred = tr.contained_credible or (True,) * len(tr.contained)
                     for q in range(len(now_c)):
                         m = int(np.argmax(iou[q]))
-                        since_c.append(tr.contained_since[m] if iou[q, m] >= match_min else t)
+                        matched = iou[q, m] >= match_min
+                        since_c.append(tr.contained_since[m] if matched else t)
+                        cred_c.append(now_cred[q] or (matched and prev_cred[m]))
                 else:
                     since_c = [t] * len(now_c)
+                    cred_c = list(now_cred)
                 tr.contained = tuple(now_c)
                 tr.contained_since = tuple(since_c)
+                tr.contained_credible = tuple(cred_c)
                 tr.contained_host = hb
         # tracklets observed this frame on a box that fills a region may hold its merged bodies (NEW_R2 F3c)
         for k, rg in enumerate(self._regions):
