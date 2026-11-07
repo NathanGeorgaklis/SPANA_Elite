@@ -69,9 +69,14 @@ Per frame (update), in order:
      one is established. An active anomaly that a second body touches, or whose box is still merge-sized after
      merged_anomaly_max_s, is a merge (SUSTAINED_SIZE_ANOMALY); partial or edge boxes neither end nor escalate it.
      Corroboration (NEW_R2, R2 stride stage) needs a real overlap: boxes share >= merged_corroboration_min_cover of
-     the smaller box's area (a corner clip is not a body). An anomaly with no second-person INDICATION - no touch
-     and no credible nested box that could be a person (not a WEAK_PART; as tall as the body or standing on its
-     feet line within population_hidden_feet_gap_max) at any of its frames - is ISOLATED (TrackletView.anomaly_isolated): it never escalates on duration alone
+     the smaller box's area (a corner clip is not a body). An anomaly with no second-person INDICATION - no CREDIBLE
+     touch and no credible nested box - at any of its frames is ISOLATED (TrackletView.anomaly_isolated). A nested
+     box is credible when it is not a part (score > population_weak_part_score_ratio x its host's, inside or
+     poking out) and could be a person (as tall as the body or standing on its feet line within
+     population_hidden_feet_gap_max); a touching box (detection, predicted or memory box) is credible when it is
+     not a SLIVER: its w/h is >= merged_aspect_band[0] x the host's held single-body w/h (a limb or edge fragment
+     is no whole person; a hidden person emerging as a sliver counts once its box is body-shaped). Ordinary
+     corroboration of a merge-sized box (second_body: any real overlap, D11) is unchanged. An isolated anomaly never escalates on duration alone
      (merged_anomaly_max_s applies once an indication exists; merged_uncorroborated_area_ratio still applies), and
      when it ends it ends ISOLATED
      (anomaly_ended_isolated): one body's stride or pose as far as geometry can tell. target.py follows an isolated
@@ -772,14 +777,76 @@ class Population:
         # tall as the body (population_partial_height_ratio) OR standing on the host's feet line within
         # population_hidden_feet_gap_max of its height (the population's own hidden-person criterion, F3c: a
         # crouched person who could stand up). A WEAK_PART is a part.
+        # (review R2-STR 2 / real 1080p G2_A): a sprinting body's own leg and torso boxes (0.1-0.4 x its score,
+        # standing on its feet line) and its tall same-body alternative boxes counted as a credible nested body.
+        # CREDIBLE is geometric first: a second person BESIDE the target inside a union box leaves at least a body's
+        # width of the host for the target - host width - nested width >= merged_aspect_band[0] x the target's
+        # single-body reference width (the narrowest a body gets against its own reference). A same-body
+        # alternative or part box is nearly as wide as its host and leaves no room (G2_A f101: a 51-wide tall
+        # alternative in a 67-wide host, reference ~50). With room beside it, a box as tall as the body is a possible
+        # person whatever its score (an occluded same-kit player scores low: fails closed, review R2-STR 2 H1); a
+        # short box on the feet line (a crouched person who could stand up, R2-STR 1) must also score above
+        # population_weak_part_score_ratio x its host, the part premise (a one-leg box is short and weak).
+        # Without a single-body reference the pre-stage form applies (any tall or feet-line nested box).
         body_nested: Dict[int, bool] = {}
         feet_tol = c.get("population_hidden_feet_gap_max")
+        part_ratio = c.get("population_weak_part_score_ratio")
+        lo_aspect = c.get("merged_aspect_band")[0]
         for i in bodies:
             hi_ = _wh(boxes[i])[1]
             body_nested[i] = any(nested_in[j] == i and j not in weak_part
                                  and (_wh(boxes[j])[1] >= c.get("population_partial_height_ratio") * hi_
                                       or boxes[i][3] - boxes[j][3] <= feet_tol * hi_)
                                  for j in bodies)
+
+        def credible_nested(i: int, ref: Optional[Tuple[float, float]]) -> bool:
+            if ref is None or ref[0] <= 0.0:
+                return body_nested[i]
+            wi, hi_ = _wh(boxes[i])
+            out = False
+            for j in bodies:
+                if nested_in[j] != i or j in weak_part:
+                    continue
+                wj, hj = _wh(boxes[j])
+                if wi - wj < lo_aspect * ref[0]:
+                    continue                                         # no room beside it for the target's own body
+                if hj >= c.get("population_partial_height_ratio") * hi_:
+                    out = True                                       # tall with room beside: a possible person
+                elif boxes[i][3] - boxes[j][3] <= feet_tol * hi_ and dets[j].score > part_ratio * dets[i].score:
+                    out = True                                       # short on the feet line and not a weak part
+            return out
+
+        # Second-person INDICATION by touch, for the anomaly path only (NEW_R2, R2 stride stage, real 1080p G2_A):
+        # a touching box is a second body only if it could be a whole body - its aspect (w/h) is at least
+        # merged_aspect_band[0] x the host's held single-body aspect. A SLIVER narrower than that (an 18 x 143 px
+        # fragment on a sprinting body's trailing edge, scored 0.45) is a limb or a detector edge fragment. Judged
+        # against the host's single-body reference, never its anomalous box (a stride box is wide, so a real
+        # side-on second person would wrongly look like a sliver against it), and never against the touching
+        # tracklet's own reference (a persisting sliver's own reference is a sliver: it would judge itself a body).
+        # Known limit (review R2-STR 2 M1): a side-on second person narrower than merged_aspect_band[0] x the
+        # target's aspect on the touch frame is not an indication; the target stays an untrusted SIZE_ANOMALY and,
+        # if the anomaly ends, continues UNVERIFIED (contrast-verified before trust), so identity is not trusted
+        # on it. A box touching the image edge is clipped, not narrow: never a sliver (M2). A hidden person emerging
+        # as a sliver becomes an indication on the frame its box is body-shaped. Ordinary merge corroboration
+        # (second_body: size + any touch, D11) is unchanged; only escalation of an active anomaly and its contact
+        # flag use the credible form.
+        def _sliver(b: Box, ref: Optional[Tuple[float, float]]) -> bool:
+            if ref is None or ref[0] <= 0.0 or ref[1] <= 0.0 or self._touches_edge(b):
+                return False
+            w_, h_ = _wh(b)
+            return h_ > 0.0 and (w_ / h_) < lo_aspect * (ref[0] / ref[1])
+
+        def credible_touch(i: int, ref: Optional[Tuple[float, float]]) -> bool:
+            bi = boxes[i]
+            return (any(j != i and group[j] != group[i] and _touch(bi, boxes[j]) and not _sliver(boxes[j], ref)
+                        for j in bodies)
+                    or any(tr.tid != own_tid[i] and _touch(bi, pbox[tr.tid]) and not _sliver(pbox[tr.tid], ref)
+                           for tr in live)
+                    or any(m_.tracklet_id != own_tid[i] and m_.position_valid and _touch(bi, m_.last_box)
+                           and not _sliver(m_.last_box, ref) for m_ in self._memory))
+
+        indication: Dict[int, bool] = {}       # credible second-person indication for body i (anomaly path)
+        touch_cred: Dict[int, bool] = {}       # credible touch alone (immediate escalation of an active anomaly)
         size_anomaly: Set[int] = set()
         anomaly_hold: Dict[int, Tuple[bool, bool]] = {}   # i -> (merge-sized now, near single size now)
         merge_reasons: Dict[int, List[str]] = {i: [] for i in track}
@@ -913,6 +980,14 @@ class Population:
                     size_reasons.append(ASPECT_WIDE)
                 tr_i = by_tid[assigned_d[i]] if i in assigned_d else None
                 active = tr_i is not None and tr_i.anomaly_since is not None
+                if tr_i is not None and i not in region_of:
+                    if tr_i.merge_lineage:
+                        # a reference inherited through a merge is not one body's size (review R2-STR 2 M4):
+                        # the pre-stage form, any touch or nested body, applies (fails closed)
+                        touch_cred[i], indication[i] = second_body[i], second_body[i] or body_nested[i]
+                    else:
+                        touch_cred[i] = credible_touch(i, ref_wh)
+                        indication[i] = credible_nested(i, ref_wh) or touch_cred[i]
                 if tr_i is not None and i not in region_of and (size_reasons or active):
                     # A single body continuing its own tracklet. Without a possible second body, a size change is pose
                     # (limbs, stride) or an unseen second body: geometry cannot tell. It is a SIZE_ANOMALY: never
@@ -928,7 +1003,7 @@ class Population:
                         pass                                 # corroborated: a merge (D11, unchanged)
                     elif active and ((size_reasons and sec_ge(elapsed, c.get("merged_anomaly_max_s"))
                                       and tr_i.anomaly_contact)
-                                     or (second_body[i] and not near_single)):
+                                     or (touch_cred[i] and not near_single)):
                         # NEW_R2 (R2 stride stage): duration alone is not second-person evidence. An anomaly that
                         # no body ever touched stays a SIZE_ANOMALY (never trusted, never banked) however long;
                         # only one that a second body touched at some frame escalates on duration
@@ -1100,7 +1175,7 @@ class Population:
                 merge_sized, near = anomaly_hold[i]
                 if tr.anomaly_since is None:                 # starts (only on a merge-sized box)
                     tr.anomaly_since, tr.frozen_ref, tr.clear_since = t, refs.get(tid), None
-                    tr.anomaly_contact = bool(second_body.get(i) or body_nested.get(i))
+                    tr.anomaly_contact = bool(indication.get(i, second_body.get(i) or body_nested.get(i)))
                     held = True
                 elif merge_sized or not near:
                     tr.clear_since, held = None, True
@@ -1115,11 +1190,12 @@ class Population:
                         # NEW_R2 (R2 stride stage): an anomaly that no second body ever touched (observation,
                         # predicted box or memory box, at any of its frames) ended ISOLATED: one body's pose
                         tr.anomaly_ended_isolated = not tr.anomaly_contact
-                if tr.anomaly_since is not None and (second_body.get(i) or body_nested.get(i)):
+                if tr.anomaly_since is not None and indication.get(i, second_body.get(i) or body_nested.get(i)):
                     tr.anomaly_contact = True
             elif tr.anomaly_since is not None:               # active anomaly, box judged elsewhere (e.g. no reference)
                 held = True
-                if second_body.get(i) or body_nested.get(i):
+                # without a size reference the credible form cannot be judged: any touch counts (fails closed)
+                if indication.get(i, second_body.get(i) or body_nested.get(i)):
                     tr.anomaly_contact = True
             if held:
                 # hold the reference and the motion size/velocity: the box may hold two bodies

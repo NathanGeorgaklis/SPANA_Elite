@@ -636,7 +636,10 @@ PARAMS: Tuple[Param, ...] = (
        "larger detection's score, lying at least population_weak_part_min_containment inside it, shorter than it, "
        "at most population_weak_part_max_width_ratio x its width and centred within "
        "population_weak_part_max_centre_offset x its width of its centre, is NESTED in it (a part box poking out "
-       "of its host): no tracklet, no second-body corroboration, still an observation and competitor.", 0.5, N,
+       "of its host): no tracklet, no second-body corroboration, still an observation and competitor. Second use "
+       "(R2 stride stage, review 2): a nested box standing on its host's feet line but shorter than "
+       "population_partial_height_ratio x it is a second-person INDICATION for an active SIZE_ANOMALY only if it "
+       "scores above this fraction of its host (a leg box is short and weak; a crouched person is not).", 0.5, N,
        "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "population", _WEAK_EV, 0.0, 1.0),
     _p("population_weak_part_min_containment", "float", "fraction of the smaller box's area",
        "Least containment of a weak part box inside its host (below population_nested_containment, which already "
@@ -698,8 +701,13 @@ PARAMS: Tuple[Param, ...] = (
        "the anomaly ends. One near-size or partial frame never ends it.", 0.2, N, "DESIGN_CHOICE", UNV,
        "BEHAVIOURAL", "merged", "NEW_R2 (R2 DEV remediation F3, review round 2 H1). Not calibrated", 0.0, 10.0),
     _p("merged_aspect_band", "pair", "ratio to recent median aspect (w/h)",
-       "Aspect ratio outside this band relative to the target's median is merged-suspect.", (0.6, 1.6), N,
-       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 100.0),
+       "Aspect ratio outside this band relative to the target's median is merged-suspect. The lower bound is also "
+       "the narrowest a single body is taken to be against its reference (R2 stride stage, review 2): a box "
+       "touching an active SIZE_ANOMALY whose w/h is below band[0] x the host's held single-body w/h is a SLIVER "
+       "(limb or edge fragment), not a second-person indication, unless it touches the image edge; and a nested "
+       "box is a possible second person beside the host only if the host leaves at least band[0] x the reference "
+       "width beside it.", (0.6, 1.6), N,
+       "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11; R2 stride stage review 2 (real 1080p G2_A)", 0.0, 100.0),
     _p("merged_overlap_min", "float", "fraction of predicted box area",
        "A box covering at least this fraction of the predicted boxes of two or more distinct tracked bodies (D11: "
        "the target's and a competitor's) is merged-suspect (subject to merged_claim_min_box_fraction).", 0.3, N, "DESIGN_CHOICE", UNV, "BEHAVIOURAL", "merged", "D11", 0.0, 1.0),

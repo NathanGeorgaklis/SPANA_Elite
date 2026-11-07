@@ -130,6 +130,176 @@ class PopulationLevel(unittest.TestCase):
                 codes = "".join(code(max(r.observations, key=lambda o: (o.bbox[2] - o.bbox[0]))) for r in rn.results)
                 self.assertIn("M", codes, codes)
 
+    def _union_frames(self, extra, n_extra_tail=10):
+        """An abrupt union held for > MAX_S; extra(b) returns additional (box, score) pairs on the wide frames."""
+        boxes = [box_at(300, 400, 40, 100)] * 30
+        boxes += [box_at(300 + 16 * (k + 1) / 10, 400, 40 + 32 * (k + 1) / 10, 100) for k in range(10)]
+        boxes += [box_at(316, 400, 72, 100)] * (int(math.ceil(MAX_S * FPS)) + n_extra_tail)
+        frames = []
+        for b in boxes:
+            dets, owners = [cand(b)], [("TARGET",)]
+            if b[2] - b[0] > 56.0:
+                for k, (bx, sc) in enumerate(extra(b)):
+                    dets.append(cand(bx, sc))
+                    owners.append(("PERSON_%d" % k,))
+            frames.append(Frame(dets, owners))
+        return frames
+
+    def _codes(self, rn):
+        return "".join(code(max(r.observations, key=lambda o: (o.bbox[2] - o.bbox[0]))) for r in rn.results)
+
+    def test_own_part_boxes_wholly_inside_on_the_feet_line_are_not_an_indication(self):
+        # real 1080p G2_A f101-114: the sprinting target's own leg box (0.28-0.36 x its score, wholly inside,
+        # standing on its feet line) and torso box counted as a credible nested body -> contact -> escalation by
+        # duration. A part scored <= population_weak_part_score_ratio x the host is a part, inside or poking out.
+        ratio = CFG.get("population_weak_part_score_ratio")
+        for sc in (0.1, 0.3, ratio * 0.9 - 1e-9):
+            with self.subTest(part_score=sc):
+                frames = self._union_frames(lambda b: [((b[0] + 8, b[3] - 0.62 * (b[3] - b[1]), b[2] - 8, b[3] - 1), sc),
+                                                       ((b[0] + 10, b[1] + 2, b[2] - 10, b[1] + 0.55 * (b[3] - b[1])), sc)])
+                rn = run(frames, fps=FPS)
+                codes = self._codes(rn)
+                self.assertIn("A", codes)
+                self.assertNotIn("M", codes, codes)
+                self.assertTrue(all(v.anomaly_isolated for r in rn.results[-5:] for v in r.tracklets
+                                    if v.tracklet_id == rn.results[-1].observations[0].tracklet_id))
+
+    def test_tall_nested_box_with_room_beside_it_is_a_person_whatever_its_score(self):
+        # review R2-STR 2 H1: an occluded same-kit player inside the union scores low; with a body's width of the
+        # host left beside it (host 72 - nested 31 = 41 >= 0.6 x 40) it is a possible person -> fails closed
+        for sc in (0.1, 0.3, 0.45):
+            with self.subTest(nested_score=sc):
+                frames = self._union_frames(lambda b: [((b[2] - 32, b[1] + 2, b[2] - 1, b[3] - 1), sc)])
+                self.assertIn("M", self._codes(run(frames, fps=FPS)))
+
+    def test_tall_same_body_alternative_box_leaving_no_room_beside_it_is_not_a_person(self):
+        # real 1080p G2_A f101: a 51-wide tall alternative box inside the 67-wide stride box of a body whose
+        # reference is ~50 wide: 16 px beside it cannot hold the target itself -> the same body, not a second one
+        lo = CFG.get("merged_aspect_band")[0]
+        for sc in (0.3, 0.9):
+            with self.subTest(alt_score=sc):
+                frames = self._union_frames(lambda b: [((b[0] + 10, b[1] + 2, b[2] - 10, b[3] - 1), sc)])   # 52 of 72: 20 px beside
+                codes = self._codes(run(frames, fps=FPS))
+                self.assertIn("A", codes)
+                self.assertNotIn("M", codes, codes)
+
+    def test_room_beside_boundary(self):
+        lo = CFG.get("merged_aspect_band")[0]
+        for room, expect in ((lo * 40.0 + 0.5, "M"), (lo * 40.0 - 0.5, "A")):
+            with self.subTest(room=room):
+                frames = self._union_frames(lambda b: [((b[0] + room, b[1] + 2, b[2], b[3] - 1), 0.9)])
+                codes = self._codes(run(frames, fps=FPS))
+                if expect == "M":
+                    self.assertIn("M", codes, codes)
+                else:
+                    self.assertNotIn("M", codes, codes)
+
+    def test_feet_line_box_at_exactly_the_part_score_ratio_is_a_part(self):
+        ratio = CFG.get("population_weak_part_score_ratio")
+        frames = self._union_frames(lambda b: [((b[2] - 30, b[3] - 0.55 * (b[3] - b[1]), b[2] - 1, b[3] - 1),
+                                                0.9 * ratio)])
+        codes = self._codes(run(frames, fps=FPS))
+        self.assertIn("A", codes)
+        self.assertNotIn("M", codes, codes)
+
+    def test_edge_clipped_touching_box_is_never_a_sliver(self):
+        # review R2-STR 2 M2: a second person entering at the image edge is clipped, not narrow -> indication
+        lo = CFG.get("merged_aspect_band")[0]
+        sliver_w = 0.5 * lo * 40.0
+        margin = CFG.get("detector_edge_touch_margin_px")
+        cx = 300.0
+
+        def extra(b):
+            return [((b[2] - 0.64 * sliver_w, b[1] - 1, b[2] + 0.36 * sliver_w, b[3] + 2), 0.5)]
+        frames = self._mid_anomaly_frames(extra)
+        # shift the whole scene so the sliver's right edge sits on the image edge
+        from tests_rb._synth_people import W as IMG_W
+        shifted = []
+        for fr in frames:
+            dets = []
+            for d in fr.dets:
+                bx = d.bbox
+                dx = IMG_W - margin * 0.5 - (316.0 + 28.0 + 0.36 * sliver_w)
+                dets.append(cand((bx[0] + dx, bx[1], bx[2] + dx, bx[3]), d.score))
+            shifted.append(Frame(dets, fr.owners))
+        self.assertIn("M", self._codes(run(shifted, fps=FPS)))
+
+    def test_credible_nested_box_on_the_feet_line_at_the_score_boundary_still_escalates(self):
+        ratio = CFG.get("population_weak_part_score_ratio")
+        frames = self._union_frames(lambda b: [((b[2] - 30, b[3] - 0.55 * (b[3] - b[1]), b[2] - 1, b[3] - 1),
+                                                0.9 * ratio + 1e-6)])
+        self.assertIn("M", self._codes(run(frames, fps=FPS)))
+
+    def _mid_anomaly_frames(self, extra, n_tail=None):
+        """The measured G2_A sequence: an isolated anomaly starts (stride box 1.8 x), then the box narrows to 1.4 x
+        (above merged_anomaly_clear_area_ratio, below merged_area_ratio: not near single, not merge-sized) while
+        extra(b) boxes touch it for longer than MAX_S. Pre-fix any touch here escalated (SUSTAINED_SIZE_ANOMALY)."""
+        n_tail = int(math.ceil(MAX_S * FPS)) + 10 if n_tail is None else n_tail
+        boxes = [box_at(300, 400, 40, 100)] * 30
+        boxes += [box_at(300 + 16 * (k + 1) / 10, 400, 40 + 32 * (k + 1) / 10, 100) for k in range(10)]
+        boxes += [box_at(316, 400, 72, 100)] * 6
+        boxes += [(box_at(316, 400, 56, 100), True)] * n_tail
+        frames = []
+        for b in boxes:
+            touched = isinstance(b, tuple) and len(b) == 2 and b[1] is True
+            if touched:
+                b = b[0]
+            dets, owners = [cand(b)], [("TARGET",)]
+            if touched:
+                for k, (bx, sc) in enumerate(extra(b)):
+                    dets.append(cand(bx, sc))
+                    owners.append(("PERSON_%d" % k,))
+            frames.append(Frame(dets, owners))
+        return frames
+
+    def test_sliver_fragment_touching_the_anomaly_box_is_not_an_indication(self):
+        # real 1080p G2_A f121: an 18 x 143 px box (w/h 0.13 against the body's 0.36; score 0.45) on the sprinting
+        # target's trailing edge, 64 % inside its 1.5 x box, escalated the anomaly into a merge. No whole person is
+        # that narrow: a touching box narrower than merged_aspect_band[0] x the held single-body aspect is a sliver.
+        lo = CFG.get("merged_aspect_band")[0]
+        sliver_w = 0.5 * lo * 40.0                                          # half the sliver threshold
+        frames = self._mid_anomaly_frames(lambda b: [((b[2] - 0.64 * sliver_w, b[1] - 1, b[2] + 0.36 * sliver_w,
+                                                        b[3] + 2), 0.5)])
+        codes = self._codes(run(frames, fps=FPS))
+        self.assertIn("A", codes)
+        self.assertNotIn("M", codes, codes)
+
+    def test_body_shaped_touching_box_still_escalates(self):
+        # the twin: a touching box at least merged_aspect_band[0] x the single-body aspect is a possible person
+        lo = CFG.get("merged_aspect_band")[0]
+        w = 1.05 * lo * 40.0                                                # just above the sliver threshold
+        frames = self._mid_anomaly_frames(lambda b: [((b[2] - 0.64 * w, b[1] - 1, b[2] + 0.36 * w, b[3] + 2), 0.5)])
+        self.assertIn("M", self._codes(run(frames, fps=FPS)))
+
+    def test_sliver_is_judged_against_the_single_body_reference_not_the_stride_box(self):
+        # a narrow side-on second person (w/h 0.75 x the target's single-body aspect) touching the 1.4 x box must
+        # not look like a sliver against that box's inflated aspect
+        lo = CFG.get("merged_aspect_band")[0]
+        w = 0.75 * 40.0
+        self.assertGreater(0.75, lo)
+        self.assertLess(w / 100.0, lo * 56.0 / 100.0)                       # a sliver against the 56-wide box
+        frames = self._mid_anomaly_frames(lambda b: [((b[2] - 0.5 * w, b[1], b[2] + 0.5 * w, b[3]), 0.9)])
+        self.assertIn("M", self._codes(run(frames, fps=FPS)))
+
+    def test_sliver_tracklet_touching_for_several_frames_is_still_not_an_indication(self):
+        # a persisting sliver carries a tracklet whose predicted box touches the anomaly box every frame
+        lo = CFG.get("merged_aspect_band")[0]
+        sliver_w = 0.5 * lo * 40.0
+        frames = self._mid_anomaly_frames(lambda b: [((b[2] - 0.3 * sliver_w, b[1] - 1, b[2] + 0.7 * sliver_w,
+                                                        b[3] + 2), 0.6)], n_tail=int(math.ceil(MAX_S * FPS)) + 40)
+        codes = self._codes(run(frames, fps=FPS))
+        self.assertIn("A", codes)
+        self.assertNotIn("M", codes, codes)
+
+    def test_sliver_corroboration_of_a_merge_sized_box_at_first_sight_is_unchanged(self):
+        # known limit (documented): ordinary corroboration (size + any real overlap, D11) is not changed by this
+        # stage; a sliver touching a box that is merge-sized on the frame it first appears still corroborates
+        lo = CFG.get("merged_aspect_band")[0]
+        sliver_w = 0.5 * lo * 40.0
+        frames = self._union_frames(lambda b: [((b[2] - 0.64 * sliver_w, b[1] - 1, b[2] + 0.36 * sliver_w,
+                                                 b[3] + 2), 0.5)])
+        self.assertIn("M", self._codes(run(frames, fps=FPS)))
+
     def test_contact_through_a_hidden_tracklets_predicted_box_is_an_indication(self):
         # a second body walks up, is lost by the detector while its predicted box overlaps the anomaly box: the
         # anomaly is not isolated and still escalates on duration
